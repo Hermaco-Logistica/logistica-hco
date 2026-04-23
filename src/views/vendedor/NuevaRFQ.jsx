@@ -1,13 +1,58 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { auth } from '../../firebase';
 import { serverTimestamp } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import {
+  buscarClientesGuardados,
+  guardarClienteSiNoExiste,
+  normalizarNombreCliente,
+} from '../../services/clientesService';
 
 export const NuevaRFQ = ({ onFinalizar }) => {
   const navigate = useNavigate();
   const [cliente, setCliente] = useState('');
+  const [sugerenciasCliente, setSugerenciasCliente] = useState([]);
+  const [indiceSugerenciaActiva, setIndiceSugerenciaActiva] = useState(-1);
+  const [buscandoCliente, setBuscandoCliente] = useState(false);
+  const [errorCliente, setErrorCliente] = useState('');
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
   const [productos, setProductos] = useState([{ desc: '', marca: '', cant: 1 }]);
   const [loading, setLoading] = useState(false);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    const termino = cliente.trim();
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (termino.length < 2) {
+      setSugerenciasCliente([]);
+      setIndiceSugerenciaActiva(-1);
+      setBuscandoCliente(false);
+      setErrorCliente('');
+      return;
+    }
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        setBuscandoCliente(true);
+        setErrorCliente('');
+        const resultados = await buscarClientesGuardados(termino);
+        setSugerenciasCliente(resultados);
+        setIndiceSugerenciaActiva(resultados.length > 0 ? 0 : -1);
+      } catch (error) {
+        setErrorCliente('No se pudo buscar clientes guardados.');
+        setSugerenciasCliente([]);
+        setIndiceSugerenciaActiva(-1);
+      } finally {
+        setBuscandoCliente(false);
+      }
+    }, 280);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [cliente]);
 
   // Añadir una nueva fila de producto
   const addFila = () => {
@@ -27,17 +72,68 @@ export const NuevaRFQ = ({ onFinalizar }) => {
     setProductos(nuevos);
   };
 
+  const seleccionarSugerenciaCliente = (nombre) => {
+    setCliente(nombre || '');
+    setMostrarSugerencias(false);
+    setIndiceSugerenciaActiva(-1);
+  };
+
+  const manejarTeclasCliente = (e) => {
+    if (!mostrarSugerencias || buscandoCliente || sugerenciasCliente.length === 0) {
+      if (e.key === 'Escape') {
+        setMostrarSugerencias(false);
+        setIndiceSugerenciaActiva(-1);
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setIndiceSugerenciaActiva((prev) => {
+        const base = prev < 0 ? 0 : prev;
+        return Math.min(base + 1, sugerenciasCliente.length - 1);
+      });
+      return;
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setIndiceSugerenciaActiva((prev) => {
+        if (prev <= 0) return 0;
+        return prev - 1;
+      });
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      if (indiceSugerenciaActiva >= 0 && indiceSugerenciaActiva < sugerenciasCliente.length) {
+        e.preventDefault();
+        seleccionarSugerenciaCliente(sugerenciasCliente[indiceSugerenciaActiva].nombre || '');
+      }
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setMostrarSugerencias(false);
+      setIndiceSugerenciaActiva(-1);
+    }
+  };
+
   const guardarRFQ = async (e) => {
     e.preventDefault();
     if (!cliente || productos.some(p => !p.desc)) return alert("Llena los campos obligatorios");
 
     setLoading(true);
     try {
+      const clienteNormalizado = normalizarNombreCliente(cliente);
+      await guardarClienteSiNoExiste(clienteNormalizado, auth.currentUser);
+
       const correlativo = `RFQ-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
       
       // Preparamos el objeto exacto que espera la base de datos
       const dataParaGuardar = {
-        cliente: cliente.toUpperCase(),
+        cliente: clienteNormalizado,
         correlativo,
         vendedorId: auth.currentUser.uid,
         vendedorEmail: auth.currentUser.email,
@@ -87,14 +183,65 @@ export const NuevaRFQ = ({ onFinalizar }) => {
         {/* Card Cliente */}
         <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-100">
           <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Nombre del Cliente / Empresa</label>
-          <input 
-            type="text" 
-            required
-            className="w-full text-2xl font-black outline-none border-b-4 border-slate-100 focus:border-emerald-500 transition-all pb-2 uppercase text-slate-700"
-            placeholder="EJ: KIMBERLY CLARK"
-            value={cliente}
-            onChange={(e) => setCliente(e.target.value)}
-          />
+          <div className="relative">
+            <input 
+              type="text" 
+              required
+              className="w-full text-2xl font-black outline-none border-b-4 border-slate-100 focus:border-emerald-500 transition-all pb-2 uppercase text-slate-700"
+              placeholder="EJ: KIMBERLY CLARK"
+              value={cliente}
+              onKeyDown={manejarTeclasCliente}
+              onFocus={() => {
+                setMostrarSugerencias(true);
+                if (sugerenciasCliente.length > 0 && indiceSugerenciaActiva < 0) {
+                  setIndiceSugerenciaActiva(0);
+                }
+              }}
+              onBlur={() =>
+                setTimeout(() => {
+                  setMostrarSugerencias(false);
+                  setIndiceSugerenciaActiva(-1);
+                }, 120)
+              }
+              onChange={(e) => setCliente(e.target.value)}
+            />
+
+            {mostrarSugerencias && cliente.trim().length >= 2 && (
+              <div className="absolute z-20 mt-2 w-full max-h-56 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                {buscandoCliente && (
+                  <div className="px-4 py-3 text-xs font-bold text-slate-500">Buscando clientes guardados...</div>
+                )}
+
+                {!buscandoCliente && !errorCliente && sugerenciasCliente.length === 0 && (
+                  <div className="px-4 py-3 text-xs font-bold text-slate-500">No hay coincidencias. Se guardará como nuevo al enviar.</div>
+                )}
+
+                {!buscandoCliente && errorCliente && (
+                  <div className="px-4 py-3 text-xs font-bold text-rose-600">{errorCliente}</div>
+                )}
+
+                {!buscandoCliente && sugerenciasCliente.map((s, idx) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className={`w-full text-left px-4 py-3 border-b last:border-b-0 border-slate-100 ${
+                      idx === indiceSugerenciaActiva ? 'bg-slate-50' : 'hover:bg-slate-50'
+                    }`}
+                    onMouseEnter={() => setIndiceSugerenciaActiva(idx)}
+                    onMouseDown={() => {
+                      seleccionarSugerenciaCliente(s.nombre || '');
+                    }}
+                  >
+                    <p className="text-sm font-black text-slate-700 uppercase">{s.nombre}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Si el cliente no existe, se crea automaticamente al enviar la solicitud.
+          </p>
         </div>
 
         {/* Listado de Productos */}

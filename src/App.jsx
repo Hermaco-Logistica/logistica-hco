@@ -86,7 +86,7 @@ function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       ) : (
-        <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">
+        <div className="tf-app-shell flex h-screen overflow-hidden">
           <Sidebar role={role} userEmail={user.email} onLogout={() => signOut(auth)} />
           <main className="flex-1 overflow-y-auto p-8">
             <Routes>

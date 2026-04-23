@@ -9,15 +9,15 @@ export const DashboardCompras = ({ solicitudes }) => {
     <div className="animate-in fade-in duration-500">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-black text-slate-800">Panel de Compras</h1>
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Gestión de cotizaciones y logística</p>
+          <h1 className="tf-title text-3xl">Panel de Compras</h1>
+          <p className="tf-subtitle text-xs">Gestión de cotizaciones y logística</p>
         </div>
       </div>
       
-      <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
+      <div className="tf-surface-panel overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-slate-900 text-white text-[10px] uppercase font-black tracking-widest">
+            <tr className="tf-table-head-dark text-[10px] uppercase font-black tracking-widest">
               <th className="p-4">Referencia / Cliente</th>
               <th className="p-4">Vendedor</th>
               <th className="p-4">Fecha Solicitud</th>

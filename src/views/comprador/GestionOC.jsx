@@ -2,10 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, doc, updateDoc, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Truck, Globe, ChevronRight, ArrowLeft, Calendar, Hash } from 'lucide-react';
+import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/trackingStatusService';
 
 export const GestionOC = () => {
   const [ordenes, setOrdenes] = useState([]);
   const [ocSeleccionada, setOcSeleccionada] = useState(null);
+  const [trackingInput, setTrackingInput] = useState('');
+  const [trackingData, setTrackingData] = useState(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [trackingError, setTrackingError] = useState('');
 
   useEffect(() => {
     const q = query(collection(db, "ordenesCompra"), orderBy("fechaCreacion", "desc"));
@@ -21,6 +26,12 @@ export const GestionOC = () => {
     });
     return () => unsubscribe();
   }, [ocSeleccionada?.id]);
+
+  useEffect(() => {
+    setTrackingInput(ocSeleccionada?.tracking || '');
+    setTrackingData(null);
+    setTrackingError('');
+  }, [ocSeleccionada?.id, ocSeleccionada?.tracking]);
 
   const cambiarEstado = async (e, id, nuevoEstado) => {
     e.stopPropagation(); // Evita conflictos de clics
@@ -43,6 +54,32 @@ export const GestionOC = () => {
       await updateDoc(ocRef, { tracking: valor });
     } catch (error) {
       console.error("Error al guardar tracking:", error);
+    }
+  };
+
+  const consultarTracking = async () => {
+    if (!trackingStatusEnabled) {
+      setTrackingError('Tracking API no configurada');
+      setTrackingData(null);
+      return;
+    }
+
+    if (trackingInput.trim().length < 6) {
+      setTrackingError('Ingresa un tracking valido (min 6 caracteres)');
+      setTrackingData(null);
+      return;
+    }
+
+    try {
+      setTrackingLoading(true);
+      setTrackingError('');
+      const result = await consultarTrackingStatus(trackingInput.trim());
+      setTrackingData(result);
+    } catch (error) {
+      setTrackingData(null);
+      setTrackingError('No fue posible consultar el tracking en este momento');
+    } finally {
+      setTrackingLoading(false);
     }
   };
 
@@ -94,13 +131,38 @@ export const GestionOC = () => {
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
                     <Globe size={14} className="text-emerald-500" /> Número de Seguimiento (Tracking)
                   </label>
-                  <input 
-                    type="text"
-                    defaultValue={ocSeleccionada.tracking}
-                    onBlur={(e) => guardarTracking(ocSeleccionada.id, e.target.value)}
-                    placeholder="DIGITE EL TRACKING Y PRESIONE FUERA PARA GUARDAR..."
-                    className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 text-xs font-black outline-none focus:border-emerald-500 transition-all uppercase shadow-sm"
-                  />
+                  <div className="flex gap-3 items-start">
+                    <input 
+                      type="text"
+                      value={trackingInput}
+                      onChange={(e) => setTrackingInput(e.target.value.toUpperCase())}
+                      onBlur={(e) => guardarTracking(ocSeleccionada.id, e.target.value)}
+                      placeholder="DIGITE EL TRACKING Y PRESIONE FUERA PARA GUARDAR..."
+                      className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 text-xs font-black outline-none focus:border-emerald-500 transition-all uppercase shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={consultarTracking}
+                      className="px-5 py-4 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-wide hover:bg-emerald-600 transition-all"
+                    >
+                      {trackingLoading ? 'Consultando...' : 'Consultar DHL'}
+                    </button>
+                  </div>
+
+                  {trackingError && (
+                    <p className="mt-2 text-[10px] font-black uppercase tracking-wide text-rose-600">{trackingError}</p>
+                  )}
+
+                  {trackingData && (
+                    <div className="mt-3 p-3 rounded-xl border border-emerald-100 bg-emerald-50">
+                      <p className="text-[10px] font-black uppercase text-emerald-700">
+                        Estado: {trackingData.status || 'Sin estado'}
+                      </p>
+                      <p className="text-[10px] font-bold text-slate-600 mt-1">
+                        {trackingData.description || 'Sin detalle'}
+                      </p>
+                    </div>
+                  )}
                </div>
                <div className="text-right px-6">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 text-right">Total de la Orden</p>

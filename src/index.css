@@ -1,12 +1,73 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --tf-font-sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --tf-color-bg-app: #f8fafc;
+    --tf-color-sidebar: #0f172a;
+    --tf-color-text-primary: #1e293b;
+    --tf-color-text-muted: #64748b;
+    --tf-color-brand: #10b981;
+    --tf-color-brand-strong: #059669;
+    --tf-color-surface: #ffffff;
+    --tf-color-border: #e2e8f0;
+    --tf-radius-panel: 1.5rem;
+    --tf-shadow-panel: 0 16px 30px rgba(15, 23, 42, 0.08);
+  }
+
   html, body, #root {
     @apply h-full m-0 p-0 overflow-hidden;
+  }
+
+  body {
+    font-family: var(--tf-font-sans);
+    color: var(--tf-color-text-primary);
+    background-color: var(--tf-color-bg-app);
+  }
+}
+
+@layer components {
+  .tf-app-shell {
+    background-color: var(--tf-color-bg-app);
+    font-family: var(--tf-font-sans);
+  }
+
+  .tf-sidebar-shell {
+    background-color: var(--tf-color-sidebar);
+    color: #ffffff;
+  }
+
+  .tf-brand-accent {
+    color: var(--tf-color-brand);
+  }
+
+  .tf-title {
+    color: var(--tf-color-text-primary);
+    font-weight: 900;
+  }
+
+  .tf-subtitle {
+    color: var(--tf-color-text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .tf-surface-panel {
+    background-color: var(--tf-color-surface);
+    border: 1px solid var(--tf-color-border);
+    border-radius: var(--tf-radius-panel);
+    box-shadow: var(--tf-shadow-panel);
+  }
+
+  .tf-table-head-dark {
+    background-color: var(--tf-color-sidebar);
+    color: #ffffff;
   }
 }
 
 /* Esto asegura que el sidebar se vea profesional incluso si Tailwind tarda un milisegundo en cargar */
 aside {
-  @apply bg-slate-900 text-white;
+  background-color: var(--tf-color-sidebar);
+  color: #ffffff;
 }

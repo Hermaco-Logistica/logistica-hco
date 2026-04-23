@@ -1,0 +1,4 @@
+[[redirects]]
+  from = "/api/tracking-status"
+  to = "/.netlify/functions/tracking-status"
+  status = 200

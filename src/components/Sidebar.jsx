@@ -47,10 +47,10 @@ export const Sidebar = ({ role, userEmail, onLogout }) => {
   ];
 
   return (
-    <div className="w-72 bg-slate-900 h-full flex flex-col p-6 shadow-2xl relative z-10">
+    <div className="tf-sidebar-shell w-72 h-full flex flex-col p-6 shadow-2xl relative z-10">
       <div className="mb-12 px-4 mt-4">
         <h1 className="text-white font-black text-2xl italic tracking-tighter uppercase leading-none">
-          Trade<span className="text-emerald-500 underline decoration-2 underline-offset-4">Flow</span>
+          Trade<span className="tf-brand-accent underline decoration-2 underline-offset-4">Flow</span>
         </h1>
         <p className="text-slate-500 font-bold text-[9px] uppercase tracking-[0.4em] mt-2">Supply Chain Manager</p>
       </div>
