@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/Badge';
 
-export const DashboardCompras = ({ solicitudes }) => {
+export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const navigate = useNavigate();
 
   return (
@@ -69,14 +69,19 @@ export const DashboardCompras = ({ solicitudes }) => {
                   </td>
                   <td className="p-4 text-center">
                     <button 
-                      onClick={() => navigate(`/calculadora/${s.id}`)}
+                      onClick={() => {
+                        if (!readOnly) navigate(`/calculadora/${s.id}`);
+                      }}
+                      disabled={readOnly}
                       className={`px-4 py-2 rounded-xl text-xs font-black transition-all shadow-sm border ${
-                        s.estado === 'Cotizado' 
+                        readOnly
+                        ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                        : s.estado === 'Cotizado' 
                         ? 'bg-slate-100 text-slate-400 border-slate-200' 
                         : 'bg-white border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white'
                       }`}
                     >
-                      {s.estado === 'Cotizado' ? 'Revisar' : 'Cotizar'}
+                      {readOnly ? 'Ver' : s.estado === 'Cotizado' ? 'Revisar' : 'Cotizar'}
                     </button>
                   </td>
                 </tr>

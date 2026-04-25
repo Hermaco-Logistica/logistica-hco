@@ -2,19 +2,21 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/Badge';
 
-export const DashboardVendedor = ({ solicitudes }) => {
+export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis Solicitudes' }) => {
   const navigate = useNavigate();
 
   return (
     <div className="animate-in fade-in duration-500">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-black text-slate-800">Mis Solicitudes</h1>
-        <button 
-          onClick={() => navigate('/vendedor/nueva')}
-          className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-100 flex items-center gap-2"
-        >
-          + Nueva RFQ
-        </button>
+        <h1 className="text-3xl font-black text-slate-800">{title}</h1>
+        {canCreate && (
+          <button 
+            onClick={() => navigate('/vendedor/nueva')}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-md shadow-emerald-100 flex items-center gap-2"
+          >
+            + Nueva RFQ
+          </button>
+        )}
       </div>
       
       <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">

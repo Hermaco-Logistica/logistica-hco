@@ -4,7 +4,7 @@ import { db } from '../../firebase';
 import { Truck, Globe, ChevronRight, ArrowLeft, Calendar, Hash } from 'lucide-react';
 import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/trackingStatusService';
 
-export const GestionOC = () => {
+export const GestionOC = ({ readOnly = false }) => {
   const [ordenes, setOrdenes] = useState([]);
   const [ocSeleccionada, setOcSeleccionada] = useState(null);
   const [trackingInput, setTrackingInput] = useState('');
@@ -34,6 +34,7 @@ export const GestionOC = () => {
   }, [ocSeleccionada?.id, ocSeleccionada?.tracking]);
 
   const cambiarEstado = async (e, id, nuevoEstado) => {
+    if (readOnly) return;
     e.stopPropagation(); // Evita conflictos de clics
     try {
       const ocRef = doc(db, "ordenesCompra", id);
@@ -49,6 +50,7 @@ export const GestionOC = () => {
   };
 
   const guardarTracking = async (id, valor) => {
+    if (readOnly) return;
     try {
       const ocRef = doc(db, "ordenesCompra", id);
       await updateDoc(ocRef, { tracking: valor });
@@ -112,6 +114,7 @@ export const GestionOC = () => {
                   <button 
                     key={est}
                     onClick={(e) => cambiarEstado(e, ocSeleccionada.id, est)}
+                    disabled={readOnly}
                     className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase transition-all duration-200 ${
                       ocSeleccionada.estado === est 
                         ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 translate-y-[-2px]' 
@@ -137,12 +140,14 @@ export const GestionOC = () => {
                       value={trackingInput}
                       onChange={(e) => setTrackingInput(e.target.value.toUpperCase())}
                       onBlur={(e) => guardarTracking(ocSeleccionada.id, e.target.value)}
+                      disabled={readOnly}
                       placeholder="DIGITE EL TRACKING Y PRESIONE FUERA PARA GUARDAR..."
                       className="w-full bg-white border-2 border-slate-200 rounded-2xl p-4 text-xs font-black outline-none focus:border-emerald-500 transition-all uppercase shadow-sm"
                     />
                     <button
                       type="button"
                       onClick={consultarTracking}
+                      disabled={trackingLoading}
                       className="px-5 py-4 rounded-2xl bg-slate-900 text-white text-[10px] font-black uppercase tracking-wide hover:bg-emerald-600 transition-all"
                     >
                       {trackingLoading ? 'Consultando...' : 'Consultar DHL'}

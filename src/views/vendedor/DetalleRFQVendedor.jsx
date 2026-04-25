@@ -4,7 +4,7 @@ import { doc, getDoc, collection, addDoc, serverTimestamp, updateDoc } from 'fir
 import { db } from '../../firebase';
 import { ChevronLeft, Clock, Tag, MessageSquare, Calendar, CheckCircle2, ShoppingCart, Link as LinkIcon } from 'lucide-react';
 
-export const DetalleRFQVendedor = () => {
+export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [rfq, setRfq] = useState(null);
@@ -324,11 +324,11 @@ export const DetalleRFQVendedor = () => {
 
           <button 
             onClick={handleCrearPedido}
-            disabled={enviandoPedido}
+            disabled={enviandoPedido || !canGenerarPedido}
             className="w-full mt-8 bg-emerald-500 hover:bg-emerald-600 text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] shadow-lg shadow-emerald-900/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShoppingCart size={20} />
-            {enviandoPedido ? 'PROCESANDO...' : 'CONFIRMAR Y GENERAR PEDIDO'}
+            {canGenerarPedido ? (enviandoPedido ? 'PROCESANDO...' : 'CONFIRMAR Y GENERAR PEDIDO') : 'SOLO VISUALIZACION'}
           </button>
         </div>
       </div>

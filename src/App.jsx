@@ -15,6 +15,14 @@ import { NuevaRFQ } from './views/vendedor/NuevaRFQ';
 import { DetalleRFQVendedor } from './views/vendedor/DetalleRFQVendedor';
 import { DashboardPedidos } from './views/pedidos/DashboardPedidos';
 
+const resolveRoleFromEmail = (email = '') => {
+  const value = email.toLowerCase();
+  if (value.includes('admin') || value.includes('administrador')) return 'administrador';
+  if (value.includes('gerente')) return 'gerente';
+  if (value.includes('compras')) return 'comprador';
+  return 'vendedor';
+};
+
 function App() {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
@@ -25,7 +33,7 @@ function App() {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       if (u && u.email.endsWith('@hermaco.net')) {
         setUser(u);
-        setRole(u.email.includes('compras') ? 'comprador' : 'vendedor');
+        setRole(resolveRoleFromEmail(u.email));
       } else {
         setUser(null);
         setRole(null);
@@ -37,7 +45,7 @@ function App() {
 
   useEffect(() => {
     if (!user || !role) return;
-    const q = role === 'comprador' 
+    const q = (role === 'comprador' || role === 'gerente' || role === 'administrador')
       ? collection(db, "solicitudes") 
       : query(collection(db, "solicitudes"), where("vendedorId", "==", user.uid));
 
@@ -78,6 +86,13 @@ function App() {
 
   if (loading) return <div className="h-screen flex items-center justify-center font-black text-slate-300 animate-pulse uppercase tracking-[0.4em]">Cargando TradeFlow...</div>;
 
+  const isComprador = role === 'comprador';
+  const isVendedor = role === 'vendedor';
+  const isGerente = role === 'gerente';
+  const isAdmin = role === 'administrador';
+
+  const appThemeClass = `role-${role || 'default'}`;
+
   return (
     <Router>
       {!user ? (
@@ -86,15 +101,15 @@ function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       ) : (
-        <div className="tf-app-shell flex h-screen overflow-hidden">
+        <div className={`tf-app-shell ${appThemeClass} flex h-screen overflow-hidden`}>
           <Sidebar role={role} userEmail={user.email} onLogout={() => signOut(auth)} />
           <main className="flex-1 overflow-y-auto p-8">
             <Routes>
-              {role === 'comprador' ? (
+              {isComprador ? (
                 <>
-                  <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} />} />
+                  <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly={false} />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
-                  <Route path="/gestion-oc" element={<GestionOC />} />
+                  <Route path="/gestion-oc" element={<GestionOC readOnly={false} />} />
                   <Route 
                     path="/calculadora/:id" 
                     element={
@@ -106,14 +121,35 @@ function App() {
                   />
                   <Route path="*" element={<Navigate to="/compras" replace />} />
                 </>
-              ) : (
+              ) : isVendedor ? (
                 <>
-                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} />} />
+                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate />} />
                   <Route path="/vendedor/nueva" element={<NuevaRFQ onFinalizar={handleNuevaSolicitud} />} />
-                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor />} />
+                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   <Route path="*" element={<Navigate to="/vendedor" replace />} />
                 </>
+              ) : isGerente ? (
+                <>
+                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate title="Solicitudes Globales" />} />
+                  <Route path="/vendedor/nueva" element={<NuevaRFQ onFinalizar={handleNuevaSolicitud} />} />
+                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} />} />
+                  <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
+                  <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
+                  <Route path="/gestion-oc" element={<GestionOC readOnly />} />
+                  <Route path="*" element={<Navigate to="/vendedor" replace />} />
+                </>
+              ) : isAdmin ? (
+                <>
+                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate={false} title="Solicitudes Globales" />} />
+                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} />} />
+                  <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
+                  <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
+                  <Route path="/gestion-oc" element={<GestionOC readOnly />} />
+                  <Route path="*" element={<Navigate to="/compras" replace />} />
+                </>
+              ) : (
+                <Route path="*" element={<Navigate to="/login" replace />} />
               )}
             </Routes>
           </main>
