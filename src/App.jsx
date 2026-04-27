@@ -66,16 +66,21 @@ function App() {
     try {
       if (!rfqId) throw new Error("ID de RFQ no válido");
       
+      // LÓGICA DE ESTADO: Si hay algún item con FOB 0 o vacío, es Parcial
+      const esParcial = items.some(p => !p.fob || Number(p.fob) <= 0);
+      const estadoFinal = esParcial ? 'Cotizado Parcial' : 'Cotizado';
+      
       await updateDoc(doc(db, "solicitudes", rfqId), {
         productos: items, 
         factorA: fa, 
         factorM: fm, 
         fleteAereo: fl, 
         aduanaAerea: ad,
-        estado: 'Cotizado', 
+        estado: estadoFinal, 
         fechaCotizacion: new Date()
       });
-      alert("Cotización Guardada");
+      
+      alert(esParcial ? "Avance Parcial Guardado" : "Cotización Finalizada");
       return true;
     } catch (e) { 
       console.error(e); 
