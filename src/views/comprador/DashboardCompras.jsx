@@ -9,7 +9,7 @@ export const DashboardCompras = ({ solicitudes }) => {
     <div className="animate-in fade-in duration-500">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-black text-slate-800">Panel de Compras</h1>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic">Panel de Compras</h1>
           <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Gestión de cotizaciones y logística</p>
         </div>
       </div>
@@ -28,17 +28,19 @@ export const DashboardCompras = ({ solicitudes }) => {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {solicitudes.map((s) => {
-              // CORRECCIÓN: Acceso a factores desde la raíz 's' y filtrado por selección
-              const totalA = s.productos?.reduce((acc, p) => 
-                acc + (p.selected ? (p.fob * (s.factorA || 1) * (p.fva || 1.3) * p.cant) : 0), 0) || 0;
+              // Calculamos totales basados en ítems que YA tienen precio (fob > 0)
+              const itemsConPrecio = s.productos?.filter(p => Number(p.fob) > 0) || [];
               
-              const totalM = s.productos?.reduce((acc, p) => 
-                acc + (p.selected ? (p.fob * (s.factorM || 1.08) * (p.fvm || 1.25) * p.cant) : 0), 0) || 0;
+              const totalA = itemsConPrecio.reduce((acc, p) => 
+                acc + (p.fob * (s.factorA || 1) * (p.fva || 1.3) * p.cant), 0);
+              
+              const totalM = itemsConPrecio.reduce((acc, p) => 
+                acc + (p.fob * (s.factorM || 1.08) * (p.fvm || 1.25) * p.cant), 0);
 
               return (
                 <tr key={s.id} className="hover:bg-slate-50 transition-colors">
                   <td className="p-4">
-                    <span className="block font-black text-slate-800 text-lg">{s.correlativo}</span>
+                    <span className="block font-black text-slate-800 text-lg leading-none">{s.correlativo}</span>
                     <span className="text-[10px] font-bold text-blue-600 uppercase italic">{s.cliente}</span>
                   </td>
                   <td className="p-4">
@@ -56,11 +58,11 @@ export const DashboardCompras = ({ solicitudes }) => {
                     <div className="flex flex-col items-center gap-1">
                       {totalA > 0 ? (
                         <>
-                          <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[11px] font-black w-24 text-center">A: ${totalA.toFixed(2)}</span>
-                          <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[11px] font-black w-24 text-center">M: ${totalM.toFixed(2)}</span>
+                          <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">A: ${totalA.toFixed(2)}</span>
+                          <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">M: ${totalM.toFixed(2)}</span>
                         </>
                       ) : (
-                        <span className="text-[10px] font-black text-slate-300 uppercase italic">Sin cotizar</span>
+                        <span className="text-[10px] font-black text-slate-300 uppercase italic tracking-widest">Sin cotizar</span>
                       )}
                     </div>
                   </td>
@@ -70,13 +72,13 @@ export const DashboardCompras = ({ solicitudes }) => {
                   <td className="p-4 text-center">
                     <button 
                       onClick={() => navigate(`/calculadora/${s.id}`)}
-                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all shadow-sm border ${
+                      className={`px-5 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border uppercase ${
                         s.estado === 'Cotizado' 
                         ? 'bg-slate-100 text-slate-400 border-slate-200' 
                         : 'bg-white border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white'
                       }`}
                     >
-                      {s.estado === 'Cotizado' ? 'Revisar' : 'Cotizar'}
+                      {s.estado === 'Cotizado' ? 'Revisar' : s.estado === 'Cotizado Parcial' ? 'Continuar' : 'Cotizar'}
                     </button>
                   </td>
                 </tr>
