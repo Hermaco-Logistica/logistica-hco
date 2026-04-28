@@ -20,6 +20,7 @@ export const DashboardPedidos = ({ role }) => {
     error: '',
     data: null,
     trackingNumber: '',
+    rfqLabel: '',
   });
   const formatFechaHora = (value) => {
     if (!value) return '---';
@@ -93,7 +94,7 @@ export const DashboardPedidos = ({ role }) => {
     })[0];
   };
 
-  const openTrackingModal = async (trackingNumber) => {
+  const openTrackingModal = async (trackingNumber, rfqLabel) => {
     if (!trackingNumber) {
       setTrackingModal({
         open: true,
@@ -101,6 +102,7 @@ export const DashboardPedidos = ({ role }) => {
         error: 'No hay tracking asociado',
         data: null,
         trackingNumber: '',
+        rfqLabel,
       });
       return;
     }
@@ -111,6 +113,7 @@ export const DashboardPedidos = ({ role }) => {
       error: '',
       data: null,
       trackingNumber,
+      rfqLabel,
     });
 
     try {
@@ -123,6 +126,7 @@ export const DashboardPedidos = ({ role }) => {
           error: 'Sin respuesta de tracking guardada',
           data: null,
           trackingNumber,
+          rfqLabel,
         });
         return;
       }
@@ -134,6 +138,7 @@ export const DashboardPedidos = ({ role }) => {
         error: '',
         data: cacheData?.payload || null,
         trackingNumber,
+        rfqLabel,
       });
     } catch (error) {
       setTrackingModal({
@@ -142,6 +147,7 @@ export const DashboardPedidos = ({ role }) => {
         error: 'No fue posible cargar el tracking',
         data: null,
         trackingNumber,
+        rfqLabel,
       });
     }
   };
@@ -292,6 +298,7 @@ export const DashboardPedidos = ({ role }) => {
               const ocInfo = getInfoOC(item.numOC);
               const ocDetalle = ordenesExistentes.find(o => o.numeroOC === item.numOC);
               const trackingNumber = ocDetalle?.tracking || '';
+              const rfqLabel = `# ${item.correlativo} — ${item.cliente}`;
               const timer = calcularCountdown(item.fechaCompromiso, ocInfo.rawEstado);
               const ventaTotal = (item.precio || 0) * (item.cantidad || 0);
 
@@ -341,7 +348,7 @@ export const DashboardPedidos = ({ role }) => {
                   <td className="p-6">
                     <button
                       type="button"
-                      onClick={() => openTrackingModal(trackingNumber)}
+                      onClick={() => openTrackingModal(trackingNumber, rfqLabel)}
                       disabled={!trackingNumber}
                       title={trackingNumber ? 'Ver detalle de tracking' : 'Sin tracking asociado'}
                       className={`inline-flex flex-col px-3 py-1.5 rounded-xl border ${ocInfo.color} border-current bg-opacity-10 w-full max-w-[140px] ${trackingNumber ? 'hover:opacity-90' : 'cursor-not-allowed opacity-60'}`}
@@ -370,7 +377,11 @@ export const DashboardPedidos = ({ role }) => {
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
               <div>
                 <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Detalle de tracking</p>
-                <p className="text-sm font-black text-slate-800">{trackingModal.trackingNumber || '--'}</p>
+                <p className="text-sm font-black text-slate-800">
+                  {role === 'comprador'
+                    ? (trackingModal.trackingNumber || '--')
+                    : (trackingModal.rfqLabel || '--')}
+                </p>
               </div>
               <button
                 type="button"
@@ -380,6 +391,7 @@ export const DashboardPedidos = ({ role }) => {
                   error: '',
                   data: null,
                   trackingNumber: '',
+                  rfqLabel: '',
                 })}
                 className="text-xs font-black uppercase text-slate-400 hover:text-slate-800"
               >
