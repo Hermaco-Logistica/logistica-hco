@@ -50,7 +50,21 @@ async function fetchTrackingFromDhl(trackingNumber) {
     return getMockTracking(trackingNumber);
   }
 
-  const url = new URL(upstreamUrl);
+  const trimmedUrl = upstreamUrl.trim();
+  if (!trimmedUrl || /^(undefined|null)$/i.test(trimmedUrl)) {
+    return getMockTracking(trackingNumber);
+  }
+
+  const normalizedUrl = /^https?:\/\//i.test(trimmedUrl)
+    ? trimmedUrl
+    : `https://${trimmedUrl}`;
+
+  let url;
+  try {
+    url = new URL(normalizedUrl);
+  } catch (error) {
+    throw new Error('DHL_TRACKING_API_URL_INVALID');
+  }
   url.searchParams.set('trackingNumber', trackingNumber);
 
   const headers = { 'Content-Type': 'application/json' };

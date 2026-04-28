@@ -2,3 +2,8 @@
   from = "/api/tracking-status"
   to = "/.netlify/functions/tracking-status"
   status = 200
+
+[dev]
+  command = "npm run dev:vite"
+  targetPort = 5173
+  port = 8888

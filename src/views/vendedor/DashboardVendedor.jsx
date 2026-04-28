@@ -4,6 +4,16 @@ import { Badge } from '../../components/Badge';
 
 export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis Solicitudes' }) => {
   const navigate = useNavigate();
+  const formatFechaHora = (timestamp) => {
+    if (!timestamp?.toDate) return '---';
+    const dateValue = timestamp.toDate();
+    return new Intl.DateTimeFormat('es-SV', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+      hour12: false,
+      timeZone: 'America/El_Salvador'
+    }).format(dateValue);
+  };
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -51,10 +61,10 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   </td>
                   <td className="p-4 text-[11px]">
                     <div className="flex flex-col gap-1">
-                      <span className="text-slate-500 font-bold uppercase text-[9px]">📥 Solicitud: <b className="text-slate-700 font-black">{s.fechaS?.toDate ? s.fechaS.toDate().toLocaleDateString() : '---'}</b></span>
+                      <span className="text-slate-500 font-bold uppercase text-[9px]">📥 Solicitud: <b className="text-slate-700 font-black">{formatFechaHora(s.fechaS)}</b></span>
                       <span className="text-emerald-600 font-black italic text-[9px] uppercase">
                         📤 {s.estado.includes('Parcial') ? 'Avance Recibido: ' : 'Respondida: '}
-                        {s.fechaCotizacion?.toDate ? s.fechaCotizacion.toDate().toLocaleDateString() : 'En proceso'}
+                        {s.fechaCotizacion?.toDate ? formatFechaHora(s.fechaCotizacion) : 'En proceso'}
                       </span>
                     </div>
                   </td>

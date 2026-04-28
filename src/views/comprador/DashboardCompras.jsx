@@ -4,6 +4,16 @@ import { Badge } from '../../components/Badge';
 
 export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const navigate = useNavigate();
+  const formatFechaHora = (timestamp) => {
+    if (!timestamp?.toDate) return '---';
+    const dateValue = timestamp.toDate();
+    return new Intl.DateTimeFormat('es-SV', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+      hour12: false,
+      timeZone: 'America/El_Salvador'
+    }).format(dateValue);
+  };
 
   return (
     <div className="animate-in fade-in duration-500">
@@ -51,7 +61,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   </td>
                   <td className="p-4 text-[11px]">
                     <span className="text-slate-500 font-bold">
-                      {s.fechaS?.toDate ? s.fechaS.toDate().toLocaleDateString() : '---'}
+                      {formatFechaHora(s.fechaS)}
                     </span>
                   </td>
                   <td className="p-4">

@@ -13,6 +13,25 @@ export const DashboardPedidos = ({ role }) => {
   const [seleccionados, setSeleccionados] = useState([]);
   const [showAsignador, setShowAsignador] = useState(false);
   const [nuevaOC, setNuevaOC] = useState({ numero: '', proveedor: '' });
+  const formatFechaHora = (value) => {
+    if (!value) return '---';
+    let dateValue = null;
+    if (typeof value.toDate === 'function') {
+      dateValue = value.toDate();
+    } else if (typeof value.seconds === 'number') {
+      dateValue = new Date(value.seconds * 1000);
+    } else if (value instanceof Date) {
+      dateValue = value;
+    }
+
+    if (!dateValue) return '---';
+    return new Intl.DateTimeFormat('es-SV', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+      hour12: false,
+      timeZone: 'America/El_Salvador'
+    }).format(dateValue);
+  };
 
   useEffect(() => {
     const unsubOCs = onSnapshot(collection(db, "ordenesCompra"), (snap) => {
@@ -74,7 +93,7 @@ export const DashboardPedidos = ({ role }) => {
     const oc = ordenesExistentes.find(o => o.numeroOC === numOC);
     if (!oc) return { label: 'Por Procesar', color: 'bg-amber-100 text-amber-600', prov: 'Pendiente', mod: '-', rawEstado: 'Pendiente' };
 
-    const ultimaMod = oc.ultimaActualizacion ? new Date(oc.ultimaActualizacion.seconds * 1000).toLocaleDateString() : 'Sin cambios';
+    const ultimaMod = oc.ultimaActualizacion ? formatFechaHora(oc.ultimaActualizacion) : 'Sin cambios';
     const estados = {
       'Pedido': { label: 'OC Generada', color: 'bg-blue-100 text-blue-600' },
       'En Tránsito': { label: 'En Tránsito', color: 'bg-purple-100 text-purple-600' },
