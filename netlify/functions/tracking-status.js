@@ -1,3 +1,47 @@
+import admin from 'firebase-admin';
+
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX = 1;
+const CACHE_COLLECTION = 'tracking_cache';
+const RATE_COLLECTION = 'tracking_rate_limits';
+
+const isValidTrackingNumber = (value) => /^[A-Z0-9-]{6,}$/i.test(value);
+
+const getLatestEventTimestamp = (events = []) => {
+  const latest = [...events].sort((a, b) => {
+    const timeA = Date.parse(a?.timestamp || '') || 0;
+    const timeB = Date.parse(b?.timestamp || '') || 0;
+    return timeB - timeA;
+  })[0];
+  return latest?.timestamp || null;
+};
+
+const initAdmin = () => {
+  if (admin.apps?.length) return admin.app();
+
+  const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (rawServiceAccount) {
+    const serviceAccount = JSON.parse(rawServiceAccount);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+    return admin.app();
+  }
+
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    admin.initializeApp();
+    return admin.app();
+  }
+
+  throw new Error('FIREBASE_ADMIN_NOT_CONFIGURED');
+};
+
+const getAuthToken = (event) => {
+  const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1] : null;
+};
+
 function normalizeTrackingPayload(data, trackingNumber) {
   const events = Array.isArray(data?.events)
     ? data.events
@@ -90,18 +134,108 @@ async function fetchTrackingFromDhl(trackingNumber) {
 
 export const handler = async (event) => {
   try {
-    const trackingNumber = (event.queryStringParameters?.trackingNumber || '').toString().trim();
-    if (trackingNumber.length < 6) {
+    const trackingNumber = (event.queryStringParameters?.trackingNumber || '').toString().trim().toUpperCase();
+    if (!isValidTrackingNumber(trackingNumber)) {
       return {
         statusCode: 400,
-        body: JSON.stringify({ message: 'trackingNumber es requerido (min 6 caracteres)' }),
+        body: JSON.stringify({ message: 'trackingNumber invalido' }),
       };
     }
 
+    const token = getAuthToken(event);
+    if (!token) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'auth_required' }),
+      };
+    }
+
+    const adminApp = initAdmin();
+    const auth = adminApp.auth();
+    const db = adminApp.firestore();
+
+    const decoded = await auth.verifyIdToken(token);
+    const uid = decoded?.uid;
+    if (!uid) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'auth_invalid' }),
+      };
+    }
+
+    const cacheRef = db.collection(CACHE_COLLECTION).doc(trackingNumber);
+    const cacheSnap = await cacheRef.get();
+    const cacheData = cacheSnap.exists ? cacheSnap.data() : null;
+    const nowMs = Date.now();
+
+    if (cacheData?.payload && cacheData?.lastCheckedAt?.toMillis) {
+      const lastCheckedAtMs = cacheData.lastCheckedAt.toMillis();
+      if (nowMs - lastCheckedAtMs < RATE_LIMIT_WINDOW_MS) {
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+            ...cacheData.payload,
+            cached: true,
+            rateLimited: false,
+          }),
+        };
+      }
+    }
+
+    const rateKey = `${uid}_${trackingNumber}`;
+    const rateRef = db.collection(RATE_COLLECTION).doc(rateKey);
+    const rateSnap = await rateRef.get();
+    const rateData = rateSnap.exists ? rateSnap.data() : {};
+    let windowStartMs = rateData?.windowStart?.toMillis ? rateData.windowStart.toMillis() : 0;
+    let count = Number(rateData?.count || 0);
+
+    if (!windowStartMs || nowMs - windowStartMs >= RATE_LIMIT_WINDOW_MS) {
+      windowStartMs = nowMs;
+      count = 0;
+    }
+
+    if (count >= RATE_LIMIT_MAX) {
+      if (cacheData?.payload) {
+        return {
+          statusCode: 200,
+          body: JSON.stringify({
+            ...cacheData.payload,
+            cached: true,
+            rateLimited: true,
+          }),
+        };
+      }
+
+      return {
+        statusCode: 429,
+        body: JSON.stringify({ message: 'rate_limited' }),
+      };
+    }
+
+    await rateRef.set({
+      windowStart: admin.firestore.Timestamp.fromMillis(windowStartMs),
+      count: count + 1,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+
     const result = await fetchTrackingFromDhl(trackingNumber);
+    const latestEventTimestamp = getLatestEventTimestamp(result.events);
+
+    await cacheRef.set({
+      trackingNumber,
+      payload: result,
+      lastCheckedAt: admin.firestore.Timestamp.fromMillis(nowMs),
+      latestEventTimestamp,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+
     return {
       statusCode: 200,
-      body: JSON.stringify(result),
+      body: JSON.stringify({
+        ...result,
+        cached: false,
+        rateLimited: false,
+      }),
     };
   } catch (error) {
     return {

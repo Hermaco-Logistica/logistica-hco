@@ -21,6 +21,7 @@ const DHL_STATUS_LABELS = {
   IC: 'En proceso de aduana',
   UD: 'Evento de aduana',
   CR: 'Aduana liberada',
+  OK: 'Entregado',
   delivered: 'Entregado',
   failure: 'Fallo en entrega',
 };
@@ -29,13 +30,27 @@ const normalizeCode = (code) => String(code || '').toLowerCase();
 
 export const getStatusLabel = (code) => {
   if (!code) return 'Actualizacion';
-  return DHL_STATUS_LABELS[code] || DHL_STATUS_LABELS[normalizeCode(code)] || 'Actualizacion';
+  const direct = DHL_STATUS_LABELS[code] || DHL_STATUS_LABELS[normalizeCode(code)];
+  if (direct) return direct;
+
+  const normalized = normalizeCode(code);
+  if (normalized === 'delivered') return 'Entregado';
+  return 'Actualizacion';
+};
+
+export const getDescripcionUi = (descripcion, code) => {
+  if (!descripcion) return 'Sin detalle';
+  const normalized = normalizeCode(code);
+  if (normalized === 'delivered' && descripcion.toLowerCase() === 'delivered') {
+    return 'Entregado';
+  }
+  return descripcion;
 };
 
 export const getStatusConfig = (code) => {
   const normalized = normalizeCode(code);
 
-  if (normalized === 'delivered') {
+  if (normalized === 'delivered' || normalized === 'ok') {
     return {
       badge: 'bg-emerald-100 text-emerald-700 border-emerald-200',
       card: 'bg-emerald-50 border-emerald-200',
@@ -99,7 +114,7 @@ export const getEventoBadgeClass = (code) => {
 
 export const EventIcon = ({ code, size = 14 }) => {
   const normalized = normalizeCode(code);
-  if (normalized === 'delivered') return <CheckCircle size={size} className="text-emerald-500" />;
+  if (normalized === 'delivered' || normalized === 'ok') return <CheckCircle size={size} className="text-emerald-500" />;
   if (normalized === 'failure') return <AlertTriangle size={size} className="text-rose-500" />;
   if (['ic', 'rr', 'ud', 'cr'].includes(normalized)) return <ShieldCheck size={size} className="text-amber-500" />;
   if (normalized === 'wc') return <Truck size={size} className="text-blue-500" />;

@@ -4,8 +4,9 @@ import { db } from '../../firebase';
 import { 
   CheckSquare, Square, Link as LinkIcon, 
   ChevronDown, Package, DollarSign, Hash, ClipboardCheck, 
-  Activity, Clock, Calendar, Truck
+  Activity, Clock, Calendar, Truck, MapPin
 } from 'lucide-react';
+import { EventIcon, getStatusConfig, getStatusLabel } from '../../utils/trackingUi';
 
 export const DashboardPedidos = ({ role }) => {
   const [itemsPedidos, setItemsPedidos] = useState([]);
@@ -13,6 +14,13 @@ export const DashboardPedidos = ({ role }) => {
   const [seleccionados, setSeleccionados] = useState([]);
   const [showAsignador, setShowAsignador] = useState(false);
   const [nuevaOC, setNuevaOC] = useState({ numero: '', proveedor: '' });
+  const [trackingModal, setTrackingModal] = useState({
+    open: false,
+    loading: false,
+    error: '',
+    data: null,
+    trackingNumber: '',
+  });
   const formatFechaHora = (value) => {
     if (!value) return '---';
     let dateValue = null;
@@ -73,6 +81,69 @@ export const DashboardPedidos = ({ role }) => {
     setItemsPedidos(prev => prev.map(item => 
       `${item.idRFQ}-${item.indexOriginal}` === uId ? { ...item, fobReal: valor } : item
     ));
+  };
+
+  const getLatestEvent = (payload) => {
+    const events = Array.isArray(payload?.events) ? payload.events : [];
+    if (!events.length) return null;
+    return [...events].sort((a, b) => {
+      const timeA = Date.parse(a?.timestamp || '') || 0;
+      const timeB = Date.parse(b?.timestamp || '') || 0;
+      return timeB - timeA;
+    })[0];
+  };
+
+  const openTrackingModal = async (trackingNumber) => {
+    if (!trackingNumber) {
+      setTrackingModal({
+        open: true,
+        loading: false,
+        error: 'No hay tracking asociado',
+        data: null,
+        trackingNumber: '',
+      });
+      return;
+    }
+
+    setTrackingModal({
+      open: true,
+      loading: true,
+      error: '',
+      data: null,
+      trackingNumber,
+    });
+
+    try {
+      const cacheRef = doc(db, 'tracking_cache', trackingNumber);
+      const cacheSnap = await getDoc(cacheRef);
+      if (!cacheSnap.exists()) {
+        setTrackingModal({
+          open: true,
+          loading: false,
+          error: 'Sin respuesta de tracking guardada',
+          data: null,
+          trackingNumber,
+        });
+        return;
+      }
+
+      const cacheData = cacheSnap.data();
+      setTrackingModal({
+        open: true,
+        loading: false,
+        error: '',
+        data: cacheData?.payload || null,
+        trackingNumber,
+      });
+    } catch (error) {
+      setTrackingModal({
+        open: true,
+        loading: false,
+        error: 'No fue posible cargar el tracking',
+        data: null,
+        trackingNumber,
+      });
+    }
   };
 
   const calcularCountdown = (fechaCompromiso, estadoLogistico) => {
@@ -219,6 +290,8 @@ export const DashboardPedidos = ({ role }) => {
             {itemsPedidos.map((item) => {
               const uId = `${item.idRFQ}-${item.indexOriginal}`;
               const ocInfo = getInfoOC(item.numOC);
+              const ocDetalle = ordenesExistentes.find(o => o.numeroOC === item.numOC);
+              const trackingNumber = ocDetalle?.tracking || '';
               const timer = calcularCountdown(item.fechaCompromiso, ocInfo.rawEstado);
               const ventaTotal = (item.precio || 0) * (item.cantidad || 0);
 
@@ -266,10 +339,16 @@ export const DashboardPedidos = ({ role }) => {
                     </div>
                   </td>
                   <td className="p-6">
-                    <div className={`inline-flex flex-col px-3 py-1.5 rounded-xl border ${ocInfo.color} border-current bg-opacity-10 w-full max-w-[140px]`}>
+                    <button
+                      type="button"
+                      onClick={() => openTrackingModal(trackingNumber)}
+                      disabled={!trackingNumber}
+                      title={trackingNumber ? 'Ver detalle de tracking' : 'Sin tracking asociado'}
+                      className={`inline-flex flex-col px-3 py-1.5 rounded-xl border ${ocInfo.color} border-current bg-opacity-10 w-full max-w-[140px] ${trackingNumber ? 'hover:opacity-90' : 'cursor-not-allowed opacity-60'}`}
+                    >
                       <span className="text-[9px] font-black uppercase text-center">{ocInfo.label}</span>
                       <span className="text-[7px] font-bold opacity-70 text-center mt-0.5 tracking-tighter">MOD: {ocInfo.mod}</span>
-                    </div>
+                    </button>
                   </td>
                   <td className="p-6 text-center">
                     {item.numOC ? (
@@ -284,6 +363,81 @@ export const DashboardPedidos = ({ role }) => {
           </tbody>
         </table>
       </div>
+
+      {trackingModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl border border-slate-100 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div>
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Detalle de tracking</p>
+                <p className="text-sm font-black text-slate-800">{trackingModal.trackingNumber || '--'}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTrackingModal({
+                  open: false,
+                  loading: false,
+                  error: '',
+                  data: null,
+                  trackingNumber: '',
+                })}
+                className="text-xs font-black uppercase text-slate-400 hover:text-slate-800"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="p-6">
+              {trackingModal.loading && (
+                <p className="text-xs font-black text-slate-400 uppercase">Cargando...</p>
+              )}
+
+              {!trackingModal.loading && trackingModal.error && (
+                <p className="text-xs font-black text-rose-600 uppercase">{trackingModal.error}</p>
+              )}
+
+              {!trackingModal.loading && trackingModal.data && (() => {
+                const latestEvent = getLatestEvent(trackingModal.data);
+                const eventCode = latestEvent?.status || latestEvent?.statusCode;
+                const label = getStatusLabel(eventCode);
+                const statusCfg = getStatusConfig(eventCode);
+                const location = latestEvent?.location?.address?.addressLocality;
+                const country = latestEvent?.location?.address?.countryCode;
+                const locacion = [location, country].filter(Boolean).join(' - ') || '--';
+
+                return (
+                  <div className={`rounded-2xl border ${statusCfg.card} p-4`}>
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-white rounded-xl border border-slate-100">
+                        <EventIcon code={eventCode} size={16} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <p className="text-xs font-black text-slate-800 uppercase">
+                            {latestEvent?.description || 'Sin detalle'}
+                          </p>
+                          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${statusCfg.badge}`}>
+                            {label}
+                          </span>
+                        </div>
+                        <div className="mt-2 text-[10px] font-bold text-slate-500 flex items-center gap-4 flex-wrap">
+                          <span className="flex items-center gap-1">
+                            <MapPin size={11} /> {locacion}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock size={11} /> {latestEvent?.timestamp ? formatFechaHora(new Date(latestEvent.timestamp)) : '--'}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-[9px] font-bold text-slate-400 uppercase">Codigo DHL: {eventCode || '--'}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -9,6 +9,7 @@ import {
 import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/trackingStatusService';
 import {
   EventIcon,
+  getDescripcionUi,
   getEventoBadgeClass,
   getStatusConfig,
   getStatusLabel,
@@ -214,7 +215,10 @@ export const GestionOC = ({ readOnly = false }) => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-3 flex-wrap">
                         <p className="text-xs font-black text-slate-800 uppercase leading-tight">
-                          {mov.descripcion}
+                          {statusLabel}
+                        </p>
+                        <p className="text-[10px] font-bold text-slate-500 uppercase leading-tight">
+                          {getDescripcionUi(mov.descripcion, mov.codigo)}
                         </p>
                         <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wide border ${statusCfg.badge}`}>
                           {statusLabel}
@@ -254,6 +258,7 @@ export const GestionOC = ({ readOnly = false }) => {
                       {eventos.map((ev, idx) => {
                         const eventCode = ev.status || ev.statusCode;
                         const eventLabel = getStatusLabel(eventCode);
+                        const eventDescripcion = getDescripcionUi(ev.description, eventCode);
 
                         return (
                     <div
@@ -271,7 +276,7 @@ export const GestionOC = ({ readOnly = false }) => {
                       {/* Contenido del evento */}
                       <div className="flex-1 min-w-0 pb-1">
                         <p className="text-[10px] font-black text-slate-700 uppercase leading-tight">
-                          {ev.description}
+                          {eventDescripcion}
                         </p>
                         <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400 mt-0.5">
                           <MapPin size={10} />

@@ -41,6 +41,7 @@ const DHL_STATUS_LABELS = {
   IC: 'En proceso de aduana',
   UD: 'Evento de aduana',
   CR: 'Aduana liberada',
+  OK: 'Entregado',
   delivered: 'Entregado',
   failure: 'Fallo en entrega',
 };

@@ -27,6 +27,7 @@ MAPA_FLUJO.md
 *.njsproj
 *.sln
 *.sw?
+service_account.json
 
 # Local Netlify folder
 .netlify
