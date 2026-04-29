@@ -22,6 +22,7 @@ export const DashboardPedidos = ({ role }) => {
     trackingNumber: '',
     rfqLabel: '',
   });
+
   const formatFechaHora = (value) => {
     if (!value) return '---';
     let dateValue = null;
@@ -154,16 +155,43 @@ export const DashboardPedidos = ({ role }) => {
 
   const calcularCountdown = (fechaCompromiso, estadoLogistico) => {
     if (estadoLogistico === 'Recibido' || estadoLogistico === 'Entregado') return { dias: 0, label: 'COMPLETADO', color: 'text-emerald-500' };
-    if (!fechaCompromiso) return { dias: '-', label: 'SIN FECHA', color: 'text-slate-300' };
+    if (!fechaCompromiso || typeof fechaCompromiso !== 'string' || !fechaCompromiso.includes('/')) return { dias: '-', label: 'SIN FECHA', color: 'text-slate-300' };
 
-    const hoy = new Date();
-    const [dia, mes, anio] = fechaCompromiso.split('/');
-    const compromiso = new Date(`${anio}-${mes}-${dia}`);
-    const diferenciaMs = compromiso - hoy;
-    const diasRestantes = Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24));
+    try {
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
 
-    if (diasRestantes < 0) return { dias: Math.abs(diasRestantes), label: 'RETRASO DÍAS', color: 'text-red-500' };
-    return { dias: diasRestantes, label: 'DÍAS RESTANTES', color: 'text-blue-500' };
+      const partes = fechaCompromiso.split('/');
+      let dia, mes, anio;
+
+      if (partes.length === 2) {
+        // Soporte para formato DD/MM (asume año actual)
+        dia = parseInt(partes[0], 10);
+        mes = parseInt(partes[1], 10);
+        anio = hoy.getFullYear();
+      } else if (partes.length === 3) {
+        // Soporte para formato DD/MM/YYYY
+        dia = parseInt(partes[0], 10);
+        mes = parseInt(partes[1], 10);
+        anio = parseInt(partes[2], 10);
+        if (anio < 100) anio += 2000;
+      } else {
+        return { dias: '!', label: 'FORMATO ERR', color: 'text-red-400' };
+      }
+
+      const compromiso = new Date(anio, mes - 1, dia);
+      compromiso.setHours(0, 0, 0, 0);
+
+      if (isNaN(compromiso.getTime())) return { dias: '!', label: 'FECHA INVÁLIDA', color: 'text-red-400' };
+
+      const diferenciaMs = compromiso.getTime() - hoy.getTime();
+      const diasRestantes = Math.round(diferenciaMs / (1000 * 60 * 60 * 24));
+
+      if (diasRestantes < 0) return { dias: Math.abs(diasRestantes), label: 'RETRASO DÍAS', color: 'text-red-500' };
+      return { dias: diasRestantes, label: 'DÍAS RESTANTES', color: 'text-blue-500' };
+    } catch (e) {
+      return { dias: '?', label: 'ERROR', color: 'text-red-500' };
+    }
   };
 
   const getInfoOC = (numOC) => {
