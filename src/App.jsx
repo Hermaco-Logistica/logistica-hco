@@ -89,7 +89,7 @@ function App() {
     }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-black text-slate-300 animate-pulse uppercase tracking-[0.4em]">Cargando TradeFlow...</div>;
+  if (loading) return <div className="h-screen flex items-center justify-center font-black text-slate-300 animate-pulse uppercase tracking-[0.4em]">Cargando logisticaHCO...</div>;
 
   const isComprador = role === 'comprador';
   const isVendedor = role === 'vendedor';
