@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "netlify dev",
     "dev:vite": "vite",
+    "import:clientes": "node scripts/import-clientes.js",
+    "import:proveedores": "node scripts/import-proveedores.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

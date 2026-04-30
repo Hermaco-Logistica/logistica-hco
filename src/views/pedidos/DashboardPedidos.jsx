@@ -1,12 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { auth, db } from '../../firebase';
 import { 
   CheckSquare, Square, Link as LinkIcon, 
   ChevronDown, Package, DollarSign, Hash, ClipboardCheck, 
   Activity, Clock, Calendar, Truck, MapPin
 } from 'lucide-react';
 import { EventIcon, getStatusConfig, getStatusLabel } from '../../utils/trackingUi';
+import {
+  buscarProveedoresGuardados,
+  guardarProveedorSiNoExiste,
+  normalizarNombreProveedor,
+} from '../../services/proveedoresService';
 
 export const DashboardPedidos = ({ role }) => {
   const [itemsPedidos, setItemsPedidos] = useState([]);
@@ -14,6 +19,12 @@ export const DashboardPedidos = ({ role }) => {
   const [seleccionados, setSeleccionados] = useState([]);
   const [showAsignador, setShowAsignador] = useState(false);
   const [nuevaOC, setNuevaOC] = useState({ numero: '', proveedor: '' });
+  const [sugerenciasProveedor, setSugerenciasProveedor] = useState([]);
+  const [indiceSugerenciaProveedor, setIndiceSugerenciaProveedor] = useState(-1);
+  const [buscandoProveedor, setBuscandoProveedor] = useState(false);
+  const [errorProveedor, setErrorProveedor] = useState('');
+  const [mostrarSugerenciasProveedor, setMostrarSugerenciasProveedor] = useState(false);
+  const debounceProveedorRef = useRef(null);
   const [trackingModal, setTrackingModal] = useState({
     open: false,
     loading: false,
@@ -74,6 +85,88 @@ export const DashboardPedidos = ({ role }) => {
 
     return () => { unsubOCs(); unsubSolicitudes(); };
   }, []);
+
+  useEffect(() => {
+    const termino = normalizarNombreProveedor(nuevaOC.proveedor);
+
+    if (debounceProveedorRef.current) clearTimeout(debounceProveedorRef.current);
+
+    if (termino.length < 2) {
+      setSugerenciasProveedor([]);
+      setIndiceSugerenciaProveedor(-1);
+      setBuscandoProveedor(false);
+      setErrorProveedor('');
+      return;
+    }
+
+    debounceProveedorRef.current = setTimeout(async () => {
+      try {
+        setBuscandoProveedor(true);
+        setErrorProveedor('');
+        const resultados = await buscarProveedoresGuardados(termino);
+        setSugerenciasProveedor(resultados);
+        setIndiceSugerenciaProveedor(resultados.length > 0 ? 0 : -1);
+      } catch (error) {
+        setErrorProveedor('No se pudo buscar proveedores guardados.');
+        setSugerenciasProveedor([]);
+        setIndiceSugerenciaProveedor(-1);
+      } finally {
+        setBuscandoProveedor(false);
+      }
+    }, 280);
+
+    return () => {
+      if (debounceProveedorRef.current) clearTimeout(debounceProveedorRef.current);
+    };
+  }, [nuevaOC.proveedor]);
+
+  const seleccionarSugerenciaProveedor = (nombre) => {
+    setNuevaOC((prev) => ({ ...prev, proveedor: nombre || '' }));
+    setMostrarSugerenciasProveedor(false);
+    setIndiceSugerenciaProveedor(-1);
+  };
+
+  const manejarTeclasProveedor = (e) => {
+    if (!mostrarSugerenciasProveedor || buscandoProveedor || sugerenciasProveedor.length === 0) {
+      if (e.key === 'Escape') {
+        setMostrarSugerenciasProveedor(false);
+        setIndiceSugerenciaProveedor(-1);
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setIndiceSugerenciaProveedor((prev) => {
+        const base = prev < 0 ? 0 : prev;
+        return Math.min(base + 1, sugerenciasProveedor.length - 1);
+      });
+      return;
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setIndiceSugerenciaProveedor((prev) => {
+        if (prev <= 0) return 0;
+        return prev - 1;
+      });
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      if (indiceSugerenciaProveedor >= 0 && indiceSugerenciaProveedor < sugerenciasProveedor.length) {
+        e.preventDefault();
+        seleccionarSugerenciaProveedor(sugerenciasProveedor[indiceSugerenciaProveedor].nombre || '');
+      }
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setMostrarSugerenciasProveedor(false);
+      setIndiceSugerenciaProveedor(-1);
+    }
+  };
 
   const toggleSeleccion = (uId) => {
     setSeleccionados(prev => prev.includes(uId) ? prev.filter(i => i !== uId) : [...prev, uId]);
@@ -220,6 +313,7 @@ export const DashboardPedidos = ({ role }) => {
     if (!numOC || !provOC) return alert("Faltan datos de la OC");
 
     try {
+      await guardarProveedorSiNoExiste(provOC, auth.currentUser);
       const itemsFormateados = itemsAProcesar.map(i => ({
         descripcion: i.descripcion || i.desc,
         cantidad: i.cantidad || i.cant,
@@ -285,7 +379,60 @@ export const DashboardPedidos = ({ role }) => {
               <p className="text-emerald-400 font-black text-[10px] uppercase">Nueva OC</p>
               <div className="flex gap-4">
                 <input type="text" placeholder="N° OC" className="flex-1 bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" onChange={(e) => setNuevaOC({...nuevaOC, numero: e.target.value.toUpperCase()})} />
-                <input type="text" placeholder="PROVEEDOR" className="flex-1 bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" onChange={(e) => setNuevaOC({...nuevaOC, proveedor: e.target.value.toUpperCase()})} />
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="PROVEEDOR"
+                    className="w-full bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold"
+                    value={nuevaOC.proveedor}
+                    onKeyDown={manejarTeclasProveedor}
+                    onFocus={() => {
+                      setMostrarSugerenciasProveedor(true);
+                      if (sugerenciasProveedor.length > 0 && indiceSugerenciaProveedor < 0) {
+                        setIndiceSugerenciaProveedor(0);
+                      }
+                    }}
+                    onBlur={() =>
+                      setTimeout(() => {
+                        setMostrarSugerenciasProveedor(false);
+                        setIndiceSugerenciaProveedor(-1);
+                      }, 120)
+                    }
+                    onChange={(e) => setNuevaOC({ ...nuevaOC, proveedor: e.target.value.toUpperCase() })}
+                  />
+
+                  {mostrarSugerenciasProveedor && nuevaOC.proveedor.trim().length >= 2 && (
+                    <div className="absolute z-20 mt-2 w-full max-h-56 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 shadow-xl">
+                      {buscandoProveedor && (
+                        <div className="px-4 py-3 text-[10px] font-bold text-slate-400">Buscando proveedores guardados...</div>
+                      )}
+
+                      {!buscandoProveedor && !errorProveedor && sugerenciasProveedor.length === 0 && (
+                        <div className="px-4 py-3 text-[10px] font-bold text-slate-400">No hay coincidencias. Se guardara como nuevo.</div>
+                      )}
+
+                      {!buscandoProveedor && errorProveedor && (
+                        <div className="px-4 py-3 text-[10px] font-bold text-rose-400">{errorProveedor}</div>
+                      )}
+
+                      {!buscandoProveedor && sugerenciasProveedor.map((s, idx) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          className={`w-full text-left px-4 py-3 border-b last:border-b-0 border-slate-800 ${
+                            idx === indiceSugerenciaProveedor ? 'bg-slate-800' : 'hover:bg-slate-800'
+                          }`}
+                          onMouseEnter={() => setIndiceSugerenciaProveedor(idx)}
+                          onMouseDown={() => {
+                            seleccionarSugerenciaProveedor(s.nombre || '');
+                          }}
+                        >
+                          <p className="text-[11px] font-black text-slate-200 uppercase">{s.nombre}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <button onClick={() => procesarAsignacion()} className="w-full bg-emerald-500 text-white py-4 rounded-xl font-black text-[10px] uppercase">Crear y Vincular</button>
             </div>
