@@ -72,6 +72,7 @@ export const DashboardPedidos = ({ role }) => {
                 indexOriginal: idx,
                 correlativo: data.correlativo || 'S/N',
                 cliente: data.cliente,
+                fechaPedido: data.fechaPedido || null,
                 fobReal: p.fobReal || p.fob || 0,
                 fechaCompromiso: p.fechaCompromiso, 
                 diasPrometidos: p.diasPrometidos
@@ -457,6 +458,7 @@ export const DashboardPedidos = ({ role }) => {
             <tr className="bg-slate-900 text-[9px] text-slate-400 font-black uppercase tracking-[0.15em]">
               <th className="p-6 text-center w-14">Sel</th>
               <th className="p-6 text-left">Ítem / Referencia</th>
+              <th className="p-6 text-center">Confirmado</th>
               <th className="p-6 text-center">Cant.</th>
               <th className="p-6 text-right">Venta (Unit/Total)</th>
               {role === 'comprador' && <th className="p-6 text-center bg-slate-800">Costo FOB Real</th>}
@@ -491,6 +493,11 @@ export const DashboardPedidos = ({ role }) => {
                       <Hash size={10}/> {item.correlativo} — {item.cliente}
                     </p>
                     <p className="text-[11px] font-black text-slate-800 uppercase leading-tight">{item.descripcion || item.desc}</p>
+                  </td>
+                  <td className="p-6 text-center">
+                    <span className="text-[10px] font-bold text-slate-500">
+                      {formatFechaHora(item.fechaPedido) || '--'}
+                    </span>
                   </td>
                   <td className="p-6 text-center font-black text-xs text-slate-400">{item.cantidad || item.cant}</td>
                   <td className="p-6 text-right whitespace-nowrap">
