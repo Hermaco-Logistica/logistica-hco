@@ -3,17 +3,10 @@ import { collection, query, onSnapshot, doc, updateDoc, orderBy } from 'firebase
 import { db } from '../../firebase';
 import {
   Truck, Globe, ChevronRight, ArrowLeft, Calendar, Hash,
-  MapPin, Clock, ChevronDown, ChevronUp, AlertTriangle,
-  RefreshCw, Loader2
+  AlertTriangle, RefreshCw, Loader2
 } from 'lucide-react';
 import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/trackingStatusService';
-import {
-  EventIcon,
-  getDescripcionUi,
-  getEventoBadgeClass,
-  getStatusConfig,
-  getStatusLabel,
-} from '../../utils/trackingUi';
+import { ShipmentTracker } from '../../components/ShipmentTracker';
 
 export const GestionOC = ({ readOnly = false }) => {
   const [ordenes, setOrdenes] = useState([]);
@@ -22,7 +15,6 @@ export const GestionOC = ({ readOnly = false }) => {
   const [trackingData, setTrackingData] = useState(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState('');
-  const [historialAbierto, setHistorialAbierto] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, "ordenesCompra"), orderBy("fechaCreacion", "desc"));
@@ -41,7 +33,7 @@ export const GestionOC = ({ readOnly = false }) => {
     setTrackingInput(ocSeleccionada?.tracking || '');
     setTrackingData(null);
     setTrackingError('');
-    setHistorialAbierto(false);
+    
   }, [ocSeleccionada?.id, ocSeleccionada?.tracking]);
 
   const cambiarEstado = async (e, id, nuevoEstado) => {
@@ -80,7 +72,6 @@ export const GestionOC = ({ readOnly = false }) => {
     try {
       setTrackingLoading(true);
       setTrackingError('');
-      setHistorialAbierto(false);
       const result = await consultarTrackingStatus(trackingInput.trim());
       setTrackingData(result);
     } catch (error) {
@@ -110,10 +101,7 @@ export const GestionOC = ({ readOnly = false }) => {
 
   // ─── VISTA DE DETALLE ────────────────────────────────────────────────────────
   if (ocSeleccionada) {
-    const mov = trackingData?.latestMovement;
-    const eventos = trackingData?.events || [];
-    const statusCfg = mov ? getStatusConfig(mov.codigo) : null;
-    const statusLabel = mov?.estado || getStatusLabel(mov?.codigo) || statusCfg?.label;
+    
 
     return (
       <div className="max-w-7xl mx-auto pb-20 animate-in slide-in-from-right duration-300">
@@ -203,107 +191,10 @@ export const GestionOC = ({ readOnly = false }) => {
                 </div>
               </div>
 
-              {/* ── ÚLTIMO MOVIMIENTO (siempre visible tras consultar) ── */}
-              {mov && statusCfg && (
-                <div className={`mt-5 rounded-2xl border ${statusCfg.card} overflow-hidden`}>
-
-                  {/* Cabecera del movimiento */}
-                  <div className="flex items-start gap-4 p-4">
-                    <div className={`mt-0.5 p-2 rounded-xl bg-white shadow-sm border ${statusCfg.card}`}>
-                      <EventIcon code={mov.codigo} size={16} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-3 flex-wrap">
-                        <p className="text-xs font-black text-slate-800 uppercase leading-tight">
-                          {statusLabel}
-                        </p>
-                        <p className="text-[10px] font-bold text-slate-500 uppercase leading-tight">
-                          {getDescripcionUi(mov.descripcion, mov.codigo)}
-                        </p>
-                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wide border ${statusCfg.badge}`}>
-                          {statusLabel}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 mt-2 flex-wrap">
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500">
-                          <MapPin size={11} className="text-slate-400" />
-                          {mov.locacion || '--'}
-                        </span>
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-slate-500">
-                          <Clock size={11} className="text-slate-400" />
-                          {mov.fecha ? formatFechaHora(new Date(mov.fecha)) : '--'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Botón de historial */}
-                  {eventos.length > 0 && (
-                    <button
-                      onClick={() => setHistorialAbierto(h => !h)}
-                      className="w-full flex items-center justify-center gap-2 py-2.5 border-t border-current border-opacity-10 text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-slate-800 transition-all"
-                    >
-                      {historialAbierto
-                        ? <><ChevronUp size={12} /> Ocultar historial</>
-                        : <><ChevronDown size={12} /> Ver historial ({eventos.length} eventos)</>
-                      }
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* ── HISTORIAL DESPLEGABLE ── */}
-              {historialAbierto && eventos.length > 0 && (
-                <div className="mt-2 bg-white rounded-2xl border border-slate-100 overflow-hidden">
-                      {eventos.map((ev, idx) => {
-                        const eventCode = ev.status || ev.statusCode;
-                        const eventLabel = getStatusLabel(eventCode);
-                        const eventDescripcion = getDescripcionUi(ev.description, eventCode);
-
-                        return (
-                    <div
-                      key={idx}
-                      className={`flex items-start gap-3 px-4 py-3 ${idx !== eventos.length - 1 ? 'border-b border-slate-50' : ''}`}
-                    >
-                      {/* Línea de tiempo */}
-                      <div className="flex flex-col items-center shrink-0 pt-0.5">
-                        <EventIcon code={eventCode} size={13} />
-                        {idx !== eventos.length - 1 && (
-                          <div className="w-px flex-1 bg-slate-100 mt-1.5 min-h-[16px]" />
-                        )}
-                      </div>
-
-                      {/* Contenido del evento */}
-                      <div className="flex-1 min-w-0 pb-1">
-                        <p className="text-[10px] font-black text-slate-700 uppercase leading-tight">
-                          {eventDescripcion}
-                        </p>
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-slate-400 mt-0.5">
-                          <MapPin size={10} />
-                          {ev.location?.address?.addressLocality || '--'}
-                        </span>
-                      </div>
-
-                      {/* Badge + fecha */}
-                      <div className="text-right shrink-0">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${getEventoBadgeClass(eventCode)}`}>
-                          {eventLabel}
-                        </span>
-                        <p className="flex items-center justify-end gap-1 text-[10px] font-bold text-slate-400 mt-1">
-                          <Clock size={10} />
-                          {ev.timestamp ? formatFechaHora(new Date(ev.timestamp)) : '--'}
-                        </p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase">
-                          Codigo: {eventCode || '--'}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-                </div>
-              )}
             </div>
             {/* ── FIN SECCIÓN TRACKING ── */}
+
+            <ShipmentTracker shipmentData={trackingData} />
 
             {/* TABLA DE ÍTEMS */}
             <table className="w-full border-separate border-spacing-y-2">

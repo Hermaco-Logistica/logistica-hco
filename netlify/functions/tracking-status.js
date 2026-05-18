@@ -1,9 +1,17 @@
 import admin from 'firebase-admin';
 
-const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
-const RATE_LIMIT_MAX = 1;
+const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const RATE_LIMIT_MAX = 5;
 const CACHE_COLLECTION = 'tracking_cache';
 const RATE_COLLECTION = 'tracking_rate_limits';
+const DSV_OAUTH_URL = process.env.DSV_OAUTH_URL || 'https://api.dsv.com/my/oauth/v1/token';
+const DSV_TRACKING_URL = process.env.DSV_TRACKING_URL || 'https://api.dsv.com/my/tracking/v2/shipments/tmsId/';
+
+let dsvTokenCache = {
+  token: null,
+  expiresAt: 0,
+};
 
 const isValidTrackingNumber = (value) => /^[A-Z0-9-]{6,}$/i.test(value);
 
@@ -42,14 +50,83 @@ const getAuthToken = (event) => {
   return match ? match[1] : null;
 };
 
-function normalizeTrackingPayload(data, trackingNumber) {
-  const events = Array.isArray(data?.events)
+const getDsvAuthSubscriptionKey = () => (
+  process.env.DSV_AUTH_SUBSCRIPTION_KEY
+  || process.env['DSV-AUTH-Subscription-Key']
+  || process.env.DSV_SUBSCRIPTION_KEY
+  || process.env['DSV-Subscription-Key']
+);
+
+const getDsvTrackingSubscriptionKey = () => (
+  process.env.DSV_TRACKING_SUBSCRIPTION_KEY
+  || process.env['DSV-TRACKING-Subscription-Key']
+  || process.env.DSV_SUBSCRIPTION_KEY
+  || process.env['DSV-Subscription-Key']
+);
+
+const isDsvConfigured = () => {
+  const authKey = getDsvAuthSubscriptionKey();
+  const trackingKey = getDsvTrackingSubscriptionKey();
+  return Boolean(authKey && trackingKey && process.env.DSV_CLIENT_ID && process.env.DSV_CLIENT_SECRET);
+};
+
+const normalizeEvent = (event) => {
+  if (!event || typeof event !== 'object') return null;
+
+  const rawLocation = event.location || event.eventLocation || event.place || {};
+  const location = typeof rawLocation === 'string' ? { place: rawLocation } : rawLocation;
+  const fallbackAddress = {
+    addressLocality: event.city || event.locationCity || event.locationName || location.place,
+    countryCode: event.countryCode || event.locationCountry || location.countryCode,
+  };
+  const sourceAddress = location.address || fallbackAddress;
+  const locationAddress = sourceAddress
+    ? {
+      ...(sourceAddress.addressLocality ? { addressLocality: sourceAddress.addressLocality } : {}),
+      ...(sourceAddress.countryCode ? { countryCode: sourceAddress.countryCode } : {}),
+    }
+    : null;
+  const normalizedLocation = locationAddress && Object.keys(locationAddress).length
+    ? { address: locationAddress }
+    : null;
+
+  return {
+    status: event.status || event.statusCode || event.eventCode || event.eventType || event.milestone || event.activityCode,
+    description: event.description || event.eventDescription || event.activityDescription || event.activity || event.eventType,
+    timestamp: event.timestamp
+      || event.eventDateTime
+      || event.eventTime
+      || event.eventDate
+      || event.eventLastModified
+      || event.dateTime
+      || event.date
+      || null,
+    location: normalizedLocation || location || null,
+    raw: event,
+  };
+};
+
+const normalizeTrackingPayload = (data, trackingNumber) => {
+  const rawEvents = Array.isArray(data?.events)
     ? data.events
     : Array.isArray(data?.checkpoints)
       ? data.checkpoints
       : Array.isArray(data?.shipments?.[0]?.events)
         ? data.shipments[0].events
-        : [];
+        : Array.isArray(data?.shipments?.[0]?.trackingEvents)
+          ? data.shipments[0].trackingEvents
+          : Array.isArray(data?.trackingEvents)
+            ? data.trackingEvents
+            : [];
+
+  const events = rawEvents
+    .map(normalizeEvent)
+    .filter(Boolean)
+    .sort((a, b) => {
+      const timeA = Date.parse(a?.timestamp || '') || 0;
+      const timeB = Date.parse(b?.timestamp || '') || 0;
+      return timeB - timeA;
+    });
 
   const latestEvent = events[0] || null;
 
@@ -61,7 +138,7 @@ function normalizeTrackingPayload(data, trackingNumber) {
     events,
     raw: data,
   };
-}
+};
 
 function getMockTracking(trackingNumber) {
   return {
@@ -82,6 +159,86 @@ function getMockTracking(trackingNumber) {
       },
     ],
     source: 'MOCK',
+    provider: 'MOCK',
+  };
+}
+
+async function fetchDsvAccessToken() {
+  const subscriptionKey = getDsvAuthSubscriptionKey();
+  if (!subscriptionKey) {
+    throw new Error('DSV_SUBSCRIPTION_KEY_MISSING');
+  }
+
+  const now = Date.now();
+  if (dsvTokenCache.token && dsvTokenCache.expiresAt > now) {
+    return dsvTokenCache.token;
+  }
+
+  const body = new URLSearchParams({
+    grant_type: 'client_credentials',
+    client_id: process.env.DSV_CLIENT_ID || '',
+    client_secret: process.env.DSV_CLIENT_SECRET || '',
+  });
+
+  const response = await fetch(DSV_OAUTH_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'DSV-Subscription-Key': subscriptionKey,
+    },
+    body: body.toString(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`DSV_TOKEN_ERROR_${response.status}`);
+  }
+
+  const data = await response.json();
+  const token = data?.access_token;
+  const expiresIn = Number(data?.expires_in || 0);
+  if (!token) {
+    throw new Error('DSV_TOKEN_MISSING');
+  }
+
+  dsvTokenCache = {
+    token,
+    expiresAt: now + Math.max(0, (expiresIn - 30) * 1000),
+  };
+
+  return token;
+}
+
+async function fetchTrackingFromDsv(trackingNumber) {
+  if (!isDsvConfigured()) {
+    throw new Error('DSV_NOT_CONFIGURED');
+  }
+
+  const subscriptionKey = getDsvTrackingSubscriptionKey();
+  if (!subscriptionKey) {
+    throw new Error('DSV_TRACKING_SUBSCRIPTION_KEY_MISSING');
+  }
+  const token = await fetchDsvAccessToken();
+  const baseUrl = DSV_TRACKING_URL.endsWith('/') ? DSV_TRACKING_URL : `${DSV_TRACKING_URL}/`;
+  const url = new URL(`${baseUrl}${encodeURIComponent(trackingNumber)}`);
+
+  const response = await fetch(url.toString(), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      'DSV-Subscription-Key': subscriptionKey,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`DSV_TRACKING_ERROR_${response.status}`);
+  }
+
+  const data = await response.json();
+  return {
+    ...normalizeTrackingPayload(data, trackingNumber),
+    source: 'DSV',
+    provider: 'DSV',
   };
 }
 
@@ -129,7 +286,37 @@ async function fetchTrackingFromDhl(trackingNumber) {
   return {
     ...normalizeTrackingPayload(data, trackingNumber),
     source: 'DHL',
+    provider: 'DHL',
   };
+}
+
+async function fetchTrackingWithFallback(trackingNumber, preferredProvider) {
+  const normalizedPreferred = (preferredProvider || '').toString().trim().toUpperCase();
+  const providers = [];
+
+  if (normalizedPreferred) {
+    providers.push(normalizedPreferred);
+  } else if (isDsvConfigured()) {
+    providers.push('DSV', 'DHL');
+  } else {
+    providers.push('DHL');
+  }
+
+  let lastError;
+  for (const provider of providers) {
+    try {
+      if (provider === 'DSV') {
+        return await fetchTrackingFromDsv(trackingNumber);
+      }
+      if (provider === 'DHL') {
+        return await fetchTrackingFromDhl(trackingNumber);
+      }
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError || new Error('TRACKING_PROVIDER_NOT_AVAILABLE');
 }
 
 export const handler = async (event) => {
@@ -168,18 +355,21 @@ export const handler = async (event) => {
     const cacheData = cacheSnap.exists ? cacheSnap.data() : null;
     const nowMs = Date.now();
 
-    if (cacheData?.payload && cacheData?.lastCheckedAt?.toMillis) {
-      const lastCheckedAtMs = cacheData.lastCheckedAt.toMillis();
-      if (nowMs - lastCheckedAtMs < RATE_LIMIT_WINDOW_MS) {
-        return {
-          statusCode: 200,
-          body: JSON.stringify({
-            ...cacheData.payload,
-            cached: true,
-            rateLimited: false,
-          }),
-        };
-      }
+    let cacheAgeMs = null;
+    if (cacheData?.lastCheckedAt?.toMillis) {
+      cacheAgeMs = nowMs - cacheData.lastCheckedAt.toMillis();
+    }
+
+    if (cacheData?.payload && cacheAgeMs !== null && cacheAgeMs < CACHE_TTL_MS) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          ...cacheData.payload,
+          cached: true,
+          stale: false,
+          rateLimited: false,
+        }),
+      };
     }
 
     const rateKey = `${uid}_${trackingNumber}`;
@@ -201,6 +391,7 @@ export const handler = async (event) => {
           body: JSON.stringify({
             ...cacheData.payload,
             cached: true,
+            stale: true,
             rateLimited: true,
           }),
         };
@@ -218,7 +409,8 @@ export const handler = async (event) => {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
 
-    const result = await fetchTrackingFromDhl(trackingNumber);
+    const providerOverride = event.queryStringParameters?.provider;
+    const result = await fetchTrackingWithFallback(trackingNumber, providerOverride);
     const latestEventTimestamp = getLatestEventTimestamp(result.events);
 
     await cacheRef.set({
@@ -241,7 +433,7 @@ export const handler = async (event) => {
     return {
       statusCode: 500,
       body: JSON.stringify({
-        message: 'Error consultando tracking en DHL',
+        message: 'Error consultando tracking',
         detail: error?.message || 'unknown_error',
       }),
     };

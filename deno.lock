@@ -20,6 +20,7 @@
         "npm:eslint-plugin-react-hooks@^7.0.1",
         "npm:eslint-plugin-react-refresh@~0.5.2",
         "npm:eslint@^9.39.4",
+        "npm:firebase-admin@^12.6.0",
         "npm:firebase@^12.12.0",
         "npm:globals@^17.4.0",
         "npm:lucide-react@^1.8.0",

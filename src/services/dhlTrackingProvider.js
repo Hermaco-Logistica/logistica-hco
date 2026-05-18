@@ -4,7 +4,7 @@ const TRACKING_STATUS_URL = import.meta.env.VITE_TRACKING_STATUS_URL || '/api/tr
 
 export const dhlTrackingEnabled = Boolean(TRACKING_STATUS_URL);
 
-export async function consultarTrackingDhl(trackingNumber) {
+export async function consultarTrackingDhl(trackingNumber, providerHint) {
   const number = String(trackingNumber || '').trim();
   if (!dhlTrackingEnabled || number.length < 6) {
     throw new Error('INVALID_TRACKING_NUMBER');
@@ -17,6 +17,9 @@ export async function consultarTrackingDhl(trackingNumber) {
 
   const url = new URL(TRACKING_STATUS_URL, window.location.origin);
   url.searchParams.set('trackingNumber', number);
+  if (providerHint) {
+    url.searchParams.set('provider', providerHint);
+  }
 
   const response = await fetch(url.toString(), {
     method: 'GET',

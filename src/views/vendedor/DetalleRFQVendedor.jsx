@@ -16,6 +16,9 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
   const [linkOC, setLinkOC] = useState('');
   const [notasPedido, setNotasPedido] = useState('');
 
+  const pedidoYaCreado = rfq?.estado === 'Pedido' || rfq?.estado === 'Comprado';
+  const puedeConfirmarPedido = canGenerarPedido && !pedidoYaCreado;
+
   // Función para calcular fecha omitiendo fines de semana
   const obtenerFechaEstimada = (dias) => {
     if (!dias || isNaN(parseInt(dias))) return 'Pendiente';
@@ -60,6 +63,10 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
   }, [id, navigate]);
 
   const handleCrearPedido = async () => {
+    if (!puedeConfirmarPedido) {
+      alert('Este pedido ya fue generado y no puede confirmarse de nuevo.');
+      return;
+    }
     const indicesSeleccionados = Object.keys(seleccionados).filter(idx => seleccionados[idx]);
     if (indicesSeleccionados.length === 0) return alert("Selecciona productos para el pedido.");
     if (!linkOC) return alert("Ingresa el link de la Orden de Compra.");
@@ -144,6 +151,11 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
             <AlertCircle size={14} /> Cotización Parcial
           </div>
         )}
+        {pedidoYaCreado && (
+          <div className="bg-emerald-600 text-white px-4 py-2 rounded-full text-[10px] font-black uppercase flex items-center gap-2">
+            <CheckCircle2 size={14} /> Pedido ya generado
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-[2rem] shadow-2xl border border-slate-200 overflow-hidden mb-8">
@@ -170,9 +182,14 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
                 <tr key={idx} className={`${seleccionados[idx] ? 'bg-slate-50' : 'bg-white'} hover:bg-slate-50/50 transition-colors ${!estaCotizado ? 'opacity-60 bg-slate-50/30' : ''}`}>
                   <td className="p-5 text-center">
                     {estaCotizado ? (
-                      <button 
-                        onClick={() => setSeleccionados(prev => ({ ...prev, [idx]: !prev[idx] }))}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-all ${seleccionados[idx] ? 'bg-emerald-500 text-white shadow-lg' : 'border-2 border-slate-200 text-slate-200 hover:border-slate-400'}`}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!puedeConfirmarPedido) return;
+                          setSeleccionados(prev => ({ ...prev, [idx]: !prev[idx] }));
+                        }}
+                        disabled={!puedeConfirmarPedido}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto transition-all ${seleccionados[idx] ? 'bg-emerald-500 text-white shadow-lg' : 'border-2 border-slate-200 text-slate-200 hover:border-slate-400'} ${!puedeConfirmarPedido ? 'opacity-40 cursor-not-allowed' : ''}`}
                       ><CheckCircle2 size={20} /></button>
                     ) : (
                       <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-300"><Clock size={16} /></div>
@@ -192,7 +209,12 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
                   </td>
                   <td className="p-5 text-center">
                     {seleccionados[idx] ? (
-                      <select value={modalidades[idx]} onChange={(e) => setModalidades(prev => ({ ...prev, [idx]: e.target.value }))} className="bg-slate-100 border-none rounded-lg p-2 font-black text-[10px] uppercase text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer">
+                      <select
+                        value={modalidades[idx]}
+                        onChange={(e) => setModalidades(prev => ({ ...prev, [idx]: e.target.value }))}
+                        disabled={!puedeConfirmarPedido}
+                        className="bg-slate-100 border-none rounded-lg p-2 font-black text-[10px] uppercase text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
                         <option value="A">Aéreo</option><option value="M">Marítimo</option>
                       </select>
                     ) : <span className="text-slate-300 italic text-[10px]">{estaCotizado ? 'Elegir para pedir' : 'Esperando'}</span>}
@@ -224,11 +246,25 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
           <div className="space-y-4">
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 italic">Enlace a Orden de Compra</label>
-              <input type="text" className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-sm outline-none focus:border-emerald-500 transition-all font-bold" placeholder="https://..." value={linkOC} onChange={(e) => setLinkOC(e.target.value)} />
+              <input
+                type="text"
+                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-sm outline-none focus:border-emerald-500 transition-all font-bold"
+                placeholder="https://..."
+                value={linkOC}
+                onChange={(e) => setLinkOC(e.target.value)}
+                disabled={!puedeConfirmarPedido}
+              />
             </div>
             <div>
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 italic">Comentarios del Pedido</label>
-              <textarea className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-sm outline-none focus:border-emerald-500 transition-all font-bold" rows="3" placeholder="Notas adicionales para compras/logística..." value={notasPedido} onChange={(e) => setNotasPedido(e.target.value)} />
+              <textarea
+                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-sm outline-none focus:border-emerald-500 transition-all font-bold"
+                rows="3"
+                placeholder="Notas adicionales para compras/logística..."
+                value={notasPedido}
+                onChange={(e) => setNotasPedido(e.target.value)}
+                disabled={!puedeConfirmarPedido}
+              />
             </div>
           </div>
         </div>
@@ -255,13 +291,13 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
           </div>
           <button 
             onClick={handleCrearPedido}
-            disabled={enviandoPedido || !canGenerarPedido}
+            disabled={enviandoPedido || !puedeConfirmarPedido}
             className="w-full mt-8 bg-emerald-500 hover:bg-emerald-600 text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] shadow-lg shadow-emerald-900/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ShoppingCart size={20} />
-            {canGenerarPedido
+            {puedeConfirmarPedido
               ? (enviandoPedido ? 'GENERANDO...' : 'CONFIRMAR Y ENVIAR PEDIDO')
-              : 'SOLO VISUALIZACION'}
+              : (pedidoYaCreado ? 'PEDIDO YA GENERADO' : 'SOLO VISUALIZACION')}
           </button>
         </div>
       </div>

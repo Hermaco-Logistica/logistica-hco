@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc, query, where } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { 
   CheckSquare, Square, Link as LinkIcon, 
   ChevronDown, Package, DollarSign, Hash, ClipboardCheck, 
-  Activity, Clock, Calendar, Truck, MapPin
+  Activity, Calendar, Truck
 } from 'lucide-react';
-import { EventIcon, getStatusConfig, getStatusLabel } from '../../utils/trackingUi';
+import { ShipmentTrackerCompact } from '../../components/ShipmentTracker';
+import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/trackingStatusService';
 import {
   buscarProveedoresGuardados,
   guardarProveedorSiNoExiste,
@@ -33,6 +34,7 @@ export const DashboardPedidos = ({ role }) => {
     trackingNumber: '',
     rfqLabel: '',
   });
+  const [trackingNotice, setTrackingNotice] = useState('');
 
   const formatFechaHora = (value) => {
     if (!value) return '---';
@@ -59,7 +61,11 @@ export const DashboardPedidos = ({ role }) => {
       setOrdenesExistentes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 
-    const unsubSolicitudes = onSnapshot(collection(db, "solicitudes"), (snap) => {
+    const solicitudesQuery = role === 'vendedor'
+      ? query(collection(db, "solicitudes"), where("vendedorId", "==", auth.currentUser?.uid || ''))
+      : collection(db, "solicitudes");
+
+    const unsubSolicitudes = onSnapshot(solicitudesQuery, (snap) => {
       let tempItems = [];
       snap.docs.forEach(d => {
         const data = d.data();
@@ -85,7 +91,7 @@ export const DashboardPedidos = ({ role }) => {
     });
 
     return () => { unsubOCs(); unsubSolicitudes(); };
-  }, []);
+  }, [role]);
 
   useEffect(() => {
     const termino = normalizarNombreProveedor(nuevaOC.proveedor);
@@ -179,16 +185,6 @@ export const DashboardPedidos = ({ role }) => {
     ));
   };
 
-  const getLatestEvent = (payload) => {
-    const events = Array.isArray(payload?.events) ? payload.events : [];
-    if (!events.length) return null;
-    return [...events].sort((a, b) => {
-      const timeA = Date.parse(a?.timestamp || '') || 0;
-      const timeB = Date.parse(b?.timestamp || '') || 0;
-      return timeB - timeA;
-    })[0];
-  };
-
   const openTrackingModal = async (trackingNumber, rfqLabel) => {
     if (!trackingNumber) {
       setTrackingModal({
@@ -199,6 +195,7 @@ export const DashboardPedidos = ({ role }) => {
         trackingNumber: '',
         rfqLabel,
       });
+      setTrackingNotice('');
       return;
     }
 
@@ -210,8 +207,27 @@ export const DashboardPedidos = ({ role }) => {
       trackingNumber,
       rfqLabel,
     });
+    setTrackingNotice('');
 
     try {
+      if (role === 'vendedor' && trackingStatusEnabled) {
+        const freshData = await consultarTrackingStatus(trackingNumber);
+        setTrackingModal({
+          open: true,
+          loading: false,
+          error: '',
+          data: freshData || null,
+          trackingNumber,
+          rfqLabel,
+        });
+        if (freshData?.rateLimited) {
+          setTrackingNotice('Mostrando ultimo dato guardado. Podras actualizar en unos minutos.');
+        } else if (freshData?.stale) {
+          setTrackingNotice('Actualizando, mostrando ultimo dato guardado.');
+        }
+        return;
+      }
+
       const cacheRef = doc(db, 'tracking_cache', trackingNumber);
       const cacheSnap = await getDoc(cacheRef);
       if (!cacheSnap.exists()) {
@@ -223,6 +239,7 @@ export const DashboardPedidos = ({ role }) => {
           trackingNumber,
           rfqLabel,
         });
+        setTrackingNotice('');
         return;
       }
 
@@ -235,6 +252,7 @@ export const DashboardPedidos = ({ role }) => {
         trackingNumber,
         rfqLabel,
       });
+      setTrackingNotice('');
     } catch (error) {
       setTrackingModal({
         open: true,
@@ -244,6 +262,7 @@ export const DashboardPedidos = ({ role }) => {
         trackingNumber,
         rfqLabel,
       });
+      setTrackingNotice('');
     }
   };
 
@@ -582,6 +601,11 @@ export const DashboardPedidos = ({ role }) => {
             </div>
 
             <div className="p-6">
+              {trackingNotice && (
+                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-bold uppercase text-amber-700">
+                  {trackingNotice}
+                </div>
+              )}
               {trackingModal.loading && (
                 <p className="text-xs font-black text-slate-400 uppercase">Cargando...</p>
               )}
@@ -590,44 +614,9 @@ export const DashboardPedidos = ({ role }) => {
                 <p className="text-xs font-black text-rose-600 uppercase">{trackingModal.error}</p>
               )}
 
-              {!trackingModal.loading && trackingModal.data && (() => {
-                const latestEvent = getLatestEvent(trackingModal.data);
-                const eventCode = latestEvent?.status || latestEvent?.statusCode;
-                const label = getStatusLabel(eventCode);
-                const statusCfg = getStatusConfig(eventCode);
-                const location = latestEvent?.location?.address?.addressLocality;
-                const country = latestEvent?.location?.address?.countryCode;
-                const locacion = [location, country].filter(Boolean).join(' - ') || '--';
-
-                return (
-                  <div className={`rounded-2xl border ${statusCfg.card} p-4`}>
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-white rounded-xl border border-slate-100">
-                        <EventIcon code={eventCode} size={16} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <p className="text-xs font-black text-slate-800 uppercase">
-                            {latestEvent?.description || 'Sin detalle'}
-                          </p>
-                          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${statusCfg.badge}`}>
-                            {label}
-                          </span>
-                        </div>
-                        <div className="mt-2 text-[10px] font-bold text-slate-500 flex items-center gap-4 flex-wrap">
-                          <span className="flex items-center gap-1">
-                            <MapPin size={11} /> {locacion}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock size={11} /> {latestEvent?.timestamp ? formatFechaHora(new Date(latestEvent.timestamp)) : '--'}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-[9px] font-bold text-slate-400 uppercase">Codigo DHL: {eventCode || '--'}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
+              {!trackingModal.loading && trackingModal.data && (
+                <ShipmentTrackerCompact shipmentData={trackingModal.data} />
+              )}
             </div>
           </div>
         </div>

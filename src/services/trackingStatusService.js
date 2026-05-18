@@ -1,4 +1,5 @@
 import { consultarTrackingDhl, dhlTrackingEnabled } from './dhlTrackingProvider';
+import { DHL_STATUS_LABELS, DSV_STATUS_LABELS } from '../utils/trackingMappings';
 
 const providers = [
   {
@@ -20,30 +21,30 @@ export async function consultarTrackingStatus(trackingNumber) {
     throw new Error('TRACKING_PROVIDER_NOT_CONFIGURED');
   }
 
-  const result = await provider.lookup(trackingNumber);
-  const latestMovement = buildLatestMovement(provider.id, result);
+  const providerHint = getProviderHint(trackingNumber);
+  const result = await provider.lookup(trackingNumber, providerHint);
+  const providerId = String(result?.provider || result?.source || provider.id || 'UNKNOWN').toUpperCase();
+  const latestMovement = buildLatestMovement(providerId, result);
   return {
-    provider: provider.id,
+    provider: providerId,
     latestMovement,
     ...result,
   };
 }
 
-const DHL_STATUS_LABELS = {
-  PU: 'Recogido por DHL',
-  PL: 'Procesado en instalacion',
-  AF: 'Llego a instalacion',
-  DF: 'Salio de instalacion',
-  TR: 'En transito',
-  WC: 'En camino al destinatario',
-  OH: 'Envio retenido',
-  RR: 'Aduana iniciada',
-  IC: 'En proceso de aduana',
-  UD: 'Evento de aduana',
-  CR: 'Aduana liberada',
-  OK: 'Entregado',
-  delivered: 'Entregado',
-  failure: 'Fallo en entrega',
+const getProviderHint = (trackingNumber) => {
+  const raw = String(trackingNumber || '').trim().toUpperCase();
+  if (!raw) return null;
+
+  if (/\b(ANR|SJO)\b/.test(raw) || raw.includes('ANR') || raw.includes('SJO')) {
+    return 'DSV';
+  }
+
+  if (/^\d+$/.test(raw)) {
+    return 'DHL';
+  }
+
+  return null;
 };
 
 const DHL_STATUS_FALLBACK = 'Actualizacion de envio';
@@ -62,11 +63,15 @@ const buildLatestMovement = (providerId, payload) => {
 
   if (!latestEvent) return null;
 
-  const statusValue = latestEvent.status || latestEvent.statusCode || 'UNKNOWN';
-  const statusKey = String(statusValue).toLowerCase();
+  const statusRaw = latestEvent.status || latestEvent.statusCode || 'UNKNOWN';
+  const statusValue = String(statusRaw || '').trim() || 'UNKNOWN';
+  const statusKey = statusValue.toLowerCase();
+  const statusLookup = statusValue.toUpperCase();
   const estado = providerId === 'DHL'
     ? (DHL_STATUS_LABELS[statusValue] || DHL_STATUS_LABELS[statusKey] || latestEvent.description || DHL_STATUS_FALLBACK)
-    : statusValue;
+    : providerId === 'DSV'
+      ? (DSV_STATUS_LABELS[statusLookup] || latestEvent.description || statusValue || DHL_STATUS_FALLBACK)
+      : statusValue;
 
   const location = latestEvent.location?.address?.addressLocality;
   const country = latestEvent.location?.address?.countryCode;
@@ -78,5 +83,6 @@ const buildLatestMovement = (providerId, payload) => {
     descripcion: latestEvent.description || 'Sin descripcion',
     locacion,
     fecha: latestEvent.timestamp || null,
+    grupo: latestEvent.raw?.eventGroup || latestEvent.raw?.eventType || null,
   };
 };
