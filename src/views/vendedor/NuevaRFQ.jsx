@@ -7,6 +7,11 @@ import {
   guardarClienteSiNoExiste,
   normalizarNombreCliente,
 } from '../../services/clientesService';
+import {
+  buscarMarcasGuardadas,
+  guardarMarcaSiNoExiste,
+  normalizarNombreMarca,
+} from '../../services/marcasService';
 
 export const NuevaRFQ = ({ onFinalizar }) => {
   const navigate = useNavigate();
@@ -17,8 +22,14 @@ export const NuevaRFQ = ({ onFinalizar }) => {
   const [errorCliente, setErrorCliente] = useState('');
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
   const [productos, setProductos] = useState([{ desc: '', marca: '', cant: 1 }]);
+  const [sugerenciasMarca, setSugerenciasMarca] = useState([[]]);
+  const [indiceSugerenciaMarca, setIndiceSugerenciaMarca] = useState([-1]);
+  const [buscandoMarca, setBuscandoMarca] = useState([false]);
+  const [errorMarca, setErrorMarca] = useState(['']);
+  const [mostrarSugerenciasMarca, setMostrarSugerenciasMarca] = useState([false]);
   const [loading, setLoading] = useState(false);
   const debounceRef = useRef(null);
+  const marcasDebounceRef = useRef([]);
 
   useEffect(() => {
     const termino = cliente.trim();
@@ -57,12 +68,25 @@ export const NuevaRFQ = ({ onFinalizar }) => {
   // Añadir una nueva fila de producto
   const addFila = () => {
     setProductos([...productos, { desc: '', marca: '', cant: 1 }]);
+    setSugerenciasMarca((prev) => [...prev, []]);
+    setIndiceSugerenciaMarca((prev) => [...prev, -1]);
+    setBuscandoMarca((prev) => [...prev, false]);
+    setErrorMarca((prev) => [...prev, '']);
+    setMostrarSugerenciasMarca((prev) => [...prev, false]);
   };
 
   // Eliminar una fila
   const removeFila = (index) => {
     const nuevos = productos.filter((_, i) => i !== index);
     setProductos(nuevos);
+    if (marcasDebounceRef.current[index]) {
+      clearTimeout(marcasDebounceRef.current[index]);
+    }
+    setSugerenciasMarca((prev) => prev.filter((_, i) => i !== index));
+    setIndiceSugerenciaMarca((prev) => prev.filter((_, i) => i !== index));
+    setBuscandoMarca((prev) => prev.filter((_, i) => i !== index));
+    setErrorMarca((prev) => prev.filter((_, i) => i !== index));
+    setMostrarSugerenciasMarca((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Actualizar campos específicos
@@ -70,6 +94,99 @@ export const NuevaRFQ = ({ onFinalizar }) => {
     const nuevos = [...productos];
     nuevos[index][campo] = valor;
     setProductos(nuevos);
+  };
+
+  const updateMarcaState = (setter, index, value) => {
+    setter((prev) => {
+      const next = [...prev];
+      const resolved = typeof value === 'function' ? value(next[index]) : value;
+      next[index] = resolved;
+      return next;
+    });
+  };
+
+  const seleccionarSugerenciaMarca = (index, nombre) => {
+    updateProducto(index, 'marca', nombre || '');
+    updateMarcaState(setMostrarSugerenciasMarca, index, false);
+    updateMarcaState(setIndiceSugerenciaMarca, index, -1);
+  };
+
+  const manejarTeclasMarca = (e, index) => {
+    const mostrar = mostrarSugerenciasMarca[index];
+    const buscando = buscandoMarca[index];
+    const sugerencias = sugerenciasMarca[index] || [];
+
+    if (!mostrar || buscando || sugerencias.length === 0) {
+      if (e.key === 'Escape') {
+        updateMarcaState(setMostrarSugerenciasMarca, index, false);
+        updateMarcaState(setIndiceSugerenciaMarca, index, -1);
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      updateMarcaState(setIndiceSugerenciaMarca, index, (prev) => {
+        const base = prev < 0 ? 0 : prev;
+        return Math.min(base + 1, sugerencias.length - 1);
+      });
+      return;
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      updateMarcaState(setIndiceSugerenciaMarca, index, (prev) => {
+        if (prev <= 0) return 0;
+        return prev - 1;
+      });
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      if (indiceSugerenciaMarca[index] >= 0 && indiceSugerenciaMarca[index] < sugerencias.length) {
+        e.preventDefault();
+        seleccionarSugerenciaMarca(index, sugerencias[indiceSugerenciaMarca[index]].nombre || '');
+      }
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      updateMarcaState(setMostrarSugerenciasMarca, index, false);
+      updateMarcaState(setIndiceSugerenciaMarca, index, -1);
+    }
+  };
+
+  const buscarMarcasConDebounce = (index, texto) => {
+    const termino = texto.trim();
+
+    if (marcasDebounceRef.current[index]) {
+      clearTimeout(marcasDebounceRef.current[index]);
+    }
+
+    if (termino.length < 2) {
+      updateMarcaState(setSugerenciasMarca, index, []);
+      updateMarcaState(setIndiceSugerenciaMarca, index, -1);
+      updateMarcaState(setBuscandoMarca, index, false);
+      updateMarcaState(setErrorMarca, index, '');
+      return;
+    }
+
+    marcasDebounceRef.current[index] = setTimeout(async () => {
+      try {
+        updateMarcaState(setBuscandoMarca, index, true);
+        updateMarcaState(setErrorMarca, index, '');
+        const resultados = await buscarMarcasGuardadas(termino);
+        updateMarcaState(setSugerenciasMarca, index, resultados);
+        updateMarcaState(setIndiceSugerenciaMarca, index, resultados.length > 0 ? 0 : -1);
+      } catch (error) {
+        updateMarcaState(setErrorMarca, index, 'No se pudo buscar marcas guardadas.');
+        updateMarcaState(setSugerenciasMarca, index, []);
+        updateMarcaState(setIndiceSugerenciaMarca, index, -1);
+      } finally {
+        updateMarcaState(setBuscandoMarca, index, false);
+      }
+    }, 250);
   };
 
   const seleccionarSugerenciaCliente = (nombre) => {
@@ -128,6 +245,12 @@ export const NuevaRFQ = ({ onFinalizar }) => {
     try {
       const clienteNormalizado = normalizarNombreCliente(cliente);
       await guardarClienteSiNoExiste(clienteNormalizado, auth.currentUser);
+      const marcasNormalizadas = Array.from(
+        new Set(productos.map((p) => normalizarNombreMarca(p.marca)).filter(Boolean))
+      );
+      if (marcasNormalizadas.length > 0) {
+        await Promise.all(marcasNormalizadas.map((marca) => guardarMarcaSiNoExiste(marca, auth.currentUser)));
+      }
 
       const correlativo = `RFQ-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
       
@@ -142,6 +265,7 @@ export const NuevaRFQ = ({ onFinalizar }) => {
         fechaS: serverTimestamp(),
         productos: productos.map(p => ({
           ...p,
+          marca: normalizarNombreMarca(p.marca),
           descripcion: p.desc, // Aseguramos compatibilidad con la calculadora
           disponible: false,
           fob: 0,
@@ -245,8 +369,8 @@ export const NuevaRFQ = ({ onFinalizar }) => {
         </div>
 
         {/* Listado de Productos */}
-        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-100 overflow-hidden">
-          <div className="p-6 bg-slate-900 flex justify-between items-center">
+        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-100 overflow-visible">
+          <div className="p-6 bg-slate-900 flex justify-between items-center rounded-t-[2rem]">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Items Solicitados</span>
             <button 
               type="button"
@@ -281,13 +405,65 @@ export const NuevaRFQ = ({ onFinalizar }) => {
                       />
                     </td>
                     <td className="p-2">
-                      <input 
-                        type="text" 
-                        className="w-full p-3 bg-transparent outline-none font-bold text-blue-600 text-sm italic"
-                        placeholder="Marca..."
-                        value={p.marca}
-                        onChange={(e) => updateProducto(idx, 'marca', e.target.value)}
-                      />
+                      <div className="relative">
+                        <input 
+                          type="text" 
+                          className="w-full p-3 bg-transparent outline-none font-bold text-blue-600 text-sm italic"
+                          placeholder="Marca..."
+                          value={p.marca}
+                          onFocus={() => {
+                            updateMarcaState(setMostrarSugerenciasMarca, idx, true);
+                            if ((sugerenciasMarca[idx] || []).length > 0 && indiceSugerenciaMarca[idx] < 0) {
+                              updateMarcaState(setIndiceSugerenciaMarca, idx, 0);
+                            }
+                          }}
+                          onBlur={() =>
+                            setTimeout(() => {
+                              updateMarcaState(setMostrarSugerenciasMarca, idx, false);
+                              updateMarcaState(setIndiceSugerenciaMarca, idx, -1);
+                            }, 120)
+                          }
+                          onKeyDown={(e) => manejarTeclasMarca(e, idx)}
+                          onChange={(e) => {
+                            const marcaEnMayusculas = e.target.value.toUpperCase();
+                            updateProducto(idx, 'marca', marcaEnMayusculas);
+                            updateMarcaState(setMostrarSugerenciasMarca, idx, true);
+                            buscarMarcasConDebounce(idx, marcaEnMayusculas);
+                          }}
+                        />
+
+                        {mostrarSugerenciasMarca[idx] && String(p.marca || '').trim().length >= 2 && (
+                          <div className="absolute z-50 mt-2 w-full max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+                            {buscandoMarca[idx] && (
+                              <div className="px-4 py-3 text-xs font-bold text-slate-500">Buscando marcas guardadas...</div>
+                            )}
+
+                            {!buscandoMarca[idx] && !errorMarca[idx] && (sugerenciasMarca[idx] || []).length === 0 && (
+                              <div className="px-4 py-3 text-xs font-bold text-slate-500">No hay coincidencias. Se guardara como nueva al enviar.</div>
+                            )}
+
+                            {!buscandoMarca[idx] && errorMarca[idx] && (
+                              <div className="px-4 py-3 text-xs font-bold text-rose-600">{errorMarca[idx]}</div>
+                            )}
+
+                            {!buscandoMarca[idx] && (sugerenciasMarca[idx] || []).map((s, sIdx) => (
+                              <button
+                                key={s.id}
+                                type="button"
+                                className={`w-full text-left px-4 py-3 border-b last:border-b-0 border-slate-100 ${
+                                  sIdx === indiceSugerenciaMarca[idx] ? 'bg-slate-50' : 'hover:bg-slate-50'
+                                }`}
+                                onMouseEnter={() => updateMarcaState(setIndiceSugerenciaMarca, idx, sIdx)}
+                                onMouseDown={() => {
+                                  seleccionarSugerenciaMarca(idx, s.nombre || '');
+                                }}
+                              >
+                                <p className="text-sm font-black text-slate-700 uppercase">{s.nombre}</p>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="p-2">
                       <input 

@@ -56,6 +56,7 @@ export const SHIPMENT_STATUS_LABELS = {
   AT_CUSTOMS: 'En aduana',
   DELAYED: 'Con retraso',
   CANCELLED: 'Cancelado',
+  IN_PROGRESS: 'En proceso',
 };
 
 export const DSV_COMPLETED_CODES = new Set(['Z70', 'ARV', 'DEP', 'ECC', 'BOOKING', 'PCF']);
