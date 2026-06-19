@@ -49,6 +49,15 @@ const getProviderHint = (trackingNumber) => {
 
 const DHL_STATUS_FALLBACK = 'Actualizacion de envio';
 
+const getDsvEventTimestamp = (event) => (
+  event?.raw?.eventLastModified
+  || event?.raw?.eventDateTime
+  || event?.raw?.eventTime
+  || event?.raw?.eventDate
+  || event?.timestamp
+  || null
+);
+
 const buildLatestMovement = (providerId, payload) => {
   const events = Array.isArray(payload?.events) ? payload.events : [];
   if (!events.length) {
@@ -56,8 +65,8 @@ const buildLatestMovement = (providerId, payload) => {
   }
 
   const latestEvent = [...events].sort((a, b) => {
-    const timeA = Date.parse(a?.timestamp || '') || 0;
-    const timeB = Date.parse(b?.timestamp || '') || 0;
+    const timeA = Date.parse(providerId === 'DSV' ? getDsvEventTimestamp(a) : a?.timestamp || '') || 0;
+    const timeB = Date.parse(providerId === 'DSV' ? getDsvEventTimestamp(b) : b?.timestamp || '') || 0;
     return timeB - timeA;
   })[0];
 
@@ -82,7 +91,7 @@ const buildLatestMovement = (providerId, payload) => {
     codigo: statusValue,
     descripcion: latestEvent.description || 'Sin descripcion',
     locacion,
-    fecha: latestEvent.timestamp || null,
+    fecha: providerId === 'DSV' ? getDsvEventTimestamp(latestEvent) : latestEvent.timestamp || null,
     grupo: latestEvent.raw?.eventGroup || latestEvent.raw?.eventType || null,
   };
 };

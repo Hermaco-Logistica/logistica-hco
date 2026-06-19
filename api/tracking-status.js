@@ -50,10 +50,10 @@ const normalizeEvent = (event) => {
     status: event.status || event.statusCode || event.eventCode || event.eventType || event.milestone || event.activityCode,
     description: event.description || event.eventDescription || event.activityDescription || event.activity || event.eventType,
     timestamp: event.timestamp
+      || event.eventLastModified
       || event.eventDateTime
       || event.eventTime
       || event.eventDate
-      || event.eventLastModified
       || event.dateTime
       || event.date
       || null,

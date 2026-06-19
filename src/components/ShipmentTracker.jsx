@@ -53,6 +53,23 @@ const getDhlHeaderIcon = (statusCode) => {
   return <RefreshCw size={14} className="text-slate-400" />;
 };
 
+const getDsvEventTimestamp = (event) => (
+  event?.eventLastModified
+  || event?.eventDateTime
+  || event?.eventTime
+  || event?.eventDate
+  || null
+);
+
+const getDsvNormalizedEventTimestamp = (event) => (
+  event?.raw?.eventLastModified
+  || event?.raw?.eventDateTime
+  || event?.raw?.eventTime
+  || event?.raw?.eventDate
+  || event?.timestamp
+  || null
+);
+
 export const ShipmentTracker = ({ shipmentData }) => {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [cargoOpen, setCargoOpen] = useState(false);
@@ -78,8 +95,8 @@ export const ShipmentTracker = ({ shipmentData }) => {
   if (isDsv) {
     const raw = shipmentData.raw || {};
     const dsvEvents = Array.isArray(raw.events) ? [...raw.events].sort((a, b) => {
-      const timeA = Date.parse(a?.eventDate || '') || 0;
-      const timeB = Date.parse(b?.eventDate || '') || 0;
+      const timeA = Date.parse(getDsvEventTimestamp(a) || '') || 0;
+      const timeB = Date.parse(getDsvEventTimestamp(b) || '') || 0;
       return timeB - timeA;
     }) : [];
     const issues = Array.isArray(raw.issues) ? raw.issues : [];
@@ -178,7 +195,7 @@ export const ShipmentTracker = ({ shipmentData }) => {
           <div className="divide-y divide-slate-50">
             {(timelineOpen ? dsvEvents : dsvEvents.slice(0, 1)).map((event, idx) => {
               const label = getDsvEventLabel(event);
-              const eventDate = formatFechaDsv(event?.eventDate);
+              const eventDate = formatFechaDsv(getDsvEventTimestamp(event));
               const place = event?.location?.place;
               const country = event?.location?.countryCode;
               const locationText = [place, country].filter(Boolean).join(' - ');
@@ -378,8 +395,8 @@ export const ShipmentTrackerCompact = ({ shipmentData }) => {
   const providerId = String(shipmentData?.provider || shipmentData?.source || '').toUpperCase();
   const isDsv = providerId === 'DSV';
   const events = Array.isArray(shipmentData?.events) ? [...shipmentData.events].sort((a, b) => {
-    const timeA = Date.parse(a?.timestamp || '') || 0;
-    const timeB = Date.parse(b?.timestamp || '') || 0;
+    const timeA = Date.parse(isDsv ? getDsvNormalizedEventTimestamp(a) : a?.timestamp || '') || 0;
+    const timeB = Date.parse(isDsv ? getDsvNormalizedEventTimestamp(b) : b?.timestamp || '') || 0;
     return timeB - timeA;
   }) : [];
   const latestEvent = events[0] || null;
@@ -396,6 +413,7 @@ export const ShipmentTrackerCompact = ({ shipmentData }) => {
     ? getDsvEventLabel(latestEvent?.raw || {})
     : getStatusLabel(statusCode, 'DHL');
   const timestamp = formatTrackingDate(status?.timestamp || latestEvent?.timestamp);
+  const dsvTimestamp = formatTrackingDate(getDsvNormalizedEventTimestamp(latestEvent));
   const location = isDsv
     ? latestEvent?.raw?.location?.place
     : status?.location?.address?.addressLocality
@@ -417,8 +435,10 @@ export const ShipmentTrackerCompact = ({ shipmentData }) => {
           {locationText && (
             <p className="text-[9px] font-bold text-slate-400 mt-1">{locationText}</p>
           )}
-          {timestamp && (
-            <p className="text-[9px] font-bold text-slate-400 mt-1">Ultima actualizacion: {timestamp}</p>
+          {(isDsv ? dsvTimestamp : timestamp) && (
+            <p className="text-[9px] font-bold text-slate-400 mt-1">
+              Ultima actualizacion: {isDsv ? dsvTimestamp : timestamp}
+            </p>
           )}
         </div>
       </div>

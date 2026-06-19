@@ -42,10 +42,12 @@ export const DSV_STATUS_LABELS = {
   DLV: 'Entregado al destinatario',
   Z70: 'Carga entregada - responsabilidad transferida',
   DEL: 'Entrega con retraso',
-  DMG: 'Danio reportado en la carga',
+  DMG: 'Daño reportado en la carga',
   MSC: 'Carga extraviada temporalmente',
   HLD: 'Carga retenida (aduana u otro)',
   SHD: 'Entrega parcial realizada',
+  GIC: 'Llegada estimada',
+  GOC: 'Salida estimada',
 };
 
 export const SHIPMENT_STATUS_LABELS = {
