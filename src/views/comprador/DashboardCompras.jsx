@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Printer, X } from 'lucide-react';
 import { Badge } from '../../components/Badge';
+import CotizacionDocumento from '../../components/CotizacionDocumento';
 
 export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const navigate = useNavigate();
+  const [solicitudVista, setSolicitudVista] = useState(null);
+
   const formatFechaHora = (timestamp) => {
     if (!timestamp?.toDate) return '---';
     const dateValue = timestamp.toDate();
@@ -13,6 +17,66 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       hour12: false,
       timeZone: 'America/El_Salvador'
     }).format(dateValue);
+  };
+
+  const formatMoneda = (valor) =>
+    `$${Number(valor || 0).toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const abrirVistaCotizacion = (solicitud) => setSolicitudVista(solicitud);
+  const cerrarVistaCotizacion = () => setSolicitudVista(null);
+
+  const imprimirVistaCotizacion = () => {
+    if (!solicitudVista) return;
+
+    const printContent = document.getElementById('cotizacion-print-area').innerHTML;
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.write('<html><head><title>Cotizacion_' + (solicitudVista?.correlativo || 'Documento') + '</title>');
+    document.querySelectorAll('link[rel="stylesheet"], style').forEach((styleNode) => {
+      doc.write(styleNode.outerHTML);
+    });
+    doc.write('</head><body class="bg-white p-8">');
+    doc.write(printContent);
+    doc.write('</body></html>');
+    doc.close();
+
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      document.body.removeChild(iframe);
+    }, 500);
+  };
+
+  const obtenerEstadoAccion = (estado) => {
+    if (estado === 'Cotizado Parcial') return 'Cotizado Parcial';
+    if (estado === 'Cotizado') return 'Cotizado';
+    return 'Cotizar';
+  };
+
+  const obtenerColorAccion = (estado) => {
+    if (estado === 'Cotizado Parcial') return 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700';
+    if (estado === 'Cotizado') return 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200';
+    return 'bg-white border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white';
+  };
+
+  const calcularItemsCotizados = (solicitud) => solicitud.productos?.filter((p) => Number(p.fob) > 0) || [];
+
+  const formatearTotal = (solicitud, mod) => {
+    const itemsConPrecio = calcularItemsCotizados(solicitud);
+    const total = itemsConPrecio.reduce((acc, p) => {
+      const factor = mod === 'A' ? (solicitud.factorA || 1) : (solicitud.factorM || 1.08);
+      const margen = mod === 'A' ? (p.fva || 1.3) : (p.fvm || 1.25);
+      return acc + (Number(p.fob || 0) * factor * margen * Number(p.cant || 0));
+    }, 0);
+    return formatMoneda(total);
   };
 
   return (
@@ -38,14 +102,10 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {solicitudes.map((s) => {
-              // Calculamos totales basados en ítems que YA tienen precio (fob > 0)
-              const itemsConPrecio = s.productos?.filter(p => Number(p.fob) > 0) || [];
-              
-              const totalA = itemsConPrecio.reduce((acc, p) => 
-                acc + (p.fob * (s.factorA || 1) * (p.fva || 1.3) * p.cant), 0);
-              
-              const totalM = itemsConPrecio.reduce((acc, p) => 
-                acc + (p.fob * (s.factorM || 1.08) * (p.fvm || 1.25) * p.cant), 0);
+              const itemsConPrecio = calcularItemsCotizados(s);
+              const estadoVisible = s.estado === 'Cotizado Parcial' ? 'Cotizado Parcial' : s.estado === 'Cotizado' ? 'Cotizado' : 'Pendiente';
+              const totalA = formatearTotal(s, 'A');
+              const totalM = formatearTotal(s, 'M');
 
               return (
                 <tr key={s.id} className="hover:bg-slate-50 transition-colors">
@@ -66,10 +126,13 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   </td>
                   <td className="p-4">
                     <div className="flex flex-col items-center gap-1">
-                      {totalA > 0 ? (
+                      {itemsConPrecio.length > 0 ? (
                         <>
-                          <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">A: ${totalA.toFixed(2)}</span>
-                          <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">M: ${totalM.toFixed(2)}</span>
+                          <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">A: {totalA}</span>
+                          <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">M: {totalM}</span>
+                          {estadoVisible === 'Cotizado Parcial' && (
+                            <span className="text-[9px] font-black text-blue-600 uppercase italic tracking-widest">Parcial</span>
+                          )}
                         </>
                       ) : (
                         <span className="text-[10px] font-black text-slate-300 uppercase italic tracking-widest">Sin cotizar</span>
@@ -82,24 +145,24 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   <td className="p-4 text-center">
                     <button 
                       onClick={() => {
-                        if (!readOnly) navigate(`/calculadora/${s.id}`);
+                        if (!readOnly) {
+                          if (s.estado === 'Cotizado' || s.estado === 'Cotizado Parcial') {
+                            abrirVistaCotizacion(s);
+                          } else {
+                            navigate(`/calculadora/${s.id}`);
+                          }
+                        }
                       }}
                       disabled={readOnly}
                       className={`px-5 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border uppercase ${
                         readOnly
                           ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                          : s.estado === 'Cotizado' 
-                            ? 'bg-slate-100 text-slate-400 border-slate-200' 
-                            : 'bg-white border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white'
+                          : obtenerColorAccion(s.estado)
                       }`}
                     >
                       {readOnly
                         ? 'Ver'
-                        : s.estado === 'Cotizado'
-                          ? 'Revisar'
-                          : s.estado === 'Cotizado Parcial'
-                            ? 'Continuar'
-                            : 'Cotizar'}
+                        : obtenerEstadoAccion(s.estado)}
                     </button>
                   </td>
                 </tr>
@@ -108,6 +171,41 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
           </tbody>
         </table>
       </div>
+
+      {solicitudVista && (
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-100 rounded-4xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="bg-slate-900 px-8 py-5 flex items-center justify-between text-white">
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Documento Oficial</p>
+                <h3 className="text-lg font-black tracking-tight uppercase">Vista previa de cotización</h3>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={imprimirVistaCotizacion}
+                  className="bg-violet-500 hover:bg-violet-600 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer"
+                >
+                  <Printer size={14} /> Imprimir / PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={cerrarVistaCotizacion}
+                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2.5 rounded-full transition-all cursor-pointer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-8 overflow-y-auto flex-1 bg-slate-50">
+              <div id="cotizacion-print-area" className="bg-white shadow-sm rounded-3xl p-1">
+                <CotizacionDocumento cotizacionData={solicitudVista} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

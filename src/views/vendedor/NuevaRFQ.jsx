@@ -28,6 +28,7 @@ export const NuevaRFQ = ({ onFinalizar }) => {
   const [errorMarca, setErrorMarca] = useState(['']);
   const [mostrarSugerenciasMarca, setMostrarSugerenciasMarca] = useState([false]);
   const [loading, setLoading] = useState(false);
+  const [validez, setValidez] = useState('5 días hábiles');
   const debounceRef = useRef(null);
   const marcasDebounceRef = useRef([]);
 
@@ -258,6 +259,7 @@ export const NuevaRFQ = ({ onFinalizar }) => {
       const dataParaGuardar = {
         cliente: clienteNormalizado,
         correlativo,
+        validez,
         vendedorId: auth.currentUser.uid,
         vendedorEmail: auth.currentUser.email,
         vendedorNombre: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
@@ -366,6 +368,18 @@ export const NuevaRFQ = ({ onFinalizar }) => {
           <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
             Si el cliente no existe, se crea automaticamente al enviar la solicitud.
           </p>
+
+          <div className="mt-6 border-t border-slate-100 pt-4">
+            <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Validez de la Oferta</label>
+            <input 
+              type="text" 
+              required
+              className="w-full text-lg font-bold outline-none border-b-2 border-slate-100 focus:border-emerald-500 transition-all pb-1 text-slate-700"
+              placeholder="EJ: 5 DÍAS HÁBILES, 15 DÍAS"
+              value={validez}
+              onChange={(e) => setValidez(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Listado de Productos */}

@@ -100,7 +100,7 @@ export const Calculadora = ({ onGuardar }) => {
       <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex items-center gap-8">
         <div className="flex-1">
           <h2 className="text-2xl font-black text-slate-800 tracking-tight italic">Calculadora de Márgenes</h2>
-          <p className="text-slate-500 text-xs uppercase font-bold">{rfq?.correlativo} — {rfq?.cliente}</p>
+          <p className="text-slate-500 text-xs uppercase font-bold">{rfq?.correlativo} — {rfq?.cliente} {rfq?.validez && `— Validez: ${rfq.validez}`}</p>
         </div>
         
         <div className="flex gap-4 bg-slate-900 p-4 rounded-xl shadow-lg shadow-slate-200">
@@ -231,7 +231,7 @@ export const Calculadora = ({ onGuardar }) => {
       </div>
 
       {/* ACCIONES INFERIORES */}
-      <div className="fixed bottom-0 right-0 left-0 bg-white p-4 border-t border-slate-200 flex justify-end gap-6 z-40 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
+      <div className="fixed bottom-0 right-0 left-0 bg-white p-4 border-t border-slate-200 flex justify-end items-center gap-6 z-40 shadow-[0_-10px_20px_rgba(0,0,0,0.05)]">
         <div className="flex items-center gap-4 mr-auto pl-4">
           {tienePendientesGlobales && (
             <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100 animate-pulse">
@@ -240,6 +240,39 @@ export const Calculadora = ({ onGuardar }) => {
             </div>
           )}
         </div>
+
+        {(() => {
+          const totals = items.reduce((acc, p) => {
+            if (!p.selected) return acc;
+            const currentFob = Number(p.fob || 0);
+            const fA = factorA;
+            const landedA = currentFob * fA;
+            const ventaA = landedA * Number(p.fva || 1.30);
+            
+            const landedM = currentFob * factorM_Standard;
+            const ventaM = landedM * Number(p.fvm || 1.25);
+            
+            acc.aereo += ventaA * Number(p.cant || 0);
+            acc.maritimo += ventaM * Number(p.cant || 0);
+            return acc;
+          }, { aereo: 0, maritimo: 0 });
+
+          const tAconIva = totals.aereo * 1.13;
+          const tMconIva = totals.maritimo * 1.13;
+
+          return (
+            <div className="flex gap-4 border-r border-slate-200 pr-6 mr-2 text-xs font-bold uppercase text-slate-500">
+              <div className="text-right">
+                <span className="block text-[8px] font-black text-slate-400">Subtotal Aéreo (+IVA)</span>
+                <span className="text-sm font-black text-blue-600">${tAconIva.toFixed(2)}</span>
+              </div>
+              <div className="text-right border-l border-slate-100 pl-4">
+                <span className="block text-[8px] font-black text-slate-400">Subtotal Marítimo (+IVA)</span>
+                <span className="text-sm font-black text-teal-600">${tMconIva.toFixed(2)}</span>
+              </div>
+            </div>
+          );
+        })()}
 
         <button onClick={() => navigate('/compras')} className="text-slate-400 hover:text-slate-600 font-bold transition-colors">Descartar</button>
         

@@ -145,3 +145,56 @@ aside {
   background-color: var(--tf-color-sidebar);
   color: #ffffff;
 }
+
+@media print {
+  @page {
+    size: letter;
+    margin: 8mm;
+  }
+
+  html, body, #root {
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cotizacion-documento {
+    width: 108% !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #111111 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    transform: scale(0.92);
+    transform-origin: top center;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cotizacion-documento,
+  .cotizacion-documento * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cotizacion-documento table {
+    border-collapse: collapse !important;
+    page-break-inside: avoid;
+  }
+
+  .cotizacion-documento thead {
+    display: table-header-group;
+  }
+
+  .cotizacion-documento tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+}
