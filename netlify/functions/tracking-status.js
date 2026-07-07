@@ -273,13 +273,18 @@ async function fetchTrackingFromDhl(trackingNumber) {
     headers['DHL-API-Key'] = apiKey;
     headers['x-api-key'] = apiKey;
   }
-  if (apiKey && apiSecret) {
-    headers.Authorization = `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString('base64')}`;
-  }
+  // Remove Basic Auth header to prevent gateway conflicts with DHL-API-Key
+  // if (apiKey && apiSecret) {
+  //   headers.Authorization = `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString('base64')}`;
+  // }
 
   const response = await fetch(url.toString(), { method: 'GET', headers });
   if (!response.ok) {
-    throw new Error(`DHL tracking error: ${response.status}`);
+    let errorDetail = '';
+    try {
+      errorDetail = await response.text();
+    } catch (_) {}
+    throw new Error(`DHL tracking error: ${response.status} - ${errorDetail}`);
   }
 
   const data = await response.json();
@@ -430,6 +435,7 @@ export const handler = async (event) => {
       }),
     };
   } catch (error) {
+    console.error("Error en tracking-status handler:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({

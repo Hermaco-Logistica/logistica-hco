@@ -423,6 +423,9 @@ export const ShipmentTrackerCompact = ({ shipmentData }) => {
     : status?.location?.address?.countryCode
       || latestEvent?.location?.address?.countryCode;
   const locationText = [location, country].filter(Boolean).join(' - ');
+  const orderRef = isDsv
+    ? raw?.references?.find((ref) => ref?.type === 'ORDER_NUMBER' && ref?.value !== 'OC')?.value
+    : null;
 
   return (
     <div className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
@@ -430,7 +433,7 @@ export const ShipmentTrackerCompact = ({ shipmentData }) => {
         <div className="shrink-0 mt-0.5">
           {isDsv ? getDsvIcon(latestEvent?.raw || {}) : getDhlHeaderIcon(statusCode)}
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 w-full">
           <p className="text-[10px] font-black text-slate-700 uppercase leading-tight">{label}</p>
           {locationText && (
             <p className="text-[9px] font-bold text-slate-400 mt-1">{locationText}</p>
@@ -439,6 +442,11 @@ export const ShipmentTrackerCompact = ({ shipmentData }) => {
             <p className="text-[9px] font-bold text-slate-400 mt-1">
               Ultima actualizacion: {isDsv ? dsvTimestamp : timestamp}
             </p>
+          )}
+          {orderRef && (
+            <div className="text-[9px] font-bold text-slate-500 uppercase mt-1 border-t border-slate-200/60 pt-1">
+              Orden de compra: <span className="text-slate-800 font-black">{orderRef}</span>
+            </div>
           )}
         </div>
       </div>
