@@ -16,6 +16,7 @@ import {
 
 export const DashboardPedidos = ({ role }) => {
   const [itemsPedidos, setItemsPedidos] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [ordenesExistentes, setOrdenesExistentes] = useState([]);
   const [seleccionados, setSeleccionados] = useState([]);
   const [showAsignador, setShowAsignador] = useState(false);
@@ -79,6 +80,7 @@ export const DashboardPedidos = ({ role }) => {
                 correlativo: data.correlativo || 'S/N',
                 cliente: data.cliente,
                 fechaPedido: data.fechaPedido || null,
+                fechaReferencia: data.fechaPedido || data.fechaCreacion || data.fechaCotizacion || null,
                 fobReal: p.fobReal || p.fob || 0,
                 fechaCompromiso: p.fechaCompromiso, 
                 diasPrometidos: p.diasPrometidos
@@ -87,11 +89,28 @@ export const DashboardPedidos = ({ role }) => {
           });
         }
       });
+      tempItems.sort((a, b) => {
+        const getMs = (val) => {
+          if (!val) return 0;
+          if (typeof val === 'object') {
+            if (typeof val.toDate === 'function') {
+              try { return val.toDate().getTime(); } catch(e) {}
+            }
+            if (typeof val.seconds === 'number') {
+              return val.seconds * 1000;
+            }
+          }
+          const ms = Date.parse(val);
+          return isNaN(ms) ? 0 : ms;
+        };
+        return getMs(b.fechaReferencia) - getMs(a.fechaReferencia);
+      });
       setItemsPedidos(tempItems);
+      setCurrentPage(1);
     });
 
     return () => { unsubOCs(); unsubSolicitudes(); };
-  }, [role]);
+  }, [role, auth.currentUser?.uid]);
 
   useEffect(() => {
     const termino = normalizarNombreProveedor(nuevaOC.proveedor);
@@ -374,6 +393,10 @@ export const DashboardPedidos = ({ role }) => {
     } catch (error) { console.error(error); }
   };
 
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(itemsPedidos.length / itemsPerPage);
+  const paginatedItems = itemsPedidos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <div className="max-w-[1600px] mx-auto animate-in fade-in duration-500 pb-10">
       <div className="flex justify-between items-end mb-8">
@@ -489,7 +512,7 @@ export const DashboardPedidos = ({ role }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {itemsPedidos.map((item) => {
+            {paginatedItems.map((item) => {
               const uId = `${item.idRFQ}-${item.indexOriginal}`;
               const ocInfo = getInfoOC(item.numOC);
               const ocDetalle = ordenesExistentes.find(o => o.numeroOC === item.numOC);
@@ -571,6 +594,28 @@ export const DashboardPedidos = ({ role }) => {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-6 px-6 py-4 bg-slate-900 rounded-[1.5rem] text-white">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
+          >
+            Anterior
+          </button>
+          <span className="text-xs font-bold uppercase tracking-widest text-slate-300">
+            Página {currentPage} de {totalPages} ({itemsPedidos.length} ítems)
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
 
       {trackingModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">

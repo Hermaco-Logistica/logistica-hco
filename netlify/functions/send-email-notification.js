@@ -9,15 +9,9 @@ export const handler = async (event) => {
   }
 
   try {
-    const { pdf, to, cc, subject, filename, bodyHtml } = JSON.parse(event.body || '{}');
+    const { to, cc, subject, bodyHtml } = JSON.parse(event.body || '{}');
 
-    if (!pdf) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: 'Falta el contenido del PDF en base64' }),
-      };
-    }
-    if (!to) {
+    if (!to || !to.length) {
       return {
         statusCode: 400,
         body: JSON.stringify({ message: 'Falta el destinatario (to)' }),
@@ -35,19 +29,13 @@ export const handler = async (event) => {
     const resend = new Resend(apiKey);
 
     const emailPayload = {
-      from: 'compras@hermaco.net <compras@hermaco.net>',
+      from: 'Sistema Logistica Hermaco <compras@hermaco.net>',
       to: Array.isArray(to) ? to : [to],
-      subject: subject || 'Cotización de Pedido',
-      html: bodyHtml || '<p>Adjunto encontrará la cotización del pedido solicitado.</p>',
-      attachments: [
-        {
-          filename: filename || 'cotizacion.pdf',
-          content: pdf,
-        },
-      ],
+      subject: subject || 'Notificación del Sistema',
+      html: bodyHtml || '<p>Notificación automática de Logística Hermaco.</p>',
     };
 
-    if (cc) {
+    if (cc && cc.length) {
       emailPayload.cc = Array.isArray(cc) ? cc : [cc];
     }
 

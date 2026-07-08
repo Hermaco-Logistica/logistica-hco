@@ -7,6 +7,7 @@ import CotizacionDocumento from '../../components/CotizacionDocumento';
 export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const navigate = useNavigate();
   const [solicitudVista, setSolicitudVista] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const formatFechaHora = (timestamp) => {
     if (!timestamp?.toDate) return '---';
@@ -24,6 +25,28 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
   const abrirVistaCotizacion = (solicitud) => setSolicitudVista(solicitud);
   const cerrarVistaCotizacion = () => setSolicitudVista(null);
+
+  // Ordenar de más reciente a más antigua
+  const sortedSolicitudes = [...solicitudes].sort((a, b) => {
+    const getMs = (val) => {
+      if (!val) return 0;
+      if (typeof val === 'object') {
+        if (typeof val.toDate === 'function') {
+          try { return val.toDate().getTime(); } catch(e) {}
+        }
+        if (typeof val.seconds === 'number') {
+          return val.seconds * 1000;
+        }
+      }
+      const ms = Date.parse(val);
+      return isNaN(ms) ? 0 : ms;
+    };
+    return getMs(b.fechaS) - getMs(a.fechaS);
+  });
+
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(sortedSolicitudes.length / itemsPerPage);
+  const paginatedSolicitudes = sortedSolicitudes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const imprimirVistaCotizacion = () => {
     if (!solicitudVista) return;
@@ -101,7 +124,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {solicitudes.map((s) => {
+            {paginatedSolicitudes.map((s) => {
               const itemsConPrecio = calcularItemsCotizados(s);
               const estadoVisible = s.estado === 'Cotizado Parcial' ? 'Cotizado Parcial' : s.estado === 'Cotizado' ? 'Cotizado' : 'Pendiente';
               const totalA = formatearTotal(s, 'A');
@@ -171,6 +194,28 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-6 px-6 py-4 bg-slate-900 rounded-[1.5rem] text-white">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
+          >
+            Anterior
+          </button>
+          <span className="text-xs font-bold uppercase tracking-widest text-slate-300">
+            Página {currentPage} de {totalPages} ({solicitudes.length} solicitudes)
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
 
       {solicitudVista && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { auth, db, provider } from './firebase'; 
 import { onAuthStateChanged, signOut, signInWithPopup } from 'firebase/auth';
-import { collection, query, onSnapshot, where, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, where, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { emailConfig } from './config/emailConfig';
 
 // Componentes y Vistas
 import { Sidebar } from './components/Sidebar';
@@ -62,15 +63,29 @@ function App() {
     } catch (e) { console.error(e); }
   };
 
-  const handleGuardarCotizacion = async (items, fa, fm, fl, ad, rfqId) => {
+  const handleGuardarCotizacion = async (items, fa, fm, fl, ad, rfqId, pdfBase64) => {
     try {
       if (!rfqId) throw new Error("ID de RFQ no válido");
       
+      const rfqDocRef = doc(db, "solicitudes", rfqId);
+      const rfqSnap = await getDoc(rfqDocRef);
+      let correlativo = "N/A";
+      let cliente = "N/A";
+      let vendedorNombre = "Vendedor";
+      let vendedorEmail = "";
+      if (rfqSnap.exists()) {
+        const rfqData = rfqSnap.data();
+        correlativo = rfqData.correlativo || "N/A";
+        cliente = rfqData.cliente || "N/A";
+        vendedorNombre = rfqData.vendedorNombre || "Vendedor";
+        vendedorEmail = rfqData.vendedorEmail || "";
+      }
+
       // LÓGICA DE ESTADO: Si hay algún item con FOB 0 o vacío, es Parcial
       const esParcial = items.some(p => !p.fob || Number(p.fob) <= 0);
       const estadoFinal = esParcial ? 'Cotizado Parcial' : 'Cotizado';
       
-      await updateDoc(doc(db, "solicitudes", rfqId), {
+      await updateDoc(rfqDocRef, {
         productos: items, 
         factorA: fa, 
         factorM: fm, 
@@ -80,11 +95,50 @@ function App() {
         fechaCotizacion: new Date()
       });
       
+      // Enviar correo automático con PDF adjunto (requerido para éxito)
+      const mailConfig = emailConfig.cotizacionFinalizada;
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      
+      // En local/sandbox, forzar destinatario a compras@hermaco.net
+      // En prod va al vendedor asignado
+      const destinatarioTo = isLocal ? (mailConfig.to || []) : (vendedorEmail ? [vendedorEmail] : (mailConfig.to || []));
+      
+      // Si estamos en local, agregamos a rvides@hermaco.net en CC para desarrollo.
+      // En prod usamos la lista de CC real configurada
+      const ccEmails = isLocal ? ["rvides@hermaco.net"] : (mailConfig.cc || []);
+      
+      if (destinatarioTo.length && pdfBase64) {
+        const subject = `Cotización #${correlativo}`;
+        const bodyHtml = `
+          <p>Estimado ${vendedorNombre},</p>
+          <p>Adjunto encontrará su cotización.</p>
+          <p>Saludos cordiales.</p>
+        `;
+        
+        const mailRes = await fetch('/.netlify/functions/send-quotation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            pdf: pdfBase64,
+            to: destinatarioTo,
+            cc: ccEmails,
+            subject,
+            filename: `cotizacion_${correlativo}.pdf`,
+            bodyHtml
+          })
+        });
+
+        if (!mailRes.ok) {
+          const errData = await mailRes.json().catch(() => ({}));
+          throw new Error(errData.detail || errData.message || "Error al enviar el correo");
+        }
+      }
+
       alert(esParcial ? "Avance Parcial Guardado" : "Cotización Finalizada");
       return true;
     } catch (e) { 
       console.error(e); 
-      alert("Error al guardar cotización");
+      alert("Error al guardar cotización: " + e.message);
       return false;
     }
   };
@@ -118,9 +172,9 @@ function App() {
                   <Route 
                     path="/calculadora/:id" 
                     element={
-                      <Calculadora onGuardar={(items, fa, fm, fl, ad) => {
+                      <Calculadora onGuardar={(items, fa, fm, fl, ad, pdfBase64) => {
                         const rfqId = window.location.pathname.split('/').pop();
-                        return handleGuardarCotizacion(items, fa, fm, fl, ad, rfqId);
+                        return handleGuardarCotizacion(items, fa, fm, fl, ad, rfqId, pdfBase64);
                       }} />
                     } 
                   />

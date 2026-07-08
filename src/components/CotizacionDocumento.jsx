@@ -197,17 +197,7 @@ export default function CotizacionDocumento({ cotizacionData }) {
                 Notas adicionales pueden decirse en correo.
               </div>
             </td>
-            <td style={{ width: '38%', verticalAlign: 'top', paddingRight: '14px' }}>
-              <div style={{ fontWeight: 'bold', fontSize: '11px', marginBottom: '4px' }}>Nota:</div>
-              <div style={{ fontSize: '11px', lineHeight: '1.55', color: '#222222' }}>
-                De aceptarse esta oferta tendrá que subir el pedido al formulario de pedidos, caso contrario <b>NO SERÁ TOMADO EN CUENTA</b>.
-                <br />
-                Link: {' '}
-                <a href={linkFormulario} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', textDecoration: 'underline' }}>
-                  Formulario Pedidos
-                </a>
-              </div>
-            </td>
+            
             <td style={{ width: '22%', verticalAlign: 'top', padding: '0', backgroundColor: '#f2c52e' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
                 <tbody>

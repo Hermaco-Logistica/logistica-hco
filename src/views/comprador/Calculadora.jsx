@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
+import html2pdf from 'html2pdf.js';
+import CotizacionDocumento from '../../components/CotizacionDocumento';
 
 export const Calculadora = ({ onGuardar }) => {
   const { id } = useParams();
@@ -13,6 +15,7 @@ export const Calculadora = ({ onGuardar }) => {
   const [flete, setFlete] = useState(0);
   const [aduana, setAduana] = useState(0);
   const [factorA, setFactorA] = useState(1);
+  const [guardando, setGuardando] = useState(false);
   const factorM_Standard = 1.08;
 
   useEffect(() => {
@@ -75,6 +78,9 @@ export const Calculadora = ({ onGuardar }) => {
   };
 
   const ejecutarGuardado = async () => {
+    if (guardando) return;
+    setGuardando(true);
+    
     // Procesamos todos los ítems para no perder los que no estaban seleccionados
     const itemsFinales = items.map(p => ({
       ...p,
@@ -82,7 +88,26 @@ export const Calculadora = ({ onGuardar }) => {
       estadoItem: Number(p.fob) > 0 ? 'Cotizado' : 'Pendiente'
     }));
 
-    const exito = await onGuardar(itemsFinales, factorA, factorM_Standard, flete, aduana);
+    let pdfBase64 = '';
+    const element = document.getElementById('cotizacion-pdf-area');
+    if (element) {
+      const opt = {
+        margin:       0.3,
+        filename:     `cotizacion_${rfq?.correlativo || 'temp'}.pdf`,
+        image:        { type: 'jpeg', quality: 0.95 },
+        html2canvas:  { scale: 1.5, useCORS: true, logging: false },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      try {
+        const pdfDataUri = await html2pdf().from(element).set(opt).outputPdf('datauristring');
+        pdfBase64 = pdfDataUri.split(',')[1];
+      } catch (e) {
+        console.error("Error al generar PDF:", e);
+      }
+    }
+
+    const exito = await onGuardar(itemsFinales, factorA, factorM_Standard, flete, aduana, pdfBase64);
+    setGuardando(false);
     if (exito) {
       navigate('/compras');
     }
@@ -286,6 +311,20 @@ export const Calculadora = ({ onGuardar }) => {
           {tienePendientesGlobales && <span className="text-[9px] opacity-80 mt-1 uppercase font-bold">(Pendientes restantes)</span>}
         </button>
       </div>
+      
+      {/* Área oculta para generación de PDF */}
+      {rfq && (
+        <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+          <div id="cotizacion-pdf-area">
+            <CotizacionDocumento cotizacionData={{
+              ...rfq,
+              productos: items,
+              factorA: factorA,
+              factorM: factorM_Standard
+            }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
