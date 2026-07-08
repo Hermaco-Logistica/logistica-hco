@@ -119,7 +119,6 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
     }
     const indicesSeleccionados = Object.keys(seleccionados).filter(idx => seleccionados[idx]);
     if (indicesSeleccionados.length === 0) return alert("Selecciona productos para el pedido.");
-    if (!linkOC) return alert("Ingresa el link de la Orden de Compra.");
 
     setEnviandoPedido(true);
     try {
@@ -155,8 +154,8 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
         cliente: rfq.cliente,
         vendedorNombre: rfq.vendedorNombre,
         productos: productosParaPedido,
-        linkOC,
-        notasPedido,
+        linkOC: linkOC || "",
+        notasPedido: notasPedido || "",
         fechaCreacion: serverTimestamp(),
         estadoGeneral: 'Procesando'
       });
@@ -164,7 +163,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
       await updateDoc(doc(db, "solicitudes", id), {
         estado: 'Pedido',
         productos: productosActualizadosParaRFQ,
-        linkOC,
+        linkOC: linkOC || "",
         fechaPedido: serverTimestamp()
       });
 
