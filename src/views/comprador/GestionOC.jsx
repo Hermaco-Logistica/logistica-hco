@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, onSnapshot, doc, updateDoc, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {
   Truck, Globe, ChevronRight, ArrowLeft, Calendar, Hash,
-  AlertTriangle, RefreshCw, Loader2
+  AlertTriangle, RefreshCw, Loader2, Calendar as CalendarIcon
 } from 'lucide-react';
 import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/trackingStatusService';
 import { ShipmentTracker } from '../../components/ShipmentTracker';
@@ -15,6 +15,29 @@ export const GestionOC = ({ readOnly = false }) => {
   const [trackingData, setTrackingData] = useState(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState('');
+
+  // Estados de filtros para Gestión de OC
+  const [searchOCNum, setSearchOCNum] = useState('');
+  const [filterProveedor, setFilterProveedor] = useState('');
+  const [filterEstadoLogistica, setFilterEstadoLogistica] = useState('');
+  
+  // Rango de Fecha Creación (Calendario Popover)
+  const [fechaInicio, setFechaInicio] = useState(null);
+  const [fechaFin, setFechaFin] = useState(null);
+  const [mostrarCalendario, setMostrarCalendario] = useState(false);
+  const [mesActual, setMesActual] = useState(new Date());
+  const refCalendario = useRef(null);
+
+  // Cerrar popover al hacer clic fuera
+  useEffect(() => {
+    const clickFuera = (e) => {
+      if (refCalendario.current && !refCalendario.current.contains(e.target)) {
+        setMostrarCalendario(false);
+      }
+    };
+    document.addEventListener('mousedown', clickFuera);
+    return () => document.removeEventListener('mousedown', clickFuera);
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, "ordenesCompra"), orderBy("fechaCreacion", "desc"));
@@ -33,7 +56,6 @@ export const GestionOC = ({ readOnly = false }) => {
     setTrackingInput(ocSeleccionada?.tracking || '');
     setTrackingData(null);
     setTrackingError('');
-    
   }, [ocSeleccionada?.id, ocSeleccionada?.tracking]);
 
   const cambiarEstado = async (e, id, nuevoEstado) => {
@@ -99,10 +121,83 @@ export const GestionOC = ({ readOnly = false }) => {
     }).format(dateValue);
   };
 
+  // Dinámicos únicos para filtros
+  const proveedoresDisponibles = Array.from(new Set(ordenes.map(o => o.proveedor).filter(Boolean)));
+  const estadosLogisticaDisponibles = ['Pedido', 'Tránsito', 'Aduana', 'Recibido'];
+
+  // Calendario popover helpers
+  const handleSelectDia = (diaDate) => {
+    if (!fechaInicio || (fechaInicio && fechaFin)) {
+      setFechaInicio(diaDate);
+      setFechaFin(null);
+    } else if (fechaInicio && !fechaFin) {
+      if (diaDate < fechaInicio) {
+        setFechaInicio(diaDate);
+      } else {
+        setFechaFin(diaDate);
+        setMostrarCalendario(false);
+      }
+    }
+  };
+
+  const getDiasDelMes = () => {
+    const año = mesActual.getFullYear();
+    const mes = mesActual.getMonth();
+    const primerDiaSemana = new Date(año, mes, 1).getDay();
+    const totalDias = new Date(año, mes + 1, 0).getDate();
+    const dias = [];
+    for (let i = 0; i < primerDiaSemana; i++) dias.push(null);
+    for (let i = 1; i <= totalDias; i++) dias.push(new Date(año, mes, i));
+    return dias;
+  };
+
+  const cambiarMes = (offset) => {
+    setMesActual(new Date(mesActual.getFullYear(), mesActual.getMonth() + offset, 1));
+  };
+
+  const formattedRangoText = () => {
+    if (!fechaInicio) return 'Elegir Rango / Día';
+    const opt = { day: '2-digit', month: 'short' };
+    const iniStr = fechaInicio.toLocaleDateString('es-ES', opt);
+    if (!fechaFin) return iniStr;
+    return `${iniStr} - ${fechaFin.toLocaleDateString('es-ES', opt)}`;
+  };
+
+  // Aplicar filtros a las órdenes
+  const filteredOrdenes = ordenes.filter(oc => {
+    // Buscar por Orden NO
+    if (searchOCNum) {
+      const term = searchOCNum.toLowerCase();
+      if (!(oc.numeroOC || '').toLowerCase().includes(term)) return false;
+    }
+
+    // Filtrar por proveedor
+    if (filterProveedor && oc.proveedor !== filterProveedor) return false;
+
+    // Filtrar por estado logístico
+    if (filterEstadoLogistica && oc.estado !== filterEstadoLogistica) return false;
+
+    // Filtrar por Rango de fecha de creación
+    if (fechaInicio || fechaFin) {
+      if (!oc.fechaCreacion) return false;
+      const dateCreacion = oc.fechaCreacion.toDate ? oc.fechaCreacion.toDate() : new Date(oc.fechaCreacion);
+      const dComp = new Date(dateCreacion.getFullYear(), dateCreacion.getMonth(), dateCreacion.getDate());
+
+      if (fechaInicio) {
+        const dIni = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate());
+        if (dComp < dIni) return false;
+      }
+      if (fechaFin) {
+        const dFin = new Date(fechaFin.getFullYear(), fechaFin.getMonth(), fechaFin.getDate());
+        if (dComp > dFin) return false;
+      }
+    }
+
+    return true;
+  });
+
   // ─── VISTA DE DETALLE ────────────────────────────────────────────────────────
   if (ocSeleccionada) {
-    
-
     return (
       <div className="max-w-7xl mx-auto pb-20 animate-in slide-in-from-right duration-300">
         <button
@@ -113,7 +208,6 @@ export const GestionOC = ({ readOnly = false }) => {
         </button>
 
         <div className="bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden">
-
           {/* HEADER */}
           <div className="bg-slate-900 p-10 flex justify-between items-end">
             <div>
@@ -143,11 +237,8 @@ export const GestionOC = ({ readOnly = false }) => {
           </div>
 
           <div className="p-10">
-
             {/* ── SECCIÓN TRACKING ── */}
             <div className="mb-10 bg-slate-50 p-6 rounded-3xl border border-slate-100 shadow-inner">
-
-              {/* Fila: input + total */}
               <div className="flex items-start gap-6">
                 <div className="flex-1">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 mb-2">
@@ -182,7 +273,6 @@ export const GestionOC = ({ readOnly = false }) => {
                   )}
                 </div>
 
-                {/* Total */}
                 <div className="text-right shrink-0 pl-4 border-l border-slate-200">
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total de la Orden</p>
                   <p className="text-4xl font-black text-slate-900 tracking-tighter">
@@ -190,9 +280,7 @@ export const GestionOC = ({ readOnly = false }) => {
                   </p>
                 </div>
               </div>
-
             </div>
-            {/* ── FIN SECCIÓN TRACKING ── */}
 
             <ShipmentTracker shipmentData={trackingData} />
 
@@ -233,6 +321,99 @@ export const GestionOC = ({ readOnly = false }) => {
         <p className="text-slate-400 font-bold text-[11px] uppercase tracking-[0.3em]">Bandeja Logística de Compras</p>
       </div>
 
+      {/* Controles de Filtros */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar N° Orden</label>
+          <input 
+            type="text" 
+            placeholder="N° de OC..." 
+            value={searchOCNum}
+            onChange={(e) => setSearchOCNum(e.target.value)}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
+          />
+        </div>
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Proveedor</label>
+          <select 
+            value={filterProveedor} 
+            onChange={(e) => setFilterProveedor(e.target.value)}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+          >
+            <option value="">TODOS LOS PROVEEDORES</option>
+            {proveedoresDisponibles.map(prov => (
+              <option key={prov} value={prov}>{prov.toUpperCase()}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Estado Logístico</label>
+          <select 
+            value={filterEstadoLogistica} 
+            onChange={(e) => setFilterEstadoLogistica(e.target.value)}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+          >
+            <option value="">TODOS LOS ESTADOS</option>
+            {estadosLogisticaDisponibles.map(est => (
+              <option key={est} value={est}>{est.toUpperCase()}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Popover Rango de Fecha Creación */}
+        <div className="relative" ref={refCalendario}>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fecha Creación</label>
+          <div className="flex items-center gap-1 bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold cursor-pointer text-slate-700" onClick={() => setMostrarCalendario(!mostrarCalendario)}>
+            <CalendarIcon size={14} className="text-slate-400 shrink-0" />
+            <span className="truncate flex-1 select-none">{formattedRangoText()}</span>
+            {(fechaInicio || fechaFin) && (
+              <button onClick={(e) => { e.stopPropagation(); setFechaInicio(null); setFechaFin(null); }} className="hover:text-red-500 font-bold p-0.5">&times;</button>
+            )}
+          </div>
+
+          {mostrarCalendario && (
+            <div className="absolute right-0 mt-2 z-30 bg-white border border-slate-200 shadow-2xl rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+              <div className="flex items-center justify-between mb-4">
+                <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
+                <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
+                  {mesActual.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                </span>
+                <button type="button" onClick={() => cambiarMes(1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&gt;</button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-slate-400 mb-2">
+                <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1">
+                {getDiasDelMes().map((dia, idx) => {
+                  if (!dia) return <div key={`empty-${idx}`} />;
+                  const timestampDia = dia.getTime();
+                  const isInicio = fechaInicio && timestampDia === fechaInicio.getTime();
+                  const isFin = fechaFin && timestampDia === fechaFin.getTime();
+                  const isRango = fechaInicio && fechaFin && timestampDia > fechaInicio.getTime() && timestampDia < fechaFin.getTime();
+
+                  let bgClass = 'hover:bg-slate-100 text-slate-700';
+                  if (isInicio || isFin) bgClass = 'bg-slate-900 text-white rounded-full font-black';
+                  if (isRango) bgClass = 'bg-slate-100 text-slate-900 rounded-none';
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSelectDia(dia)}
+                      className={`text-center py-1 text-[11px] font-bold rounded-full transition-all ${bgClass}`}
+                    >
+                      {dia.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden">
         <table className="w-full border-collapse">
           <thead>
@@ -247,7 +428,7 @@ export const GestionOC = ({ readOnly = false }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {ordenes.map(oc => (
+            {filteredOrdenes.map(oc => (
               <tr
                 key={oc.id}
                 onClick={() => setOcSeleccionada(oc)}

@@ -37,6 +37,30 @@ export const DashboardPedidos = ({ role }) => {
   });
   const [trackingNotice, setTrackingNotice] = useState('');
 
+  // Estados para filtros (Compras/Ventas)
+  const [searchItemRef, setSearchItemRef] = useState('');
+  const [filterProveedor, setFilterProveedor] = useState('');
+  const [filterEstadoLogistico, setFilterEstadoLogistico] = useState('');
+  const [searchOCRef, setSearchOCRef] = useState('');
+
+  // Estados del calendario popover de fecha confirmado
+  const [fechaConfirmadoInicio, setFechaConfirmadoInicio] = useState(null);
+  const [fechaConfirmadoFin, setFechaConfirmadoFin] = useState(null);
+  const [mostrarCalendarioConfirmado, setMostrarCalendarioConfirmado] = useState(false);
+  const [mesActualConfirmado, setMesActualConfirmado] = useState(new Date());
+  const refCalendarioConfirmado = useRef(null);
+
+  // Cerrar popover al hacer clic fuera
+  useEffect(() => {
+    const clickFuera = (e) => {
+      if (refCalendarioConfirmado.current && !refCalendarioConfirmado.current.contains(e.target)) {
+        setMostrarCalendarioConfirmado(false);
+      }
+    };
+    document.addEventListener('mousedown', clickFuera);
+    return () => document.removeEventListener('mousedown', clickFuera);
+  }, []);
+
   const formatFechaHora = (value) => {
     if (!value) return '---';
     let dateValue = null;
@@ -393,9 +417,101 @@ export const DashboardPedidos = ({ role }) => {
     } catch (error) { console.error(error); }
   };
 
+  // Helpers para obtener proveedores y estados lógicos únicos disponibles
+  const proveedoresDisponibles = Array.from(new Set(itemsPedidos.map(item => {
+    const ocInfo = getInfoOC(item.numOC);
+    return ocInfo.prov;
+  }).filter(p => p && p !== 'Pendiente')));
+
+  const estadosLogicosDisponibles = ['Por Procesar', 'OC Generada', 'En Tránsito', 'Recibido (Almacén)', 'Entregado Cliente'];
+
+  // Calendario popover helpers
+  const handleSelectDiaConfirmado = (diaDate) => {
+    setCurrentPage(1);
+    if (!fechaConfirmadoInicio || (fechaConfirmadoInicio && fechaConfirmadoFin)) {
+      setFechaConfirmadoInicio(diaDate);
+      setFechaConfirmadoFin(null);
+    } else if (fechaConfirmadoInicio && !fechaConfirmadoFin) {
+      if (diaDate < fechaConfirmadoInicio) {
+        setFechaConfirmadoInicio(diaDate);
+      } else {
+        setFechaConfirmadoFin(diaDate);
+        setMostrarCalendarioConfirmado(false);
+      }
+    }
+  };
+
+  const getDiasDelMesConfirmado = () => {
+    const año = mesActualConfirmado.getFullYear();
+    const mes = mesActualConfirmado.getMonth();
+    const primerDiaSemana = new Date(año, mes, 1).getDay();
+    const totalDias = new Date(año, mes + 1, 0).getDate();
+    const dias = [];
+    for (let i = 0; i < primerDiaSemana; i++) dias.push(null);
+    for (let i = 1; i <= totalDias; i++) dias.push(new Date(año, mes, i));
+    return dias;
+  };
+
+  const cambiarMesConfirmado = (offset) => {
+    setMesActualConfirmado(new Date(mesActualConfirmado.getFullYear(), mesActualConfirmado.getMonth() + offset, 1));
+  };
+
+  const formattedRangoConfirmadoText = () => {
+    if (!fechaConfirmadoInicio) return 'Elegir Rango / Día';
+    const opt = { day: '2-digit', month: 'short' };
+    const iniStr = fechaConfirmadoInicio.toLocaleDateString('es-ES', opt);
+    if (!fechaConfirmadoFin) return iniStr;
+    return `${iniStr} - ${fechaConfirmadoFin.toLocaleDateString('es-ES', opt)}`;
+  };
+
+  // Filtrado de items
+  const filteredItems = itemsPedidos.filter(item => {
+    const ocInfo = getInfoOC(item.numOC);
+
+    // Buscar Item / Referencia / Cliente
+    if (searchItemRef) {
+      const term = searchItemRef.toLowerCase();
+      const matchDesc = (item.descripcion || item.desc || '').toLowerCase().includes(term);
+      const matchCorrelativo = (item.correlativo || '').toLowerCase().includes(term);
+      const matchCliente = (item.cliente || '').toLowerCase().includes(term);
+      if (!matchDesc && !matchCorrelativo && !matchCliente) return false;
+    }
+
+    // Filtrar por proveedor
+    if (filterProveedor && ocInfo.prov !== filterProveedor) return false;
+
+    // Filtrar por estado logístico
+    if (filterEstadoLogistico && ocInfo.label !== filterEstadoLogistico) return false;
+
+    // Buscar OC Ref
+    if (searchOCRef) {
+      const term = searchOCRef.toLowerCase();
+      const matchOC = (item.numOC || '').toLowerCase().includes(term);
+      if (!matchOC) return false;
+    }
+
+    // Rango de Fecha Confirmado (fechaPedido)
+    if (fechaConfirmadoInicio || fechaConfirmadoFin) {
+      if (!item.fechaPedido) return false;
+      const dateConfirmado = item.fechaPedido.toDate ? item.fechaPedido.toDate() : new Date(item.fechaPedido);
+      const dComp = new Date(dateConfirmado.getFullYear(), dateConfirmado.getMonth(), dateConfirmado.getDate());
+
+      if (fechaConfirmadoInicio) {
+        const dIni = new Date(fechaConfirmadoInicio.getFullYear(), fechaConfirmadoInicio.getMonth(), fechaConfirmadoInicio.getDate());
+        if (dComp < dIni) return false;
+      }
+      if (fechaConfirmadoFin) {
+        const dFin = new Date(fechaConfirmadoFin.getFullYear(), fechaConfirmadoFin.getMonth(), fechaConfirmadoFin.getDate());
+        if (dComp > dFin) return false;
+      }
+    }
+
+    return true;
+  });
+
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(itemsPedidos.length / itemsPerPage);
-  const paginatedItems = itemsPedidos.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
     <div className="max-w-[1600px] mx-auto animate-in fade-in duration-500 pb-10">
@@ -413,6 +529,109 @@ export const DashboardPedidos = ({ role }) => {
              <LinkIcon size={16} /> Vincular Selección ({seleccionados.length})
            </button>
         )}
+      </div>
+
+      {/* Panel de Filtros para Seguimiento de Pedidos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (Ítem / Ref / Cliente)</label>
+          <input 
+            type="text" 
+            placeholder="Escribe para buscar..." 
+            value={searchItemRef}
+            onChange={(e) => { setSearchItemRef(e.target.value); setCurrentPage(1); }}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
+          />
+        </div>
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Proveedor</label>
+          <select 
+            value={filterProveedor} 
+            onChange={(e) => { setFilterProveedor(e.target.value); setCurrentPage(1); }}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+          >
+            <option value="">TODOS LOS PROVEEDORES</option>
+            {proveedoresDisponibles.map(prov => (
+              <option key={prov} value={prov}>{prov.toUpperCase()}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Estado Logístico</label>
+          <select 
+            value={filterEstadoLogistico} 
+            onChange={(e) => { setFilterEstadoLogistico(e.target.value); setCurrentPage(1); }}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+          >
+            <option value="">TODOS LOS ESTADOS</option>
+            {estadosLogicosDisponibles.map(est => (
+              <option key={est} value={est}>{est.toUpperCase()}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar por N° OC</label>
+          <input 
+            type="text" 
+            placeholder="N° de OC..." 
+            value={searchOCRef}
+            onChange={(e) => { setSearchOCRef(e.target.value); setCurrentPage(1); }}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
+          />
+        </div>
+
+        {/* Rango de Fecha Confirmación Calendario Popover */}
+        <div className="relative" ref={refCalendarioConfirmado}>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fecha Confirmado</label>
+          <div className="flex items-center gap-1 bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold cursor-pointer text-slate-700" onClick={() => setMostrarCalendarioConfirmado(!mostrarCalendarioConfirmado)}>
+            <Calendar size={14} className="text-slate-400 shrink-0" />
+            <span className="truncate flex-1 select-none">{formattedRangoConfirmadoText()}</span>
+            {(fechaConfirmadoInicio || fechaConfirmadoFin) && (
+              <button onClick={(e) => { e.stopPropagation(); setFechaConfirmadoInicio(null); setFechaConfirmadoFin(null); setCurrentPage(1); }} className="hover:text-red-500 font-bold p-0.5">&times;</button>
+            )}
+          </div>
+
+          {mostrarCalendarioConfirmado && (
+            <div className="absolute right-0 mt-2 z-30 bg-white border border-slate-200 shadow-2xl rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+              <div className="flex items-center justify-between mb-4">
+                <button type="button" onClick={() => cambiarMesConfirmado(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
+                <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
+                  {mesActualConfirmado.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                </span>
+                <button type="button" onClick={() => cambiarMesConfirmado(1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&gt;</button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-slate-400 mb-2">
+                <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1">
+                {getDiasDelMesConfirmado().map((dia, idx) => {
+                  if (!dia) return <div key={`empty-c-${idx}`} />;
+                  const timestampDia = dia.getTime();
+                  const isInicio = fechaConfirmadoInicio && timestampDia === fechaConfirmadoInicio.getTime();
+                  const isFin = fechaConfirmadoFin && timestampDia === fechaConfirmadoFin.getTime();
+                  const isRango = fechaConfirmadoInicio && fechaConfirmadoFin && timestampDia > fechaConfirmadoInicio.getTime() && timestampDia < fechaConfirmadoFin.getTime();
+
+                  let bgClass = 'hover:bg-slate-100 text-slate-700';
+                  if (isInicio || isFin) bgClass = 'bg-slate-900 text-white rounded-full font-black';
+                  if (isRango) bgClass = 'bg-slate-100 text-slate-900 rounded-none';
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSelectDiaConfirmado(dia)}
+                      className={`text-center py-1 text-[11px] font-bold rounded-full transition-all ${bgClass}`}
+                    >
+                      {dia.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {showAsignador && (
@@ -605,7 +824,7 @@ export const DashboardPedidos = ({ role }) => {
             Anterior
           </button>
           <span className="text-xs font-bold uppercase tracking-widest text-slate-300">
-            Página {currentPage} de {totalPages} ({itemsPedidos.length} ítems)
+            Página {currentPage} de {totalPages} ({filteredItems.length} ítems)
           </span>
           <button
             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
