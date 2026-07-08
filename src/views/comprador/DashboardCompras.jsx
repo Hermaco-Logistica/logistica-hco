@@ -50,15 +50,30 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const abrirVistaCotizacion = (solicitud) => setSolicitudVista(solicitud);
   const cerrarVistaCotizacion = () => setSolicitudVista(null);
 
-  const obtenerEstadoAccion = (estado) => {
-    if (estado === 'Cotizado Parcial') return 'Cotizado Parcial';
-    if (estado === 'Cotizado') return 'Cotizado';
+  const obtenerEstadoAccion = (solicitud) => {
+    const estado = solicitud.estado;
+    const tienePendientes = solicitud.productos?.some(p => !p.fob || Number(p.fob) <= 0);
+    
+    if (estado === 'Pedido') {
+      return tienePendientes ? 'Cotizar Restante' : 'Ver Cotización';
+    }
+    if (estado === 'Cotizado Parcial') {
+      return tienePendientes ? 'Cotizar Restante' : 'Ver Cotización';
+    }
+    if (estado === 'Cotizado') return 'Ver Cotización';
     return 'Cotizar';
   };
 
-  const obtenerColorAccion = (estado) => {
-    if (estado === 'Cotizado Parcial') return 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700';
-    if (estado === 'Cotizado') return 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200';
+  const obtenerColorAccion = (solicitud) => {
+    const estado = solicitud.estado;
+    const tienePendientes = solicitud.productos?.some(p => !p.fob || Number(p.fob) <= 0);
+    
+    if ((estado === 'Pedido' || estado === 'Cotizado Parcial') && tienePendientes) {
+      return 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700';
+    }
+    if (estado === 'Cotizado' || estado === 'Cotizado Parcial' || estado === 'Pedido') {
+      return 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200';
+    }
     return 'bg-white border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white';
   };
 
@@ -392,10 +407,11 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                     <button 
                       onClick={() => {
                         if (!readOnly) {
-                          if (s.estado === 'Cotizado' || s.estado === 'Cotizado Parcial') {
-                            abrirVistaCotizacion(s);
-                          } else {
+                          const accion = obtenerEstadoAccion(s);
+                          if (accion === 'Cotizar Restante' || accion === 'Cotizar') {
                             navigate(`/calculadora/${s.id}`);
+                          } else {
+                            abrirVistaCotizacion(s);
                           }
                         }
                       }}
@@ -403,12 +419,12 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                       className={`px-5 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border uppercase ${
                         readOnly
                           ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                          : obtenerColorAccion(s.estado)
+                          : obtenerColorAccion(s)
                       }`}
                     >
                       {readOnly
                         ? 'Ver'
-                        : obtenerEstadoAccion(s.estado)}
+                        : obtenerEstadoAccion(s)}
                     </button>
                   </td>
                 </tr>
