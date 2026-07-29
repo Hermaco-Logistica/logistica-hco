@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import html2pdf from 'html2pdf.js';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
+import { useDHLCalculator } from '../../hooks/useDHLCalculator';
 
 export const Calculadora = ({ onGuardar }) => {
   const { id } = useParams();
@@ -14,9 +15,83 @@ export const Calculadora = ({ onGuardar }) => {
   const [items, setItems] = useState([]);
   const [flete, setFlete] = useState(0);
   const [aduana, setAduana] = useState(0);
-  const [factorA, setFactorA] = useState(1);
   const [guardando, setGuardando] = useState(false);
-  const factorM_Standard = 1.08;
+  const [factorM, setFactorM] = useState(1.07);
+
+  // Estados del cotizador DHL Belgium / QS USA
+  const [dhlWeight, setDhlWeight] = useState('');
+  const [qsWeight, setQsWeight] = useState('');
+  const [activeProvider, setActiveProvider] = useState(null);
+  const [cotizadorExpandido, setCotizadorExpandido] = useState(false);
+  const cotizadorRef = useRef(null);
+
+  // Selecciona un courier y expande el cotizador para ver el detalle
+  const seleccionarProvider = (provider) => {
+    setActiveProvider(provider);
+    setCotizadorExpandido(true);
+  };
+
+  // Si el usuario hace click fuera del cotizador, lo plegamos de vuelta
+  useEffect(() => {
+    if (!cotizadorExpandido) return;
+    const handleClickOutside = (event) => {
+      if (cotizadorRef.current && !cotizadorRef.current.contains(event.target)) {
+        setCotizadorExpandido(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [cotizadorExpandido]);
+  
+  const dhlZoneId = useMemo(() => {
+    const country = rfq?.paisDestino || rfq?.pais || rfq?.destino || 'El Salvador';
+    return country.toLowerCase().includes('salvador') ? '13' : '14';
+  }, [rfq]);
+
+  const { rates, config } = useDHLCalculator(dhlZoneId);
+
+  const dhlResults = useMemo(() => {
+    const weight = parseFloat(dhlWeight) || 0;
+    if (weight <= 0 || !Array.isArray(rates) || rates.length === 0) {
+      return { chargeableWeight: 0, totalEur: 0, totalUsd: 0 };
+    }
+
+    // 1. Chargeable Weight exacto (Fórmula I22 de Excel)
+    const exactChargeable = weight * (0.0003 * weight + 1);
+
+    // 2. Réplica exacta de VLOOKUP(exactChargeable, A:E, col, 1)
+    // Busca el tramo más cercano que sea <= exactChargeable
+    let entry = rates[0];
+    for (let i = 0; i < rates.length; i++) {
+      if (rates[i].w <= exactChargeable) {
+        entry = rates[i];
+      } else {
+        break; // Como la lista está ordenada, al pasar el valor nos detenemos
+      }
+    }
+
+    const totalEur = entry?.final || 0;
+    const totalUsd = totalEur * (config?.skfMonthlyRate || 1.186447);
+
+    return {
+      chargeableWeight: exactChargeable,
+      totalEur,
+      totalUsd,
+    };
+  }, [dhlWeight, rates, config]);
+
+  const qsResults = useMemo(() => {
+    const weightLbs = parseFloat(qsWeight) || 0;
+    if (weightLbs <= 0) {
+      return { totalUsd: 0 };
+    }
+
+    const totalUsd = weightLbs > 10 ? weightLbs * 2.80 : 10.00;
+
+    return {
+      totalUsd
+    };
+  }, [qsWeight]);
 
   useEffect(() => {
     const fetchRFQ = async () => {
@@ -44,6 +119,7 @@ export const Calculadora = ({ onGuardar }) => {
 
           setFlete(data.fleteAereo || 0);
           setAduana(data.aduanaAerea || 0);
+          setFactorM(data.factorM || 1.07);
         } else {
           navigate('/compras');
         }
@@ -59,22 +135,38 @@ export const Calculadora = ({ onGuardar }) => {
   // La cotización es parcial si todavía queda algún ítem con FOB 0 en el array total
   const tienePendientesGlobales = items.some(p => Number(p.fob) <= 0);
 
-  useEffect(() => {
+  const factorA = useMemo(() => {
     const seleccionados = items.filter(p => p.selected);
-    const totalFobPartida = seleccionados.reduce((acc, p) => acc + (Number(p.fob) * p.cant), 0);
-    
+    const totalFobPartida = seleccionados.reduce((acc, p) => acc + (Number(p.fob || 0) * p.cant), 0);
     if (totalFobPartida > 0) {
-      const nuevoFactor = (totalFobPartida + Number(flete) + Number(aduana)) / totalFobPartida;
-      setFactorA(nuevoFactor);
-    } else {
-      setFactorA(1);
+      return (totalFobPartida + Number(flete) + Number(aduana)) / totalFobPartida;
     }
+    return 0;
   }, [flete, aduana, items]);
 
   const updateItem = (idx, campo, valor) => {
     const nuevos = [...items];
     nuevos[idx][campo] = valor;
     setItems(nuevos);
+  };
+
+  const handleNumericInput = (setValue) => (e) => {
+    const val = e.target.value;
+    if (val === '' || (/^\d*\.?\d*$/.test(val) && parseFloat(val) >= 0)) {
+      setValue(val);
+    }
+  };
+
+  const handleTableNumericInput = (idx, campo, valor) => {
+    if (valor === '' || (/^\d*\.?\d*$/.test(valor) && parseFloat(valor) >= 0)) {
+      updateItem(idx, campo, valor);
+    }
+  };
+
+  const handleTableIntegerInput = (idx, campo, valor) => {
+    if (valor === '' || /^\d+$/.test(valor)) {
+      updateItem(idx, campo, valor);
+    }
   };
 
   const ejecutarGuardado = async () => {
@@ -106,7 +198,7 @@ export const Calculadora = ({ onGuardar }) => {
       }
     }
 
-    const exito = await onGuardar(itemsFinales, factorA, factorM_Standard, flete, aduana, pdfBase64);
+    const exito = await onGuardar(itemsFinales, factorA, factorM, flete, aduana, pdfBase64);
     setGuardando(false);
     if (exito) {
       navigate('/compras');
@@ -133,18 +225,22 @@ export const Calculadora = ({ onGuardar }) => {
             <label className="text-[9px] font-black text-slate-400 uppercase">Flete Aéreo ($)</label>
             <input 
               type="number" 
+              min="0"
               className="bg-transparent font-bold text-white outline-none w-20 text-lg border-b border-slate-700 focus:border-emerald-500" 
               value={flete} 
-              onChange={(e) => setFlete(e.target.value)} 
+              onChange={handleNumericInput(setFlete)} 
+              onFocus={(e) => e.target.select()}
             />
           </div>
           <div className="flex flex-col border-l border-slate-700 pl-4">
             <label className="text-[9px] font-black text-slate-400 uppercase">Aduana Aéreo ($)</label>
             <input 
               type="number" 
+              min="0"
               className="bg-transparent font-bold text-white outline-none w-20 text-lg border-b border-slate-700 focus:border-emerald-500" 
               value={aduana} 
-              onChange={(e) => setAduana(e.target.value)} 
+              onChange={handleNumericInput(setAduana)} 
+              onFocus={(e) => e.target.select()}
             />
           </div>
         </div>
@@ -152,8 +248,234 @@ export const Calculadora = ({ onGuardar }) => {
         <div className="flex gap-4">
           <div className="text-right px-5 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
             <span className="text-[9px] block text-emerald-600 font-black uppercase tracking-widest">Factor Aéreo Aplicado</span>
-            <span className="text-2xl font-black text-emerald-700">{factorA.toFixed(4)}</span>
+            <span className="text-2xl font-black text-emerald-700">{factorA.toFixed(2)}</span>
           </div>
+          <div className="text-right px-5 py-2 bg-blue-50 rounded-xl border border-blue-100 flex flex-col items-end">
+            <span className="text-[9px] block text-blue-600 font-black uppercase tracking-widest">Factor Marítimo Aplicado</span>
+            <input 
+              type="number" 
+              step="0.01"
+              min="0"
+              className="bg-transparent font-black text-blue-700 outline-none w-16 text-2xl text-right border-b border-transparent focus:border-blue-500" 
+              value={factorM} 
+              onChange={handleNumericInput(setFactorM)} 
+              onFocus={(e) => e.target.select()}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Cotizador de Flete Internacional */}
+      <div ref={cotizadorRef} className="bg-white rounded-2xl shadow-sm border border-slate-200 mb-6 overflow-hidden">
+        <div
+          className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2 cursor-pointer"
+          onClick={() => setCotizadorExpandido(prev => !prev)}
+        >
+          <div>
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide">Cotizador de Flete Internacional</h3>
+            <p className="text-[11px] text-slate-400 font-semibold mt-0.5">Calcula el costo con cada courier y aplica el resultado como Flete Aéreo</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <span className="text-[9px] block text-slate-400 font-black uppercase tracking-widest">Fuente activa</span>
+              <span className="text-xs font-black text-blue-600 uppercase">
+                {activeProvider === 'dhl' ? 'DHL Express Bélgica' : activeProvider === 'qs' ? 'QS USA' : 'Ninguna'}
+              </span>
+            </div>
+            <span className={`w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 transition-transform duration-200 ${cotizadorExpandido ? 'rotate-180' : ''}`}>
+              ▾
+            </span>
+          </div>
+        </div>
+
+        {/* Vista plegada: resumen compacto de lo ya calculado, click en alguno para expandir */}
+        <div className={`grid transition-all duration-300 ease-in-out origin-top ${!cotizadorExpandido ? 'grid-rows-[1fr] opacity-100 scale-100' : 'grid-rows-[0fr] opacity-0 scale-95'}`}>
+        <div className="overflow-hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+            <button
+              type="button"
+              onClick={() => seleccionarProvider('dhl')}
+              className={`p-4 flex items-center gap-3 text-left transition-colors ${activeProvider === 'dhl' ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+            >
+              <div className="w-8 h-8 rounded-lg border flex items-center justify-center overflow-hidden bg-white border-slate-200 shrink-0">
+                <img src="/dhl.svg" alt="DHL" className="w-7 h-auto object-contain" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-black text-slate-700 uppercase truncate">DHL Express Bélgica</p>
+                <p className="text-[9px] text-slate-400 font-semibold">Peso volumétrico (kg)</p>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="block text-[8px] text-slate-400 font-black uppercase">Costo estimado</span>
+                <span className="text-sm font-black text-slate-800">${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : '0.00'}</span>
+              </div>
+              {activeProvider === 'dhl' && (
+                <span className="bg-blue-600 text-white text-[7px] font-black uppercase px-1.5 py-1 rounded-full shrink-0">En uso</span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => seleccionarProvider('qs')}
+              className={`p-4 flex items-center gap-3 text-left transition-colors ${activeProvider === 'qs' ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+            >
+              <div className="w-8 h-8 rounded-lg border flex items-center justify-center overflow-hidden bg-white border-slate-200 shrink-0">
+                <img src="/quickshipping.png" alt="QS" className="w-7 h-auto object-contain" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-black text-slate-700 uppercase truncate">QS USA</p>
+                <p className="text-[9px] text-slate-400 font-semibold">Tarifa por libra, mínimo $10.00</p>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="block text-[8px] text-slate-400 font-black uppercase">Costo estimado</span>
+                <span className="text-sm font-black text-slate-800">${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : '0.00'}</span>
+              </div>
+              {activeProvider === 'qs' && (
+                <span className="bg-blue-600 text-white text-[7px] font-black uppercase px-1.5 py-1 rounded-full shrink-0">En uso</span>
+              )}
+            </button>
+          </div>
+        </div>
+        </div>
+
+        {/* Vista expandida: detalle completo de ambos couriers */}
+        <div className={`grid transition-all duration-300 ease-in-out origin-top ${cotizadorExpandido ? 'grid-rows-[1fr] opacity-100 scale-100' : 'grid-rows-[0fr] opacity-0 scale-95'}`}>
+        <div className="overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+
+          {/* Cotizador DHL Belgium */}
+          <div className={`p-6 transition-all duration-200 ${activeProvider === 'dhl' ? 'bg-blue-50 ring-2 ring-inset ring-blue-200' : 'bg-slate-100/80 hover:bg-slate-100'}`}>
+            <div
+              className="flex items-center gap-3 mb-5 cursor-pointer group"
+              onClick={() => seleccionarProvider('dhl')}
+              role="radio"
+              aria-checked={activeProvider === 'dhl'}
+              tabIndex={0}
+            >
+              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'dhl' ? 'border-blue-600' : 'border-slate-300 group-hover:border-slate-400'}`}>
+                {activeProvider === 'dhl' && <span className="w-2 h-2 rounded-full bg-blue-600" />}
+              </span>
+              <div className={`w-9 h-9 rounded-lg border flex items-center justify-center overflow-hidden shrink-0 transition-colors ${activeProvider === 'dhl' ? 'bg-white border-slate-200' : 'bg-slate-200/70 border-slate-200'}`}>
+                <img src="/dhl.svg" alt="DHL" className="w-8 h-auto object-contain" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className={`text-xs font-black uppercase tracking-wide ${activeProvider === 'dhl' ? 'text-slate-800' : 'text-slate-400'}`}>DHL Express Bélgica</h4>
+                <p className={`text-[10px] font-semibold ${activeProvider === 'dhl' ? 'text-slate-400' : 'text-slate-400/70'}`}>Tarifa por peso volumétrico (kg)</p>
+              </div>
+              {activeProvider === 'dhl' && (
+                <span className="bg-blue-600 text-white text-[8px] font-black uppercase px-2 py-1 rounded-full shrink-0">En uso</span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="flex flex-col">
+                <label className={`text-[10px] font-black uppercase mb-1 ${activeProvider === 'dhl' ? 'text-slate-500' : 'text-slate-400'}`}>Peso base (kg)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className={`p-2.5 border rounded-lg font-bold outline-none text-sm transition-shadow ${activeProvider === 'dhl' ? 'bg-white border-slate-200 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10' : 'bg-white/60 border-slate-200 text-slate-500'}`}
+                  value={dhlWeight}
+                  onChange={handleNumericInput(setDhlWeight)}
+                  onFocus={(e) => e.target.select()}
+                />
+              </div>
+              <div className="flex flex-col">
+                <label className={`text-[10px] font-black uppercase mb-1 ${activeProvider === 'dhl' ? 'text-slate-500' : 'text-slate-400'}`}>Zona DHL</label>
+                <div className={`p-2.5 border rounded-lg font-bold text-sm flex items-center justify-between h-[38px] ${activeProvider === 'dhl' ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-white/60 border-slate-200 text-slate-400'}`}>
+                  <span>Zona {dhlZoneId}</span>
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Auto</span>
+                </div>
+              </div>
+            </div>
+
+            <div className={`rounded-xl border p-3.5 flex items-center gap-4 ${activeProvider === 'dhl' ? 'bg-white border-slate-200' : 'bg-white/50 border-slate-200'}`}>
+              <div className="flex-1">
+                <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Facturable</span>
+                <span className={`text-sm font-black ${activeProvider === 'dhl' ? 'text-slate-700' : 'text-slate-400'}`}>{dhlResults.chargeableWeight ? Number(dhlResults.chargeableWeight).toFixed(2) : "0.00"} kg</span>
+              </div>
+              <div className="flex-1 text-right">
+                <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Costo estimado</span>
+                <span className={`text-lg font-black ${activeProvider === 'dhl' ? 'text-slate-900' : 'text-slate-400'}`}>${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : "0.00"}</span>
+              </div>
+              <button
+                type="button"
+                disabled={!(dhlResults.totalUsd > 0)}
+                onClick={() => {
+                  setFlete(Number(dhlResults.totalUsd.toFixed(2)));
+                  setActiveProvider('dhl');
+                }}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-[10px] font-black px-4 py-2.5 rounded-lg uppercase tracking-wide transition-colors shrink-0"
+                title="Aplicar como Flete Aéreo"
+              >
+                Aplicar
+              </button>
+            </div>
+          </div>
+
+          {/* Cotizador QS USA */}
+          <div className={`p-6 transition-all duration-200 ${activeProvider === 'qs' ? 'bg-blue-50 ring-2 ring-inset ring-blue-200' : 'bg-slate-100/80 hover:bg-slate-100'}`}>
+            <div
+              className="flex items-center gap-3 mb-5 cursor-pointer group"
+              onClick={() => seleccionarProvider('qs')}
+              role="radio"
+              aria-checked={activeProvider === 'qs'}
+              tabIndex={0}
+            >
+              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'qs' ? 'border-blue-600' : 'border-slate-300 group-hover:border-slate-400'}`}>
+                {activeProvider === 'qs' && <span className="w-2 h-2 rounded-full bg-blue-600" />}
+              </span>
+              <div className={`w-9 h-9 rounded-lg border flex items-center justify-center overflow-hidden shrink-0 transition-colors ${activeProvider === 'qs' ? 'bg-white border-slate-200' : 'bg-slate-200/70 border-slate-200'}`}>
+                <img src="/quickshipping.png" alt="QS" className="w-8 h-auto object-contain" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className={`text-xs font-black uppercase tracking-wide ${activeProvider === 'qs' ? 'text-slate-800' : 'text-slate-400'}`}>QS USA</h4>
+                <p className={`text-[10px] font-semibold ${activeProvider === 'qs' ? 'text-slate-400' : 'text-slate-400/70'}`}>Tarifa por libra, mínimo $10.00</p>
+              </div>
+              {activeProvider === 'qs' && (
+                <span className="bg-blue-600 text-white text-[8px] font-black uppercase px-2 py-1 rounded-full shrink-0">En uso</span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 mb-3">
+              <div className="flex flex-col max-w-[calc(50%-0.375rem)]">
+                <label className={`text-[10px] font-black uppercase mb-1 ${activeProvider === 'qs' ? 'text-slate-500' : 'text-slate-400'}`}>Peso base (lbs)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className={`p-2.5 border rounded-lg font-bold outline-none text-sm transition-shadow ${activeProvider === 'qs' ? 'bg-white border-slate-200 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10' : 'bg-white/60 border-slate-200 text-slate-500'}`}
+                  value={qsWeight}
+                  onChange={handleNumericInput(setQsWeight)}
+                  onFocus={(e) => e.target.select()}
+                />
+              </div>
+            </div>
+
+            <div className={`rounded-xl border p-3.5 flex items-center gap-4 ${activeProvider === 'qs' ? 'bg-white border-slate-200' : 'bg-white/50 border-slate-200'}`}>
+              <div className="flex-1">
+                <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Tarifa aplicada</span>
+                <span className={`text-sm font-black ${activeProvider === 'qs' ? 'text-slate-700' : 'text-slate-400'}`}>{parseFloat(qsWeight) > 10 ? '$2.80 / lb' : 'Mínimo fijo'}</span>
+              </div>
+              <div className="flex-1 text-right">
+                <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Costo estimado</span>
+                <span className={`text-lg font-black ${activeProvider === 'qs' ? 'text-slate-900' : 'text-slate-400'}`}>${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : "0.00"}</span>
+              </div>
+              <button
+                type="button"
+                disabled={!(qsResults.totalUsd > 0)}
+                onClick={() => {
+                  setFlete(Number(qsResults.totalUsd.toFixed(2)));
+                  setActiveProvider('qs');
+                }}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-[10px] font-black px-4 py-2.5 rounded-lg uppercase tracking-wide transition-colors shrink-0"
+                title="Aplicar como Flete Aéreo"
+              >
+                Aplicar
+              </button>
+            </div>
+          </div>
+
+        </div>
+        </div>
         </div>
       </div>
 
@@ -185,7 +507,7 @@ export const Calculadora = ({ onGuardar }) => {
               const ventaA = landedA * Number(p.fva);
               const rentaA = ventaA > 0 ? ((ventaA - landedA) / ventaA) * 100 : 0;
               
-              const landedM = currentFob * factorM_Standard;
+              const landedM = currentFob * factorM;
               const ventaM = landedM * Number(p.fvm);
               const rentaM = ventaM > 0 ? ((ventaM - landedM) / ventaM) * 100 : 0;
 
@@ -198,22 +520,26 @@ export const Calculadora = ({ onGuardar }) => {
                   </td>
                   <td className="p-2">
                     <input type="text" className="font-bold text-slate-800 w-full outline-none bg-transparent uppercase" 
-                           value={p.desc || p.descripcion} onChange={(e) => updateItem(idx, 'desc', e.target.value)} />
+                           value={p.desc || p.descripcion} onChange={(e) => updateItem(idx, 'desc', e.target.value)}
+                           onFocus={(e) => e.target.select()} />
                     <input type="text" className="text-[10px] text-blue-600 w-full outline-none bg-transparent italic font-bold" 
-                           value={p.marca} onChange={(e) => updateItem(idx, 'marca', e.target.value)} placeholder="Indicar marca..." />
+                           value={p.marca} onChange={(e) => updateItem(idx, 'marca', e.target.value)} placeholder="Indicar marca..."
+                           onFocus={(e) => e.target.select()} />
                   </td>
                   <td className="p-2 text-center font-bold">{p.cant}</td>
                   <td className="p-2">
-                    <input type="number" className="w-full p-1 border rounded text-center font-bold text-emerald-600 bg-white" 
-                           value={p.fob} onChange={(e) => updateItem(idx, 'fob', e.target.value)} />
+                    <input type="number" min="0" className="w-full p-1 border rounded text-center font-bold text-emerald-600 bg-white" 
+                           value={p.fob} onChange={(e) => handleTableNumericInput(idx, 'fob', e.target.value)}
+                           onFocus={(e) => e.target.select()} />
                   </td>
 
                   <td className="p-2 text-center bg-emerald-50/20">
                      <div className="font-black text-emerald-600 text-sm">{ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}</div>
                      <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
                         <span className="text-slate-400 font-bold italic">FVA:</span>
-                        <input type="number" step="0.01" className="w-8 border-b outline-none text-center bg-transparent font-bold" 
-                               value={p.fva} onChange={(e) => updateItem(idx, 'fva', e.target.value)} />
+                        <input type="number" step="0.01" min="0" className="w-8 border-b outline-none text-center bg-transparent font-bold" 
+                               value={p.fva} onChange={(e) => handleTableNumericInput(idx, 'fva', e.target.value)}
+                               onFocus={(e) => e.target.select()} />
                      </div>
                   </td>
                   <td className="p-2 text-center bg-emerald-100/30">
@@ -226,8 +552,9 @@ export const Calculadora = ({ onGuardar }) => {
                      <div className="font-black text-blue-600 text-sm">{ventaM > 0 ? `$${ventaM.toFixed(2)}` : '—'}</div>
                      <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
                         <span className="text-slate-400 font-bold italic">FVM:</span>
-                        <input type="number" step="0.01" className="w-8 border-b outline-none text-center bg-transparent font-bold" 
-                               value={p.fvm} onChange={(e) => updateItem(idx, 'fvm', e.target.value)} />
+                        <input type="number" step="0.01" min="0" className="w-8 border-b outline-none text-center bg-transparent font-bold" 
+                               value={p.fvm} onChange={(e) => handleTableNumericInput(idx, 'fvm', e.target.value)}
+                               onFocus={(e) => e.target.select()} />
                      </div>
                   </td>
                   <td className="p-2 text-center bg-blue-100/30">
@@ -239,9 +566,11 @@ export const Calculadora = ({ onGuardar }) => {
                   <td className="p-2">
                     <div className="flex flex-col gap-1">
                         <input type="text" className="text-[9px] border-b outline-none bg-transparent" placeholder="Aéreo: 10 d.h." 
-                               value={p.entregaA} onChange={(e) => updateItem(idx, 'entregaA', e.target.value)} />
+                               value={p.entregaA} onChange={(e) => handleTableIntegerInput(idx, 'entregaA', e.target.value)}
+                               onFocus={(e) => e.target.select()} />
                         <input type="text" className="text-[9px] border-b outline-none bg-transparent" placeholder="Marít: 45 d.h." 
-                               value={p.entregaM} onChange={(e) => updateItem(idx, 'entregaM', e.target.value)} />
+                               value={p.entregaM} onChange={(e) => handleTableIntegerInput(idx, 'entregaM', e.target.value)}
+                               onFocus={(e) => e.target.select()} />
                     </div>
                   </td>
                   <td className="p-2">
@@ -274,7 +603,7 @@ export const Calculadora = ({ onGuardar }) => {
             const landedA = currentFob * fA;
             const ventaA = landedA * Number(p.fva || 1.30);
             
-            const landedM = currentFob * factorM_Standard;
+            const landedM = currentFob * factorM;
             const ventaM = landedM * Number(p.fvm || 1.25);
             
             acc.aereo += ventaA * Number(p.cant || 0);
@@ -305,7 +634,7 @@ export const Calculadora = ({ onGuardar }) => {
           onClick={ejecutarGuardado}
           className={`${
             tienePendientesGlobales ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-900 hover:bg-emerald-600'
-          } text-white px-10 py-3 rounded-xl font-black transition-all flex flex-col items-center justify-center leading-none min-w-[240px] shadow-lg`}
+          } text-white px-10 py-3 rounded-xl font-black transition-all flex flex-col items-center justify-center leading-none min-w-60 shadow-lg`}
         >
           <span className="text-sm">{tienePendientesGlobales ? 'Guardar Avance Parcial' : 'Finalizar y Enviar'}</span>
           {tienePendientesGlobales && <span className="text-[9px] opacity-80 mt-1 uppercase font-bold">(Pendientes restantes)</span>}
@@ -320,7 +649,7 @@ export const Calculadora = ({ onGuardar }) => {
               ...rfq,
               productos: items,
               factorA: factorA,
-              factorM: factorM_Standard
+              factorM: factorM
             }} />
           </div>
         </div>

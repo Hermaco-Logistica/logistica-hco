@@ -8,6 +8,7 @@
     "dev:vite": "vite",
     "import:clientes": "node scripts/import-clientes.js",
     "import:proveedores": "node scripts/import-proveedores.js",
+    "db:push-dhl": "node scripts/push_to_firebase.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
