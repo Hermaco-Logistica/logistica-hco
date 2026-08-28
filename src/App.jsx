@@ -32,9 +32,16 @@ function App() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
-      if (u && u.email.endsWith('@hermaco.net')) {
-        setUser(u);
-        setRole(resolveRoleFromEmail(u.email));
+      if (u) {
+        if (u.email.endsWith('@hermaco.net')) {
+          setUser(u);
+          setRole(resolveRoleFromEmail(u.email));
+        } else {
+          signOut(auth);
+          alert("Acceso denegado. Solo se permiten correos de @hermaco.net");
+          setUser(null);
+          setRole(null);
+        }
       } else {
         setUser(null);
         setRole(null);

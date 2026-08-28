@@ -8,11 +8,6 @@
   to = "/.netlify/functions/send-quotation"
   status = 200
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
 [dev]
   command = "npm run dev:vite"
   targetPort = 5173
