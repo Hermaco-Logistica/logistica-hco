@@ -2,16 +2,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/Badge';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import { usePersistedState } from '../../hooks/usePersistedState';
 
 export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis Solicitudes' }) => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Estados de filtros
-  const [filterAccion, setFilterAccion] = useState('');
-  const [filterEstado, setFilterEstado] = useState('');
-  const [filterVendedor, setFilterVendedor] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  // Estados de filtros (persistidos en localStorage)
+  const [filterAccion, setFilterAccion] = usePersistedState('dv_filterAccion', '');
+  const [filterEstado, setFilterEstado] = usePersistedState('dv_filterEstado', '');
+  const [filterVendedor, setFilterVendedor] = usePersistedState('dv_filterVendedor', '');
+  const [searchTerm, setSearchTerm] = usePersistedState('dv_searchTerm', '');
 
   // Estados de Rango de Fecha Popover
   const [fechaInicio, setFechaInicio] = useState(null);

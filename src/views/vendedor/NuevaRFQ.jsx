@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { auth } from '../../firebase';
-import { serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../../firebase';
+import { serverTimestamp, getDocs, query, orderBy, limit, collection } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import {
   buscarClientesGuardados,
@@ -253,7 +253,24 @@ export const NuevaRFQ = ({ onFinalizar }) => {
         await Promise.all(marcasNormalizadas.map((marca) => guardarMarcaSiNoExiste(marca, auth.currentUser)));
       }
 
-      const correlativo = `RFQ-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+      // Correlativo secuencial: busca el número más alto existente y suma 1
+      let nextNum = 1;
+      try {
+        const snap = await getDocs(query(collection(db, 'solicitudes'), orderBy('correlativo', 'desc'), limit(50)));
+        let maxNum = 0;
+        snap.docs.forEach(d => {
+          const corr = d.data().correlativo || '';
+          const match = corr.match(/^RFQ-(\d+)$/);
+          if (match) {
+            const n = parseInt(match[1], 10);
+            if (n > maxNum) maxNum = n;
+          }
+        });
+        nextNum = maxNum + 1;
+      } catch (_) {
+        nextNum = Math.floor(Math.random() * 9000) + 1000; // fallback si falla la consulta
+      }
+      const correlativo = `RFQ-${nextNum.toString().padStart(4, '0')}`;
       
       // Preparamos el objeto exacto que espera la base de datos
       const dataParaGuardar = {

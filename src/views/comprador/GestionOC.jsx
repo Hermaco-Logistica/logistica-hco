@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/trackingStatusService';
 import { ShipmentTracker } from '../../components/ShipmentTracker';
+import { usePersistedState } from '../../hooks/usePersistedState';
 
 export const GestionOC = ({ readOnly = false }) => {
   const [ordenes, setOrdenes] = useState([]);
@@ -16,10 +17,10 @@ export const GestionOC = ({ readOnly = false }) => {
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState('');
 
-  // Estados de filtros para Gestión de OC
-  const [searchOCNum, setSearchOCNum] = useState('');
-  const [filterProveedor, setFilterProveedor] = useState('');
-  const [filterEstadoLogistica, setFilterEstadoLogistica] = useState('');
+  // Estados de filtros para Gestión de OC (persistidos en localStorage)
+  const [searchOCNum, setSearchOCNum] = usePersistedState('goc_searchOCNum', '');
+  const [filterProveedor, setFilterProveedor] = usePersistedState('goc_filterProveedor', '');
+  const [filterEstadoLogistica, setFilterEstadoLogistica] = usePersistedState('goc_filterEstadoLogistica', '');
   
   // Rango de Fecha Creación (Calendario Popover)
   const [fechaInicio, setFechaInicio] = useState(null);

@@ -3,17 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { Printer, X, Calendar as CalendarIcon } from 'lucide-react';
 import { Badge } from '../../components/Badge';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
+import { usePersistedState } from '../../hooks/usePersistedState';
 
 export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const navigate = useNavigate();
   const [solicitudVista, setSolicitudVista] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Estados de filtros
-  const [filterAccion, setFilterAccion] = useState('');
-  const [filterEstado, setFilterEstado] = useState('');
-  const [filterVendedor, setFilterVendedor] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  // Estados de filtros (persistidos en localStorage)
+  const [filterAccion, setFilterAccion] = usePersistedState('dc_filterAccion', '');
+  const [filterEstado, setFilterEstado] = usePersistedState('dc_filterEstado', '');
+  const [filterVendedor, setFilterVendedor] = usePersistedState('dc_filterVendedor', '');
+  const [searchTerm, setSearchTerm] = usePersistedState('dc_searchTerm', '');
 
   // Estados de Rango de Fecha Personalizado
   const [fechaInicio, setFechaInicio] = useState(null); // Date object

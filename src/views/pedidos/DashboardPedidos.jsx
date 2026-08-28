@@ -13,6 +13,7 @@ import {
   guardarProveedorSiNoExiste,
   normalizarNombreProveedor,
 } from '../../services/proveedoresService';
+import { usePersistedState } from '../../hooks/usePersistedState';
 
 export const DashboardPedidos = ({ role }) => {
   const [itemsPedidos, setItemsPedidos] = useState([]);
@@ -37,11 +38,11 @@ export const DashboardPedidos = ({ role }) => {
   });
   const [trackingNotice, setTrackingNotice] = useState('');
 
-  // Estados para filtros (Compras/Ventas)
-  const [searchItemRef, setSearchItemRef] = useState('');
-  const [filterProveedor, setFilterProveedor] = useState('');
-  const [filterEstadoLogistico, setFilterEstadoLogistico] = useState('');
-  const [searchOCRef, setSearchOCRef] = useState('');
+  // Estados para filtros (persistidos en localStorage)
+  const [searchItemRef, setSearchItemRef] = usePersistedState('dp_searchItemRef', '');
+  const [filterProveedor, setFilterProveedor] = usePersistedState('dp_filterProveedor', '');
+  const [filterEstadoLogistico, setFilterEstadoLogistico] = usePersistedState('dp_filterEstadoLogistico', '');
+  const [searchOCRef, setSearchOCRef] = usePersistedState('dp_searchOCRef', '');
 
   // Estados del calendario popover de fecha confirmado
   const [fechaConfirmadoInicio, setFechaConfirmadoInicio] = useState(null);
