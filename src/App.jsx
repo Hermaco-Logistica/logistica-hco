@@ -63,7 +63,7 @@ function App() {
     } catch (e) { console.error(e); }
   };
 
-  const handleGuardarCotizacion = async (items, fa, fm, fl, ad, rfqId, pdfBase64) => {
+  const handleGuardarCotizacion = async (items, fa, fm, fl, ad, ta, sc, ax, mj, sg, el, og, rfqId, pdfBase64) => {
     try {
       if (!rfqId) throw new Error("ID de RFQ no válido");
       
@@ -91,6 +91,13 @@ function App() {
         factorM: fm, 
         fleteAereo: fl, 
         aduanaAerea: ad,
+        tramiteAduanal: ta,
+        scan: sc,
+        adimex: ax,
+        manejos: mj,
+        seguro: sg,
+        entregaLocal: el,
+        otrosGastos: og,
         estado: estadoFinal, 
         fechaCotizacion: new Date()
       });
@@ -172,9 +179,9 @@ function App() {
                   <Route 
                     path="/calculadora/:id" 
                     element={
-                      <Calculadora onGuardar={(items, fa, fm, fl, ad, pdfBase64) => {
+                      <Calculadora onGuardar={(items, fa, fm, fl, ad, ta, sc, ax, mj, sg, el, og, pdfBase64) => {
                         const rfqId = window.location.pathname.split('/').pop();
-                        return handleGuardarCotizacion(items, fa, fm, fl, ad, rfqId, pdfBase64);
+                        return handleGuardarCotizacion(items, fa, fm, fl, ad, ta, sc, ax, mj, sg, el, og, rfqId, pdfBase64);
                       }} />
                     } 
                   />

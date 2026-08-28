@@ -14,7 +14,6 @@ export default function CotizacionDocumento({ cotizacionData }) {
     productos = [],
     factorA = 1,
     factorM = 1.08,
-    linkFormulario = 'https://forms.google.com'
   } = cotizacionData;
 
   // Formatear fecha
@@ -58,7 +57,7 @@ export default function CotizacionDocumento({ cotizacionData }) {
       : '$0.00';
   };
 
-  const getDescripcionItem = (item) => item?.codigo || item?.item || item?.sku || item?.descripcion || item?.desc || '';
+  const getDescripcionItem = (item) => (item?.codigo || item?.item || item?.sku || item?.descripcion || item?.desc || '').toString().toUpperCase();
 
   const pageStyle = {
     width: '100%',
