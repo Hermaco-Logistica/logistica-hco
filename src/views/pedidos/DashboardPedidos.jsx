@@ -1,25 +1,96 @@
-import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import React, { useState, useEffect, useRef } from 'react';
+import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc, query, where } from 'firebase/firestore';
+import { auth, db } from '../../firebase';
 import { 
   CheckSquare, Square, Link as LinkIcon, 
   ChevronDown, Package, DollarSign, Hash, ClipboardCheck, 
-  Activity, Clock, Calendar, Truck
+  Activity, Calendar, Truck
 } from 'lucide-react';
+import { ShipmentTrackerCompact } from '../../components/ShipmentTracker';
+import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/trackingStatusService';
+import {
+  buscarProveedoresGuardados,
+  guardarProveedorSiNoExiste,
+  normalizarNombreProveedor,
+} from '../../services/proveedoresService';
 
 export const DashboardPedidos = ({ role }) => {
   const [itemsPedidos, setItemsPedidos] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [ordenesExistentes, setOrdenesExistentes] = useState([]);
   const [seleccionados, setSeleccionados] = useState([]);
   const [showAsignador, setShowAsignador] = useState(false);
   const [nuevaOC, setNuevaOC] = useState({ numero: '', proveedor: '' });
+  const [sugerenciasProveedor, setSugerenciasProveedor] = useState([]);
+  const [indiceSugerenciaProveedor, setIndiceSugerenciaProveedor] = useState(-1);
+  const [buscandoProveedor, setBuscandoProveedor] = useState(false);
+  const [errorProveedor, setErrorProveedor] = useState('');
+  const [mostrarSugerenciasProveedor, setMostrarSugerenciasProveedor] = useState(false);
+  const debounceProveedorRef = useRef(null);
+  const [trackingModal, setTrackingModal] = useState({
+    open: false,
+    loading: false,
+    error: '',
+    data: null,
+    trackingNumber: '',
+    rfqLabel: '',
+  });
+  const [trackingNotice, setTrackingNotice] = useState('');
+
+  // Estados para filtros (Compras/Ventas)
+  const [searchItemRef, setSearchItemRef] = useState('');
+  const [filterProveedor, setFilterProveedor] = useState('');
+  const [filterEstadoLogistico, setFilterEstadoLogistico] = useState('');
+  const [searchOCRef, setSearchOCRef] = useState('');
+
+  // Estados del calendario popover de fecha confirmado
+  const [fechaConfirmadoInicio, setFechaConfirmadoInicio] = useState(null);
+  const [fechaConfirmadoFin, setFechaConfirmadoFin] = useState(null);
+  const [mostrarCalendarioConfirmado, setMostrarCalendarioConfirmado] = useState(false);
+  const [mesActualConfirmado, setMesActualConfirmado] = useState(new Date());
+  const refCalendarioConfirmado = useRef(null);
+
+  // Cerrar popover al hacer clic fuera
+  useEffect(() => {
+    const clickFuera = (e) => {
+      if (refCalendarioConfirmado.current && !refCalendarioConfirmado.current.contains(e.target)) {
+        setMostrarCalendarioConfirmado(false);
+      }
+    };
+    document.addEventListener('mousedown', clickFuera);
+    return () => document.removeEventListener('mousedown', clickFuera);
+  }, []);
+
+  const formatFechaHora = (value) => {
+    if (!value) return '---';
+    let dateValue = null;
+    if (typeof value.toDate === 'function') {
+      dateValue = value.toDate();
+    } else if (typeof value.seconds === 'number') {
+      dateValue = new Date(value.seconds * 1000);
+    } else if (value instanceof Date) {
+      dateValue = value;
+    }
+
+    if (!dateValue) return '---';
+    return new Intl.DateTimeFormat('es-SV', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+      hour12: false,
+      timeZone: 'America/El_Salvador'
+    }).format(dateValue);
+  };
 
   useEffect(() => {
     const unsubOCs = onSnapshot(collection(db, "ordenesCompra"), (snap) => {
       setOrdenesExistentes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 
-    const unsubSolicitudes = onSnapshot(collection(db, "solicitudes"), (snap) => {
+    const solicitudesQuery = role === 'vendedor'
+      ? query(collection(db, "solicitudes"), where("vendedorId", "==", auth.currentUser?.uid || ''))
+      : collection(db, "solicitudes");
+
+    const unsubSolicitudes = onSnapshot(solicitudesQuery, (snap) => {
       let tempItems = [];
       snap.docs.forEach(d => {
         const data = d.data();
@@ -32,6 +103,8 @@ export const DashboardPedidos = ({ role }) => {
                 indexOriginal: idx,
                 correlativo: data.correlativo || 'S/N',
                 cliente: data.cliente,
+                fechaPedido: data.fechaPedido || null,
+                fechaReferencia: data.fechaPedido || data.fechaCreacion || data.fechaCotizacion || null,
                 fobReal: p.fobReal || p.fob || 0,
                 fechaCompromiso: p.fechaCompromiso, 
                 diasPrometidos: p.diasPrometidos
@@ -40,11 +113,110 @@ export const DashboardPedidos = ({ role }) => {
           });
         }
       });
+      tempItems.sort((a, b) => {
+        const getMs = (val) => {
+          if (!val) return 0;
+          if (typeof val === 'object') {
+            if (typeof val.toDate === 'function') {
+              try { return val.toDate().getTime(); } catch(e) {}
+            }
+            if (typeof val.seconds === 'number') {
+              return val.seconds * 1000;
+            }
+          }
+          const ms = Date.parse(val);
+          return isNaN(ms) ? 0 : ms;
+        };
+        return getMs(b.fechaReferencia) - getMs(a.fechaReferencia);
+      });
       setItemsPedidos(tempItems);
+      setCurrentPage(1);
     });
 
     return () => { unsubOCs(); unsubSolicitudes(); };
-  }, []);
+  }, [role, auth.currentUser?.uid]);
+
+  useEffect(() => {
+    const termino = normalizarNombreProveedor(nuevaOC.proveedor);
+
+    if (debounceProveedorRef.current) clearTimeout(debounceProveedorRef.current);
+
+    if (termino.length < 2) {
+      setSugerenciasProveedor([]);
+      setIndiceSugerenciaProveedor(-1);
+      setBuscandoProveedor(false);
+      setErrorProveedor('');
+      return;
+    }
+
+    debounceProveedorRef.current = setTimeout(async () => {
+      try {
+        setBuscandoProveedor(true);
+        setErrorProveedor('');
+        const resultados = await buscarProveedoresGuardados(termino);
+        setSugerenciasProveedor(resultados);
+        setIndiceSugerenciaProveedor(resultados.length > 0 ? 0 : -1);
+      } catch (error) {
+        setErrorProveedor('No se pudo buscar proveedores guardados.');
+        setSugerenciasProveedor([]);
+        setIndiceSugerenciaProveedor(-1);
+      } finally {
+        setBuscandoProveedor(false);
+      }
+    }, 280);
+
+    return () => {
+      if (debounceProveedorRef.current) clearTimeout(debounceProveedorRef.current);
+    };
+  }, [nuevaOC.proveedor]);
+
+  const seleccionarSugerenciaProveedor = (nombre) => {
+    setNuevaOC((prev) => ({ ...prev, proveedor: nombre || '' }));
+    setMostrarSugerenciasProveedor(false);
+    setIndiceSugerenciaProveedor(-1);
+  };
+
+  const manejarTeclasProveedor = (e) => {
+    if (!mostrarSugerenciasProveedor || buscandoProveedor || sugerenciasProveedor.length === 0) {
+      if (e.key === 'Escape') {
+        setMostrarSugerenciasProveedor(false);
+        setIndiceSugerenciaProveedor(-1);
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setIndiceSugerenciaProveedor((prev) => {
+        const base = prev < 0 ? 0 : prev;
+        return Math.min(base + 1, sugerenciasProveedor.length - 1);
+      });
+      return;
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setIndiceSugerenciaProveedor((prev) => {
+        if (prev <= 0) return 0;
+        return prev - 1;
+      });
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      if (indiceSugerenciaProveedor >= 0 && indiceSugerenciaProveedor < sugerenciasProveedor.length) {
+        e.preventDefault();
+        seleccionarSugerenciaProveedor(sugerenciasProveedor[indiceSugerenciaProveedor].nombre || '');
+      }
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setMostrarSugerenciasProveedor(false);
+      setIndiceSugerenciaProveedor(-1);
+    }
+  };
 
   const toggleSeleccion = (uId) => {
     setSeleccionados(prev => prev.includes(uId) ? prev.filter(i => i !== uId) : [...prev, uId]);
@@ -56,25 +228,133 @@ export const DashboardPedidos = ({ role }) => {
     ));
   };
 
+  const openTrackingModal = async (trackingNumber, rfqLabel) => {
+    if (!trackingNumber) {
+      setTrackingModal({
+        open: true,
+        loading: false,
+        error: 'No hay tracking asociado',
+        data: null,
+        trackingNumber: '',
+        rfqLabel,
+      });
+      setTrackingNotice('');
+      return;
+    }
+
+    setTrackingModal({
+      open: true,
+      loading: true,
+      error: '',
+      data: null,
+      trackingNumber,
+      rfqLabel,
+    });
+    setTrackingNotice('');
+
+    try {
+      if (role === 'vendedor' && trackingStatusEnabled) {
+        const freshData = await consultarTrackingStatus(trackingNumber);
+        setTrackingModal({
+          open: true,
+          loading: false,
+          error: '',
+          data: freshData || null,
+          trackingNumber,
+          rfqLabel,
+        });
+        if (freshData?.rateLimited) {
+          setTrackingNotice('Mostrando ultimo dato guardado. Podras actualizar en unos minutos.');
+        } else if (freshData?.stale) {
+          setTrackingNotice('Actualizando, mostrando ultimo dato guardado.');
+        }
+        return;
+      }
+
+      const cacheRef = doc(db, 'tracking_cache', trackingNumber);
+      const cacheSnap = await getDoc(cacheRef);
+      if (!cacheSnap.exists()) {
+        setTrackingModal({
+          open: true,
+          loading: false,
+          error: 'Sin respuesta de tracking guardada',
+          data: null,
+          trackingNumber,
+          rfqLabel,
+        });
+        setTrackingNotice('');
+        return;
+      }
+
+      const cacheData = cacheSnap.data();
+      setTrackingModal({
+        open: true,
+        loading: false,
+        error: '',
+        data: cacheData?.payload || null,
+        trackingNumber,
+        rfqLabel,
+      });
+      setTrackingNotice('');
+    } catch (error) {
+      setTrackingModal({
+        open: true,
+        loading: false,
+        error: 'No fue posible cargar el tracking',
+        data: null,
+        trackingNumber,
+        rfqLabel,
+      });
+      setTrackingNotice('');
+    }
+  };
+
   const calcularCountdown = (fechaCompromiso, estadoLogistico) => {
     if (estadoLogistico === 'Recibido' || estadoLogistico === 'Entregado') return { dias: 0, label: 'COMPLETADO', color: 'text-emerald-500' };
-    if (!fechaCompromiso) return { dias: '-', label: 'SIN FECHA', color: 'text-slate-300' };
+    if (!fechaCompromiso || typeof fechaCompromiso !== 'string' || !fechaCompromiso.includes('/')) return { dias: '-', label: 'SIN FECHA', color: 'text-slate-300' };
 
-    const hoy = new Date();
-    const [dia, mes, anio] = fechaCompromiso.split('/');
-    const compromiso = new Date(`${anio}-${mes}-${dia}`);
-    const diferenciaMs = compromiso - hoy;
-    const diasRestantes = Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24));
+    try {
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
 
-    if (diasRestantes < 0) return { dias: Math.abs(diasRestantes), label: 'RETRASO DÍAS', color: 'text-red-500' };
-    return { dias: diasRestantes, label: 'DÍAS RESTANTES', color: 'text-blue-500' };
+      const partes = fechaCompromiso.split('/');
+      let dia, mes, anio;
+
+      if (partes.length === 2) {
+        // Soporte para formato DD/MM (asume año actual)
+        dia = parseInt(partes[0], 10);
+        mes = parseInt(partes[1], 10);
+        anio = hoy.getFullYear();
+      } else if (partes.length === 3) {
+        // Soporte para formato DD/MM/YYYY
+        dia = parseInt(partes[0], 10);
+        mes = parseInt(partes[1], 10);
+        anio = parseInt(partes[2], 10);
+        if (anio < 100) anio += 2000;
+      } else {
+        return { dias: '!', label: 'FORMATO ERR', color: 'text-red-400' };
+      }
+
+      const compromiso = new Date(anio, mes - 1, dia);
+      compromiso.setHours(0, 0, 0, 0);
+
+      if (isNaN(compromiso.getTime())) return { dias: '!', label: 'FECHA INVÁLIDA', color: 'text-red-400' };
+
+      const diferenciaMs = compromiso.getTime() - hoy.getTime();
+      const diasRestantes = Math.round(diferenciaMs / (1000 * 60 * 60 * 24));
+
+      if (diasRestantes < 0) return { dias: Math.abs(diasRestantes), label: 'RETRASO DÍAS', color: 'text-red-500' };
+      return { dias: diasRestantes, label: 'DÍAS RESTANTES', color: 'text-blue-500' };
+    } catch (e) {
+      return { dias: '?', label: 'ERROR', color: 'text-red-500' };
+    }
   };
 
   const getInfoOC = (numOC) => {
     const oc = ordenesExistentes.find(o => o.numeroOC === numOC);
     if (!oc) return { label: 'Por Procesar', color: 'bg-amber-100 text-amber-600', prov: 'Pendiente', mod: '-', rawEstado: 'Pendiente' };
 
-    const ultimaMod = oc.ultimaActualizacion ? new Date(oc.ultimaActualizacion.seconds * 1000).toLocaleDateString() : 'Sin cambios';
+    const ultimaMod = oc.ultimaActualizacion ? formatFechaHora(oc.ultimaActualizacion) : 'Sin cambios';
     const estados = {
       'Pedido': { label: 'OC Generada', color: 'bg-blue-100 text-blue-600' },
       'En Tránsito': { label: 'En Tránsito', color: 'bg-purple-100 text-purple-600' },
@@ -96,6 +376,7 @@ export const DashboardPedidos = ({ role }) => {
     if (!numOC || !provOC) return alert("Faltan datos de la OC");
 
     try {
+      await guardarProveedorSiNoExiste(provOC, auth.currentUser);
       const itemsFormateados = itemsAProcesar.map(i => ({
         descripcion: i.descripcion || i.desc,
         cantidad: i.cantidad || i.cant,
@@ -136,6 +417,102 @@ export const DashboardPedidos = ({ role }) => {
     } catch (error) { console.error(error); }
   };
 
+  // Helpers para obtener proveedores y estados lógicos únicos disponibles
+  const proveedoresDisponibles = Array.from(new Set(itemsPedidos.map(item => {
+    const ocInfo = getInfoOC(item.numOC);
+    return ocInfo.prov;
+  }).filter(p => p && p !== 'Pendiente')));
+
+  const estadosLogicosDisponibles = ['Por Procesar', 'OC Generada', 'En Tránsito', 'Recibido (Almacén)', 'Entregado Cliente'];
+
+  // Calendario popover helpers
+  const handleSelectDiaConfirmado = (diaDate) => {
+    setCurrentPage(1);
+    if (!fechaConfirmadoInicio || (fechaConfirmadoInicio && fechaConfirmadoFin)) {
+      setFechaConfirmadoInicio(diaDate);
+      setFechaConfirmadoFin(null);
+    } else if (fechaConfirmadoInicio && !fechaConfirmadoFin) {
+      if (diaDate < fechaConfirmadoInicio) {
+        setFechaConfirmadoInicio(diaDate);
+      } else {
+        setFechaConfirmadoFin(diaDate);
+        setMostrarCalendarioConfirmado(false);
+      }
+    }
+  };
+
+  const getDiasDelMesConfirmado = () => {
+    const año = mesActualConfirmado.getFullYear();
+    const mes = mesActualConfirmado.getMonth();
+    const primerDiaSemana = new Date(año, mes, 1).getDay();
+    const totalDias = new Date(año, mes + 1, 0).getDate();
+    const dias = [];
+    for (let i = 0; i < primerDiaSemana; i++) dias.push(null);
+    for (let i = 1; i <= totalDias; i++) dias.push(new Date(año, mes, i));
+    return dias;
+  };
+
+  const cambiarMesConfirmado = (offset) => {
+    setMesActualConfirmado(new Date(mesActualConfirmado.getFullYear(), mesActualConfirmado.getMonth() + offset, 1));
+  };
+
+  const formattedRangoConfirmadoText = () => {
+    if (!fechaConfirmadoInicio) return 'Elegir Rango / Día';
+    const opt = { day: '2-digit', month: 'short' };
+    const iniStr = fechaConfirmadoInicio.toLocaleDateString('es-ES', opt);
+    if (!fechaConfirmadoFin) return iniStr;
+    return `${iniStr} - ${fechaConfirmadoFin.toLocaleDateString('es-ES', opt)}`;
+  };
+
+  // Filtrado de items
+  const filteredItems = itemsPedidos.filter(item => {
+    const ocInfo = getInfoOC(item.numOC);
+
+    // Buscar Item / Referencia / Cliente
+    if (searchItemRef) {
+      const term = searchItemRef.toLowerCase();
+      const matchDesc = (item.descripcion || item.desc || '').toLowerCase().includes(term);
+      const matchCorrelativo = (item.correlativo || '').toLowerCase().includes(term);
+      const matchCliente = (item.cliente || '').toLowerCase().includes(term);
+      if (!matchDesc && !matchCorrelativo && !matchCliente) return false;
+    }
+
+    // Filtrar por proveedor
+    if (filterProveedor && ocInfo.prov !== filterProveedor) return false;
+
+    // Filtrar por estado logístico
+    if (filterEstadoLogistico && ocInfo.label !== filterEstadoLogistico) return false;
+
+    // Buscar OC Ref
+    if (searchOCRef) {
+      const term = searchOCRef.toLowerCase();
+      const matchOC = (item.numOC || '').toLowerCase().includes(term);
+      if (!matchOC) return false;
+    }
+
+    // Rango de Fecha Confirmado (fechaPedido)
+    if (fechaConfirmadoInicio || fechaConfirmadoFin) {
+      if (!item.fechaPedido) return false;
+      const dateConfirmado = item.fechaPedido.toDate ? item.fechaPedido.toDate() : new Date(item.fechaPedido);
+      const dComp = new Date(dateConfirmado.getFullYear(), dateConfirmado.getMonth(), dateConfirmado.getDate());
+
+      if (fechaConfirmadoInicio) {
+        const dIni = new Date(fechaConfirmadoInicio.getFullYear(), fechaConfirmadoInicio.getMonth(), fechaConfirmadoInicio.getDate());
+        if (dComp < dIni) return false;
+      }
+      if (fechaConfirmadoFin) {
+        const dFin = new Date(fechaConfirmadoFin.getFullYear(), fechaConfirmadoFin.getMonth(), fechaConfirmadoFin.getDate());
+        if (dComp > dFin) return false;
+      }
+    }
+
+    return true;
+  });
+
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <div className="max-w-[1600px] mx-auto animate-in fade-in duration-500 pb-10">
       <div className="flex justify-between items-end mb-8">
@@ -154,6 +531,109 @@ export const DashboardPedidos = ({ role }) => {
         )}
       </div>
 
+      {/* Panel de Filtros para Seguimiento de Pedidos */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (Ítem / Ref / Cliente)</label>
+          <input 
+            type="text" 
+            placeholder="Escribe para buscar..." 
+            value={searchItemRef}
+            onChange={(e) => { setSearchItemRef(e.target.value); setCurrentPage(1); }}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
+          />
+        </div>
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Proveedor</label>
+          <select 
+            value={filterProveedor} 
+            onChange={(e) => { setFilterProveedor(e.target.value); setCurrentPage(1); }}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+          >
+            <option value="">TODOS LOS PROVEEDORES</option>
+            {proveedoresDisponibles.map(prov => (
+              <option key={prov} value={prov}>{prov.toUpperCase()}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Estado Logístico</label>
+          <select 
+            value={filterEstadoLogistico} 
+            onChange={(e) => { setFilterEstadoLogistico(e.target.value); setCurrentPage(1); }}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+          >
+            <option value="">TODOS LOS ESTADOS</option>
+            {estadosLogicosDisponibles.map(est => (
+              <option key={est} value={est}>{est.toUpperCase()}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar por N° OC</label>
+          <input 
+            type="text" 
+            placeholder="N° de OC..." 
+            value={searchOCRef}
+            onChange={(e) => { setSearchOCRef(e.target.value); setCurrentPage(1); }}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
+          />
+        </div>
+
+        {/* Rango de Fecha Confirmación Calendario Popover */}
+        <div className="relative" ref={refCalendarioConfirmado}>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fecha Confirmado</label>
+          <div className="flex items-center gap-1 bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold cursor-pointer text-slate-700" onClick={() => setMostrarCalendarioConfirmado(!mostrarCalendarioConfirmado)}>
+            <Calendar size={14} className="text-slate-400 shrink-0" />
+            <span className="truncate flex-1 select-none">{formattedRangoConfirmadoText()}</span>
+            {(fechaConfirmadoInicio || fechaConfirmadoFin) && (
+              <button onClick={(e) => { e.stopPropagation(); setFechaConfirmadoInicio(null); setFechaConfirmadoFin(null); setCurrentPage(1); }} className="hover:text-red-500 font-bold p-0.5">&times;</button>
+            )}
+          </div>
+
+          {mostrarCalendarioConfirmado && (
+            <div className="absolute right-0 mt-2 z-30 bg-white border border-slate-200 shadow-2xl rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+              <div className="flex items-center justify-between mb-4">
+                <button type="button" onClick={() => cambiarMesConfirmado(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
+                <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
+                  {mesActualConfirmado.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                </span>
+                <button type="button" onClick={() => cambiarMesConfirmado(1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&gt;</button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-slate-400 mb-2">
+                <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1">
+                {getDiasDelMesConfirmado().map((dia, idx) => {
+                  if (!dia) return <div key={`empty-c-${idx}`} />;
+                  const timestampDia = dia.getTime();
+                  const isInicio = fechaConfirmadoInicio && timestampDia === fechaConfirmadoInicio.getTime();
+                  const isFin = fechaConfirmadoFin && timestampDia === fechaConfirmadoFin.getTime();
+                  const isRango = fechaConfirmadoInicio && fechaConfirmadoFin && timestampDia > fechaConfirmadoInicio.getTime() && timestampDia < fechaConfirmadoFin.getTime();
+
+                  let bgClass = 'hover:bg-slate-100 text-slate-700';
+                  if (isInicio || isFin) bgClass = 'bg-slate-900 text-white rounded-full font-black';
+                  if (isRango) bgClass = 'bg-slate-100 text-slate-900 rounded-none';
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSelectDiaConfirmado(dia)}
+                      className={`text-center py-1 text-[11px] font-bold rounded-full transition-all ${bgClass}`}
+                    >
+                      {dia.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
       {showAsignador && (
         <div className="mb-8 bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl border-4 border-emerald-500/20">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
@@ -161,7 +641,60 @@ export const DashboardPedidos = ({ role }) => {
               <p className="text-emerald-400 font-black text-[10px] uppercase">Nueva OC</p>
               <div className="flex gap-4">
                 <input type="text" placeholder="N° OC" className="flex-1 bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" onChange={(e) => setNuevaOC({...nuevaOC, numero: e.target.value.toUpperCase()})} />
-                <input type="text" placeholder="PROVEEDOR" className="flex-1 bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" onChange={(e) => setNuevaOC({...nuevaOC, proveedor: e.target.value.toUpperCase()})} />
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="PROVEEDOR"
+                    className="w-full bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold"
+                    value={nuevaOC.proveedor}
+                    onKeyDown={manejarTeclasProveedor}
+                    onFocus={() => {
+                      setMostrarSugerenciasProveedor(true);
+                      if (sugerenciasProveedor.length > 0 && indiceSugerenciaProveedor < 0) {
+                        setIndiceSugerenciaProveedor(0);
+                      }
+                    }}
+                    onBlur={() =>
+                      setTimeout(() => {
+                        setMostrarSugerenciasProveedor(false);
+                        setIndiceSugerenciaProveedor(-1);
+                      }, 120)
+                    }
+                    onChange={(e) => setNuevaOC({ ...nuevaOC, proveedor: e.target.value.toUpperCase() })}
+                  />
+
+                  {mostrarSugerenciasProveedor && nuevaOC.proveedor.trim().length >= 2 && (
+                    <div className="absolute z-20 mt-2 w-full max-h-56 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 shadow-xl">
+                      {buscandoProveedor && (
+                        <div className="px-4 py-3 text-[10px] font-bold text-slate-400">Buscando proveedores guardados...</div>
+                      )}
+
+                      {!buscandoProveedor && !errorProveedor && sugerenciasProveedor.length === 0 && (
+                        <div className="px-4 py-3 text-[10px] font-bold text-slate-400">No hay coincidencias. Se guardara como nuevo.</div>
+                      )}
+
+                      {!buscandoProveedor && errorProveedor && (
+                        <div className="px-4 py-3 text-[10px] font-bold text-rose-400">{errorProveedor}</div>
+                      )}
+
+                      {!buscandoProveedor && sugerenciasProveedor.map((s, idx) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          className={`w-full text-left px-4 py-3 border-b last:border-b-0 border-slate-800 ${
+                            idx === indiceSugerenciaProveedor ? 'bg-slate-800' : 'hover:bg-slate-800'
+                          }`}
+                          onMouseEnter={() => setIndiceSugerenciaProveedor(idx)}
+                          onMouseDown={() => {
+                            seleccionarSugerenciaProveedor(s.nombre || '');
+                          }}
+                        >
+                          <p className="text-[11px] font-black text-slate-200 uppercase">{s.nombre}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <button onClick={() => procesarAsignacion()} className="w-full bg-emerald-500 text-white py-4 rounded-xl font-black text-[10px] uppercase">Crear y Vincular</button>
             </div>
@@ -186,6 +719,7 @@ export const DashboardPedidos = ({ role }) => {
             <tr className="bg-slate-900 text-[9px] text-slate-400 font-black uppercase tracking-[0.15em]">
               <th className="p-6 text-center w-14">Sel</th>
               <th className="p-6 text-left">Ítem / Referencia</th>
+              <th className="p-6 text-center">Confirmado</th>
               <th className="p-6 text-center">Cant.</th>
               <th className="p-6 text-right">Venta (Unit/Total)</th>
               {role === 'comprador' && <th className="p-6 text-center bg-slate-800">Costo FOB Real</th>}
@@ -197,9 +731,12 @@ export const DashboardPedidos = ({ role }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {itemsPedidos.map((item) => {
+            {paginatedItems.map((item) => {
               const uId = `${item.idRFQ}-${item.indexOriginal}`;
               const ocInfo = getInfoOC(item.numOC);
+              const ocDetalle = ordenesExistentes.find(o => o.numeroOC === item.numOC);
+              const trackingNumber = ocDetalle?.tracking || '';
+              const rfqLabel = `# ${item.correlativo} — ${item.cliente}`;
               const timer = calcularCountdown(item.fechaCompromiso, ocInfo.rawEstado);
               const ventaTotal = (item.precio || 0) * (item.cantidad || 0);
 
@@ -217,6 +754,11 @@ export const DashboardPedidos = ({ role }) => {
                       <Hash size={10}/> {item.correlativo} — {item.cliente}
                     </p>
                     <p className="text-[11px] font-black text-slate-800 uppercase leading-tight">{item.descripcion || item.desc}</p>
+                  </td>
+                  <td className="p-6 text-center">
+                    <span className="text-[10px] font-bold text-slate-500">
+                      {formatFechaHora(item.fechaPedido) || '--'}
+                    </span>
                   </td>
                   <td className="p-6 text-center font-black text-xs text-slate-400">{item.cantidad || item.cant}</td>
                   <td className="p-6 text-right whitespace-nowrap">
@@ -247,10 +789,16 @@ export const DashboardPedidos = ({ role }) => {
                     </div>
                   </td>
                   <td className="p-6">
-                    <div className={`inline-flex flex-col px-3 py-1.5 rounded-xl border ${ocInfo.color} border-current bg-opacity-10 w-full max-w-[140px]`}>
+                    <button
+                      type="button"
+                      onClick={() => openTrackingModal(trackingNumber, rfqLabel)}
+                      disabled={!trackingNumber}
+                      title={trackingNumber ? 'Ver detalle de tracking' : 'Sin tracking asociado'}
+                      className={`inline-flex flex-col px-3 py-1.5 rounded-xl border ${ocInfo.color} border-current bg-opacity-10 w-full max-w-[140px] ${trackingNumber ? 'hover:opacity-90' : 'cursor-not-allowed opacity-60'}`}
+                    >
                       <span className="text-[9px] font-black uppercase text-center">{ocInfo.label}</span>
                       <span className="text-[7px] font-bold opacity-70 text-center mt-0.5 tracking-tighter">MOD: {ocInfo.mod}</span>
-                    </div>
+                    </button>
                   </td>
                   <td className="p-6 text-center">
                     {item.numOC ? (
@@ -265,6 +813,78 @@ export const DashboardPedidos = ({ role }) => {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-6 px-6 py-4 bg-slate-900 rounded-[1.5rem] text-white">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
+          >
+            Anterior
+          </button>
+          <span className="text-xs font-bold uppercase tracking-widest text-slate-300">
+            Página {currentPage} de {totalPages} ({filteredItems.length} ítems)
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
+
+      {trackingModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl border border-slate-100 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <div>
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Detalle de tracking</p>
+                <p className="text-sm font-black text-slate-800">
+                  {role === 'comprador'
+                    ? (trackingModal.trackingNumber || '--')
+                    : (trackingModal.rfqLabel || '--')}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTrackingModal({
+                  open: false,
+                  loading: false,
+                  error: '',
+                  data: null,
+                  trackingNumber: '',
+                  rfqLabel: '',
+                })}
+                className="text-xs font-black uppercase text-slate-400 hover:text-slate-800"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="p-6">
+              {trackingNotice && (
+                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-bold uppercase text-amber-700">
+                  {trackingNotice}
+                </div>
+              )}
+              {trackingModal.loading && (
+                <p className="text-xs font-black text-slate-400 uppercase">Cargando...</p>
+              )}
+
+              {!trackingModal.loading && trackingModal.error && (
+                <p className="text-xs font-black text-rose-600 uppercase">{trackingModal.error}</p>
+              )}
+
+              {!trackingModal.loading && trackingModal.data && (
+                <ShipmentTrackerCompact shipmentData={trackingModal.data} />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

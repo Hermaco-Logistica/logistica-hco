@@ -14,6 +14,9 @@ dist-ssr
 build
 .DS_Store
 *.local
+MAPA_FLUJO.md
+.github
+scripts
 
 # Editor directories and files
 .vscode/*
@@ -25,3 +28,7 @@ build
 *.njsproj
 *.sln
 *.sw?
+service_account.json
+
+# Local Netlify folder
+.netlify

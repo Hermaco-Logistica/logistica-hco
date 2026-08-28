@@ -1,23 +1,274 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/Badge';
+import { Calendar as CalendarIcon } from 'lucide-react';
 
-export const DashboardVendedor = ({ solicitudes }) => {
+export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis Solicitudes' }) => {
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Estados de filtros
+  const [filterAccion, setFilterAccion] = useState('');
+  const [filterEstado, setFilterEstado] = useState('');
+  const [filterVendedor, setFilterVendedor] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Estados de Rango de Fecha Popover
+  const [fechaInicio, setFechaInicio] = useState(null);
+  const [fechaFin, setFechaFin] = useState(null);
+  const [mostrarCalendario, setMostrarCalendario] = useState(false);
+  const [mesActual, setMesActual] = useState(new Date());
+  const refCalendario = useRef(null);
+
+  // Cerrar calendario al hacer clic fuera
+  useEffect(() => {
+    const clickFuera = (e) => {
+      if (refCalendario.current && !refCalendario.current.contains(e.target)) {
+        setMostrarCalendario(false);
+      }
+    };
+    document.addEventListener('mousedown', clickFuera);
+    return () => document.removeEventListener('mousedown', clickFuera);
+  }, []);
+
+  const formatFechaHora = (timestamp) => {
+    if (!timestamp?.toDate) return '---';
+    const dateValue = timestamp.toDate();
+    return new Intl.DateTimeFormat('es-SV', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+      hour12: false,
+      timeZone: 'America/El_Salvador'
+    }).format(dateValue);
+  };
+
+  const obtenerEstadoAccion = (estado) => {
+    if (estado === 'Cotizado Parcial') return 'Cotizado Parcial';
+    if (estado === 'Cotizado') return 'Cotizado';
+    return 'Cotizar';
+  };
+
+  // Obtener listas únicas de vendedores y estados para los filtros selectores
+  const vendedoresDisponibles = Array.from(new Set(solicitudes.map(s => s.vendedorNombre).filter(Boolean)));
+  const estadosDisponibles = Array.from(new Set(solicitudes.map(s => s.estado).filter(Boolean)));
+
+  // Aplicar filtros
+  const filteredSolicitudes = solicitudes.filter((s) => {
+    if (filterAccion) {
+      const accionReal = obtenerEstadoAccion(s.estado);
+      if (accionReal !== filterAccion) return false;
+    }
+    if (filterEstado && s.estado !== filterEstado) return false;
+    if (filterVendedor && s.vendedorNombre !== filterVendedor) return false;
+    
+    if (s.fechaS) {
+      const fechaSDate = s.fechaS.toDate ? s.fechaS.toDate() : new Date(s.fechaS);
+      const dComp = new Date(fechaSDate.getFullYear(), fechaSDate.getMonth(), fechaSDate.getDate());
+      
+      if (fechaInicio) {
+        const dIni = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate());
+        if (dComp < dIni) return false;
+      }
+      if (fechaFin) {
+        const dFin = new Date(fechaFin.getFullYear(), fechaFin.getMonth(), fechaFin.getDate());
+        if (dComp > dFin) return false;
+      }
+    } else if (fechaInicio || fechaFin) {
+      return false;
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      const matchCorrelativo = s.correlativo?.toLowerCase().includes(term);
+      const matchCliente = s.cliente?.toLowerCase().includes(term);
+      if (!matchCorrelativo && !matchCliente) return false;
+    }
+    return true;
+  });
+
+  // Ordenar de más reciente a más antigua
+  const sortedSolicitudes = [...filteredSolicitudes].sort((a, b) => {
+    const getMs = (val) => {
+      if (!val) return 0;
+      if (typeof val === 'object') {
+        if (typeof val.toDate === 'function') {
+          try { return val.toDate().getTime(); } catch(e) {}
+        }
+        if (typeof val.seconds === 'number') {
+          return val.seconds * 1000;
+        }
+      }
+      const ms = Date.parse(val);
+      return isNaN(ms) ? 0 : ms;
+    };
+    return getMs(b.fechaS) - getMs(a.fechaS);
+  });
+
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(sortedSolicitudes.length / itemsPerPage);
+  const paginatedSolicitudes = sortedSolicitudes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Lógica del Calendario
+  const handleSelectDia = (diaDate) => {
+    setCurrentPage(1);
+    if (!fechaInicio || (fechaInicio && fechaFin)) {
+      setFechaInicio(diaDate);
+      setFechaFin(null);
+    } else if (fechaInicio && !fechaFin) {
+      if (diaDate < fechaInicio) {
+        setFechaInicio(diaDate);
+      } else {
+        setFechaFin(diaDate);
+        setMostrarCalendario(false);
+      }
+    }
+  };
+
+  const getDiasDelMes = () => {
+    const año = mesActual.getFullYear();
+    const mes = mesActual.getMonth();
+    const primerDiaSemana = new Date(año, mes, 1).getDay();
+    const totalDias = new Date(año, mes + 1, 0).getDate();
+    
+    const dias = [];
+    for (let i = 0; i < primerDiaSemana; i++) dias.push(null);
+    for (let i = 1; i <= totalDias; i++) dias.push(new Date(año, mes, i));
+    return dias;
+  };
+
+  const cambiarMes = (offset) => {
+    setMesActual(new Date(mesActual.getFullYear(), mesActual.getMonth() + offset, 1));
+  };
+
+  const formattedRangoText = () => {
+    if (!fechaInicio) return 'Elegir Rango / Día';
+    const opt = { day: '2-digit', month: 'short' };
+    const iniStr = fechaInicio.toLocaleDateString('es-ES', opt);
+    if (!fechaFin) return iniStr;
+    return `${iniStr} - ${fechaFin.toLocaleDateString('es-ES', opt)}`;
+  };
 
   return (
     <div className="animate-in fade-in duration-500">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic">Mis Solicitudes</h1>
+          <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic">{title}</h1>
           <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Estado de RFQs enviadas</p>
         </div>
-        <button 
-          onClick={() => navigate('/vendedor/nueva')}
-          className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 flex items-center gap-2"
-        >
-          + Nueva RFQ
-        </button>
+        {canCreate && (
+          <button 
+            onClick={() => navigate('/vendedor/nueva')}
+            className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 flex items-center gap-2"
+          >
+            + Nueva RFQ
+          </button>
+        )}
+      </div>
+
+      {/* Controles de Filtros */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (Ref / Cliente)</label>
+          <input 
+            type="text" 
+            placeholder="Escribe para buscar..." 
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
+          />
+        </div>
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Acción</label>
+          <select 
+            value={filterAccion} 
+            onChange={(e) => { setFilterAccion(e.target.value); setCurrentPage(1); }}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+          >
+            <option value="">TODAS LAS ACCIONES</option>
+            <option value="Cotizar">COTIZAR</option>
+            <option value="Cotizado">COTIZADO</option>
+            <option value="Cotizado Parcial">COTIZADO PARCIAL</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Estado</label>
+          <select 
+            value={filterEstado} 
+            onChange={(e) => { setFilterEstado(e.target.value); setCurrentPage(1); }}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+          >
+            <option value="">TODOS LOS ESTADOS</option>
+            {estadosDisponibles.map(est => (
+              <option key={est} value={est}>{est.toUpperCase()}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Vendedor</label>
+          <select 
+            value={filterVendedor} 
+            onChange={(e) => { setFilterVendedor(e.target.value); setCurrentPage(1); }}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+          >
+            <option value="">TODOS LOS VENDEDORES</option>
+            {vendedoresDisponibles.map(vend => (
+              <option key={vend} value={vend}>{vend.toUpperCase()}</option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Rango de Fecha Calendario Popover */}
+        <div className="relative" ref={refCalendario}>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Fecha</label>
+          <div className="flex items-center gap-1 bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold cursor-pointer text-slate-700" onClick={() => setMostrarCalendario(!mostrarCalendario)}>
+            <CalendarIcon size={14} className="text-slate-400 shrink-0" />
+            <span className="truncate flex-1 select-none">{formattedRangoText()}</span>
+            {(fechaInicio || fechaFin) && (
+              <button onClick={(e) => { e.stopPropagation(); setFechaInicio(null); setFechaFin(null); setCurrentPage(1); }} className="hover:text-red-500 font-bold p-0.5">&times;</button>
+            )}
+          </div>
+
+          {mostrarCalendario && (
+            <div className="absolute right-0 mt-2 z-30 bg-white border border-slate-200 shadow-2xl rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+              <div className="flex items-center justify-between mb-4">
+                <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
+                <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
+                  {mesActual.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                </span>
+                <button type="button" onClick={() => cambiarMes(1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&gt;</button>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-slate-400 mb-2">
+                <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1">
+                {getDiasDelMes().map((dia, idx) => {
+                  if (!dia) return <div key={`empty-${idx}`} />;
+                  const timestampDia = dia.getTime();
+                  const isInicio = fechaInicio && timestampDia === fechaInicio.getTime();
+                  const isFin = fechaFin && timestampDia === fechaFin.getTime();
+                  const isRango = fechaInicio && fechaFin && timestampDia > fechaInicio.getTime() && timestampDia < fechaFin.getTime();
+
+                  let bgClass = 'hover:bg-slate-100 text-slate-700';
+                  if (isInicio || isFin) bgClass = 'bg-slate-900 text-white rounded-full font-black';
+                  if (isRango) bgClass = 'bg-slate-100 text-slate-900 rounded-none';
+
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSelectDia(dia)}
+                      className={`text-center py-1 text-[11px] font-bold rounded-full transition-all ${bgClass}`}
+                    >
+                      {dia.getDate()}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       
       <div className="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden">
@@ -32,7 +283,7 @@ export const DashboardVendedor = ({ solicitudes }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {solicitudes.map((s) => {
+            {paginatedSolicitudes.map((s) => {
               const itemsConPrecio = s.productos?.filter(p => Number(p.fob) > 0) || [];
               
               const totalA = itemsConPrecio.reduce((acc, p) => 
@@ -49,10 +300,10 @@ export const DashboardVendedor = ({ solicitudes }) => {
                   </td>
                   <td className="p-4 text-[11px]">
                     <div className="flex flex-col gap-1">
-                      <span className="text-slate-500 font-bold uppercase text-[9px]">📥 Solicitud: <b className="text-slate-700 font-black">{s.fechaS?.toDate ? s.fechaS.toDate().toLocaleDateString() : '---'}</b></span>
+                      <span className="text-slate-500 font-bold uppercase text-[9px]">📥 Solicitud: <b className="text-slate-700 font-black">{formatFechaHora(s.fechaS)}</b></span>
                       <span className="text-emerald-600 font-black italic text-[9px] uppercase">
                         📤 {s.estado.includes('Parcial') ? 'Avance Recibido: ' : 'Respondida: '}
-                        {s.fechaCotizacion?.toDate ? s.fechaCotizacion.toDate().toLocaleDateString() : 'En proceso'}
+                        {s.fechaCotizacion?.toDate ? formatFechaHora(s.fechaCotizacion) : 'En proceso'}
                       </span>
                     </div>
                   </td>
@@ -85,6 +336,28 @@ export const DashboardVendedor = ({ solicitudes }) => {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-6 px-6 py-4 bg-slate-900 rounded-[1.5rem] text-white">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
+          >
+            Anterior
+          </button>
+          <span className="text-xs font-bold uppercase tracking-widest text-slate-300">
+            Página {currentPage} de {totalPages} ({sortedSolicitudes.length} solicitudes)
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-4 py-2 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
     </div>
   );
 };

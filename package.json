@@ -4,17 +4,25 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "netlify dev",
+    "dev:vite": "vite",
+    "import:clientes": "node scripts/import-clientes.js",
+    "import:proveedores": "node scripts/import-proveedores.js",
+    "db:push-dhl": "node scripts/push_to_firebase.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-pdf/renderer": "^4.8.1",
     "firebase": "^12.12.0",
+    "firebase-admin": "^12.6.0",
+    "html2pdf.js": "^0.14.0",
     "lucide-react": "^1.8.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^7.14.2"
+    "react-router-dom": "^7.14.2",
+    "resend": "^6.14.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

@@ -1,12 +1,200 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --tf-font-sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --tf-color-bg-app: #f8fafc;
+    --tf-color-sidebar: #0f172a;
+    --tf-color-text-primary: #1e293b;
+    --tf-color-text-muted: #64748b;
+    --tf-color-brand: #10b981;
+    --tf-color-brand-strong: #059669;
+    --tf-color-surface: #ffffff;
+    --tf-color-border: #e2e8f0;
+    --tf-radius-panel: 1.5rem;
+    --tf-shadow-panel: 0 16px 30px rgba(15, 23, 42, 0.08);
+  }
+
   html, body, #root {
     @apply h-full m-0 p-0 overflow-hidden;
+  }
+
+  body {
+    font-family: var(--tf-font-sans);
+    color: var(--tf-color-text-primary);
+    background-color: var(--tf-color-bg-app);
+  }
+}
+
+@layer components {
+  .tf-app-shell {
+    background-color: var(--tf-color-bg-app);
+    font-family: var(--tf-font-sans);
+  }
+
+  .role-comprador {
+    --tf-color-bg-app: #eef4ff;
+    --tf-color-sidebar: #0b2545;
+    --tf-color-brand: #3b82f6;
+    --tf-color-brand-strong: #2563eb;
+  }
+
+  .role-vendedor {
+    --tf-color-bg-app: #f4f0ff;
+    --tf-color-sidebar: #312e81;
+    --tf-color-brand: #8b5cf6;
+    --tf-color-brand-strong: #7c3aed;
+  }
+
+  .role-gerente {
+    --tf-color-bg-app: #edfdf4;
+    --tf-color-sidebar: #14532d;
+    --tf-color-brand: #10b981;
+    --tf-color-brand-strong: #059669;
+  }
+
+  .role-administrador {
+    --tf-color-bg-app: #fff4f4;
+    --tf-color-sidebar: #7f1d2d;
+    --tf-color-brand: #b45366;
+    --tf-color-brand-strong: #9f3650;
+  }
+
+  .role-comprador .bg-slate-900,
+  .role-vendedor .bg-slate-900,
+  .role-gerente .bg-slate-900,
+  .role-administrador .bg-slate-900 {
+    background-color: var(--tf-color-sidebar) !important;
+  }
+
+  .role-comprador .bg-slate-800,
+  .role-vendedor .bg-slate-800,
+  .role-gerente .bg-slate-800,
+  .role-administrador .bg-slate-800 {
+    background-color: color-mix(in oklab, var(--tf-color-sidebar) 86%, white) !important;
+  }
+
+  .role-comprador .border-slate-800,
+  .role-vendedor .border-slate-800,
+  .role-gerente .border-slate-800,
+  .role-administrador .border-slate-800 {
+    border-color: color-mix(in oklab, var(--tf-color-sidebar) 88%, white) !important;
+  }
+
+  .role-comprador .text-emerald-500,
+  .role-vendedor .text-emerald-500,
+  .role-gerente .text-emerald-500,
+  .role-administrador .text-emerald-500,
+  .role-comprador .text-emerald-400,
+  .role-vendedor .text-emerald-400,
+  .role-gerente .text-emerald-400,
+  .role-administrador .text-emerald-400 {
+    color: var(--tf-color-brand) !important;
+  }
+
+  .role-comprador .bg-emerald-500,
+  .role-vendedor .bg-emerald-500,
+  .role-gerente .bg-emerald-500,
+  .role-administrador .bg-emerald-500 {
+    background-color: var(--tf-color-brand) !important;
+  }
+
+  .role-comprador .hover\:bg-emerald-600:hover,
+  .role-vendedor .hover\:bg-emerald-600:hover,
+  .role-gerente .hover\:bg-emerald-600:hover,
+  .role-administrador .hover\:bg-emerald-600:hover {
+    background-color: var(--tf-color-brand-strong) !important;
+  }
+
+  .tf-sidebar-shell {
+    background-color: var(--tf-color-sidebar);
+    color: #ffffff;
+  }
+
+  .tf-brand-accent {
+    color: var(--tf-color-brand);
+  }
+
+  .tf-title {
+    color: var(--tf-color-text-primary);
+    font-weight: 900;
+  }
+
+  .tf-subtitle {
+    color: var(--tf-color-text-muted);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .tf-surface-panel {
+    background-color: var(--tf-color-surface);
+    border: 1px solid var(--tf-color-border);
+    border-radius: var(--tf-radius-panel);
+    box-shadow: var(--tf-shadow-panel);
+  }
+
+  .tf-table-head-dark {
+    background-color: var(--tf-color-sidebar);
+    color: #ffffff;
   }
 }
 
 /* Esto asegura que el sidebar se vea profesional incluso si Tailwind tarda un milisegundo en cargar */
 aside {
-  @apply bg-slate-900 text-white;
+  background-color: var(--tf-color-sidebar);
+  color: #ffffff;
+}
+
+@media print {
+  @page {
+    size: letter;
+    margin: 8mm;
+  }
+
+  html, body, #root {
+    height: auto !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cotizacion-documento {
+    width: 108% !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #111111 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    transform: scale(0.92);
+    transform-origin: top center;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cotizacion-documento,
+  .cotizacion-documento * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .cotizacion-documento table {
+    border-collapse: collapse !important;
+    page-break-inside: avoid;
+  }
+
+  .cotizacion-documento thead {
+    display: table-header-group;
+  }
+
+  .cotizacion-documento tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
 }

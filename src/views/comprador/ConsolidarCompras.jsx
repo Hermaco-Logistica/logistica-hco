@@ -1,7 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { collection, query, onSnapshot, addDoc, doc, updateDoc, serverTimestamp, getDocs } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { auth, db } from '../../firebase';
 import { Box, ShoppingBag, Plus, Info, CheckCircle2, Factory, Hash, DollarSign } from 'lucide-react';
+import {
+  buscarProveedoresGuardados,
+  guardarProveedorSiNoExiste,
+  normalizarNombreProveedor,
+} from '../../services/proveedoresService';
 
 export const ConsolidarCompras = () => {
   const [items, setItems] = useState([]);
@@ -13,6 +18,12 @@ export const ConsolidarCompras = () => {
     proveedor: '',
     notas: ''
   });
+  const [sugerenciasProveedor, setSugerenciasProveedor] = useState([]);
+  const [indiceSugerenciaProveedor, setIndiceSugerenciaProveedor] = useState(-1);
+  const [buscandoProveedor, setBuscandoProveedor] = useState(false);
+  const [errorProveedor, setErrorProveedor] = useState('');
+  const [mostrarSugerenciasProveedor, setMostrarSugerenciasProveedor] = useState(false);
+  const debounceProveedorRef = useRef(null);
 
   useEffect(() => {
     const q = query(collection(db, "solicitudes"));
@@ -41,6 +52,88 @@ export const ConsolidarCompras = () => {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    const termino = normalizarNombreProveedor(datosOC.proveedor);
+
+    if (debounceProveedorRef.current) clearTimeout(debounceProveedorRef.current);
+
+    if (termino.length < 2) {
+      setSugerenciasProveedor([]);
+      setIndiceSugerenciaProveedor(-1);
+      setBuscandoProveedor(false);
+      setErrorProveedor('');
+      return;
+    }
+
+    debounceProveedorRef.current = setTimeout(async () => {
+      try {
+        setBuscandoProveedor(true);
+        setErrorProveedor('');
+        const resultados = await buscarProveedoresGuardados(termino);
+        setSugerenciasProveedor(resultados);
+        setIndiceSugerenciaProveedor(resultados.length > 0 ? 0 : -1);
+      } catch (error) {
+        setErrorProveedor('No se pudo buscar proveedores guardados.');
+        setSugerenciasProveedor([]);
+        setIndiceSugerenciaProveedor(-1);
+      } finally {
+        setBuscandoProveedor(false);
+      }
+    }, 280);
+
+    return () => {
+      if (debounceProveedorRef.current) clearTimeout(debounceProveedorRef.current);
+    };
+  }, [datosOC.proveedor]);
+
+  const seleccionarSugerenciaProveedor = (nombre) => {
+    setDatosOC((prev) => ({ ...prev, proveedor: nombre || '' }));
+    setMostrarSugerenciasProveedor(false);
+    setIndiceSugerenciaProveedor(-1);
+  };
+
+  const manejarTeclasProveedor = (e) => {
+    if (!mostrarSugerenciasProveedor || buscandoProveedor || sugerenciasProveedor.length === 0) {
+      if (e.key === 'Escape') {
+        setMostrarSugerenciasProveedor(false);
+        setIndiceSugerenciaProveedor(-1);
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setIndiceSugerenciaProveedor((prev) => {
+        const base = prev < 0 ? 0 : prev;
+        return Math.min(base + 1, sugerenciasProveedor.length - 1);
+      });
+      return;
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setIndiceSugerenciaProveedor((prev) => {
+        if (prev <= 0) return 0;
+        return prev - 1;
+      });
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      if (indiceSugerenciaProveedor >= 0 && indiceSugerenciaProveedor < sugerenciasProveedor.length) {
+        e.preventDefault();
+        seleccionarSugerenciaProveedor(sugerenciasProveedor[indiceSugerenciaProveedor].nombre || '');
+      }
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setMostrarSugerenciasProveedor(false);
+      setIndiceSugerenciaProveedor(-1);
+    }
+  };
+
   const toggleSeleccion = (item) => {
     const idUnico = `${item.idRFQ}-${item.indexOriginal}`;
     const existe = seleccionados.find(i => `${i.idRFQ}-${i.indexOriginal}` === idUnico);
@@ -65,6 +158,7 @@ export const ConsolidarCompras = () => {
     if (seleccionados.length === 0) return alert("No hay ítems seleccionados");
 
     try {
+      await guardarProveedorSiNoExiste(datosOC.proveedor, auth.currentUser);
       const ocRef = await addDoc(collection(db, "ordenesCompra"), {
         ...datosOC,
         items: seleccionados,
@@ -162,11 +256,60 @@ export const ConsolidarCompras = () => {
                 className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white text-xs font-bold outline-none focus:border-emerald-500"
                 onChange={(e) => setDatosOC({...datosOC, numeroOC: e.target.value.toUpperCase()})}
               />
-              <input 
-                type="text" placeholder="PROVEEDOR"
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white text-xs font-bold outline-none focus:border-emerald-500"
-                onChange={(e) => setDatosOC({...datosOC, proveedor: e.target.value.toUpperCase()})}
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="PROVEEDOR"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white text-xs font-bold outline-none focus:border-emerald-500"
+                  value={datosOC.proveedor}
+                  onKeyDown={manejarTeclasProveedor}
+                  onFocus={() => {
+                    setMostrarSugerenciasProveedor(true);
+                    if (sugerenciasProveedor.length > 0 && indiceSugerenciaProveedor < 0) {
+                      setIndiceSugerenciaProveedor(0);
+                    }
+                  }}
+                  onBlur={() =>
+                    setTimeout(() => {
+                      setMostrarSugerenciasProveedor(false);
+                      setIndiceSugerenciaProveedor(-1);
+                    }, 120)
+                  }
+                  onChange={(e) => setDatosOC({ ...datosOC, proveedor: e.target.value.toUpperCase() })}
+                />
+
+                {mostrarSugerenciasProveedor && datosOC.proveedor.trim().length >= 2 && (
+                  <div className="absolute z-20 mt-2 w-full max-h-56 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 shadow-xl">
+                    {buscandoProveedor && (
+                      <div className="px-4 py-3 text-[10px] font-bold text-slate-400">Buscando proveedores guardados...</div>
+                    )}
+
+                    {!buscandoProveedor && !errorProveedor && sugerenciasProveedor.length === 0 && (
+                      <div className="px-4 py-3 text-[10px] font-bold text-slate-400">No hay coincidencias. Se guardara como nuevo.</div>
+                    )}
+
+                    {!buscandoProveedor && errorProveedor && (
+                      <div className="px-4 py-3 text-[10px] font-bold text-rose-400">{errorProveedor}</div>
+                    )}
+
+                    {!buscandoProveedor && sugerenciasProveedor.map((s, idx) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        className={`w-full text-left px-4 py-3 border-b last:border-b-0 border-slate-800 ${
+                          idx === indiceSugerenciaProveedor ? 'bg-slate-800' : 'hover:bg-slate-800'
+                        }`}
+                        onMouseEnter={() => setIndiceSugerenciaProveedor(idx)}
+                        onMouseDown={() => {
+                          seleccionarSugerenciaProveedor(s.nombre || '');
+                        }}
+                      >
+                        <p className="text-[11px] font-black text-slate-200 uppercase">{s.nombre}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
               <button 
                 onClick={handleCrearOrdenCompra}
                 className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl transition-all uppercase tracking-widest text-xs mt-4"
