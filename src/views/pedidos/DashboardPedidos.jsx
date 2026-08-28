@@ -119,7 +119,7 @@ export const DashboardPedidos = ({ role }) => {
           if (!val) return 0;
           if (typeof val === 'object') {
             if (typeof val.toDate === 'function') {
-              try { return val.toDate().getTime(); } catch(e) {}
+              try { return val.toDate().getTime(); } catch(_) {}
             }
             if (typeof val.seconds === 'number') {
               return val.seconds * 1000;
