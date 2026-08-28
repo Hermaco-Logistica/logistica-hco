@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { db } from '../../firebase';
+import { db, auth } from '../../firebase';
 import { ChevronLeft, Clock, Tag, Calendar, CheckCircle2, ShoppingCart, Link as LinkIcon, AlertCircle, Printer, X } from 'lucide-react';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
 
@@ -88,6 +88,16 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
+          
+          // PROTECCIÓN DE RUTA: Si es vendedor, verificar que sea el dueño
+          const email = auth.currentUser?.email || '';
+          const esVendedor = !email.toLowerCase().match(/admin|gerente|compras/);
+          if (esVendedor && data.vendedorId !== auth.currentUser?.uid) {
+            alert('Acceso Denegado: Esta solicitud pertenece a otro vendedor.');
+            navigate('/vendedor');
+            return;
+          }
+
           setRfq({ id: docSnap.id, ...data });
           
           const selInit = {};
