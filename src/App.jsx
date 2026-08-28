@@ -196,7 +196,7 @@ function App() {
                 </>
               ) : isVendedor ? (
                 <>
-                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate />} />
+                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate role={role} />} />
                   <Route path="/vendedor/nueva" element={<NuevaRFQ onFinalizar={handleNuevaSolicitud} />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
@@ -204,7 +204,7 @@ function App() {
                 </>
               ) : isGerente ? (
                 <>
-                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate title="Solicitudes Globales" />} />
+                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate title="Solicitudes Globales" role={role} />} />
                   <Route path="/vendedor/nueva" element={<NuevaRFQ onFinalizar={handleNuevaSolicitud} />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} />} />
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
@@ -214,7 +214,7 @@ function App() {
                 </>
               ) : isAdmin ? (
                 <>
-                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate={false} title="Solicitudes Globales" />} />
+                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate={false} title="Solicitudes Globales" role={role} />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} />} />
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />

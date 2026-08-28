@@ -58,10 +58,12 @@ export const ConsolidarCompras = () => {
     if (debounceProveedorRef.current) clearTimeout(debounceProveedorRef.current);
 
     if (termino.length < 2) {
-      setSugerenciasProveedor([]);
-      setIndiceSugerenciaProveedor(-1);
-      setBuscandoProveedor(false);
-      setErrorProveedor('');
+      debounceProveedorRef.current = setTimeout(() => {
+        setSugerenciasProveedor([]);
+        setIndiceSugerenciaProveedor(-1);
+        setBuscandoProveedor(false);
+        setErrorProveedor('');
+      }, 0);
       return;
     }
 
@@ -72,7 +74,7 @@ export const ConsolidarCompras = () => {
         const resultados = await buscarProveedoresGuardados(termino);
         setSugerenciasProveedor(resultados);
         setIndiceSugerenciaProveedor(resultados.length > 0 ? 0 : -1);
-      } catch (error) {
+      } catch {
         setErrorProveedor('No se pudo buscar proveedores guardados.');
         setSugerenciasProveedor([]);
         setIndiceSugerenciaProveedor(-1);
@@ -159,7 +161,7 @@ export const ConsolidarCompras = () => {
 
     try {
       await guardarProveedorSiNoExiste(datosOC.proveedor, auth.currentUser);
-      const ocRef = await addDoc(collection(db, "ordenesCompra"), {
+      await addDoc(collection(db, "ordenesCompra"), {
         ...datosOC,
         items: seleccionados,
         estado: 'Pedido',
@@ -206,7 +208,7 @@ export const ConsolidarCompras = () => {
             return (
               <div 
                 key={idx} 
-                className={`p-5 rounded-[1.5rem] border-2 transition-all flex justify-between items-center ${
+                className={`p-5 rounded-3xl border-2 transition-all flex justify-between items-center ${
                   isSel ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 bg-white'
                 }`}
               >
@@ -235,7 +237,7 @@ export const ConsolidarCompras = () => {
                       </div>
                     </div>
                   )}
-                  <div className="text-right min-w-[80px]">
+                  <div className="text-right min-w-20">
                     <span className="block font-black text-lg text-slate-800">{item.cantidad}</span>
                     <span className="text-[9px] font-black text-slate-400 uppercase">{item.modalidad}</span>
                   </div>

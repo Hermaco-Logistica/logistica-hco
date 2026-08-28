@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Printer, X, Calendar as CalendarIcon } from 'lucide-react';
+import { Printer, X, Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import { Badge } from '../../components/Badge';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
 import { usePersistedState } from '../../hooks/usePersistedState';
+import { normalizarBusqueda } from '../../utils/normalizers';
 
 export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const navigate = useNavigate();
@@ -121,10 +122,16 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
     }
 
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      const matchCorrelativo = s.correlativo?.toLowerCase().includes(term);
-      const matchCliente = s.cliente?.toLowerCase().includes(term);
-      if (!matchCorrelativo && !matchCliente) return false;
+      const termNormalized = normalizarBusqueda(searchTerm);
+      if (termNormalized) {
+        const matchCorrelativo = normalizarBusqueda(s.correlativo).includes(termNormalized);
+        const matchCliente = normalizarBusqueda(s.cliente).includes(termNormalized);
+        const matchProducto = s.productos?.some(p => 
+          normalizarBusqueda(p.desc).includes(termNormalized) || 
+          normalizarBusqueda(p.marca).includes(termNormalized)
+        );
+        if (!matchCorrelativo && !matchCliente && !matchProducto) return false;
+      }
     }
     return true;
   });
@@ -135,7 +142,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       if (!val) return 0;
       if (typeof val === 'object') {
         if (typeof val.toDate === 'function') {
-          try { return val.toDate().getTime(); } catch(_) {}
+          try { return val.toDate().getTime(); } catch { return 0; }
         }
         if (typeof val.seconds === 'number') {
           return val.seconds * 1000;
@@ -242,7 +249,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       </div>
 
       {/* Controles de Filtros */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (Ref / Cliente)</label>
           <input 
@@ -349,6 +356,24 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             </div>
           )}
         </div>
+
+        <div className="flex flex-col justify-end w-fit pb-1">
+          <button
+            onClick={() => {
+              setSearchTerm('');
+              setFilterAccion('');
+              setFilterEstado('');
+              setFilterVendedor('');
+              setFechaInicio(null);
+              setFechaFin(null);
+              setCurrentPage(1);
+            }}
+            title="Limpiar filtros"
+            className="flex items-center justify-center bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded-xl w-10 h-10 border border-slate-100 transition-all cursor-pointer shadow-sm"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
       
       <div className="tf-surface-panel overflow-hidden">
@@ -436,7 +461,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       </div>
 
       {totalPages > 1 && (
-        <div className="flex justify-between items-center mt-6 px-6 py-4 bg-slate-900 rounded-[1.5rem] text-white">
+        <div className="flex justify-between items-center mt-6 px-6 py-4 bg-slate-900 rounded-3xl text-white">
           <button
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}

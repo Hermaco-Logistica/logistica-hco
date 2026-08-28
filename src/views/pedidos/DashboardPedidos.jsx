@@ -4,7 +4,7 @@ import { auth, db } from '../../firebase';
 import { 
   CheckSquare, Square, Link as LinkIcon, 
   ChevronDown, Package, DollarSign, Hash, ClipboardCheck, 
-  Activity, Calendar, Truck
+  Activity, Calendar, Truck, Trash2
 } from 'lucide-react';
 import { ShipmentTrackerCompact } from '../../components/ShipmentTracker';
 import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/trackingStatusService';
@@ -13,6 +13,7 @@ import {
   guardarProveedorSiNoExiste,
   normalizarNombreProveedor,
 } from '../../services/proveedoresService';
+import { normalizarBusqueda } from '../../utils/normalizers';
 import { usePersistedState } from '../../hooks/usePersistedState';
 
 export const DashboardPedidos = ({ role }) => {
@@ -43,6 +44,7 @@ export const DashboardPedidos = ({ role }) => {
   const [filterProveedor, setFilterProveedor] = usePersistedState('dp_filterProveedor', '');
   const [filterEstadoLogistico, setFilterEstadoLogistico] = usePersistedState('dp_filterEstadoLogistico', '');
   const [searchOCRef, setSearchOCRef] = usePersistedState('dp_searchOCRef', '');
+  const [sortCompra, setSortCompra] = usePersistedState('dp_sortCompra', '');
 
   // Estados del calendario popover de fecha confirmado
   const [fechaConfirmadoInicio, setFechaConfirmadoInicio] = useState(null);
@@ -61,6 +63,20 @@ export const DashboardPedidos = ({ role }) => {
     document.addEventListener('mousedown', clickFuera);
     return () => document.removeEventListener('mousedown', clickFuera);
   }, []);
+
+  const handleSortCycle = () => {
+    setSortCompra((current) => {
+      if (current === '') return 'comprado_first';
+      if (current === 'comprado_first') return 'pendiente_first';
+      return '';
+    });
+  };
+
+  const getSortIcon = () => {
+    if (sortCompra === 'comprado_first') return ' ↑(Ord)';
+    if (sortCompra === 'pendiente_first') return ' ↓(Pend)';
+    return ' ↕';
+  };
 
   const formatFechaHora = (value) => {
     if (!value) return '---';
@@ -119,7 +135,7 @@ export const DashboardPedidos = ({ role }) => {
           if (!val) return 0;
           if (typeof val === 'object') {
             if (typeof val.toDate === 'function') {
-              try { return val.toDate().getTime(); } catch(_) {}
+              try { return val.toDate().getTime(); } catch { return 0; }
             }
             if (typeof val.seconds === 'number') {
               return val.seconds * 1000;
@@ -135,7 +151,7 @@ export const DashboardPedidos = ({ role }) => {
     });
 
     return () => { unsubOCs(); unsubSolicitudes(); };
-  }, [role, auth.currentUser?.uid]);
+  }, [role]);
 
   useEffect(() => {
     const termino = normalizarNombreProveedor(nuevaOC.proveedor);
@@ -143,10 +159,12 @@ export const DashboardPedidos = ({ role }) => {
     if (debounceProveedorRef.current) clearTimeout(debounceProveedorRef.current);
 
     if (termino.length < 2) {
-      setSugerenciasProveedor([]);
-      setIndiceSugerenciaProveedor(-1);
-      setBuscandoProveedor(false);
-      setErrorProveedor('');
+      debounceProveedorRef.current = setTimeout(() => {
+        setSugerenciasProveedor([]);
+        setIndiceSugerenciaProveedor(-1);
+        setBuscandoProveedor(false);
+        setErrorProveedor('');
+      }, 0);
       return;
     }
 
@@ -157,7 +175,7 @@ export const DashboardPedidos = ({ role }) => {
         const resultados = await buscarProveedoresGuardados(termino);
         setSugerenciasProveedor(resultados);
         setIndiceSugerenciaProveedor(resultados.length > 0 ? 0 : -1);
-      } catch (error) {
+      } catch {
         setErrorProveedor('No se pudo buscar proveedores guardados.');
         setSugerenciasProveedor([]);
         setIndiceSugerenciaProveedor(-1);
@@ -297,7 +315,7 @@ export const DashboardPedidos = ({ role }) => {
         rfqLabel,
       });
       setTrackingNotice('');
-    } catch (error) {
+    } catch {
       setTrackingModal({
         open: true,
         loading: false,
@@ -346,7 +364,7 @@ export const DashboardPedidos = ({ role }) => {
 
       if (diasRestantes < 0) return { dias: Math.abs(diasRestantes), label: 'RETRASO DÍAS', color: 'text-red-500' };
       return { dias: diasRestantes, label: 'DÍAS RESTANTES', color: 'text-blue-500' };
-    } catch (e) {
+    } catch {
       return { dias: '?', label: 'ERROR', color: 'text-red-500' };
     }
   };
@@ -471,11 +489,14 @@ export const DashboardPedidos = ({ role }) => {
 
     // Buscar Item / Referencia / Cliente
     if (searchItemRef) {
-      const term = searchItemRef.toLowerCase();
-      const matchDesc = (item.descripcion || item.desc || '').toLowerCase().includes(term);
-      const matchCorrelativo = (item.correlativo || '').toLowerCase().includes(term);
-      const matchCliente = (item.cliente || '').toLowerCase().includes(term);
-      if (!matchDesc && !matchCorrelativo && !matchCliente) return false;
+      const termNormalized = normalizarBusqueda(searchItemRef);
+      if (termNormalized) {
+        const matchDesc = normalizarBusqueda(item.descripcion || item.desc).includes(termNormalized);
+        const matchCorrelativo = normalizarBusqueda(item.correlativo).includes(termNormalized);
+        const matchCliente = normalizarBusqueda(item.cliente).includes(termNormalized);
+        const matchMarca = normalizarBusqueda(item.marca).includes(termNormalized);
+        if (!matchDesc && !matchCorrelativo && !matchCliente && !matchMarca) return false;
+      }
     }
 
     // Filtrar por proveedor
@@ -510,12 +531,18 @@ export const DashboardPedidos = ({ role }) => {
     return true;
   });
 
+  if (sortCompra === 'comprado_first') {
+    filteredItems.sort((a, b) => (!!b.numOC) - (!!a.numOC));
+  } else if (sortCompra === 'pendiente_first') {
+    filteredItems.sort((a, b) => (!!a.numOC) - (!!b.numOC));
+  }
+
   const itemsPerPage = 10;
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
   const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   return (
-    <div className="max-w-[1600px] mx-auto animate-in fade-in duration-500 pb-10">
+    <div className="max-w-400 mx-auto animate-in fade-in duration-500 pb-10">
       <div className="flex justify-between items-end mb-8">
         <div>
           <h1 className="text-4xl font-black text-slate-800 italic uppercase tracking-tighter">
@@ -533,7 +560,7 @@ export const DashboardPedidos = ({ role }) => {
       </div>
 
       {/* Panel de Filtros para Seguimiento de Pedidos */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 mb-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (Ítem / Ref / Cliente)</label>
           <input 
@@ -633,6 +660,25 @@ export const DashboardPedidos = ({ role }) => {
             </div>
           )}
         </div>
+
+        <div className="flex flex-col justify-end w-fit pb-1">
+          <button
+            onClick={() => {
+              setSearchItemRef('');
+              setFilterProveedor('');
+              setFilterEstadoLogistico('');
+              setSearchOCRef('');
+              setFechaConfirmadoInicio(null);
+              setFechaConfirmadoFin(null);
+              setSortCompra('');
+              setCurrentPage(1);
+            }}
+            title="Limpiar filtros"
+            className="flex items-center justify-center bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded-xl w-10 h-10 border border-slate-100 transition-all cursor-pointer shadow-sm"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
 
       {showAsignador && (
@@ -718,7 +764,13 @@ export const DashboardPedidos = ({ role }) => {
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-slate-900 text-[9px] text-slate-400 font-black uppercase tracking-[0.15em]">
-              <th className="p-6 text-center w-14">Sel</th>
+              <th 
+                className="p-6 text-center w-14 cursor-pointer select-none hover:bg-slate-800 hover:text-white transition-colors"
+                onClick={handleSortCycle}
+                title="Ciclar ordenamiento (Ordenados / Pendientes / Sin ordenar)"
+              >
+                Sel{getSortIcon()}
+              </th>
               <th className="p-6 text-left">Ítem / Referencia</th>
               <th className="p-6 text-center">Confirmado</th>
               <th className="p-6 text-center">Cant.</th>
@@ -795,7 +847,7 @@ export const DashboardPedidos = ({ role }) => {
                       onClick={() => openTrackingModal(trackingNumber, rfqLabel)}
                       disabled={!trackingNumber}
                       title={trackingNumber ? 'Ver detalle de tracking' : 'Sin tracking asociado'}
-                      className={`inline-flex flex-col px-3 py-1.5 rounded-xl border ${ocInfo.color} border-current bg-opacity-10 w-full max-w-[140px] ${trackingNumber ? 'hover:opacity-90' : 'cursor-not-allowed opacity-60'}`}
+                      className={`inline-flex flex-col px-3 py-1.5 rounded-xl border ${ocInfo.color} border-current bg-opacity-10 w-full max-w-35 ${trackingNumber ? 'hover:opacity-90' : 'cursor-not-allowed opacity-60'}`}
                     >
                       <span className="text-[9px] font-black uppercase text-center">{ocInfo.label}</span>
                       <span className="text-[7px] font-bold opacity-70 text-center mt-0.5 tracking-tighter">MOD: {ocInfo.mod}</span>
@@ -816,7 +868,7 @@ export const DashboardPedidos = ({ role }) => {
       </div>
 
       {totalPages > 1 && (
-        <div className="flex justify-between items-center mt-6 px-6 py-4 bg-slate-900 rounded-[1.5rem] text-white">
+        <div className="flex justify-between items-center mt-6 px-6 py-4 bg-slate-900 rounded-3xl text-white">
           <button
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}

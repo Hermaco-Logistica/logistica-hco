@@ -3,11 +3,12 @@ import { collection, query, onSnapshot, doc, updateDoc, orderBy } from 'firebase
 import { db } from '../../firebase';
 import {
   Truck, Globe, ChevronRight, ArrowLeft, Calendar, Hash,
-  AlertTriangle, RefreshCw, Loader2, Calendar as CalendarIcon
+  AlertTriangle, RefreshCw, Loader2, Calendar as CalendarIcon, Trash2
 } from 'lucide-react';
 import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/trackingStatusService';
 import { ShipmentTracker } from '../../components/ShipmentTracker';
 import { usePersistedState } from '../../hooks/usePersistedState';
+import { normalizarBusqueda } from '../../utils/normalizers';
 
 export const GestionOC = ({ readOnly = false }) => {
   const [ordenes, setOrdenes] = useState([]);
@@ -51,12 +52,15 @@ export const GestionOC = ({ readOnly = false }) => {
       }
     });
     return () => unsubscribe();
-  }, [ocSeleccionada?.id]);
+  }, [ocSeleccionada]);
 
   useEffect(() => {
-    setTrackingInput(ocSeleccionada?.tracking || '');
-    setTrackingData(null);
-    setTrackingError('');
+    const timer = setTimeout(() => {
+      setTrackingInput(ocSeleccionada?.tracking || '');
+      setTrackingData(null);
+      setTrackingError('');
+    }, 0);
+    return () => clearTimeout(timer);
   }, [ocSeleccionada?.id, ocSeleccionada?.tracking]);
 
   const cambiarEstado = async (e, id, nuevoEstado) => {
@@ -97,7 +101,7 @@ export const GestionOC = ({ readOnly = false }) => {
       setTrackingError('');
       const result = await consultarTrackingStatus(trackingInput.trim());
       setTrackingData(result);
-    } catch (error) {
+    } catch {
       setTrackingData(null);
       setTrackingError('No fue posible consultar el tracking en este momento');
     } finally {
@@ -166,10 +170,18 @@ export const GestionOC = ({ readOnly = false }) => {
 
   // Aplicar filtros a las órdenes
   const filteredOrdenes = ordenes.filter(oc => {
-    // Buscar por Orden NO
+    // Buscar por Orden, Ítems o Tracking
     if (searchOCNum) {
-      const term = searchOCNum.toLowerCase();
-      if (!(oc.numeroOC || '').toLowerCase().includes(term)) return false;
+      const termNormalized = normalizarBusqueda(searchOCNum);
+      if (termNormalized) {
+        const matchOC = normalizarBusqueda(oc.numeroOC).includes(termNormalized);
+        const matchTracking = normalizarBusqueda(oc.tracking).includes(termNormalized);
+        const matchItems = oc.items?.some(item => 
+          normalizarBusqueda(item.descripcion || item.desc).includes(termNormalized) ||
+          normalizarBusqueda(item.marca).includes(termNormalized)
+        );
+        if (!matchOC && !matchTracking && !matchItems) return false;
+      }
     }
 
     // Filtrar por proveedor
@@ -226,7 +238,7 @@ export const GestionOC = ({ readOnly = false }) => {
                     disabled={readOnly}
                     className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase transition-all duration-200 ${
                       ocSeleccionada.estado === est
-                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 translate-y-[-2px]'
+                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 -translate-y-0.5'
                         : 'bg-slate-800 text-slate-500 hover:text-slate-300'
                     }`}
                   >
@@ -323,12 +335,12 @@ export const GestionOC = ({ readOnly = false }) => {
       </div>
 
       {/* Controles de Filtros */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
         <div>
-          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar N° Orden</label>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (OC / Item / Tracking)</label>
           <input 
             type="text" 
-            placeholder="N° de OC..." 
+            placeholder="N° OC, ítem, tracking..." 
             value={searchOCNum}
             onChange={(e) => setSearchOCNum(e.target.value)}
             className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
@@ -413,6 +425,22 @@ export const GestionOC = ({ readOnly = false }) => {
             </div>
           )}
         </div>
+
+        <div className="flex flex-col justify-end w-fit pb-1">
+          <button
+            onClick={() => {
+              setSearchOCNum('');
+              setFilterProveedor('');
+              setFilterEstadoLogistica('');
+              setFechaInicio(null);
+              setFechaFin(null);
+            }}
+            title="Limpiar filtros"
+            className="flex items-center justify-center bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded-xl w-10 h-10 border border-slate-100 transition-all cursor-pointer shadow-sm"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden">
@@ -423,6 +451,7 @@ export const GestionOC = ({ readOnly = false }) => {
               <th className="text-left px-8 py-6 text-[10px] font-black uppercase tracking-widest">Proveedor</th>
               <th className="text-center px-8 py-6 text-[10px] font-black uppercase tracking-widest">Fecha</th>
               <th className="text-center px-8 py-6 text-[10px] font-black uppercase tracking-widest">Últ. Cambio</th>
+              <th className="text-center px-8 py-6 text-[10px] font-black uppercase tracking-widest">Guía/BL</th>
               <th className="text-center px-8 py-6 text-[10px] font-black uppercase tracking-widest">Logística</th>
               <th className="text-right px-8 py-6 text-[10px] font-black uppercase tracking-widest">Monto</th>
               <th className="px-8 py-6"></th>
@@ -453,6 +482,13 @@ export const GestionOC = ({ readOnly = false }) => {
                   <span className="text-[10px] font-black text-emerald-600 uppercase italic">
                     {formatFechaHora(oc.fechaUltimoEstado)}
                   </span>
+                </td>
+                <td className="px-8 py-6 text-center">
+                  {oc.tracking ? (
+                    <span className="text-[10px] font-black text-slate-700 bg-slate-100 px-3 py-1 rounded-full uppercase border border-slate-200">
+                      {oc.tracking}
+                    </span>
+                  ) : <span className="text-slate-300 italic text-[9px]">-</span>}
                 </td>
                 <td className="px-8 py-6 text-center">
                   <span className={`px-4 py-1.5 rounded-full font-black text-[9px] uppercase tracking-tighter ${

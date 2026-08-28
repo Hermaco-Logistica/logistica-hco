@@ -487,7 +487,7 @@ export const Calculadora = ({ onGuardar }) => {
               </div>
               <div className="flex flex-col">
                 <label className={`text-[10px] font-black uppercase mb-1 ${activeProvider === 'dhl' ? 'text-slate-500' : 'text-slate-400'}`}>Zona DHL</label>
-                <div className={`p-2.5 border rounded-lg font-bold text-sm flex items-center justify-between h-[38px] ${activeProvider === 'dhl' ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-white/60 border-slate-200 text-slate-400'}`}>
+                <div className={`p-2.5 border rounded-lg font-bold text-sm flex items-center justify-between h-9.5 ${activeProvider === 'dhl' ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-white/60 border-slate-200 text-slate-400'}`}>
                   <span>Zona {dhlZoneId}</span>
                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Auto</span>
                 </div>

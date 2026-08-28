@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/Badge';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import { usePersistedState } from '../../hooks/usePersistedState';
+import { auth } from '../../firebase';
+import { normalizarBusqueda } from '../../utils/normalizers';
 
-export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis Solicitudes' }) => {
+export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis Solicitudes', role }) => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -55,12 +57,13 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
 
   // Aplicar filtros
   const filteredSolicitudes = solicitudes.filter((s) => {
+    if (role === 'vendedor' && s.vendedorId !== auth.currentUser?.uid) return false;
     if (filterAccion) {
       const accionReal = obtenerEstadoAccion(s.estado);
       if (accionReal !== filterAccion) return false;
     }
     if (filterEstado && s.estado !== filterEstado) return false;
-    if (filterVendedor && s.vendedorNombre !== filterVendedor) return false;
+    if (role !== 'vendedor' && filterVendedor && s.vendedorNombre !== filterVendedor) return false;
     
     if (s.fechaS) {
       const fechaSDate = s.fechaS.toDate ? s.fechaS.toDate() : new Date(s.fechaS);
@@ -79,10 +82,16 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
     }
 
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      const matchCorrelativo = s.correlativo?.toLowerCase().includes(term);
-      const matchCliente = s.cliente?.toLowerCase().includes(term);
-      if (!matchCorrelativo && !matchCliente) return false;
+      const termNormalized = normalizarBusqueda(searchTerm);
+      if (termNormalized) {
+        const matchCorrelativo = normalizarBusqueda(s.correlativo).includes(termNormalized);
+        const matchCliente = normalizarBusqueda(s.cliente).includes(termNormalized);
+        const matchProducto = s.productos?.some(p => 
+          normalizarBusqueda(p.desc).includes(termNormalized) || 
+          normalizarBusqueda(p.marca).includes(termNormalized)
+        );
+        if (!matchCorrelativo && !matchCliente && !matchProducto) return false;
+      }
     }
     return true;
   });
@@ -93,7 +102,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       if (!val) return 0;
       if (typeof val === 'object') {
         if (typeof val.toDate === 'function') {
-          try { return val.toDate().getTime(); } catch(_) {}
+          try { return val.toDate().getTime(); } catch { return 0; }
         }
         if (typeof val.seconds === 'number') {
           return val.seconds * 1000;
@@ -167,7 +176,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       </div>
 
       {/* Controles de Filtros */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 ${role === 'vendedor' ? 'md:grid-cols-5' : 'md:grid-cols-6'} gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm`}>
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (Ref / Cliente)</label>
           <input 
@@ -204,19 +213,21 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
             ))}
           </select>
         </div>
-        <div>
-          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Vendedor</label>
-          <select 
-            value={filterVendedor} 
-            onChange={(e) => { setFilterVendedor(e.target.value); setCurrentPage(1); }}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
-          >
-            <option value="">TODOS LOS VENDEDORES</option>
-            {vendedoresDisponibles.map(vend => (
-              <option key={vend} value={vend}>{vend.toUpperCase()}</option>
-            ))}
-          </select>
-        </div>
+        {role !== 'vendedor' && (
+          <div>
+            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Vendedor</label>
+            <select 
+              value={filterVendedor} 
+              onChange={(e) => { setFilterVendedor(e.target.value); setCurrentPage(1); }}
+              className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+            >
+              <option value="">TODOS LOS VENDEDORES</option>
+              {vendedoresDisponibles.map(vend => (
+                <option key={vend} value={vend}>{vend.toUpperCase()}</option>
+              ))}
+            </select>
+          </div>
+        )}
         
         {/* Rango de Fecha Calendario Popover */}
         <div className="relative" ref={refCalendario}>
@@ -269,6 +280,24 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               </div>
             </div>
           )}
+        </div>
+
+        <div className="flex flex-col justify-end w-fit pb-1">
+          <button
+            onClick={() => {
+              setSearchTerm('');
+              setFilterAccion('');
+              setFilterEstado('');
+              setFilterVendedor('');
+              setFechaInicio(null);
+              setFechaFin(null);
+              setCurrentPage(1);
+            }}
+            title="Limpiar filtros"
+            className="flex items-center justify-center bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded-xl w-10 h-10 border border-slate-100 transition-all cursor-pointer shadow-sm"
+          >
+            <Trash2 size={16} />
+          </button>
         </div>
       </div>
       
@@ -346,7 +375,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       </div>
 
       {totalPages > 1 && (
-        <div className="flex justify-between items-center mt-6 px-6 py-4 bg-slate-900 rounded-[1.5rem] text-white">
+        <div className="flex justify-between items-center mt-6 px-6 py-4 bg-slate-900 rounded-3xl text-white">
           <button
             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}

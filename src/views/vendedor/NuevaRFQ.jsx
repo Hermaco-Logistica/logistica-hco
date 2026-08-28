@@ -38,10 +38,12 @@ export const NuevaRFQ = ({ onFinalizar }) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (termino.length < 2) {
-      setSugerenciasCliente([]);
-      setIndiceSugerenciaActiva(-1);
-      setBuscandoCliente(false);
-      setErrorCliente('');
+      debounceRef.current = setTimeout(() => {
+        setSugerenciasCliente([]);
+        setIndiceSugerenciaActiva(-1);
+        setBuscandoCliente(false);
+        setErrorCliente('');
+      }, 0);
       return;
     }
 
@@ -52,7 +54,7 @@ export const NuevaRFQ = ({ onFinalizar }) => {
         const resultados = await buscarClientesGuardados(termino);
         setSugerenciasCliente(resultados);
         setIndiceSugerenciaActiva(resultados.length > 0 ? 0 : -1);
-      } catch (error) {
+      } catch {
         setErrorCliente('No se pudo buscar clientes guardados.');
         setSugerenciasCliente([]);
         setIndiceSugerenciaActiva(-1);
@@ -180,7 +182,7 @@ export const NuevaRFQ = ({ onFinalizar }) => {
         const resultados = await buscarMarcasGuardadas(termino);
         updateMarcaState(setSugerenciasMarca, index, resultados);
         updateMarcaState(setIndiceSugerenciaMarca, index, resultados.length > 0 ? 0 : -1);
-      } catch (error) {
+      } catch {
         updateMarcaState(setErrorMarca, index, 'No se pudo buscar marcas guardadas.');
         updateMarcaState(setSugerenciasMarca, index, []);
         updateMarcaState(setIndiceSugerenciaMarca, index, -1);
@@ -267,7 +269,7 @@ export const NuevaRFQ = ({ onFinalizar }) => {
           }
         });
         nextNum = maxNum + 1;
-      } catch (_) {
+      } catch {
         nextNum = Math.floor(Math.random() * 9000) + 1000; // fallback si falla la consulta
       }
       const correlativo = `RFQ-${nextNum.toString().padStart(4, '0')}`;
@@ -324,7 +326,7 @@ export const NuevaRFQ = ({ onFinalizar }) => {
 
       <form onSubmit={guardarRFQ} className="space-y-6">
         {/* Card Cliente */}
-        <div className="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-100">
+        <div className="bg-white p-8 rounded-4xl border border-slate-200 shadow-xl shadow-slate-100">
           <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Nombre del Cliente / Empresa</label>
           <div className="relative">
             <input 
@@ -400,8 +402,8 @@ export const NuevaRFQ = ({ onFinalizar }) => {
         </div>
 
         {/* Listado de Productos */}
-        <div className="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-100 overflow-visible">
-          <div className="p-6 bg-slate-900 flex justify-between items-center rounded-t-[2rem]">
+        <div className="bg-white rounded-4xl border border-slate-200 shadow-xl shadow-slate-100 overflow-visible">
+          <div className="p-6 bg-slate-900 flex justify-between items-center rounded-t-4xl">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Items Solicitados</span>
             <button 
               type="button"
@@ -526,7 +528,7 @@ export const NuevaRFQ = ({ onFinalizar }) => {
         <button 
           type="submit" 
           disabled={loading}
-          className={`w-full py-5 rounded-[1.5rem] font-black text-white uppercase tracking-[0.2em] shadow-2xl transition-all transform active:scale-[0.98] ${
+          className={`w-full py-5 rounded-3xl font-black text-white uppercase tracking-[0.2em] shadow-2xl transition-all transform active:scale-[0.98] ${
             loading 
               ? 'bg-slate-400 cursor-not-allowed' 
               : 'bg-slate-900 hover:bg-emerald-600 shadow-emerald-200'

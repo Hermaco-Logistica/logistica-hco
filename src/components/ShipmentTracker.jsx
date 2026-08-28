@@ -84,7 +84,7 @@ export const ShipmentTracker = ({ shipmentData }) => {
       const timeB = Date.parse(b?.timestamp || '') || 0;
       return timeB - timeA;
     });
-  }, [shipmentData?.events]);
+  }, [shipmentData]);
 
   const latestEvent = normalizedEvents[0] || null;
 
