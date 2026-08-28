@@ -402,6 +402,14 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
               ? (enviandoPedido ? 'GENERANDO...' : 'CONFIRMAR Y ENVIAR PEDIDO')
               : (pedidoYaCreado ? 'PEDIDO YA GENERADO' : 'SOLO VISUALIZACION')}
           </button>
+          
+          {pedidoYaCreado && (
+            <div className="mt-4 bg-slate-100 border-2 border-slate-200 rounded-xl p-4 text-center animate-in fade-in zoom-in duration-300">
+              <span className="text-slate-700 font-black text-xs uppercase tracking-widest">
+                Referencia OC asignada: {[...new Set((rfq?.productos || []).filter(p => p.numOC).map(p => p.numOC))].join(', ') || 'Pendiente'}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

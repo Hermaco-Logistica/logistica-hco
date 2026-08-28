@@ -279,6 +279,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               <th className="p-4">Fechas (Solicitud / Respuesta)</th>
               <th className="p-4 text-center">Resumen Oferta (A / M)</th>
               <th className="p-4 text-center">Estado</th>
+              <th className="p-4 text-center">OC Ref</th>
               <th className="p-4 text-center">Acción</th>
             </tr>
           </thead>
@@ -291,6 +292,9 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               
               const totalM = itemsConPrecio.reduce((acc, p) => 
                 acc + (p.fob * (s.factorM || 1.08) * (p.fvm || 1.25) * p.cant), 0);
+
+              const ocRefs = [...new Set((s.productos || []).filter(p => p.numOC).map(p => p.numOC))];
+              const ocRefText = ocRefs.length > 0 ? ocRefs.join(', ') : '-';
 
               return (
                 <tr key={s.id} className="hover:bg-slate-50 transition-colors">
@@ -321,6 +325,9 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   </td>
                   <td className="p-4 text-center">
                     <Badge estado={s.estado} />
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className="text-[10px] font-black text-slate-700 bg-slate-100 px-3 py-1 rounded-full uppercase">{ocRefText}</span>
                   </td>
                   <td className="p-4 text-center">
                     <button 
