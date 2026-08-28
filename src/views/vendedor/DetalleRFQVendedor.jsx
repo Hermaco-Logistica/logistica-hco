@@ -373,7 +373,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
                   <span className="text-emerald-400">Sí</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800 pb-2">
-                  <span>Orden de compra</span>
+                  <span>Ref. OC Cliente/Vendedor</span>
                   <span className="text-white normal-case tracking-normal">{linkOC || rfq?.linkOC || 'No registrada'}</span>
                 </div>
                 <div className="pt-2 border-t border-slate-800">
@@ -406,7 +406,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
           {pedidoYaCreado && (
             <div className="mt-4 bg-slate-100 border-2 border-slate-200 rounded-xl p-4 text-center animate-in fade-in zoom-in duration-300">
               <span className="text-slate-700 font-black text-xs uppercase tracking-widest">
-                Referencia OC asignada: {[...new Set((rfq?.productos || []).filter(p => p.numOC).map(p => p.numOC))].join(', ') || 'Pendiente'}
+                OC Compras Asignada: {[...new Set((rfq?.productos || []).filter(p => p.numOC).map(p => p.numOC))].join(', ') || 'Pendiente'}
               </span>
             </div>
           )}
