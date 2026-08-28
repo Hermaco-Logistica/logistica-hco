@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc, collection, addDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, addDoc, serverTimestamp, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { ChevronLeft, Clock, Tag, Calendar, CheckCircle2, ShoppingCart, Link as LinkIcon, AlertCircle, Printer, X } from 'lucide-react';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
@@ -82,44 +82,44 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
   };
 
   useEffect(() => {
-    const fetchRFQ = async () => {
-      try {
-        const docRef = doc(db, "solicitudes", id);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          
-          // PROTECCIÓN DE RUTA: Si es vendedor, verificar que sea el dueño
-          const email = auth.currentUser?.email || '';
-          const esVendedor = !email.toLowerCase().match(/admin|gerente|compras/);
-          if (esVendedor && data.vendedorId !== auth.currentUser?.uid) {
-            alert('Acceso Denegado: Esta solicitud pertenece a otro vendedor.');
-            navigate('/vendedor');
-            return;
-          }
-
-          setRfq({ id: docSnap.id, ...data });
-          
-          const selInit = {};
-          const modInit = {};
-          data.productos.forEach((p, idx) => {
-            if (Number(p.fob) > 0) {
-              selInit[idx] = false;
-              modInit[idx] = 'A';
-            }
-          });
-          setSeleccionados(selInit);
-          setModalidades(modInit);
-        } else {
+    const docRef = doc(db, "solicitudes", id);
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        
+        // PROTECCIÓN DE RUTA: Si es vendedor, verificar que sea el dueño
+        const email = auth.currentUser?.email || '';
+        const esVendedor = !email.toLowerCase().match(/admin|gerente|compras/);
+        if (esVendedor && data.vendedorId !== auth.currentUser?.uid) {
+          alert('Acceso Denegado: Esta solicitud pertenece a otro vendedor.');
           navigate('/vendedor');
+          return;
         }
-      } catch (error) {
-        console.error("Error:", error);
-      } finally {
-        setLoading(false);
+
+        setRfq({ id: docSnap.id, ...data });
+        
+        const selInit = {};
+        const modInit = {};
+        data.productos.forEach((p, idx) => {
+          if (Number(p.fob) > 0) {
+            selInit[idx] = false;
+            modInit[idx] = 'A';
+          }
+        });
+        // Solo resetear si no había selecciones previas para no borrar el progreso del usuario
+        setSeleccionados(prev => Object.keys(prev).length ? prev : selInit);
+        setModalidades(prev => Object.keys(prev).length ? prev : modInit);
+      } else {
+        alert("Solicitud no encontrada.");
+        navigate('/vendedor');
       }
-    };
-    fetchRFQ();
+      setLoading(false);
+    }, (error) => {
+      console.error("Error obteniendo RFQ:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [id, navigate]);
 
   const handleCrearPedido = async () => {
