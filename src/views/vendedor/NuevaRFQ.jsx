@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { auth, db } from '../../firebase';
-import { serverTimestamp, getDocs, query, orderBy, limit, collection } from 'firebase/firestore';
+import { serverTimestamp, collection, doc, runTransaction } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import {
   buscarClientesGuardados,
@@ -13,7 +13,7 @@ import {
   normalizarNombreMarca,
 } from '../../services/marcasService';
 
-export const NuevaRFQ = ({ onFinalizar }) => {
+export const NuevaRFQ = () => {
   const navigate = useNavigate();
   const [cliente, setCliente] = useState('');
   const [sugerenciasCliente, setSugerenciasCliente] = useState([]);
@@ -255,49 +255,45 @@ export const NuevaRFQ = ({ onFinalizar }) => {
         await Promise.all(marcasNormalizadas.map((marca) => guardarMarcaSiNoExiste(marca, auth.currentUser)));
       }
 
-      // Correlativo secuencial: busca el número más alto existente y suma 1
-      let nextNum = 1;
-      try {
-        const snap = await getDocs(query(collection(db, 'solicitudes'), orderBy('correlativo', 'desc'), limit(50)));
-        let maxNum = 0;
-        snap.docs.forEach(d => {
-          const corr = d.data().correlativo || '';
-          const match = corr.match(/^RFQ-(\d+)$/);
-          if (match) {
-            const n = parseInt(match[1], 10);
-            if (n > maxNum) maxNum = n;
-          }
-        });
-        nextNum = maxNum + 1;
-      } catch {
-        nextNum = Math.floor(Math.random() * 9000) + 1000; // fallback si falla la consulta
-      }
-      const correlativo = `RFQ-${nextNum.toString().padStart(4, '0')}`;
-      
-      // Preparamos el objeto exacto que espera la base de datos
-      const dataParaGuardar = {
-        cliente: clienteNormalizado,
-        correlativo,
-        validez,
-        vendedorId: auth.currentUser.uid,
-        vendedorEmail: auth.currentUser.email,
-        vendedorNombre: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
-        estado: 'Pendiente',
-        fechaS: serverTimestamp(),
-        productos: productos.map(p => ({
-          ...p,
-          marca: normalizarNombreMarca(p.marca),
-          descripcion: p.desc, // Aseguramos compatibilidad con la calculadora
-          disponible: false,
-          fob: 0,
-          fva: 1.30,
-          fvm: 1.25,
-          selected: true
-        }))
-      };
+      // Generar ID de forma atómica y segura mediante transacciones
+      const counterRef = doc(db, 'metadata', 'rfq_counter');
+      const nuevaSolicitudRef = doc(collection(db, 'solicitudes'));
 
-      // Delegamos el guardado al padre (App.jsx) para evitar el doble mensaje
-      await onFinalizar(dataParaGuardar);
+      await runTransaction(db, async (transaction) => {
+        const counterDoc = await transaction.get(counterRef);
+        let nextNum = 1;
+        if (counterDoc.exists()) {
+          nextNum = (counterDoc.data().lastNum || 0) + 1;
+        }
+
+        const correlativo = `RFQ-${nextNum.toString().padStart(4, '0')}`;
+        
+        const dataParaGuardar = {
+          cliente: clienteNormalizado,
+          correlativo,
+          validez,
+          vendedorId: auth.currentUser.uid,
+          vendedorEmail: auth.currentUser.email,
+          vendedorNombre: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
+          estado: 'Pendiente',
+          fechaS: serverTimestamp(),
+          productos: productos.map(p => ({
+            ...p,
+            marca: normalizarNombreMarca(p.marca),
+            descripcion: p.desc, 
+            disponible: false,
+            fob: 0,
+            fva: 1.30,
+            fvm: 1.25,
+            selected: true
+          }))
+        };
+
+        transaction.set(counterRef, { lastNum: nextNum }, { merge: true });
+        transaction.set(nuevaSolicitudRef, dataParaGuardar);
+      });
+
+      alert("Solicitud Creada");
       navigate('/vendedor');
       
     } catch (error) {

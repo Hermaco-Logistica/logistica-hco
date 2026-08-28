@@ -63,12 +63,6 @@ function App() {
     return () => unsubscribe();
   }, [user, role]);
 
-  const handleNuevaSolicitud = async (datos) => {
-    try {
-      await addDoc(collection(db, "solicitudes"), datos);
-      alert("Solicitud Creada");
-    } catch (e) { console.error(e); }
-  };
 
   const handleGuardarCotizacion = async (items, fa, fm, fl, ad, ta, sc, ax, mj, sg, el, og, rfqId, pdfBase64) => {
     try {
@@ -197,7 +191,7 @@ function App() {
               ) : isVendedor ? (
                 <>
                   <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate role={role} />} />
-                  <Route path="/vendedor/nueva" element={<NuevaRFQ onFinalizar={handleNuevaSolicitud} />} />
+                  <Route path="/vendedor/nueva" element={<NuevaRFQ />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   <Route path="*" element={<Navigate to="/vendedor" replace />} />
@@ -205,7 +199,7 @@ function App() {
               ) : isGerente ? (
                 <>
                   <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate title="Solicitudes Globales" role={role} />} />
-                  <Route path="/vendedor/nueva" element={<NuevaRFQ onFinalizar={handleNuevaSolicitud} />} />
+                  <Route path="/vendedor/nueva" element={<NuevaRFQ />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} />} />
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
