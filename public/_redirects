@@ -1,1 +1,3 @@
-/*    /index.html   200
+/api/tracking-status    /.netlify/functions/tracking-status   200
+/api/send-quotation     /.netlify/functions/send-quotation    200
+/*                      /index.html                           200

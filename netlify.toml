@@ -1,13 +1,3 @@
-[[redirects]]
-  from = "/api/tracking-status"
-  to = "/.netlify/functions/tracking-status"
-  status = 200
-
-[[redirects]]
-  from = "/api/send-quotation"
-  to = "/.netlify/functions/send-quotation"
-  status = 200
-
 [dev]
   command = "npm run dev:vite"
   targetPort = 5173
