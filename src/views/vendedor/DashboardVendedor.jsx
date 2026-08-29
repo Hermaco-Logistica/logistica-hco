@@ -370,11 +370,11 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       <span className="block font-black text-slate-800 text-lg leading-none">{s.correlativo}</span>
-                      {s.emailEnviado === false && (
+                      {s.emailEnviado !== true && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleReenviarCorreo(s); }}
                           disabled={reenviandoId === s.id}
-                          title="Correo a compras falló. Clic para reenviar."
+                          title="Enviar correo a Compras"
                           className={`p-1 rounded bg-rose-100 text-rose-600 hover:bg-rose-200 transition-colors ${reenviandoId === s.id ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <AlertTriangle size={14} />
