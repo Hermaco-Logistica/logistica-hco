@@ -9,7 +9,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { to, cc, subject, bodyHtml } = JSON.parse(event.body || '{}');
+    const { to, cc, subject, bodyHtml, from, replyTo } = JSON.parse(event.body || '{}');
 
     if (!to || !to.length) {
       return {
@@ -29,11 +29,15 @@ export const handler = async (event) => {
     const resend = new Resend(apiKey);
 
     const emailPayload = {
-      from: 'Sistema Logistica Hermaco <compras@hermaco.net>',
+      from: from || 'Sistema Logistica Hermaco <compras@hermaco.net>',
       to: Array.isArray(to) ? to : [to],
       subject: subject || 'Notificación del Sistema',
       html: bodyHtml || '<p>Notificación automática de Logística Hermaco.</p>',
     };
+
+    if (replyTo) {
+      emailPayload.reply_to = replyTo;
+    }
 
     if (cc && cc.length) {
       emailPayload.cc = Array.isArray(cc) ? cc : [cc];

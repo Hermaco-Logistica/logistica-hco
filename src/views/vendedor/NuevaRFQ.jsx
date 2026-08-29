@@ -12,6 +12,7 @@ import {
   guardarMarcaSiNoExiste,
   normalizarNombreMarca,
 } from '../../services/marcasService';
+import { generarPlantillaNuevaRFQ } from '../../utils/emailTemplates';
 
 export const NuevaRFQ = () => {
   const navigate = useNavigate();
@@ -259,7 +260,7 @@ export const NuevaRFQ = () => {
       const counterRef = doc(db, 'metadata', 'rfq_counter');
       const nuevaSolicitudRef = doc(collection(db, 'solicitudes'));
 
-      await runTransaction(db, async (transaction) => {
+      const savedData = await runTransaction(db, async (transaction) => {
         const counterDoc = await transaction.get(counterRef);
         let nextNum = 1;
         if (counterDoc.exists()) {
@@ -290,10 +291,42 @@ export const NuevaRFQ = () => {
         };
 
         transaction.set(counterRef, { lastNum: nextNum }, { merge: true });
+        transaction.set(counterRef, { lastNum: nextNum }, { merge: true });
         transaction.set(nuevaSolicitudRef, dataParaGuardar);
+        return { ...dataParaGuardar, id: nuevaSolicitudRef.id };
       });
 
-      alert("Solicitud Creada");
+      // --- Envío de correo automático ---
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : ["compras@hermaco.net"];
+      const ccEmails = [auth.currentUser.email];
+      
+      const htmlBody = generarPlantillaNuevaRFQ(savedData);
+      
+      let emailExitoso = false;
+      try {
+        const mailRes = await fetch('/.netlify/functions/send-email-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: auth.currentUser.email,
+            replyTo: auth.currentUser.email,
+            to: destinatarioTo,
+            cc: ccEmails,
+            subject: `Nueva RFQ: ${savedData.correlativo} - ${savedData.cliente}`,
+            bodyHtml: htmlBody
+          })
+        });
+        emailExitoso = mailRes.ok;
+      } catch (e) {
+        console.error("Error enviando correo de notificación:", e);
+      }
+      
+      // Actualizamos la solicitud con el estado del correo (importar updateDoc)
+      const { updateDoc } = await import('firebase/firestore');
+      await updateDoc(doc(db, 'solicitudes', savedData.id), { emailEnviado: emailExitoso });
+
+      alert(emailExitoso ? "Solicitud Creada" : "Solicitud Creada (Advertencia: Correo no enviado)");
       navigate('/vendedor');
       
     } catch (error) {

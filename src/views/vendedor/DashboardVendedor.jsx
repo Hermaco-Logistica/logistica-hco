@@ -5,7 +5,10 @@ import { Calendar as CalendarIcon, Trash2 } from 'lucide-react';
 import { usePersistedState } from '../../hooks/usePersistedState';
 import { auth } from '../../firebase';
 import { normalizarBusqueda } from '../../utils/normalizers';
-
+import { db } from '../../firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { generarPlantillaNuevaRFQ } from '../../utils/emailTemplates';
+import { AlertTriangle } from 'lucide-react';
 export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis Solicitudes', role }) => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
@@ -43,6 +46,42 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       hour12: false,
       timeZone: 'America/El_Salvador'
     }).format(dateValue);
+  };
+
+  const [reenviandoId, setReenviandoId] = useState(null);
+
+  const handleReenviarCorreo = async (s) => {
+    try {
+      setReenviandoId(s.id);
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : ["compras@hermaco.net"];
+      const ccEmails = [s.vendedorEmail];
+      
+      const htmlBody = generarPlantillaNuevaRFQ(s);
+      
+      const mailRes = await fetch('/.netlify/functions/send-email-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: s.vendedorEmail,
+          replyTo: s.vendedorEmail,
+          to: destinatarioTo,
+          cc: ccEmails,
+          subject: `Nueva RFQ: ${s.correlativo} - ${s.cliente}`,
+          bodyHtml: htmlBody
+        })
+      });
+
+      if (!mailRes.ok) throw new Error("Fallo al enviar correo");
+      
+      await updateDoc(doc(db, 'solicitudes', s.id), { emailEnviado: true });
+      alert("Correo reenviado exitosamente");
+    } catch (e) {
+      alert("No se pudo reenviar el correo. Intenta de nuevo.");
+      console.error(e);
+    } finally {
+      setReenviandoId(null);
+    }
   };
 
   const obtenerEstadoAccion = (estado) => {
@@ -329,7 +368,19 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               return (
                 <tr key={s.id} className="hover:bg-slate-50 transition-colors">
                   <td className="p-4">
-                    <span className="block font-black text-slate-800 text-lg leading-none">{s.correlativo}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="block font-black text-slate-800 text-lg leading-none">{s.correlativo}</span>
+                      {s.emailEnviado === false && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleReenviarCorreo(s); }}
+                          disabled={reenviandoId === s.id}
+                          title="Correo a compras falló. Clic para reenviar."
+                          className={`p-1 rounded bg-rose-100 text-rose-600 hover:bg-rose-200 transition-colors ${reenviandoId === s.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <AlertTriangle size={14} />
+                        </button>
+                      )}
+                    </div>
                     <span className="text-[10px] font-bold text-blue-600 uppercase italic">EXT: {s.cliente}</span>
                   </td>
                   <td className="p-4 text-[11px]">
