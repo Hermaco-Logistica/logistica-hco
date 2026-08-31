@@ -15,6 +15,17 @@ export const emailConfig = {
     ]
   },
 
+  // Configuración de notificaciones cuando el vendedor genera una Nueva RFQ
+  nuevaRFQ: {
+    to: [
+      "compras@hermaco.net"
+    ],
+    cc: [
+      "chernandez@hermaco.net",
+      "fsalinas@hermaco.net",
+      "oventura@hermaco.net"
+    ]
+  },
   // Configuración de notificaciones cuando el vendedor genera un pedido
   pedidoGenerado: {
     // Destinatarios principales (TO)

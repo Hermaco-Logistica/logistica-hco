@@ -13,6 +13,7 @@ import {
   normalizarNombreMarca,
 } from '../../services/marcasService';
 import { generarPlantillaNuevaRFQ } from '../../utils/emailTemplates';
+import { emailConfig } from '../../config/emailConfig';
 
 export const NuevaRFQ = () => {
   const navigate = useNavigate();
@@ -298,8 +299,13 @@ export const NuevaRFQ = () => {
 
       // --- Envío de correo automático ---
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : ["compras@hermaco.net"];
-      const ccEmails = [auth.currentUser.email];
+      const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : (emailConfig.nuevaRFQ.to || []);
+      const ccEmails = isLocal 
+        ? [auth.currentUser.email]
+        : [
+            auth.currentUser.email,
+            ...(emailConfig.nuevaRFQ.cc || [])
+          ];
       
       const htmlBody = generarPlantillaNuevaRFQ(savedData);
       
@@ -309,7 +315,7 @@ export const NuevaRFQ = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            from: auth.currentUser.email,
+            from: `${auth.currentUser.displayName || auth.currentUser.email.split('@')[0]} <${auth.currentUser.email}>`,
             replyTo: auth.currentUser.email,
             to: destinatarioTo,
             cc: ccEmails,
