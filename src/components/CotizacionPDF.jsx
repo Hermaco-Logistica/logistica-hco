@@ -271,6 +271,7 @@ export default function CotizacionPDF({ cotizacionData }) {
           </View>
 
           {filas.map((item, index) => {
+            const esEnConsulta = item?.enConsulta || item?.estadoItem === 'En consulta';
             const fobVal = Number(item?.fob || 0);
             const precioA = fobVal * factorA * (item?.fva || 1.30);
             const precioM = fobVal * factorM * (item?.fvm || 1.25);
@@ -281,13 +282,21 @@ export default function CotizacionPDF({ cotizacionData }) {
               <View key={index} style={styles.tableRow}>
                 <Text style={[styles.tdDesc, { width: '11%', fontSize: 8 }]}>{getDescripcionItem(item)}</Text>
                 <Text style={[styles.td, { width: '7%' }]}>{item?.cant ?? ''}</Text>
-                <Text style={[styles.tdRight, { width: '11%' }]}>{precioA > 0 ? formatMoneda(precioA) : ''}</Text>
-                <Text style={[styles.tdRight, { width: '11%' }]}>{precioM > 0 ? formatMoneda(precioM) : ''}</Text>
+                <Text style={[styles.tdRight, { width: '11%', fontSize: esEnConsulta ? 7 : 8 }]}>
+                  {esEnConsulta ? 'En consulta' : (precioA > 0 ? formatMoneda(precioA) : '')}
+                </Text>
+                <Text style={[styles.tdRight, { width: '11%', fontSize: esEnConsulta ? 7 : 8 }]}>
+                  {esEnConsulta ? 'En consulta' : (precioM > 0 ? formatMoneda(precioM) : '')}
+                </Text>
                 <Text style={[styles.td, { width: '9%' }]}>{item?.marca || ''}</Text>
                 <Text style={[styles.td, { width: '14%' }]}>{item?.entregaA || ''}</Text>
                 <Text style={[styles.td, { width: '14%' }]}>{item?.entregaM || ''}</Text>
-                <Text style={[styles.tdRight, { width: '11%' }]}>{tAereo > 0 ? formatMoneda(tAereo) : ''}</Text>
-                <Text style={[styles.tdRight, { width: '12%' }]}>{tMaritimo > 0 ? formatMoneda(tMaritimo) : ''}</Text>
+                <Text style={[styles.tdRight, { width: '11%', fontSize: esEnConsulta ? 7 : 8 }]}>
+                  {esEnConsulta ? 'En consulta' : (tAereo > 0 ? formatMoneda(tAereo) : '')}
+                </Text>
+                <Text style={[styles.tdRight, { width: '12%', fontSize: esEnConsulta ? 7 : 8 }]}>
+                  {esEnConsulta ? 'En consulta' : (tMaritimo > 0 ? formatMoneda(tMaritimo) : '')}
+                </Text>
               </View>
             );
           })}

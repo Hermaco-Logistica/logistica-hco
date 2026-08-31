@@ -9,7 +9,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { pdf, to, cc, subject, filename, bodyHtml } = JSON.parse(event.body || '{}');
+    const { pdf, to, cc, subject, filename, bodyHtml, from } = JSON.parse(event.body || '{}');
 
     if (!pdf) {
       return {
@@ -35,7 +35,7 @@ export const handler = async (event) => {
     const resend = new Resend(apiKey);
 
     const emailPayload = {
-      from: 'compras@hermaco.net <compras@hermaco.net>',
+      from: from || 'compras@hermaco.net <compras@hermaco.net>',
       to: Array.isArray(to) ? to : [to],
       subject: subject || 'Cotización de Pedido',
       html: bodyHtml || '<p>Adjunto encontrará la cotización del pedido solicitado.</p>',

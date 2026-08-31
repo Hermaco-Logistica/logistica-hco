@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { auth, db, provider } from './firebase'; 
 import { onAuthStateChanged, signOut, signInWithPopup } from 'firebase/auth';
-import { collection, query, onSnapshot, where, addDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, where, addDoc, doc, updateDoc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { emailConfig } from './config/emailConfig';
 
 // Componentes y Vistas
@@ -24,6 +24,25 @@ const resolveRoleFromEmail = (email = '') => {
   return 'vendedor';
 };
 
+// `selected` solo controla la interfaz de la calculadora y no representa un
+// cambio comercial en la cotización.
+const normalizarParaComparacion = (valor) => {
+  if (Array.isArray(valor)) return valor.map(normalizarParaComparacion);
+  if (valor && typeof valor === 'object' && !(valor instanceof Date)) {
+    return Object.keys(valor)
+      .filter((clave) => clave !== 'selected')
+      .sort()
+      .reduce((resultado, clave) => {
+        resultado[clave] = normalizarParaComparacion(valor[clave]);
+        return resultado;
+      }, {});
+  }
+  return valor;
+};
+
+const sonIgualesParaCotizacion = (anterior, nuevo) =>
+  JSON.stringify(normalizarParaComparacion(anterior)) === JSON.stringify(normalizarParaComparacion(nuevo));
+
 function App() {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
@@ -31,11 +50,41 @@ function App() {
   const [solicitudes, setSolicitudes] = useState([]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
         if (u.email.endsWith('@hermaco.net')) {
-          setUser(u);
-          setRole(resolveRoleFromEmail(u.email));
+          try {
+            const userRef = doc(db, 'users', u.uid);
+            const userSnap = await getDoc(userRef);
+            
+            let userRole = 'vendedor';
+            
+            if (userSnap.exists()) {
+              const data = userSnap.data();
+              userRole = data.role || data.rol || resolveRoleFromEmail(u.email);
+              // Actualizar último login de forma no bloqueante
+              updateDoc(userRef, { lastLoginAt: serverTimestamp() }).catch(() => {});
+            } else {
+              // Registro automático para usuarios nuevos y migración limpia de antiguos
+              userRole = resolveRoleFromEmail(u.email);
+              await setDoc(userRef, {
+                uid: u.uid,
+                email: u.email,
+                displayName: u.displayName || u.email.split('@')[0],
+                role: userRole,
+                createdAt: serverTimestamp(),
+                lastLoginAt: serverTimestamp()
+              });
+            }
+
+            setUser(u);
+            setRole(userRole);
+          } catch (err) {
+            console.error("Error al sincronizar usuario en Firestore:", err);
+            // Fallback de seguridad en caso de error de red o permisos
+            setUser(u);
+            setRole(resolveRoleFromEmail(u.email));
+          }
         } else {
           signOut(auth);
           alert("Acceso denegado. Solo se permiten correos de @hermaco.net");
@@ -61,7 +110,7 @@ function App() {
       setSolicitudes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return () => unsubscribe();
-  }, [user, role]);
+  }, [user?.uid, role]);
 
 
   const handleGuardarCotizacion = async (items, fa, fm, fl, ad, ta, sc, ax, mj, sg, el, og, rfqId, pdfBase64) => {
@@ -74,20 +123,58 @@ function App() {
       let cliente = "N/A";
       let vendedorNombre = "Vendedor";
       let vendedorEmail = "";
+      let rfqData = {};
       if (rfqSnap.exists()) {
-        const rfqData = rfqSnap.data();
+        rfqData = rfqSnap.data();
         correlativo = rfqData.correlativo || "N/A";
         cliente = rfqData.cliente || "N/A";
         vendedorNombre = rfqData.vendedorNombre || "Vendedor";
         vendedorEmail = rfqData.vendedorEmail || "";
       }
 
-      // LÓGICA DE ESTADO: Si hay algún item con FOB 0 o vacío, es Parcial
-      const esParcial = items.some(p => !p.fob || Number(p.fob) <= 0);
-      const estadoFinal = esParcial ? 'Cotizado Parcial' : 'Cotizado';
+      // Una cotización finalizada es un documento cerrado: no debe guardarse
+      // otra vez ni generar un correo duplicado desde una pantalla o URL abierta.
+      if (rfqData.estado === 'Cotizado' || rfqData.estado === 'Pedido') {
+        throw new Error("Esta solicitud ya está cotizada y no admite una nueva cotización.");
+      }
+
+      // Preservar datos de ítems previamente pedidos por el vendedor
+      const productosGuardadosEnBD = rfqData.productos || [];
+      const productosProcesados = items.map((newItem, idx) => {
+        const itemExistenteBD = productosGuardadosEnBD[idx] || {};
+        const esPedidoPrevio = itemExistenteBD.estadoItem === 'Pedido' || itemExistenteBD.estadoItem === 'Comprado' || (!!itemExistenteBD.modalidad && Number(itemExistenteBD.precioUnitario || 0) > 0);
+
+        if (esPedidoPrevio) {
+          // Mantener intactos todos los datos de la confirmación previa del vendedor
+          return {
+            ...newItem,
+            ...itemExistenteBD,
+            fob: Number(newItem.fob) > 0 ? newItem.fob : itemExistenteBD.fob
+          };
+        }
+        return newItem;
+      });
+
+      // LÓGICA DE ESTADO GLOBAL DE LA SOLICITUD
+      const hayPedidos = productosProcesados.some(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
+      const todosPedidos = productosProcesados.length > 0 && productosProcesados.every(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
+      const hayItemsSinCotizar = productosProcesados.some(p => (!p.fob || Number(p.fob) <= 0) && !p.enConsulta);
+
+      let estadoFinal = 'Cotizado';
+      if (todosPedidos) {
+        estadoFinal = 'Pedido';
+      } else if (hayPedidos) {
+        estadoFinal = 'Pedido Parcial';
+      } else if (hayItemsSinCotizar) {
+        estadoFinal = 'Cotizado Parcial';
+      } else {
+        estadoFinal = 'Cotizado';
+      }
+
+      const tieneItemsCotizados = productosProcesados.some(p => Number(p.fob || 0) > 0);
       
-      await updateDoc(rfqDocRef, {
-        productos: items, 
+      const updatePayload = {
+        productos: productosProcesados, 
         factorA: fa, 
         factorM: fm, 
         fleteAereo: fl, 
@@ -101,21 +188,39 @@ function App() {
         otrosGastos: og,
         estado: estadoFinal, 
         fechaCotizacion: new Date()
-      });
+      };
+
+      if (rfqData.linkOC) updatePayload.linkOC = rfqData.linkOC;
+      if (rfqData.notasPedido) updatePayload.notasPedido = rfqData.notasPedido;
+
+      const camposComparables = [
+        'productos', 'factorA', 'factorM', 'fleteAereo', 'aduanaAerea',
+        'tramiteAduanal', 'scan', 'adimex', 'manejos', 'seguro',
+        'entregaLocal', 'otrosGastos', 'estado'
+      ];
+      const sinCambios = camposComparables.every((campo) =>
+        sonIgualesParaCotizacion(rfqData[campo], updatePayload[campo])
+      );
+
+      if (sinCambios) {
+        alert("No se detectaron cambios. La cotización ya estaba guardada y no se envió ningún correo.");
+        return true;
+      }
+
+      await updateDoc(rfqDocRef, updatePayload);
       
-      // Enviar correo automático con PDF adjunto (requerido para éxito)
+      // Enviar correo automático con PDF adjunto SOLO si hay ítems cotizados con precio
       const mailConfig = emailConfig.cotizacionFinalizada;
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       
-      // En local/sandbox, forzar destinatario a compras@hermaco.net
-      // En prod va al vendedor asignado
-      const destinatarioTo = isLocal ? (mailConfig.to || []) : (vendedorEmail ? [vendedorEmail] : (mailConfig.to || []));
-      
-      // Si estamos en local, agregamos a rvides@hermaco.net en CC para desarrollo.
-      // En prod usamos la lista de CC real configurada
+      // En local/sandbox (desarrollo): destinatarios y CC van ÚNICAMENTE a rvides@hermaco.net.
+      // En producción: TO va al vendedor asignado y CC a la lista corporativa (compras, chernandez, fsalinas, oventura).
+      const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : (vendedorEmail ? [vendedorEmail] : (mailConfig.to || []));
       const ccEmails = isLocal ? ["rvides@hermaco.net"] : (mailConfig.cc || []);
       
-      if (destinatarioTo.length && pdfBase64) {
+      const senderFrom = isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : 'compras@hermaco.net <compras@hermaco.net>';
+
+      if (tieneItemsCotizados && destinatarioTo.length && pdfBase64) {
         const subject = `Cotización #${correlativo}`;
         const bodyHtml = `
           <p>Estimado ${vendedorNombre},</p>
@@ -128,6 +233,7 @@ function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             pdf: pdfBase64,
+            from: senderFrom,
             to: destinatarioTo,
             cc: ccEmails,
             subject,
@@ -142,6 +248,7 @@ function App() {
         }
       }
 
+      const esParcial = estadoFinal === 'Cotizado Parcial' || estadoFinal === 'Pedido Parcial';
       alert(esParcial ? "Avance Parcial Guardado" : "Cotización Finalizada");
       return true;
     } catch (e) { 
@@ -174,6 +281,7 @@ function App() {
             <Routes>
               {isComprador ? (
                 <>
+                  <Route path="/" element={<Navigate to="/compras" replace />} />
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly={false} />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   <Route path="/gestion-oc" element={<GestionOC readOnly={false} />} />
@@ -190,6 +298,7 @@ function App() {
                 </>
               ) : isVendedor ? (
                 <>
+                  <Route path="/" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate role={role} />} />
                   <Route path="/vendedor/nueva" element={<NuevaRFQ />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido />} />
@@ -198,22 +307,24 @@ function App() {
                 </>
               ) : isGerente ? (
                 <>
+                  <Route path="/" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate title="Solicitudes Globales" role={role} />} />
+                  <Route path="/vendedor/nueva" element={<NuevaRFQ />} />
+                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} />} />
+                  <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
+                  <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
+                  <Route path="*" element={<Navigate to="/vendedor" replace />} />
+                </>
+              ) : isAdmin ? (
+                <>
+                  <Route path="/" element={<Navigate to="/vendedor" replace />} />
+                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate={false} title="Solicitudes Globales" role={role} />} />
                   <Route path="/vendedor/nueva" element={<NuevaRFQ />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} />} />
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   <Route path="/gestion-oc" element={<GestionOC readOnly />} />
                   <Route path="*" element={<Navigate to="/vendedor" replace />} />
-                </>
-              ) : isAdmin ? (
-                <>
-                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate={false} title="Solicitudes Globales" role={role} />} />
-                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} />} />
-                  <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
-                  <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
-                  <Route path="/gestion-oc" element={<GestionOC readOnly />} />
-                  <Route path="*" element={<Navigate to="/compras" replace />} />
                 </>
               ) : (
                 <Route path="*" element={<Navigate to="/login" replace />} />

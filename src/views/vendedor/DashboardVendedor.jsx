@@ -351,6 +351,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           <thead>
             <tr className="bg-slate-900 text-white text-[10px] uppercase font-black tracking-widest">
               <th className="p-4">Referencia / Cliente</th>
+              <th className="p-4">Vendedor</th>
               <th className="p-4">Fechas (Solicitud / Respuesta)</th>
               <th className="p-4 text-center">Resumen Oferta (A / M)</th>
               <th className="p-4 text-center">Estado</th>
@@ -388,6 +389,12 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                       )}
                     </div>
                     <span className="text-[10px] font-bold text-blue-600 uppercase italic">EXT: {s.cliente}</span>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-black text-slate-700 uppercase">{s.vendedorNombre || '-'}</span>
+                      <span className="text-[10px] text-slate-400 font-medium">{s.vendedorEmail}</span>
+                    </div>
                   </td>
                   <td className="p-4 text-[11px]">
                     <div className="flex flex-col gap-1">

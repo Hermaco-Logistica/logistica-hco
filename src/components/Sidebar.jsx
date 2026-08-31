@@ -77,7 +77,7 @@ export const Sidebar = ({ role, userEmail, onLogout }) => {
       label: 'Gestión de OC',
       icon: <ShoppingBag size={18} />,
       path: '/gestion-oc',
-      show: role === 'comprador' || role === 'gerente' || role === 'administrador'
+      show: role === 'comprador' || role === 'administrador'
     }
   ];
 

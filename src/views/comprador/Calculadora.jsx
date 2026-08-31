@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
@@ -10,8 +10,12 @@ import { useDHLCalculator } from '../../hooks/useDHLCalculator';
 export const Calculadora = ({ onGuardar }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isReadOnlyMode = searchParams.get('readOnly') === 'true' || searchParams.get('mode') === 'view';
   const [rfq, setRfq] = useState(null);
   const [loading, setLoading] = useState(true);
+  const esSolicitudCerrada = rfq?.estado === 'Cotizado' || rfq?.estado === 'Pedido';
+  const esSoloLectura = isReadOnlyMode || esSolicitudCerrada;
 
   const [items, setItems] = useState([]);
   const [flete, setFlete] = useState(0);
@@ -182,6 +186,7 @@ export const Calculadora = ({ onGuardar }) => {
   }, [flete, aduana, items]);
 
   const updateItem = (idx, campo, valor) => {
+    if (esSoloLectura) return;
     const nuevos = [...items];
     nuevos[idx][campo] = valor;
     setItems(nuevos);
@@ -195,8 +200,14 @@ export const Calculadora = ({ onGuardar }) => {
   };
 
   const handleTableNumericInput = (idx, campo, valor) => {
+    if (esSoloLectura) return;
     if (valor === '' || (/^\d*\.?\d*$/.test(valor) && parseFloat(valor) >= 0)) {
-      updateItem(idx, campo, valor);
+      const nuevos = [...items];
+      nuevos[idx][campo] = valor;
+      if (campo === 'fob' && Number(valor) > 0) {
+        nuevos[idx].enConsulta = false;
+      }
+      setItems(nuevos);
     }
   };
 
@@ -220,21 +231,26 @@ export const Calculadora = ({ onGuardar }) => {
   };
 
   const ejecutarGuardado = async () => {
-    if (guardando) return;
+    if (guardando || esSolicitudCerrada) return;
     setGuardando(true);
     
     // Procesamos todos los ítems para no perder los que no estaban seleccionados
-    const itemsFinales = items.map(p => ({
-      ...p,
-      // Si tiene precio > 0, su estado es Cotizado, de lo contrario Pendiente
-      estadoItem: Number(p.fob) > 0 ? 'Cotizado' : 'Pendiente'
-    }));
+    const itemsFinales = items.map(p => {
+      const esPedidoPrevio = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado';
+      const tieneFob = Number(p.fob || 0) > 0;
+      const esEnConsulta = !tieneFob && !!p.enConsulta;
+      return {
+        ...p,
+        enConsulta: esEnConsulta,
+        estadoItem: esPedidoPrevio ? p.estadoItem : (tieneFob ? 'Cotizado' : (esEnConsulta ? 'En consulta' : 'Pendiente'))
+      };
+    });
 
     let pdfBase64 = '';
     try {
       const doc = <CotizacionPDF cotizacionData={{
         ...rfq,
-        productos: itemsFinales.filter(p => p.estadoItem === 'Cotizado' || Number(p.fob) > 0),
+        productos: itemsFinales.filter(p => p.estadoItem === 'Cotizado' || p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || Number(p.fob) > 0 || p.enConsulta || p.estadoItem === 'En consulta'),
         factorA,
         factorM
       }} />;
@@ -282,7 +298,8 @@ export const Calculadora = ({ onGuardar }) => {
             <input 
               type="number" 
               min="0"
-              className="bg-transparent font-bold text-white outline-none w-20 text-lg border-b border-slate-700 focus:border-emerald-500" 
+              disabled={esSoloLectura}
+              className="bg-transparent font-bold text-white outline-none w-20 text-lg border-b border-slate-700 focus:border-emerald-500 disabled:opacity-70" 
               value={flete} 
               onChange={(e) => {
                 handleNumericInput(setFlete)(e);
@@ -314,7 +331,8 @@ export const Calculadora = ({ onGuardar }) => {
               type="number" 
               step="0.01"
               min="0"
-              className="bg-transparent font-black text-blue-700 outline-none w-16 text-2xl text-right border-b border-transparent focus:border-blue-500" 
+              disabled={esSoloLectura}
+              className="bg-transparent font-black text-blue-700 outline-none w-16 text-2xl text-right border-b border-transparent focus:border-blue-500 disabled:opacity-70" 
               value={factorM} 
               onChange={handleNumericInput(setFactorM)} 
               onFocus={(e) => e.target.select()}
@@ -341,31 +359,31 @@ export const Calculadora = ({ onGuardar }) => {
             <div className="p-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 bg-slate-50">
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Trámite Aduanal</label>
-                <input type="number" min="0" className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500" value={tramiteAduanal} onChange={handleNumericInput(setTramiteAduanal)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={tramiteAduanal} onChange={handleNumericInput(setTramiteAduanal)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Scan</label>
-                <input type="number" min="0" className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500" value={scan} onChange={handleNumericInput(setScan)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={scan} onChange={handleNumericInput(setScan)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Adimex</label>
-                <input type="number" min="0" className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500" value={adimex} onChange={handleNumericInput(setAdimex)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={adimex} onChange={handleNumericInput(setAdimex)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Manejos</label>
-                <input type="number" min="0" className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500" value={manejos} onChange={handleNumericInput(setManejos)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={manejos} onChange={handleNumericInput(setManejos)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Seguro</label>
-                <input type="number" min="0" className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500" value={seguro} onChange={handleNumericInput(setSeguro)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={seguro} onChange={handleNumericInput(setSeguro)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Entrega Local</label>
-                <input type="number" min="0" className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500" value={entregaLocal} onChange={handleNumericInput(setEntregaLocal)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={entregaLocal} onChange={handleNumericInput(setEntregaLocal)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Otros</label>
-                <input type="number" min="0" className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500" value={otrosGastos} onChange={handleNumericInput(setOtrosGastos)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={otrosGastos} onChange={handleNumericInput(setOtrosGastos)} onFocus={(e) => e.target.select()} />
               </div>
             </div>
           </div>
@@ -653,28 +671,65 @@ export const Calculadora = ({ onGuardar }) => {
 
               const picardEsMejor = esSKF && fobPicard > 0 && fvPicard > Number(p.fva);
               const skfEsMejor = esSKF && fobPicard > 0 && Number(p.fva) >= fvPicard;
+              const esPedidoPrevio = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || (!!p.modalidad && Number(p.precioUnitario || 0) > 0);
+              const isRowDisabled = esSoloLectura || esPedidoPrevio;
 
               return (
-                <tr key={idx} className={`${isSelected ? 'bg-white' : 'bg-slate-50 opacity-60'} hover:bg-slate-50/50 transition-all`}>
+                <tr key={idx} className={`${isSelected ? (esPedidoPrevio ? 'bg-emerald-50/20' : 'bg-white') : 'bg-slate-50 opacity-60'} hover:bg-slate-50/50 transition-all`}>
                   <td className="p-2 text-center">
                     <input type="checkbox" checked={isSelected} 
+                           disabled={isRowDisabled}
                            onChange={(e) => updateItem(idx, 'selected', e.target.checked)}
-                           className="w-4 h-4 accent-emerald-500 cursor-pointer" />
+                           className="w-4 h-4 accent-emerald-500 cursor-pointer disabled:opacity-50" />
                   </td>
                   <td className="p-2">
-                    <input type="text" className="font-bold text-slate-800 w-full outline-none bg-transparent uppercase" 
+                    <input type="text" className="font-bold text-slate-800 w-full outline-none bg-transparent uppercase disabled:opacity-80" 
+                           disabled={isRowDisabled}
                            value={p.desc || p.descripcion} onChange={(e) => updateItem(idx, 'desc', e.target.value)}
                            onFocus={(e) => e.target.select()} />
-                    <input type="text" className="text-[10px] text-blue-600 w-full outline-none bg-transparent italic font-bold" 
+                    <input type="text" className="text-[10px] text-blue-600 w-full outline-none bg-transparent italic font-bold disabled:opacity-80" 
+                           disabled={isRowDisabled}
                            value={p.marca} onChange={(e) => updateItem(idx, 'marca', e.target.value)} placeholder="Indicar marca..."
                            onFocus={(e) => e.target.select()} />
+                    {esPedidoPrevio ? (
+                      <div className="mt-1">
+                        <span className="text-[8px] font-black text-emerald-800 uppercase bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 inline-block">
+                          ✓ Pedido Confirmado ({p.modalidad || 'Aéreo'})
+                        </span>
+                      </div>
+                    ) : !isRowDisabled ? (
+                      <div className="flex items-center gap-2 mt-1">
+                        <label className="inline-flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md text-[9px] font-black text-amber-800 cursor-pointer select-none transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={!!p.enConsulta}
+                            onChange={(e) => updateItem(idx, 'enConsulta', e.target.checked)}
+                            className="w-3 h-3 accent-amber-600 rounded cursor-pointer"
+                          />
+                          <span>💬 En consulta</span>
+                        </label>
+                        {p.enConsulta && (
+                          <span className="text-[8px] font-black text-amber-700 uppercase bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-200">
+                            Sin precio (Consulta a proveedor)
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      p.enConsulta && (
+                        <div className="mt-1">
+                          <span className="text-[8px] font-black text-amber-700 uppercase bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-200 inline-block">
+                            💬 En consulta con proveedor
+                          </span>
+                        </div>
+                      )
+                    )}
                   </td>
                   <td className="p-2 text-center font-bold">{p.cant}</td>
                   {mostrarPicard ? (
                     <>
                       {/* FOB SKF */}
                       <td className="p-2 bg-slate-50/20 text-center">
-                        <input type="number" min="0" className="w-full p-1 border rounded text-center font-bold text-emerald-600 bg-white" 
+                        <input type="number" min="0" disabled={isRowDisabled} className="w-full p-1 border rounded text-center font-bold text-emerald-600 bg-white disabled:bg-slate-100 disabled:opacity-70" 
                                value={p.fob} onChange={(e) => handleTableNumericInput(idx, 'fob', e.target.value)}
                                onFocus={(e) => e.target.select()} />
                       </td>
@@ -684,7 +739,7 @@ export const Calculadora = ({ onGuardar }) => {
                       </td>
                       {/* Factor Venta SKF */}
                       <td className={`p-2 text-center transition-colors ${skfEsMejor ? 'bg-emerald-100 border-x-2 border-emerald-500 text-emerald-700 font-bold' : 'bg-emerald-50/20 text-slate-700'}`}>
-                         <input type="number" step="0.01" min="0" className="w-8 border-b outline-none text-center bg-transparent font-bold" 
+                         <input type="number" step="0.01" min="0" disabled={isRowDisabled} className="w-8 border-b outline-none text-center bg-transparent font-bold disabled:opacity-70" 
                                 value={p.fva} onChange={(e) => handleTableNumericInput(idx, 'fva', e.target.value)}
                                 onFocus={(e) => e.target.select()} />
                          {skfEsMejor && <div className="text-[7px] text-emerald-600 font-black uppercase mt-0.5 tracking-tighter">★ Mejor Margen</div>}
@@ -695,7 +750,8 @@ export const Calculadora = ({ onGuardar }) => {
                           <input 
                             type="number" 
                             min="0"
-                            className="w-full p-1 border rounded text-center font-bold text-amber-600 bg-white" 
+                            disabled={isRowDisabled}
+                            className="w-full p-1 border rounded text-center font-bold text-amber-600 bg-white disabled:bg-slate-100 disabled:opacity-70" 
                             value={p.fobPicard || ''} 
                             onChange={(e) => handleTableNumericInput(idx, 'fobPicard', e.target.value)}
                             onFocus={(e) => e.target.select()}
@@ -714,10 +770,11 @@ export const Calculadora = ({ onGuardar }) => {
                       <td className="p-2 text-center bg-amber-50/20">
                         {esSKF ? (
                           <input
+                            disabled={isRowDisabled}
                             type="number"
                             min="0"
                             step="0.01"
-                            className={`w-full p-1 border rounded text-center font-bold bg-white outline-none ${
+                            className={`w-full p-1 border rounded text-center font-bold bg-white outline-none disabled:bg-slate-100 disabled:opacity-70 ${
                               !p.costoPicardManual && costoSugerido > 0 
                                 ? 'text-slate-400 placeholder:text-slate-400/70 placeholder:italic' 
                                 : 'text-amber-700'
@@ -753,7 +810,7 @@ export const Calculadora = ({ onGuardar }) => {
                     <>
                       {/* FOB Unit */}
                       <td className="p-2">
-                        <input type="number" min="0" className="w-full p-1 border rounded text-center font-bold text-emerald-600 bg-white" 
+                        <input type="number" min="0" disabled={isRowDisabled} className="w-full p-1 border rounded text-center font-bold text-emerald-600 bg-white disabled:bg-slate-100 disabled:opacity-70" 
                                value={p.fob} onChange={(e) => handleTableNumericInput(idx, 'fob', e.target.value)}
                                onFocus={(e) => e.target.select()} />
                       </td>
@@ -762,7 +819,7 @@ export const Calculadora = ({ onGuardar }) => {
                          <div className="font-black text-emerald-600 text-sm">{ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}</div>
                          <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
                             <span className="text-slate-400 font-bold italic">FVA:</span>
-                            <input type="number" step="0.01" min="0" className="w-8 border-b outline-none text-center bg-transparent font-bold" 
+                            <input type="number" step="0.01" min="0" disabled={isRowDisabled} className="w-8 border-b outline-none text-center bg-transparent font-bold disabled:opacity-70" 
                                    value={p.fva} onChange={(e) => handleTableNumericInput(idx, 'fva', e.target.value)}
                                    onFocus={(e) => e.target.select()} />
                          </div>
@@ -780,7 +837,7 @@ export const Calculadora = ({ onGuardar }) => {
                      <div className="font-black text-blue-600 text-sm">{ventaM > 0 ? `$${ventaM.toFixed(2)}` : '—'}</div>
                      <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
                         <span className="text-slate-400 font-bold italic">FVM:</span>
-                        <input type="number" step="0.01" min="0" className="w-8 border-b outline-none text-center bg-transparent font-bold" 
+                        <input type="number" step="0.01" min="0" disabled={isRowDisabled} className="w-8 border-b outline-none text-center bg-transparent font-bold disabled:opacity-70" 
                                value={p.fvm} onChange={(e) => handleTableNumericInput(idx, 'fvm', e.target.value)}
                                onFocus={(e) => e.target.select()} />
                      </div>
@@ -793,16 +850,16 @@ export const Calculadora = ({ onGuardar }) => {
 
                   <td className="p-2">
                     <div className="flex flex-col gap-1">
-                        <input type="text" className="text-[9px] border-b outline-none bg-transparent" placeholder="Aéreo: 10 d.h." 
+                        <input type="text" disabled={isRowDisabled} className="text-[9px] border-b outline-none bg-transparent disabled:opacity-70" placeholder="Aéreo: 10 d.h." 
                                value={p.entregaA} onChange={(e) => handleTableIntegerInput(idx, 'entregaA', e.target.value)}
                                onFocus={(e) => e.target.select()} />
-                        <input type="text" className="text-[9px] border-b outline-none bg-transparent" placeholder="Marít: 45 d.h." 
+                        <input type="text" disabled={isRowDisabled} className="text-[9px] border-b outline-none bg-transparent disabled:opacity-70" placeholder="Marít: 45 d.h." 
                                value={p.entregaM} onChange={(e) => handleTableIntegerInput(idx, 'entregaM', e.target.value)}
                                onFocus={(e) => e.target.select()} />
                     </div>
                   </td>
                   <td className="p-2">
-                    <textarea className="w-full text-[9px] border rounded p-1 h-10 outline-none bg-transparent" 
+                    <textarea disabled={isRowDisabled} className="w-full text-[9px] border rounded p-1 h-10 outline-none bg-transparent disabled:bg-slate-100 disabled:opacity-70" 
                               value={p.notas} onChange={(e) => updateItem(idx, 'notas', e.target.value)} placeholder="Notas..."></textarea>
                   </td>
                 </tr>
@@ -856,17 +913,27 @@ export const Calculadora = ({ onGuardar }) => {
           );
         })()}
 
-        <button onClick={() => navigate('/compras')} className="text-slate-400 hover:text-slate-600 font-bold transition-colors">Descartar</button>
-        
-        <button 
-          onClick={ejecutarGuardado}
-          className={`${
-            tienePendientesGlobales ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-900 hover:bg-emerald-600'
-          } text-white px-10 py-3 rounded-xl font-black transition-all flex flex-col items-center justify-center leading-none min-w-60 shadow-lg`}
-        >
-          <span className="text-sm">{tienePendientesGlobales ? 'Guardar Avance Parcial' : 'Finalizar y Enviar'}</span>
-          {tienePendientesGlobales && <span className="text-[9px] opacity-80 mt-1 uppercase font-bold">(Pendientes restantes)</span>}
-        </button>
+        {esSoloLectura ? (
+          <button 
+            onClick={() => navigate('/compras')} 
+            className="bg-slate-900 hover:bg-emerald-600 text-white px-10 py-3 rounded-xl font-black transition-all text-xs uppercase tracking-wider shadow-lg"
+          >
+            Volver a Compras
+          </button>
+        ) : (
+          <>
+            <button onClick={() => navigate('/compras')} className="text-slate-400 hover:text-slate-600 font-bold transition-colors">Descartar</button>
+            <button 
+              onClick={ejecutarGuardado}
+              className={`${
+                tienePendientesGlobales ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-900 hover:bg-emerald-600'
+              } text-white px-10 py-3 rounded-xl font-black transition-all flex flex-col items-center justify-center leading-none min-w-60 shadow-lg`}
+            >
+              <span className="text-sm">{tienePendientesGlobales ? 'Guardar Avance Parcial' : 'Finalizar y Enviar'}</span>
+              {tienePendientesGlobales && <span className="text-[9px] opacity-80 mt-1 uppercase font-bold">(Pendientes restantes)</span>}
+            </button>
+          </>
+        )}
       </div>
       
     </div>

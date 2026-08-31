@@ -1,4 +1,6 @@
 import admin from 'firebase-admin';
+import fs from 'fs';
+import path from 'path';
 
 const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -27,9 +29,28 @@ const getLatestEventTimestamp = (events = []) => {
 const initAdmin = () => {
   if (admin.apps?.length) return admin.app();
 
+  // En entorno local (PC), priorizar service_account_dev.json si existe para desarrollo
+  const devFile = path.resolve(process.cwd(), 'service_account_dev.json');
+  if (fs.existsSync(devFile)) {
+    const serviceAccount = JSON.parse(fs.readFileSync(devFile, 'utf8'));
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+    return admin.app();
+  }
+
   const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (rawServiceAccount) {
     const serviceAccount = JSON.parse(rawServiceAccount);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+    return admin.app();
+  }
+
+  const prodFile = path.resolve(process.cwd(), 'service_account.json');
+  if (fs.existsSync(prodFile)) {
+    const serviceAccount = JSON.parse(fs.readFileSync(prodFile, 'utf8'));
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
@@ -231,6 +252,17 @@ async function fetchTrackingFromDsv(trackingNumber) {
   });
 
   if (!response.ok) {
+    if (response.status === 404) {
+      return {
+        trackingNumber,
+        status: 'NOT_FOUND',
+        description: 'Guía no encontrada en el sistema de DSV',
+        updatedAt: new Date().toISOString(),
+        events: [],
+        source: 'DSV',
+        provider: 'DSV',
+      };
+    }
     throw new Error(`DSV_TRACKING_ERROR_${response.status}`);
   }
 
@@ -280,6 +312,17 @@ async function fetchTrackingFromDhl(trackingNumber) {
 
   const response = await fetch(url.toString(), { method: 'GET', headers });
   if (!response.ok) {
+    if (response.status === 404) {
+      return {
+        trackingNumber,
+        status: 'NOT_FOUND',
+        description: 'Guía no encontrada en el sistema de DHL',
+        updatedAt: new Date().toISOString(),
+        events: [],
+        source: 'DHL',
+        provider: 'DHL',
+      };
+    }
     let errorDetail = '';
     try {
       errorDetail = await response.text();
@@ -365,9 +408,15 @@ export const handler = async (event) => {
       cacheAgeMs = nowMs - cacheData.lastCheckedAt.toMillis();
     }
 
+    const responseHeaders = {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+    };
+
     if (cacheData?.payload && cacheAgeMs !== null && cacheAgeMs < CACHE_TTL_MS) {
       return {
         statusCode: 200,
+        headers: responseHeaders,
         body: JSON.stringify({
           ...cacheData.payload,
           cached: true,
@@ -393,6 +442,7 @@ export const handler = async (event) => {
       if (cacheData?.payload) {
         return {
           statusCode: 200,
+          headers: responseHeaders,
           body: JSON.stringify({
             ...cacheData.payload,
             cached: true,
@@ -404,6 +454,7 @@ export const handler = async (event) => {
 
       return {
         statusCode: 429,
+        headers: responseHeaders,
         body: JSON.stringify({ message: 'rate_limited' }),
       };
     }
@@ -428,6 +479,7 @@ export const handler = async (event) => {
 
     return {
       statusCode: 200,
+      headers: responseHeaders,
       body: JSON.stringify({
         ...result,
         cached: false,
@@ -438,6 +490,10 @@ export const handler = async (event) => {
     console.error("Error en tracking-status handler:", error);
     return {
       statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
       body: JSON.stringify({
         message: 'Error consultando tracking',
         detail: error?.message || 'unknown_error',

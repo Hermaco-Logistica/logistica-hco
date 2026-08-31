@@ -1,6 +1,6 @@
 import { auth } from '../firebase';
 
-const TRACKING_STATUS_URL = import.meta.env.VITE_TRACKING_STATUS_URL || '/api/tracking-status';
+const TRACKING_STATUS_URL = import.meta.env.VITE_TRACKING_STATUS_URL || '/.netlify/functions/tracking-status';
 
 export const dhlTrackingEnabled = Boolean(TRACKING_STATUS_URL);
 

@@ -4,6 +4,8 @@ import { doc, collection, addDoc, serverTimestamp, updateDoc, onSnapshot } from 
 import { db, auth } from '../../firebase';
 import { ChevronLeft, Clock, Tag, Calendar, CheckCircle2, ShoppingCart, Link as LinkIcon, AlertCircle, Printer, X } from 'lucide-react';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
+import { generarPlantillaNuevoPedido } from '../../utils/emailTemplates';
+import { emailConfig } from '../../config/emailConfig';
 
 export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
   const { id } = useParams();
@@ -18,12 +20,20 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
   const [linkOC, setLinkOC] = useState('');
   const [notasPedido, setNotasPedido] = useState('');
 
-  const pedidoYaCreado = rfq?.estado === 'Pedido' || rfq?.estado === 'Comprado';
-  const puedeConfirmarPedido = canGenerarPedido && !pedidoYaCreado;
+  const esItemYaPedido = (p) => {
+    if (!p) return false;
+    if (p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado') return true;
+    if (p.modalidad && (Number(p.precioUnitario || 0) > 0 || Number(p.precio || 0) > 0 || !!p.fechaConfirmacion)) return true;
+    return false;
+  };
+
+  const hayItemsPendientesDePedir = rfq?.productos?.some(p => Number(p.fob || 0) > 0 && !esItemYaPedido(p));
+  const pedidoYaCreado = (rfq?.estado === 'Pedido' || rfq?.estado === 'Comprado') || (rfq?.estado === 'Pedido Parcial' && !hayItemsPendientesDePedir);
+  const puedeConfirmarPedido = canGenerarPedido && hayItemsPendientesDePedir;
   const productosDelPedido = pedidoYaCreado
     ? (rfq?.productos || [])
         .map((item, idx) => ({ item, idx }))
-        .filter(({ item }) => item?.estadoItem === 'Pedido' || item?.modalidad || item?.precioUnitario)
+        .filter(({ item }) => esItemYaPedido(item))
     : Object.keys(seleccionados)
         .filter((idx) => seleccionados[idx])
         .map((idx) => ({ item: rfq?.productos?.[Number(idx)], idx: Number(idx) }))
@@ -78,7 +88,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
       fecha.setDate(fecha.getDate() + 1);
       if (fecha.getDay() !== 0 && fecha.getDay() !== 6) diasRestantes--;
     }
-    return fecha.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
+    return fecha.toLocaleDateString('es-SV', { day: '2-digit', month: '2-digit', timeZone: 'America/El_Salvador' });
   };
 
   useEffect(() => {
@@ -97,11 +107,13 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
         }
 
         setRfq({ id: docSnap.id, ...data });
+        if (data.linkOC) setLinkOC(data.linkOC);
+        if (data.notasPedido) setNotasPedido(data.notasPedido);
         
         const selInit = {};
         const modInit = {};
         data.productos.forEach((p, idx) => {
-          if (Number(p.fob) > 0) {
+          if (Number(p.fob) > 0 && !esItemYaPedido(p)) {
             selInit[idx] = false;
             modInit[idx] = 'A';
           }
@@ -141,6 +153,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
         const precioVenta = p.fob * factor * margen;
         const diasHabiles = mod === 'A' ? p.entregaA : p.entregaM;
 
+        const ahoraTimestamp = new Date();
         const itemData = {
           descripcion: p.descripcion || p.desc,
           marca: p.marca || 'N/A',
@@ -151,6 +164,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
           diasPrometidos: parseInt(diasHabiles),
           fechaCompromiso: obtenerFechaEstimada(diasHabiles),
           estadoItem: 'Pedido',
+          fechaConfirmacion: p.fechaConfirmacion || ahoraTimestamp,
           fob: p.fob
         };
 
@@ -158,24 +172,84 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
         return itemData;
       });
 
+      const valorLinkOC = linkOC || rfq?.linkOC || "";
+      const valorNotasPedido = notasPedido || rfq?.notasPedido || "";
+
       await addDoc(collection(db, "pedidos"), {
         idCotizacion: rfq.id,
         correlativoRFQ: rfq.correlativo,
         cliente: rfq.cliente,
         vendedorNombre: rfq.vendedorNombre,
         productos: productosParaPedido,
-        linkOC: linkOC || "",
-        notasPedido: notasPedido || "",
+        linkOC: valorLinkOC,
+        notasPedido: valorNotasPedido,
         fechaCreacion: serverTimestamp(),
         estadoGeneral: 'Procesando'
       });
 
+      const todosLosItemsPedidos = productosActualizadosParaRFQ.every(p => esItemYaPedido(p));
+      const estadoNuevoSolicitud = todosLosItemsPedidos ? 'Pedido' : 'Pedido Parcial';
+
       await updateDoc(doc(db, "solicitudes", id), {
-        estado: 'Pedido',
+        estado: estadoNuevoSolicitud,
         productos: productosActualizadosParaRFQ,
-        linkOC: linkOC || "",
+        linkOC: valorLinkOC,
+        notasPedido: valorNotasPedido,
         fechaPedido: serverTimestamp()
       });
+
+      // --- LÓGICA DE CORREO AUTOMÁTICO AL CREAR PEDIDO ---
+      const productosCotizadosCount = rfq.productos.filter(p => Number(p.fob || 0) > 0 || p.precio > 0).length;
+      // El estado posterior a la selección determina el tipo del correo. Así,
+      // al confirmar los últimos ítems el aviso siempre dice pedido completo.
+      const esPedidoParcial = estadoNuevoSolicitud === 'Pedido Parcial';
+
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      
+      const vendedorEmail = auth.currentUser?.email || rfq.vendedorEmail || '';
+      const vendedorNombre = auth.currentUser?.displayName || rfq.vendedorNombre || vendedorEmail.split('@')[0];
+
+      const senderFrom = isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : `${vendedorNombre} <${vendedorEmail}>`;
+      const replyToEmail = isLocal ? 'rvides@hermaco.net' : vendedorEmail;
+      const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : (emailConfig.pedidoGenerado?.to?.filter(Boolean).length ? emailConfig.pedidoGenerado.to : ["compras@hermaco.net"]);
+      const ccEmails = isLocal 
+        ? ["rvides@hermaco.net"]
+        : [
+            vendedorEmail,
+            ...(emailConfig.nuevaRFQ?.cc || ["chernandez@hermaco.net", "fsalinas@hermaco.net", "oventura@hermaco.net"])
+          ];
+
+      const orderDataForEmail = {
+        correlativoRFQ: rfq.correlativo,
+        cliente: rfq.cliente,
+        vendedorNombre,
+        vendedorEmail,
+        esPedidoParcial,
+        totalItemsCotizacion: productosCotizadosCount,
+        productos: productosActualizadosParaRFQ,
+        linkOC: linkOC || "",
+        notasPedido: notasPedido || ""
+      };
+
+      const htmlBody = generarPlantillaNuevoPedido(orderDataForEmail);
+      const tipoTag = esPedidoParcial ? 'Parcial' : 'Completo';
+
+      try {
+        await fetch('/.netlify/functions/send-email-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            from: senderFrom,
+            replyTo: replyToEmail,
+            to: destinatarioTo,
+            cc: ccEmails,
+            subject: `Nuevo Pedido ${tipoTag}: ${rfq.correlativo} - ${rfq.cliente}`,
+            bodyHtml: htmlBody
+          })
+        });
+      } catch (e) {
+        console.error("Error enviando correo de pedido:", e);
+      }
 
       alert("Pedido generado con éxito.");
       navigate('/vendedor'); 
@@ -244,13 +318,18 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
             {rfq?.productos?.map((p, idx) => {
               const fobVal = Number(p.fob || 0);
               const estaCotizado = fobVal > 0;
+              const yaFuePedido = esItemYaPedido(p);
               const ventaA = fobVal * (rfq.factorA || 1) * (p.fva || 1.30);
               const ventaM = fobVal * 1.08 * (p.fvm || 1.25);
 
               return (
-                <tr key={idx} className={`${seleccionados[idx] ? 'bg-slate-50' : 'bg-white'} hover:bg-slate-50/50 transition-colors ${!estaCotizado ? 'opacity-60 bg-slate-50/30' : ''}`}>
+                <tr key={idx} className={`${seleccionados[idx] ? 'bg-slate-50' : (yaFuePedido ? 'bg-emerald-50/20' : 'bg-white')} hover:bg-slate-50/50 transition-colors ${!estaCotizado ? 'opacity-60 bg-slate-50/30' : ''}`}>
                   <td className="p-5 text-center">
-                    {estaCotizado ? (
+                    {yaFuePedido ? (
+                      <div className="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-sm" title="Ítem ya pedido previamente">
+                        <CheckCircle2 size={18} />
+                      </div>
+                    ) : estaCotizado ? (
                       <button
                         type="button"
                         onClick={() => {
@@ -267,7 +346,21 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
                   <td className="p-5">
                     <div className="font-black text-slate-800 uppercase leading-tight">{p.descripcion || p.desc}</div>
                     <div className="flex items-center gap-1 mt-1 text-blue-600 font-bold italic text-[10px]"><Tag size={10} /> {p.marca || 'N/A'}</div>
-                    {!estaCotizado && <span className="text-[8px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full font-black uppercase mt-2 inline-block">Pendiente de Costeo</span>}
+                    {yaFuePedido ? (
+                      <span className="text-[8px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-black uppercase mt-2 inline-block">
+                        ✓ Pedido Confirmado ({p.modalidad || 'Aéreo'})
+                      </span>
+                    ) : !estaCotizado && (
+                      (p.enConsulta || p.estadoItem === 'En consulta') ? (
+                        <span className="text-[8px] bg-amber-500 text-white px-2.5 py-0.5 rounded-full font-black uppercase mt-2 inline-flex items-center gap-1 shadow-sm">
+                          💬 En Consulta con Proveedor
+                        </span>
+                      ) : (
+                        <span className="text-[8px] bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full font-black uppercase mt-2 inline-block">
+                          Pendiente de Costeo
+                        </span>
+                      )
+                    )}
                   </td>
                   <td className="p-5 text-center font-black text-slate-400 text-lg">{p.cant}</td>
                   <td className="p-5 text-center bg-emerald-50/30">
@@ -277,7 +370,11 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
                     {estaCotizado ? <><div className="text-blue-700 font-black text-base">${ventaM.toFixed(2)}</div><div className="text-[9px] text-blue-500 font-bold uppercase">Total: ${(ventaM * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
                   </td>
                   <td className="p-5 text-center">
-                    {seleccionados[idx] ? (
+                    {yaFuePedido ? (
+                      <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                        {p.modalidad || 'Aéreo'}
+                      </span>
+                    ) : seleccionados[idx] ? (
                       <select
                         value={modalidades[idx]}
                         onChange={(e) => setModalidades(prev => ({ ...prev, [idx]: e.target.value }))}

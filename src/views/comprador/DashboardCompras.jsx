@@ -35,9 +35,21 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
     return () => document.removeEventListener('mousedown', clickFuera);
   }, []);
 
-  const formatFechaHora = (timestamp) => {
-    if (!timestamp?.toDate) return '---';
-    const dateValue = timestamp.toDate();
+  const formatFechaHora = (value) => {
+    if (!value) return '---';
+    let dateValue = null;
+    if (typeof value.toDate === 'function') {
+      dateValue = value.toDate();
+    } else if (typeof value.seconds === 'number') {
+      dateValue = new Date(value.seconds * 1000);
+    } else if (value instanceof Date) {
+      dateValue = value;
+    } else {
+      const ms = Date.parse(value);
+      if (!isNaN(ms)) dateValue = new Date(ms);
+    }
+
+    if (!dateValue) return '---';
     return new Intl.DateTimeFormat('es-SV', {
       dateStyle: 'short',
       timeStyle: 'short',
@@ -54,7 +66,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
   const obtenerEstadoAccion = (solicitud) => {
     const estado = solicitud.estado;
-    const tienePendientes = solicitud.productos?.some(p => !p.fob || Number(p.fob) <= 0);
+    const tienePendientes = solicitud.productos?.some((p) =>
+      Number(p.fob || 0) <= 0 && !p.enConsulta && p.estadoItem !== 'En consulta'
+    );
     
     if (estado === 'Pedido') {
       return tienePendientes ? 'Cotizar Restante' : 'Ver Cotización';
@@ -68,7 +82,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
   const obtenerColorAccion = (solicitud) => {
     const estado = solicitud.estado;
-    const tienePendientes = solicitud.productos?.some(p => !p.fob || Number(p.fob) <= 0);
+    const tienePendientes = solicitud.productos?.some((p) =>
+      Number(p.fob || 0) <= 0 && !p.enConsulta && p.estadoItem !== 'En consulta'
+    );
     
     if ((estado === 'Pedido' || estado === 'Cotizado Parcial') && tienePendientes) {
       return 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700';
@@ -382,7 +398,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             <tr className="tf-table-head-dark text-[10px] uppercase font-black tracking-widest">
               <th className="p-4">Referencia / Cliente</th>
               <th className="p-4">Vendedor</th>
-              <th className="p-4">Fecha Solicitud</th>
+              <th className="p-4">Fechas (Solicitud / Respuesta)</th>
               <th className="p-4 text-center">Total Cotizado (A / M)</th>
               <th className="p-4 text-center">Estado</th>
               <th className="p-4 text-center">Acción</th>
@@ -391,8 +407,13 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
           <tbody className="divide-y divide-slate-100">
             {paginatedSolicitudes.map((s) => {
               const itemsConPrecio = calcularItemsCotizados(s);
+              const tienePendientesPorCotizar = s.productos?.some((p) =>
+                Number(p.fob || 0) <= 0 && !p.enConsulta && p.estadoItem !== 'En consulta'
+              );
               const totalA = formatearTotal(s, 'A');
               const totalM = formatearTotal(s, 'M');
+
+              const fechaResp = s.fechaCotizacion || s.fechaRespuesta;
 
               return (
                 <tr key={s.id} className="hover:bg-slate-50 transition-colors">
@@ -407,9 +428,12 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                     </div>
                   </td>
                   <td className="p-4 text-[11px]">
-                    <span className="text-slate-500 font-bold">
-                      {formatFechaHora(s.fechaS)}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-slate-500 font-bold uppercase text-[9px]">📥 Solicitud: <b className="text-slate-700 font-black">{formatFechaHora(s.fechaS || s.fechaCreacion)}</b></span>
+                      <span className="text-emerald-600 font-black italic text-[9px] uppercase">
+                        📤 Resp: {fechaResp ? formatFechaHora(fechaResp) : 'En espera'}
+                      </span>
+                    </div>
                   </td>
                   <td className="p-4">
                     <div className="flex flex-col items-center gap-1">
@@ -430,28 +454,65 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                     <Badge estado={s.estado} />
                   </td>
                   <td className="p-4 text-center">
-                    <button 
-                      onClick={() => {
-                        if (!readOnly) {
-                          const accion = obtenerEstadoAccion(s);
-                          if (accion === 'Cotizar Restante' || accion === 'Cotizar') {
-                            navigate(`/calculadora/${s.id}`);
-                          } else {
-                            abrirVistaCotizacion(s);
-                          }
-                        }
-                      }}
-                      disabled={readOnly}
-                      className={`px-5 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border uppercase ${
-                        readOnly
-                          ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                          : obtenerColorAccion(s)
-                      }`}
-                    >
-                      {readOnly
-                        ? 'Ver'
-                        : obtenerEstadoAccion(s)}
-                    </button>
+                    <div className="flex items-center justify-center gap-2">
+                      {s.estado === 'Cotizado' || s.estado === 'Pedido' || (
+                        (s.estado === 'Cotizado Parcial' || s.estado === 'Pedido Parcial') && !tienePendientesPorCotizar
+                      ) ? (
+                        <>
+                          <button
+                            onClick={() => abrirVistaCotizacion(s)}
+                            title="Ver / Imprimir PDF de Cotización"
+                            className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition-all uppercase"
+                          >
+                            {readOnly ? 'Ver Cotización' : (s.estado === 'Cotizado Parcial' ? 'Cotizado' : 'PDF')}
+                          </button>
+                          {!readOnly && (
+                            <button
+                              onClick={() => navigate(`/calculadora/${s.id}?readOnly=true`)}
+                              title="Ver desglose completo en la calculadora (Solo lectura)"
+                              className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-all uppercase shadow-sm"
+                            >
+                              Ver Detalle
+                            </button>
+                          )}
+                        </>
+                      ) : (s.estado === 'Cotizado Parcial' || s.estado === 'Pedido Parcial') ? (
+                        <>
+                          <button
+                            onClick={() => abrirVistaCotizacion(s)}
+                            title="Ver / Imprimir PDF de Avance Parcial"
+                            className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition-all uppercase"
+                          >
+                            {readOnly ? 'Ver Cotización' : 'PDF'}
+                          </button>
+                          {!readOnly && (
+                            <button
+                              onClick={() => navigate(`/calculadora/${s.id}`)}
+                              title="Continuar cotizando los ítems restantes"
+                              className="px-4 py-1.5 rounded-xl text-[10px] font-black bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 transition-all uppercase shadow-sm"
+                            >
+                              Cotizar Restante
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <button 
+                          onClick={() => {
+                            if (!readOnly) {
+                              navigate(`/calculadora/${s.id}`);
+                            }
+                          }}
+                          disabled={readOnly}
+                          className={`px-5 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border uppercase ${
+                            readOnly
+                              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                              : obtenerColorAccion(s)
+                          }`}
+                        >
+                          {readOnly ? 'En proceso' : obtenerEstadoAccion(s)}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

@@ -30,11 +30,13 @@ export const emailConfig = {
   pedidoGenerado: {
     // Destinatarios principales (TO)
     to: [
-      ""
+      "compras@hermaco.net"
     ],
     // En copia (CC)
     cc: [
-      ""
+      "chernandez@hermaco.net",
+      "fsalinas@hermaco.net",
+      "oventura@hermaco.net"
     ]
   }
 };

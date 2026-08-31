@@ -111,7 +111,7 @@ export const DashboardPedidos = ({ role }) => {
       let tempItems = [];
       snap.docs.forEach(d => {
         const data = d.data();
-        if (data.productos && (data.estado === 'Pedido' || data.estado === 'Comprado')) {
+        if (data.productos && (data.estado === 'Pedido' || data.estado === 'Pedido Parcial' || data.estado === 'Comprado')) {
           data.productos.forEach((p, idx) => {
             if (p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado') {
               tempItems.push({
@@ -248,7 +248,8 @@ export const DashboardPedidos = ({ role }) => {
   };
 
   const openTrackingModal = async (trackingNumber, rfqLabel) => {
-    if (!trackingNumber) {
+    const cleanNumber = String(trackingNumber || '').trim().toUpperCase();
+    if (!cleanNumber) {
       setTrackingModal({
         open: true,
         loading: false,
@@ -266,20 +267,20 @@ export const DashboardPedidos = ({ role }) => {
       loading: true,
       error: '',
       data: null,
-      trackingNumber,
+      trackingNumber: cleanNumber,
       rfqLabel,
     });
     setTrackingNotice('');
 
     try {
-      if (role === 'vendedor' && trackingStatusEnabled) {
-        const freshData = await consultarTrackingStatus(trackingNumber);
+      if (trackingStatusEnabled) {
+        const freshData = await consultarTrackingStatus(cleanNumber);
         setTrackingModal({
           open: true,
           loading: false,
-          error: '',
+          error: freshData ? '' : 'Sin respuesta de tracking guardada',
           data: freshData || null,
-          trackingNumber,
+          trackingNumber: cleanNumber,
           rfqLabel,
         });
         if (freshData?.rateLimited) {
@@ -290,7 +291,7 @@ export const DashboardPedidos = ({ role }) => {
         return;
       }
 
-      const cacheRef = doc(db, 'tracking_cache', trackingNumber);
+      const cacheRef = doc(db, 'tracking_cache', cleanNumber);
       const cacheSnap = await getDoc(cacheRef);
       if (!cacheSnap.exists()) {
         setTrackingModal({
@@ -298,7 +299,7 @@ export const DashboardPedidos = ({ role }) => {
           loading: false,
           error: 'Sin respuesta de tracking guardada',
           data: null,
-          trackingNumber,
+          trackingNumber: cleanNumber,
           rfqLabel,
         });
         setTrackingNotice('');
@@ -311,20 +312,36 @@ export const DashboardPedidos = ({ role }) => {
         loading: false,
         error: '',
         data: cacheData?.payload || null,
-        trackingNumber,
+        trackingNumber: cleanNumber,
         rfqLabel,
       });
-      setTrackingNotice('');
-    } catch {
+    } catch (err) {
+      console.error("Error consultando tracking en modal:", err);
+      // Fallback a Firestore directo en caso de error
+      try {
+        const cacheRef = doc(db, 'tracking_cache', cleanNumber);
+        const cacheSnap = await getDoc(cacheRef);
+        if (cacheSnap.exists()) {
+          setTrackingModal({
+            open: true,
+            loading: false,
+            error: '',
+            data: cacheSnap.data()?.payload || null,
+            trackingNumber: cleanNumber,
+            rfqLabel,
+          });
+          return;
+        }
+      } catch (_) {}
+
       setTrackingModal({
         open: true,
         loading: false,
-        error: 'No fue posible cargar el tracking',
+        error: 'No se pudo obtener la informacion de tracking',
         data: null,
-        trackingNumber,
+        trackingNumber: cleanNumber,
         rfqLabel,
       });
-      setTrackingNotice('');
     }
   };
 
@@ -788,7 +805,7 @@ export const DashboardPedidos = ({ role }) => {
               const uId = `${item.idRFQ}-${item.indexOriginal}`;
               const ocInfo = getInfoOC(item.numOC);
               const ocDetalle = ordenesExistentes.find(o => o.numeroOC === item.numOC);
-              const trackingNumber = ocDetalle?.tracking || '';
+              const trackingNumber = ocDetalle?.tracking || item.tracking || item.numTracking || '';
               const rfqLabel = `# ${item.correlativo} — ${item.cliente}`;
               const timer = calcularCountdown(item.fechaCompromiso, ocInfo.rawEstado);
               const ventaTotal = (item.precio || 0) * (item.cantidad || 0);

@@ -29,6 +29,7 @@ scripts
 *.sln
 *.sw?
 service_account.json
+service_account_dev.json
 
 # Local Netlify folder
 .netlify
