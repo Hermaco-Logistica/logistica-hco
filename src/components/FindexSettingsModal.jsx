@@ -102,7 +102,6 @@ export const FindexSettingsModal = ({ isOpen, onClose }) => {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="ejemplo@hermaco.net"
                 className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-sm font-bold text-slate-700"
               />
             </div>
@@ -117,7 +116,6 @@ export const FindexSettingsModal = ({ isOpen, onClose }) => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
                   className="w-full px-4 py-3 pr-12 rounded-xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-sm font-bold text-slate-700"
                 />
                 <button
