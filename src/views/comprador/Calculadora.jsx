@@ -222,8 +222,7 @@ export const Calculadora = ({ onGuardar }) => {
     if (p.costoPicardManual === '' || p.costoPicardManual === undefined || p.costoPicardManual === null) {
       const fobPicard = Number(p.fobPicard || 0);
       if (fobPicard > 0) {
-        const isSelected = p.selected;
-        const fAereo = isSelected ? factorA : (rfq?.factorA || 1);
+        const fAereo = p.factorA || factorA;
         const sug = fobPicard * fAereo;
         updateItem(idx, 'costoPicardManual', sug.toFixed(2));
       }
@@ -239,10 +238,16 @@ export const Calculadora = ({ onGuardar }) => {
       const esPedidoPrevio = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado';
       const tieneFob = Number(p.fob || 0) > 0;
       const esEnConsulta = !tieneFob && !!p.enConsulta;
+      const nuevoEstado = esPedidoPrevio ? p.estadoItem : (tieneFob ? 'Cotizado' : (esEnConsulta ? 'En consulta' : 'Pendiente'));
+      
+      const estaCotizado = nuevoEstado === 'Cotizado' || nuevoEstado === 'Pedido' || nuevoEstado === 'Comprado';
+      
       return {
         ...p,
         enConsulta: esEnConsulta,
-        estadoItem: esPedidoPrevio ? p.estadoItem : (tieneFob ? 'Cotizado' : (esEnConsulta ? 'En consulta' : 'Pendiente'))
+        estadoItem: nuevoEstado,
+        factorA: estaCotizado ? (p.factorA || factorA) : null,
+        factorM: estaCotizado ? (p.factorM || factorM) : null
       };
     });
 
@@ -653,13 +658,15 @@ export const Calculadora = ({ onGuardar }) => {
               const currentFob = Number(p.fob || 0);
               const isSelected = p.selected;
               
-              // Si está seleccionado calculamos con el factor NUEVO, sino usamos el guardado en el RFQ
-              const fAereo = isSelected ? factorA : (rfq.factorA || 1);
+              // Los ítems pendientes o recién agregados tienen p.factorA = null, por lo que reaccionarán al factor global.
+              // Los ítems cotizados tienen guardado su propio p.factorA, por lo que quedan fijos.
+              const fAereo = p.factorA || factorA;
               const landedA = currentFob * fAereo;
               const ventaA = landedA * Number(p.fva);
               const rentaA = ventaA > 0 ? ((ventaA - landedA) / ventaA) * 100 : 0;
               
-              const landedM = currentFob * factorM;
+              const fMaritimo = p.factorM || factorM;
+              const landedM = currentFob * fMaritimo;
               const ventaM = landedM * Number(p.fvm);
               const rentaM = ventaM > 0 ? ((ventaM - landedM) / ventaM) * 100 : 0;
 
@@ -884,11 +891,11 @@ export const Calculadora = ({ onGuardar }) => {
           const totals = items.reduce((acc, p) => {
             if (!p.selected) return acc;
             const currentFob = Number(p.fob || 0);
-            const fA = factorA;
+            const fA = p.factorA || factorA;
             const landedA = currentFob * fA;
             const ventaA = landedA * Number(p.fva || 1.30);
             
-            const landedM = currentFob * factorM;
+            const landedM = currentFob * (p.factorM || factorM);
             const ventaM = landedM * Number(p.fvm || 1.25);
             
             acc.aereo += ventaA * Number(p.cant || 0);

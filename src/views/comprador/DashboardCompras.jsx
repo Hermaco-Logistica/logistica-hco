@@ -64,11 +64,14 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const abrirVistaCotizacion = (solicitud) => setSolicitudVista(solicitud);
   const cerrarVistaCotizacion = () => setSolicitudVista(null);
 
+  // Un ítem en consulta todavía no tiene FOB; debe poder retomarse desde
+  // "Cotizar Restante" aunque ya exista una cotización parcial guardada.
+  const tieneItemsPendientesPorCotizar = (solicitud) =>
+    solicitud.productos?.some((p) => Number(p.fob || 0) <= 0);
+
   const obtenerEstadoAccion = (solicitud) => {
     const estado = solicitud.estado;
-    const tienePendientes = solicitud.productos?.some((p) =>
-      Number(p.fob || 0) <= 0 && !p.enConsulta && p.estadoItem !== 'En consulta'
-    );
+    const tienePendientes = tieneItemsPendientesPorCotizar(solicitud);
     
     if (estado === 'Pedido') {
       return tienePendientes ? 'Cotizar Restante' : 'Ver Cotización';
@@ -82,9 +85,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
   const obtenerColorAccion = (solicitud) => {
     const estado = solicitud.estado;
-    const tienePendientes = solicitud.productos?.some((p) =>
-      Number(p.fob || 0) <= 0 && !p.enConsulta && p.estadoItem !== 'En consulta'
-    );
+    const tienePendientes = tieneItemsPendientesPorCotizar(solicitud);
     
     if ((estado === 'Pedido' || estado === 'Cotizado Parcial') && tienePendientes) {
       return 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700';
@@ -100,7 +101,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const formatearTotal = (solicitud, mod) => {
     const itemsConPrecio = calcularItemsCotizados(solicitud);
     const total = itemsConPrecio.reduce((acc, p) => {
-      const factor = mod === 'A' ? (solicitud.factorA || 1) : (solicitud.factorM || 1.08);
+      const factor = mod === 'A'
+        ? (p.factorA || solicitud.factorA || 1)
+        : (p.factorM || solicitud.factorM || 1.08);
       const margen = mod === 'A' ? (p.fva || 1.3) : (p.fvm || 1.25);
       return acc + (Number(p.fob || 0) * factor * margen * Number(p.cant || 0));
     }, 0);
@@ -407,9 +410,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
           <tbody className="divide-y divide-slate-100">
             {paginatedSolicitudes.map((s) => {
               const itemsConPrecio = calcularItemsCotizados(s);
-              const tienePendientesPorCotizar = s.productos?.some((p) =>
-                Number(p.fob || 0) <= 0 && !p.enConsulta && p.estadoItem !== 'En consulta'
-              );
+              const tienePendientesPorCotizar = tieneItemsPendientesPorCotizar(s);
               const totalA = formatearTotal(s, 'A');
               const totalM = formatearTotal(s, 'M');
 

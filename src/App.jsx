@@ -173,20 +173,22 @@ function App() {
       // LÓGICA DE ESTADO GLOBAL DE LA SOLICITUD
       const hayPedidos = productosProcesados.some(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
       const todosPedidos = productosProcesados.length > 0 && productosProcesados.every(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
-      const hayItemsSinCotizar = productosProcesados.some(p => (!p.fob || Number(p.fob) <= 0) && !p.enConsulta);
+      const hayItemsSinCotizar = productosProcesados.some(p => !p.fob || Number(p.fob) <= 0);
+
+      const tieneItemsCotizados = productosProcesados.some(p => Number(p.fob || 0) > 0);
 
       let estadoFinal = 'Cotizado';
       if (todosPedidos) {
         estadoFinal = 'Pedido';
       } else if (hayPedidos) {
         estadoFinal = 'Pedido Parcial';
+      } else if (!tieneItemsCotizados) {
+        estadoFinal = 'Pendiente';
       } else if (hayItemsSinCotizar) {
         estadoFinal = 'Cotizado Parcial';
       } else {
         estadoFinal = 'Cotizado';
       }
-
-      const tieneItemsCotizados = productosProcesados.some(p => Number(p.fob || 0) > 0);
       
       const updatePayload = {
         productos: productosProcesados, 

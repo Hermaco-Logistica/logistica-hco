@@ -63,7 +63,9 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
       return Number(item.subtotal || 0);
     }
 
-    const factor = mod === 'A' ? (rfq?.factorA || 1) : 1.08;
+    const factor = mod === 'A'
+      ? (item?.factorA || rfq?.factorA || 1)
+      : (item?.factorM || rfq?.factorM || 1.08);
     const margen = mod === 'A' ? (item?.fva || 1.3) : (item?.fvm || 1.25);
     return Number(item?.fob || 0) * factor * margen * Number(item?.cant || 0);
   };
@@ -148,7 +150,9 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
       const productosParaPedido = indicesSeleccionados.map(idx => {
         const p = rfq.productos[idx];
         const mod = modalidades[idx];
-        const factor = mod === 'A' ? (rfq.factorA || 1) : 1.08;
+        const factor = mod === 'A'
+          ? (p.factorA || rfq.factorA || 1)
+          : (p.factorM || rfq.factorM || 1.08);
         const margen = mod === 'A' ? (p.fva || 1.3) : (p.fvm || 1.25);
         const precioVenta = p.fob * factor * margen;
         const diasHabiles = mod === 'A' ? p.entregaA : p.entregaM;
@@ -195,7 +199,8 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
         productos: productosActualizadosParaRFQ,
         linkOC: valorLinkOC,
         notasPedido: valorNotasPedido,
-        fechaPedido: serverTimestamp()
+        fechaPedido: serverTimestamp(),
+        pedidoEmailEnviado: false
       });
 
       // --- LÓGICA DE CORREO AUTOMÁTICO AL CREAR PEDIDO ---
@@ -235,7 +240,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
       const tipoTag = esPedidoParcial ? 'Parcial' : 'Completo';
 
       try {
-        await fetch('/.netlify/functions/send-email-notification', {
+        const mailRes = await fetch('/.netlify/functions/send-email-notification', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -247,6 +252,9 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
             bodyHtml: htmlBody
           })
         });
+
+        if (!mailRes.ok) throw new Error('Fallo al enviar correo de pedido');
+        await updateDoc(doc(db, 'solicitudes', id), { pedidoEmailEnviado: true });
       } catch (e) {
         console.error("Error enviando correo de pedido:", e);
       }
@@ -319,8 +327,8 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true }) => {
               const fobVal = Number(p.fob || 0);
               const estaCotizado = fobVal > 0;
               const yaFuePedido = esItemYaPedido(p);
-              const ventaA = fobVal * (rfq.factorA || 1) * (p.fva || 1.30);
-              const ventaM = fobVal * 1.08 * (p.fvm || 1.25);
+              const ventaA = fobVal * (p.factorA || rfq.factorA || 1) * (p.fva || 1.30);
+              const ventaM = fobVal * (p.factorM || rfq.factorM || 1.08) * (p.fvm || 1.25);
 
               return (
                 <tr key={idx} className={`${seleccionados[idx] ? 'bg-slate-50' : (yaFuePedido ? 'bg-emerald-50/20' : 'bg-white')} hover:bg-slate-50/50 transition-colors ${!estaCotizado ? 'opacity-60 bg-slate-50/30' : ''}`}>

@@ -31,13 +31,13 @@ export default function CotizacionDocumento({ cotizacionData }) {
   // Lógica de cálculos dinámicos basados en factorA y factorM
   const subtotalAereo = productos.reduce((acc, item) => {
     const fobVal = Number(item.fob || 0);
-    const ventaA = fobVal * factorA * (item.fva || 1.30);
+    const ventaA = fobVal * (item.factorA || factorA) * (item.fva || 1.30);
     return acc + (Number(item.cant || 0) * ventaA);
   }, 0);
 
   const subtotalMaritimo = productos.reduce((acc, item) => {
     const fobVal = Number(item.fob || 0);
-    const ventaM = fobVal * factorM * (item.fvm || 1.25);
+    const ventaM = fobVal * (item.factorM || factorM) * (item.fvm || 1.25);
     return acc + (Number(item.cant || 0) * ventaM);
   }, 0);
   
@@ -163,8 +163,8 @@ export default function CotizacionDocumento({ cotizacionData }) {
           {filas.map((item, index) => {
             const esEnConsulta = item?.enConsulta || item?.estadoItem === 'En consulta';
             const fobVal = Number(item?.fob || 0);
-            const precioA = fobVal * factorA * (item?.fva || 1.30);
-            const precioM = fobVal * factorM * (item?.fvm || 1.25);
+            const precioA = fobVal * (item?.factorA || factorA) * (item?.fva || 1.30);
+            const precioM = fobVal * (item?.factorM || factorM) * (item?.fvm || 1.25);
             const tAereo = Number(item?.cant || 0) * precioA;
             const tMaritimo = Number(item?.cant || 0) * precioM;
 

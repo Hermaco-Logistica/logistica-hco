@@ -7,7 +7,7 @@ import { auth } from '../../firebase';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { db } from '../../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { generarPlantillaNuevaRFQ } from '../../utils/emailTemplates';
+import { generarPlantillaNuevaRFQ, generarPlantillaNuevoPedido } from '../../utils/emailTemplates';
 import { AlertTriangle } from 'lucide-react';
 import { emailConfig } from '../../config/emailConfig';
 export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis Solicitudes', role }) => {
@@ -50,6 +50,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   };
 
   const [reenviandoId, setReenviandoId] = useState(null);
+  const [reenviandoPedidoId, setReenviandoPedidoId] = useState(null);
 
   const handleReenviarCorreo = async (s) => {
     try {
@@ -87,6 +88,55 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       console.error(e);
     } finally {
       setReenviandoId(null);
+    }
+  };
+
+  const handleReenviarCorreoPedido = async (s) => {
+    try {
+      setReenviandoPedidoId(s.id);
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const vendedorEmail = auth.currentUser?.email || s.vendedorEmail || '';
+      const vendedorNombre = auth.currentUser?.displayName || s.vendedorNombre || vendedorEmail.split('@')[0];
+      const esPedidoParcial = s.estado === 'Pedido Parcial';
+      const destinatarioTo = isLocal
+        ? ['rvides@hermaco.net']
+        : (emailConfig.pedidoGenerado?.to?.filter(Boolean).length ? emailConfig.pedidoGenerado.to : ['compras@hermaco.net']);
+      const ccEmails = isLocal
+        ? ['rvides@hermaco.net']
+        : [vendedorEmail, ...(emailConfig.pedidoGenerado?.cc || [])].filter(Boolean);
+      const htmlBody = generarPlantillaNuevoPedido({
+        correlativoRFQ: s.correlativo,
+        cliente: s.cliente,
+        vendedorNombre,
+        vendedorEmail,
+        esPedidoParcial,
+        totalItemsCotizacion: s.productos?.filter((p) => Number(p.fob || 0) > 0 || Number(p.precio || 0) > 0).length || 0,
+        productos: s.productos || [],
+        linkOC: s.linkOC || '',
+        notasPedido: s.notasPedido || ''
+      });
+      const tipoTag = esPedidoParcial ? 'Parcial' : 'Completo';
+      const mailRes = await fetch('/.netlify/functions/send-email-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : `${vendedorNombre} <${vendedorEmail}>`,
+          replyTo: isLocal ? 'rvides@hermaco.net' : vendedorEmail,
+          to: destinatarioTo,
+          cc: ccEmails,
+          subject: `Nuevo Pedido ${tipoTag}: ${s.correlativo} - ${s.cliente}`,
+          bodyHtml: htmlBody
+        })
+      });
+
+      if (!mailRes.ok) throw new Error('Fallo al enviar correo de pedido');
+      await updateDoc(doc(db, 'solicitudes', s.id), { pedidoEmailEnviado: true });
+      alert('Correo de pedido reenviado exitosamente');
+    } catch (e) {
+      alert('No se pudo reenviar el correo de pedido. Intenta de nuevo.');
+      console.error(e);
+    } finally {
+      setReenviandoPedidoId(null);
     }
   };
 
@@ -362,12 +412,13 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           <tbody className="divide-y divide-slate-100">
             {paginatedSolicitudes.map((s) => {
               const itemsConPrecio = s.productos?.filter(p => Number(p.fob) > 0) || [];
+              const esPedidoConfirmado = s.estado === 'Pedido' || s.estado === 'Pedido Parcial';
               
               const totalA = itemsConPrecio.reduce((acc, p) => 
-                acc + (p.fob * (s.factorA || 1) * (p.fva || 1.3) * p.cant), 0);
+                acc + (p.fob * (p.factorA || s.factorA || 1) * (p.fva || 1.3) * p.cant), 0);
               
               const totalM = itemsConPrecio.reduce((acc, p) => 
-                acc + (p.fob * (s.factorM || 1.08) * (p.fvm || 1.25) * p.cant), 0);
+                acc + (p.fob * (p.factorM || s.factorM || 1.08) * (p.fvm || 1.25) * p.cant), 0);
 
               const ocRefs = [...new Set((s.productos || []).filter(p => p.numOC).map(p => p.numOC))];
               const ocRefText = ocRefs.length > 0 ? ocRefs.join(', ') : '-';
@@ -383,6 +434,16 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                           disabled={reenviandoId === s.id}
                           title="Enviar correo a Compras"
                           className={`p-1 rounded bg-rose-100 text-rose-600 hover:bg-rose-200 transition-colors ${reenviandoId === s.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <AlertTriangle size={14} />
+                        </button>
+                      )}
+                      {esPedidoConfirmado && s.pedidoEmailEnviado === false && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleReenviarCorreoPedido(s); }}
+                          disabled={reenviandoPedidoId === s.id}
+                          title={`Enviar correo de ${s.estado.toLowerCase()} a Compras`}
+                          className={`p-1 rounded bg-amber-100 text-amber-700 hover:bg-amber-200 transition-colors ${reenviandoPedidoId === s.id ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <AlertTriangle size={14} />
                         </button>

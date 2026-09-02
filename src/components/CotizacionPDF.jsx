@@ -192,13 +192,15 @@ export default function CotizacionPDF({ cotizacionData }) {
 
   const subtotalAereo = productos.reduce((acc, item) => {
     const fobVal = Number(item.fob || 0);
-    const ventaA = fobVal * factorA * (item.fva || 1.30);
+    const itemFactorA = item.factorA || factorA;
+    const ventaA = fobVal * itemFactorA * (item.fva || 1.30);
     return acc + (Number(item.cant || 0) * ventaA);
   }, 0);
 
   const subtotalMaritimo = productos.reduce((acc, item) => {
     const fobVal = Number(item.fob || 0);
-    const ventaM = fobVal * factorM * (item.fvm || 1.25);
+    const itemFactorM = item.factorM || factorM;
+    const ventaM = fobVal * itemFactorM * (item.fvm || 1.25);
     return acc + (Number(item.cant || 0) * ventaM);
   }, 0);
   
@@ -273,8 +275,10 @@ export default function CotizacionPDF({ cotizacionData }) {
           {filas.map((item, index) => {
             const esEnConsulta = item?.enConsulta || item?.estadoItem === 'En consulta';
             const fobVal = Number(item?.fob || 0);
-            const precioA = fobVal * factorA * (item?.fva || 1.30);
-            const precioM = fobVal * factorM * (item?.fvm || 1.25);
+            const itemFactorA = item?.factorA || factorA;
+            const precioA = fobVal * itemFactorA * (item?.fva || 1.30);
+            const itemFactorM = item?.factorM || factorM;
+            const precioM = fobVal * itemFactorM * (item?.fvm || 1.25);
             const tAereo = Number(item?.cant || 0) * precioA;
             const tMaritimo = Number(item?.cant || 0) * precioM;
 
