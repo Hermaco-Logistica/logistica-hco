@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { auth, db, provider } from './firebase'; 
 import { onAuthStateChanged, signOut, signInWithPopup } from 'firebase/auth';
-import { collection, query, onSnapshot, where, addDoc, doc, updateDoc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, where, doc, updateDoc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { emailConfig } from './config/emailConfig';
+
 
 // Componentes y Vistas
 import { Sidebar } from './components/Sidebar';
@@ -48,6 +49,15 @@ function App() {
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [solicitudes, setSolicitudes] = useState([]);
+  const [isFindexSettingsOpen, setIsFindexSettingsOpen] = useState(false);
+  const [isFindexActive, setIsFindexActive] = useState(true);
+
+  useEffect(() => {
+    import('./services/apiClient').then(({ apiClient }) => {
+      apiClient.onFindexAuthFailure = () => setIsFindexActive(false);
+      apiClient.onFindexAuthSuccess = () => setIsFindexActive(true);
+    });
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
@@ -62,6 +72,9 @@ function App() {
             if (userSnap.exists()) {
               const data = userSnap.data();
               userRole = data.role || data.rol || resolveRoleFromEmail(u.email);
+              if (!data.findexCredentials) {
+                setIsFindexSettingsOpen(true);
+              }
               // Actualizar último login de forma no bloqueante
               updateDoc(userRef, { lastLoginAt: serverTimestamp() }).catch(() => {});
             } else {
@@ -75,10 +88,12 @@ function App() {
                 createdAt: serverTimestamp(),
                 lastLoginAt: serverTimestamp()
               });
+              setIsFindexSettingsOpen(true);
             }
 
             setUser(u);
             setRole(userRole);
+            
           } catch (err) {
             console.error("Error al sincronizar usuario en Firestore:", err);
             // Fallback de seguridad en caso de error de red o permisos
@@ -110,7 +125,7 @@ function App() {
       setSolicitudes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return () => unsubscribe();
-  }, [user?.uid, role]);
+  }, [user, role]);
 
 
   const handleGuardarCotizacion = async (items, fa, fm, fl, ad, ta, sc, ax, mj, sg, el, og, rfqId, pdfBase64) => {
@@ -120,7 +135,7 @@ function App() {
       const rfqDocRef = doc(db, "solicitudes", rfqId);
       const rfqSnap = await getDoc(rfqDocRef);
       let correlativo = "N/A";
-      let cliente = "N/A";
+      let cliente = "N/A"; void cliente;
       let vendedorNombre = "Vendedor";
       let vendedorEmail = "";
       let rfqData = {};
@@ -276,7 +291,7 @@ function App() {
         </Routes>
       ) : (
         <div className={`tf-app-shell ${appThemeClass} flex h-screen overflow-hidden`}>
-          <Sidebar role={role} userEmail={user.email} onLogout={() => signOut(auth)} />
+          <Sidebar role={role} userEmail={user.email} onLogout={() => signOut(auth)} isFindexSettingsOpen={isFindexSettingsOpen} setIsFindexSettingsOpen={setIsFindexSettingsOpen} isFindexActive={isFindexActive} />
           <main className="flex-1 overflow-y-auto p-8">
             <Routes>
               {isComprador ? (

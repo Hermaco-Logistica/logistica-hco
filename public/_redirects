@@ -1,3 +1,5 @@
 /api/tracking-status    /.netlify/functions/tracking-status   200
 /api/send-quotation     /.netlify/functions/send-quotation    200
+/api/login              /.netlify/functions/findex-login      200
+/api/*                  /.netlify/functions/findex-proxy/api/:splat      200
 /*                      /index.html                           200

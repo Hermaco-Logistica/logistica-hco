@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { Loader2, PlusCircle, X } from 'lucide-react';
 import { auth, db } from '../../firebase';
 import { serverTimestamp, collection, doc, runTransaction } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +13,7 @@ import {
   guardarMarcaSiNoExiste,
   normalizarNombreMarca,
 } from '../../services/marcasService';
+import { buscarProductos, guardarProductoLocal } from '../../services/productosSearchService';
 import { generarPlantillaNuevaRFQ } from '../../utils/emailTemplates';
 import { emailConfig } from '../../config/emailConfig';
 
@@ -29,10 +31,16 @@ export const NuevaRFQ = () => {
   const [buscandoMarca, setBuscandoMarca] = useState([false]);
   const [errorMarca, setErrorMarca] = useState(['']);
   const [mostrarSugerenciasMarca, setMostrarSugerenciasMarca] = useState([false]);
+  const [sugerenciasProducto, setSugerenciasProducto] = useState([[]]);
+  const [indiceSugerenciaProducto, setIndiceSugerenciaProducto] = useState([-1]);
+  const [buscandoProducto, setBuscandoProducto] = useState([false]);
+  const [mostrarSugerenciasProducto, setMostrarSugerenciasProducto] = useState([false]);
   const [loading, setLoading] = useState(false);
   const [validez, setValidez] = useState('5 días hábiles');
+  const [modalNuevoProd, setModalNuevoProd] = useState({ isOpen: false, idx: null, sku: '', producto: '', marca: '', saving: false });
   const debounceRef = useRef(null);
   const marcasDebounceRef = useRef([]);
+  const productosDebounceRef = useRef([]);
 
   useEffect(() => {
     const termino = cliente.trim();
@@ -78,6 +86,10 @@ export const NuevaRFQ = () => {
     setBuscandoMarca((prev) => [...prev, false]);
     setErrorMarca((prev) => [...prev, '']);
     setMostrarSugerenciasMarca((prev) => [...prev, false]);
+    setSugerenciasProducto((prev) => [...prev, []]);
+    setIndiceSugerenciaProducto((prev) => [...prev, -1]);
+    setBuscandoProducto((prev) => [...prev, false]);
+    setMostrarSugerenciasProducto((prev) => [...prev, false]);
   };
 
   // Eliminar una fila
@@ -87,11 +99,18 @@ export const NuevaRFQ = () => {
     if (marcasDebounceRef.current[index]) {
       clearTimeout(marcasDebounceRef.current[index]);
     }
+    if (productosDebounceRef.current[index]) {
+      clearTimeout(productosDebounceRef.current[index]);
+    }
     setSugerenciasMarca((prev) => prev.filter((_, i) => i !== index));
     setIndiceSugerenciaMarca((prev) => prev.filter((_, i) => i !== index));
     setBuscandoMarca((prev) => prev.filter((_, i) => i !== index));
     setErrorMarca((prev) => prev.filter((_, i) => i !== index));
     setMostrarSugerenciasMarca((prev) => prev.filter((_, i) => i !== index));
+    setSugerenciasProducto((prev) => prev.filter((_, i) => i !== index));
+    setIndiceSugerenciaProducto((prev) => prev.filter((_, i) => i !== index));
+    setBuscandoProducto((prev) => prev.filter((_, i) => i !== index));
+    setMostrarSugerenciasProducto((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Actualizar campos específicos
@@ -192,6 +211,88 @@ export const NuevaRFQ = () => {
         updateMarcaState(setBuscandoMarca, index, false);
       }
     }, 250);
+  };
+
+  const buscarProductosConDebounce = (index, texto) => {
+    const termino = texto.trim();
+
+    if (productosDebounceRef.current[index]) {
+      clearTimeout(productosDebounceRef.current[index]);
+    }
+
+    if (termino.length < 3) {
+      updateMarcaState(setSugerenciasProducto, index, []);
+      updateMarcaState(setIndiceSugerenciaProducto, index, -1);
+      updateMarcaState(setBuscandoProducto, index, false);
+      return;
+    }
+
+    productosDebounceRef.current[index] = setTimeout(async () => {
+      updateMarcaState(setBuscandoProducto, index, true);
+      try {
+        const resultados = await buscarProductos(termino);
+        updateMarcaState(setSugerenciasProducto, index, resultados);
+        updateMarcaState(setIndiceSugerenciaProducto, index, resultados.length > 0 ? 0 : -1);
+      } catch (error) {
+        console.error(error);
+        updateMarcaState(setSugerenciasProducto, index, []);
+      } finally {
+        updateMarcaState(setBuscandoProducto, index, false);
+      }
+    }, 400); // 400ms debounce como en ExcessStockModal
+  };
+
+  const seleccionarSugerenciaProducto = (index, producto) => {
+    updateProducto(index, 'desc', producto.s || '');
+    updateProducto(index, 'marca', producto.m || '');
+    updateMarcaState(setMostrarSugerenciasProducto, index, false);
+    updateMarcaState(setIndiceSugerenciaProducto, index, -1);
+  };
+
+  const manejarTeclasProducto = (e, index) => {
+    const mostrar = mostrarSugerenciasProducto[index];
+    const buscando = buscandoProducto[index];
+    const sugerencias = sugerenciasProducto[index] || [];
+
+    if (!mostrar || buscando || sugerencias.length === 0) {
+      if (e.key === 'Escape') {
+        updateMarcaState(setMostrarSugerenciasProducto, index, false);
+        updateMarcaState(setIndiceSugerenciaProducto, index, -1);
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      updateMarcaState(setIndiceSugerenciaProducto, index, (prev) => {
+        const base = prev < 0 ? 0 : prev;
+        return Math.min(base + 1, sugerencias.length - 1);
+      });
+      return;
+    }
+
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      updateMarcaState(setIndiceSugerenciaProducto, index, (prev) => {
+        if (prev <= 0) return 0;
+        return prev - 1;
+      });
+      return;
+    }
+
+    if (e.key === 'Enter') {
+      if (indiceSugerenciaProducto[index] >= 0 && indiceSugerenciaProducto[index] < sugerencias.length) {
+        e.preventDefault();
+        seleccionarSugerenciaProducto(index, sugerencias[indiceSugerenciaProducto[index]]);
+      }
+      return;
+    }
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      updateMarcaState(setMostrarSugerenciasProducto, index, false);
+      updateMarcaState(setIndiceSugerenciaProducto, index, -1);
+    }
   };
 
   const seleccionarSugerenciaCliente = (nombre) => {
@@ -463,14 +564,91 @@ export const NuevaRFQ = () => {
                 {productos.map((p, idx) => (
                   <tr key={idx} className="group hover:bg-slate-50/50 transition-colors">
                     <td className="p-2">
-                      <input 
-                        type="text" 
-                        required
-                        className="w-full p-3 bg-transparent outline-none font-bold text-slate-700 uppercase text-sm"
-                        placeholder="Nombre del ítem..."
-                        value={p.desc}
-                        onChange={(e) => updateProducto(idx, 'desc', e.target.value)}
-                      />
+                      <div className="relative">
+                        <input 
+                          type="text" 
+                          required
+                          className="w-full p-3 bg-transparent outline-none font-bold text-slate-700 uppercase text-sm"
+                          placeholder="SKU o nombre del ítem..."
+                          value={p.desc}
+                          onFocus={() => {
+                            updateMarcaState(setMostrarSugerenciasProducto, idx, true);
+                            if ((sugerenciasProducto[idx] || []).length > 0 && indiceSugerenciaProducto[idx] < 0) {
+                              updateMarcaState(setIndiceSugerenciaProducto, idx, 0);
+                            }
+                          }}
+                          onBlur={() =>
+                            setTimeout(() => {
+                              updateMarcaState(setMostrarSugerenciasProducto, idx, false);
+                              updateMarcaState(setIndiceSugerenciaProducto, idx, -1);
+                            }, 200)
+                          }
+                          onKeyDown={(e) => manejarTeclasProducto(e, idx)}
+                          onChange={(e) => {
+                            updateProducto(idx, 'desc', e.target.value.toUpperCase());
+                            updateMarcaState(setMostrarSugerenciasProducto, idx, true);
+                            buscarProductosConDebounce(idx, e.target.value);
+                          }}
+                        />
+                        {buscandoProducto[idx] && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <Loader2 size={16} className="animate-spin text-slate-400" />
+                          </div>
+                        )}
+
+                        {mostrarSugerenciasProducto[idx] && String(p.desc || '').trim().length >= 1 && (
+                          <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg py-1">
+                            {buscandoProducto[idx] && (
+                              <div className="px-4 py-2 flex items-center gap-2 text-xs font-medium text-slate-400 italic">
+                                <Loader2 size={14} className="animate-spin" />
+                                <span>Buscando en catálogo...</span>
+                              </div>
+                            )}
+
+                            {!buscandoProducto[idx] && (sugerenciasProducto[idx] || []).length === 0 && (
+                              <div className="px-4 py-2 text-xs font-medium text-slate-400 italic">Sin resultados. Se guardará como texto libre.</div>
+                            )}
+
+                            {!buscandoProducto[idx] && (sugerenciasProducto[idx] || []).map((s, sIdx) => (
+                              <button
+                                key={s.id}
+                                type="button"
+                                className={`w-full text-left px-4 py-2 transition-colors ${
+                                  sIdx === indiceSugerenciaProducto[idx] ? 'bg-slate-100' : 'hover:bg-slate-50'
+                                }`}
+                                onMouseEnter={() => updateMarcaState(setIndiceSugerenciaProducto, idx, sIdx)}
+                                onMouseDown={() => {
+                                  seleccionarSugerenciaProducto(idx, s);
+                                }}
+                              >
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[15px] font-black text-slate-900 tracking-tight">{s.s}</span>
+                                    {s.local && <span className="text-[10px] px-1.5 rounded border border-slate-200 text-slate-400 italic">local</span>}
+                                  </div>
+                                  <span className="text-[11px] font-semibold text-slate-500 uppercase truncate mt-0.5">{s.n}</span>
+                                  <span className="text-[10px] font-medium text-slate-400 mt-0.5">{s.m} — {s.c}</span>
+                                </div>
+                              </button>
+                            ))}
+                            {!buscandoProducto[idx] && (sugerenciasProducto[idx] || []).length === 0 && (
+                              <div className="p-2 border-t border-slate-100 bg-slate-50 rounded-b-lg">
+                                <button
+                                  type="button"
+                                  className="w-full text-left px-3 py-2 text-xs font-bold text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded flex items-center gap-2 transition-colors"
+                                  onMouseDown={() => {
+                                    setModalNuevoProd({ isOpen: true, idx, sku: p.desc || '', producto: '', marca: productos[idx]?.marca || '', saving: false });
+                                    updateMarcaState(setMostrarSugerenciasProducto, idx, false);
+                                  }}
+                                >
+                                  <PlusCircle size={14} />
+                                  Agregar "{p.desc}" al catálogo
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </td>
                     <td className="p-2">
                       <div className="relative">
@@ -572,6 +750,56 @@ export const NuevaRFQ = () => {
           {loading ? 'PROCESANDO ENVÍO...' : 'ENVIAR A COMPRAS'}
         </button>
       </form>
+
+      {/* Modal Agregar Producto Local */}
+      {modalNuevoProd.isOpen && (
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-black text-slate-800 uppercase">Nuevo Producto Local</h3>
+                <button type="button" onClick={() => setModalNuevoProd(prev => ({...prev, isOpen: false}))} className="text-slate-400 hover:text-slate-600">
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Código (SKU)</label>
+                  <input type="text" value={modalNuevoProd.sku} onChange={e => setModalNuevoProd(prev => ({...prev, sku: e.target.value.toUpperCase()}))} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold uppercase" placeholder="SKU..." />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre / Descripción</label>
+                  <input type="text" value={modalNuevoProd.producto} onChange={e => setModalNuevoProd(prev => ({...prev, producto: e.target.value.toUpperCase()}))} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold uppercase" placeholder="DESCRIPCIÓN..." />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Marca</label>
+                  <input type="text" value={modalNuevoProd.marca} onChange={e => setModalNuevoProd(prev => ({...prev, marca: e.target.value.toUpperCase()}))} className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold uppercase" placeholder="MARCA..." />
+                </div>
+              </div>
+              <div className="mt-8 flex gap-3">
+                <button type="button" onClick={() => setModalNuevoProd(prev => ({...prev, isOpen: false}))} className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200">Cancelar</button>
+                <button type="button" disabled={modalNuevoProd.saving || !modalNuevoProd.sku || !modalNuevoProd.producto} onClick={async () => {
+                  setModalNuevoProd(prev => ({...prev, saving: true}));
+                  try {
+                    const nuevo = await guardarProductoLocal(modalNuevoProd.sku, modalNuevoProd.producto, modalNuevoProd.marca);
+                    seleccionarSugerenciaProducto(modalNuevoProd.idx, nuevo);
+                    setModalNuevoProd(prev => ({...prev, isOpen: false}));
+                  } catch (e) {
+                    console.error(e);
+                    alert('Error guardando producto');
+                  } finally {
+                    setModalNuevoProd(prev => ({...prev, saving: false}));
+                  }
+                }} className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 flex justify-center items-center gap-2">
+                  {modalNuevoProd.saving ? <Loader2 size={16} className="animate-spin" /> : <PlusCircle size={16} />}
+                  Guardar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
