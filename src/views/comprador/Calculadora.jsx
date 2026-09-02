@@ -6,6 +6,7 @@ import CotizacionDocumento from '../../components/CotizacionDocumento';
 import { pdf } from '@react-pdf/renderer';
 import CotizacionPDF from '../../components/CotizacionPDF';
 import { useDHLCalculator } from '../../hooks/useDHLCalculator';
+import { HelpCircle, Info } from 'lucide-react';
 
 export const Calculadora = ({ onGuardar }) => {
   const { id } = useParams();
@@ -705,18 +706,23 @@ export const Calculadora = ({ onGuardar }) => {
                         </span>
                       </div>
                     ) : !isRowDisabled ? (
-                      <div className="flex items-center gap-2 mt-1">
-                        <label className="inline-flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-md text-[9px] font-black text-amber-800 cursor-pointer select-none transition-colors">
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <label className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-[9px] font-medium transition-colors cursor-pointer select-none ${
+                          p.enConsulta
+                            ? 'bg-slate-100 border-slate-300 text-slate-700 font-semibold'
+                            : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-500'
+                        }`}>
                           <input
                             type="checkbox"
                             checked={!!p.enConsulta}
                             onChange={(e) => updateItem(idx, 'enConsulta', e.target.checked)}
-                            className="w-3 h-3 accent-amber-600 rounded cursor-pointer"
+                            className="w-3 h-3 accent-slate-700 rounded cursor-pointer"
                           />
-                          <span>💬 En consulta</span>
+                          <HelpCircle className="w-3 h-3 text-slate-400 shrink-0" />
+                          <span>En consulta</span>
                         </label>
                         {p.enConsulta && (
-                          <span className="text-[8px] font-black text-amber-700 uppercase bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-200">
+                          <span className="inline-flex items-center gap-1 text-[8px] font-medium text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 uppercase tracking-tight">
                             Sin precio (Consulta a proveedor)
                           </span>
                         )}
@@ -724,8 +730,9 @@ export const Calculadora = ({ onGuardar }) => {
                     ) : (
                       p.enConsulta && (
                         <div className="mt-1">
-                          <span className="text-[8px] font-black text-amber-700 uppercase bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-200 inline-block">
-                            💬 En consulta con proveedor
+                          <span className="inline-flex items-center gap-1 text-[8px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 uppercase tracking-tight">
+                            <HelpCircle className="w-2.5 h-2.5 text-slate-400 shrink-0" />
+                            En consulta con proveedor
                           </span>
                         </div>
                       )
@@ -881,7 +888,7 @@ export const Calculadora = ({ onGuardar }) => {
         <div className="flex items-center gap-4 mr-auto pl-4">
           {tienePendientesGlobales && (
             <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100 animate-pulse">
-              <span className="text-lg">ℹ️</span>
+              <Info className="w-4 h-4 text-blue-600 shrink-0" />
               <span className="text-[10px] font-black uppercase tracking-tight">Detectados ítems sin precio. Se guardará como COTIZACIÓN PARCIAL.</span>
             </div>
           )}
