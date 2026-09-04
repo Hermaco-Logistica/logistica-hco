@@ -44,9 +44,15 @@ export const Calculadora = ({ onGuardar }) => {
   const [activeProvider, setActiveProvider] = useState(null);
   const [appliedProvider, setAppliedProvider] = useState(null);
   const [mostrarPicard, setMostrarPicard] = useState(false);
+  const [fletePicard, setFletePicard] = useState('');
+  const [aduanaPicard, setAduanaPicard] = useState('');
+  const [costosPicardExpandidos, setCostosPicardExpandidos] = useState(false);
   const [cotizadorExpandido, setCotizadorExpandido] = useState(false);
   const [gastosExpandidos, setGastosExpandidos] = useState(false);
+  const [factoresExpandidos, setFactoresExpandidos] = useState(false);
   const cotizadorRef = useRef(null);
+  const factoresRef = useRef(null);
+  const costosPicardRef = useRef(null);
 
   // Selecciona un courier y expande el cotizador para ver el detalle
   const seleccionarProvider = (provider) => {
@@ -65,6 +71,28 @@ export const Calculadora = ({ onGuardar }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [cotizadorExpandido]);
+
+  useEffect(() => {
+    if (!factoresExpandidos) return;
+    const handleClickOutside = (event) => {
+      if (factoresRef.current && !factoresRef.current.contains(event.target)) {
+        setFactoresExpandidos(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [factoresExpandidos]);
+
+  useEffect(() => {
+    if (!costosPicardExpandidos) return;
+    const handleClickOutside = (event) => {
+      if (costosPicardRef.current && !costosPicardRef.current.contains(event.target)) {
+        setCostosPicardExpandidos(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [costosPicardExpandidos]);
   
   const dhlZoneId = useMemo(() => {
     const country = rfq?.paisDestino || rfq?.pais || rfq?.destino || 'El Salvador';
@@ -143,6 +171,8 @@ export const Calculadora = ({ onGuardar }) => {
           })));
 
           setFlete(data.fleteAereo || 0);
+          setFletePicard(data.fleteAereoPicard ?? '');
+          setAduanaPicard(data.aduanaAereaPicard ?? '');
 
           const legacyAduana = data.aduanaAerea || 0;
           const loadedOtros = data.otrosGastos || 0;
@@ -176,6 +206,27 @@ export const Calculadora = ({ onGuardar }) => {
 
   // La cotización es parcial si todavía queda algún ítem con FOB 0 en el array total
   const tienePendientesGlobales = items.some(p => Number(p.fob) <= 0);
+  const esAvanceParcial = rfq?.estado === 'Cotizado Parcial' || rfq?.estado === 'Pedido Parcial';
+
+  const factoresAereosFijados = useMemo(() => {
+    const grupos = new Map();
+
+    items.forEach((p) => {
+      const factor = Number(p.factorA);
+      if (Number(p.fob || 0) <= 0 || !Number.isFinite(factor) || factor <= 0) return;
+
+      const clave = factor.toFixed(2);
+      const grupo = grupos.get(clave) || { factor: clave, cantidad: 0 };
+      grupo.cantidad += 1;
+      grupos.set(clave, grupo);
+    });
+
+    return Array.from(grupos.values());
+  }, [items]);
+
+  const mostrarFactoresAereosFijados = factoresAereosFijados.length > 0 && (
+    esAvanceParcial || factoresAereosFijados.length > 1
+  );
 
   const factorA = useMemo(() => {
     const seleccionados = items.filter(p => p.selected);
@@ -215,18 +266,6 @@ export const Calculadora = ({ onGuardar }) => {
   const handleTableIntegerInput = (idx, campo, valor) => {
     if (valor === '' || /^\d+$/.test(valor)) {
       updateItem(idx, campo, valor);
-    }
-  };
-
-  const aceptarCostoSugerido = (idx) => {
-    const p = items[idx];
-    if (p.costoPicardManual === '' || p.costoPicardManual === undefined || p.costoPicardManual === null) {
-      const fobPicard = Number(p.fobPicard || 0);
-      if (fobPicard > 0) {
-        const fAereo = p.factorA || factorA;
-        const sug = fobPicard * fAereo;
-        updateItem(idx, 'costoPicardManual', sug.toFixed(2));
-      }
     }
   };
 
@@ -276,7 +315,7 @@ export const Calculadora = ({ onGuardar }) => {
       console.error("Error al generar PDF nativo:", e);
     }
 
-    const exito = await onGuardar(itemsFinales, factorA, factorM, flete, aduana, tramiteAduanal, scan, adimex, manejos, seguro, entregaLocal, otrosGastos, pdfBase64);
+    const exito = await onGuardar(itemsFinales, factorA, factorM, flete, aduana, tramiteAduanal, scan, adimex, manejos, seguro, entregaLocal, otrosGastos, fletePicard, aduanaPicard, pdfBase64);
     setGuardando(false);
     if (exito) {
       navigate('/compras');
@@ -292,13 +331,13 @@ export const Calculadora = ({ onGuardar }) => {
   return (
     <div className="max-w-[99%] mx-auto animate-in fade-in duration-500 pb-28">
       {/* Panel de Control de Costos */}
-      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex items-center gap-8">
+      <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-6 flex flex-col gap-5 xl:flex-row xl:items-center xl:gap-8">
         <div className="flex-1">
           <h2 className="text-2xl font-black text-slate-800 tracking-tight italic">Calculadora de Márgenes</h2>
           <p className="text-slate-500 text-xs uppercase font-bold">{rfq?.correlativo} — {rfq?.cliente} {rfq?.validez && `— Validez: ${rfq.validez}`}</p>
         </div>
         
-        <div className="flex gap-4 bg-slate-900 p-4 rounded-xl shadow-lg shadow-slate-200">
+        <div className="flex w-full gap-4 bg-slate-900 p-4 rounded-xl shadow-lg shadow-slate-200 sm:w-auto">
           <div className="flex flex-col">
             <label className="text-[9px] font-black text-slate-400 uppercase">Flete Aéreo ($)</label>
             <input 
@@ -326,10 +365,37 @@ export const Calculadora = ({ onGuardar }) => {
           </div>
         </div>
 
-        <div className="flex gap-4">
-          <div className="text-right px-5 py-2 bg-emerald-50 rounded-xl border border-emerald-100">
+        <div className="flex w-full flex-wrap gap-4 xl:w-auto xl:flex-nowrap">
+          <div className="min-w-60 flex-1 text-right px-5 py-2 bg-emerald-50 rounded-xl border border-emerald-100 xl:flex-none">
             <span className="text-[9px] block text-emerald-600 font-black uppercase tracking-widest">Factor Aéreo Aplicado</span>
-            <span className="text-2xl font-black text-emerald-700">{factorA.toFixed(2)}</span>
+            {!mostrarFactoresAereosFijados ? (
+              <span className="text-2xl font-black text-emerald-700">{factorA.toFixed(2)}</span>
+            ) : (
+              <div ref={factoresRef} className="relative mt-1">
+                <button
+                  type="button"
+                  onClick={() => setFactoresExpandidos(prev => !prev)}
+                  className="border-b border-emerald-300 pb-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-700 transition-colors hover:border-emerald-600 hover:text-emerald-900"
+                >
+                  {factoresExpandidos ? 'Cerrar' : 'Ver más'}
+                </button>
+                {factoresExpandidos && (
+                  <div className="absolute right-0 top-full z-50 mt-2 flex w-72 max-w-[calc(100vw-3rem)] flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-xl">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Factores aplicados</span>
+                {factoresAereosFijados.map(({ factor, cantidad }) => (
+                  <span key={factor} className="flex items-center justify-between rounded-md border border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
+                    {factor} · {cantidad} {cantidad === 1 ? 'ítem' : 'ítems'}
+                  </span>
+                ))}
+                {!esSoloLectura && tienePendientesGlobales && (
+                  <span className="flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700">
+                    Pendientes: {factorA.toFixed(2)}
+                  </span>
+                )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="text-right px-5 py-2 bg-blue-50 rounded-xl border border-blue-100 flex flex-col items-end">
             <span className="text-[9px] block text-blue-600 font-black uppercase tracking-widest">Factor Marítimo Aplicado</span>
@@ -613,15 +679,37 @@ export const Calculadora = ({ onGuardar }) => {
       {/* Cabecera de Tabla con Toggle Picard */}
       <div className="flex justify-between items-center mb-4 mt-2">
         <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Productos de la Solicitud</h3>
-        <label className="flex items-center gap-2 cursor-pointer select-none bg-slate-100 hover:bg-slate-200/80 px-4 py-2 rounded-xl border border-slate-200 transition-colors">
-          <input 
-            type="checkbox" 
-            checked={mostrarPicard} 
-            onChange={(e) => setMostrarPicard(e.target.checked)} 
-            className="w-4 h-4 accent-blue-600 cursor-pointer" 
-          />
-          <span className="text-[10px] font-black text-slate-700 uppercase tracking-wide">Mostrar Comparativa Picard (SKF)</span>
-        </label>
+        <div className="flex items-center gap-2">
+          {mostrarPicard && (
+            <div ref={costosPicardRef} className={`relative overflow-hidden rounded-xl border transition-all duration-300 ease-out ${costosPicardExpandidos ? 'w-[18.5rem] border-amber-300 bg-amber-50 shadow-sm' : 'w-32 border-amber-200 bg-amber-50/70'}`}>
+              {!costosPicardExpandidos ? (
+                <button type="button" onClick={() => setCostosPicardExpandidos(true)} className="w-full px-3 py-2 text-[9px] font-black uppercase tracking-wide text-amber-700 transition-colors hover:bg-amber-100">
+                  Otros Gastos Picard
+                </button>
+              ) : (
+                <div className="flex items-end gap-2 p-2 animate-in fade-in zoom-in-95 duration-200">
+                  <label className="min-w-0 flex-1 text-[8px] font-black uppercase tracking-wide text-amber-700">
+                    Flete Aéreo ($)
+                    <input type="number" min="0" step="0.01" disabled={esSoloLectura} value={fletePicard} placeholder="0.00" onChange={handleNumericInput(setFletePicard)} onFocus={(e) => e.target.select()} onKeyDown={(e) => { if (e.key === 'Enter' && fletePicard !== '' && aduanaPicard !== '') setCostosPicardExpandidos(false); }} className="mt-1 w-full border-b border-amber-300 bg-transparent py-1 text-sm font-black text-amber-800 outline-none focus:border-amber-600 disabled:opacity-70" />
+                  </label>
+                  <label className="min-w-0 flex-1 text-[8px] font-black uppercase tracking-wide text-amber-700">
+                    Aduana Aérea ($)
+                    <input type="number" min="0" step="0.01" disabled={esSoloLectura} value={aduanaPicard} placeholder="0.00" onChange={handleNumericInput(setAduanaPicard)} onFocus={(e) => e.target.select()} onKeyDown={(e) => { if (e.key === 'Enter' && fletePicard !== '' && aduanaPicard !== '') setCostosPicardExpandidos(false); }} className="mt-1 w-full border-b border-amber-300 bg-transparent py-1 text-sm font-black text-amber-800 outline-none focus:border-amber-600 disabled:opacity-70" />
+                  </label>
+                </div>
+              )}
+            </div>
+          )}
+          <label className="flex items-center gap-2 cursor-pointer select-none bg-slate-100 hover:bg-slate-200/80 px-4 py-2 rounded-xl border border-slate-200 transition-colors">
+            <input
+              type="checkbox"
+              checked={mostrarPicard}
+              onChange={(e) => setMostrarPicard(e.target.checked)}
+              className="w-4 h-4 accent-blue-600 cursor-pointer"
+            />
+            <span className="text-[10px] font-black text-slate-700 uppercase tracking-wide">Mostrar Comparativa Picard (SKF)</span>
+          </label>
+        </div>
       </div>
 
       {/* Tabla de Productos */}
@@ -635,6 +723,7 @@ export const Calculadora = ({ onGuardar }) => {
               {mostrarPicard ? (
                 <>
                   <th className="p-3 w-20 text-center bg-slate-900/40">FOB SKF</th>
+                  <th className="p-3 w-24 text-center bg-emerald-900/40 font-black text-emerald-400">Venta (A)</th>
                   <th className="p-3 w-20 text-center bg-emerald-900/40">Costo SKF</th>
                   <th className="p-3 w-20 text-center bg-emerald-900/60">FV SKF</th>
                   <th className="p-3 w-20 text-center bg-amber-900/30 font-black text-amber-400">FOB Picard</th>
@@ -673,8 +762,14 @@ export const Calculadora = ({ onGuardar }) => {
 
               const esSKF = p.marca?.toUpperCase() === 'SKF';
               const fobPicard = Number(p.fobPicard || 0);
-              const costoSugerido = fobPicard * fAereo;
-              const costoEfectivo = (p.costoPicardManual !== '' && p.costoPicardManual !== undefined && p.costoPicardManual !== null) ? Number(p.costoPicardManual) : costoSugerido;
+              const totalFobPicard = items.reduce((acc, item) => {
+                const esPicardComparable = item.selected && item.marca?.toUpperCase() === 'SKF';
+                return esPicardComparable ? acc + (Number(item.fobPicard || 0) * Number(item.cant || 0)) : acc;
+              }, 0);
+              const factorPicard = totalFobPicard > 0
+                ? (totalFobPicard + Number(fletePicard || 0) + Number(aduanaPicard || 0)) / totalFobPicard
+                : 0;
+              const costoEfectivo = fobPicard * factorPicard;
               const fvPicard = costoEfectivo > 0 ? (ventaA / costoEfectivo) : 0;
 
               const picardEsMejor = esSKF && fobPicard > 0 && fvPicard > Number(p.fva);
@@ -701,7 +796,7 @@ export const Calculadora = ({ onGuardar }) => {
                            onFocus={(e) => e.target.select()} />
                     {esPedidoPrevio ? (
                       <div className="mt-1">
-                        <span className="text-[8px] font-black text-emerald-800 uppercase bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 inline-block">
+                        <span className="inline-block border-l-2 border-emerald-500 pl-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
                           ✓ Pedido Confirmado ({p.modalidad || 'Aéreo'})
                         </span>
                       </div>
@@ -737,17 +832,30 @@ export const Calculadora = ({ onGuardar }) => {
                         </div>
                       )
                     )}
+                    {mostrarFactoresAereosFijados && Number(p.factorA) > 0 && (
+                      <span className="mt-2 inline-flex border-l-2 border-emerald-400 pl-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                        FA {Number(p.factorA).toFixed(2)} fijado
+                      </span>
+                    )}
                   </td>
                   <td className="p-2 text-center font-bold">{p.cant}</td>
                   {mostrarPicard ? (
                     <>
                       {/* FOB SKF */}
-                      <td className="p-2 bg-slate-50/20 text-center">
+                       <td className="p-2 bg-slate-50/20 text-center">
                         <input type="number" min="0" disabled={isRowDisabled} className="w-full p-1 border rounded text-center font-bold text-emerald-600 bg-white disabled:bg-slate-100 disabled:opacity-70" 
                                value={p.fob} onChange={(e) => handleTableNumericInput(idx, 'fob', e.target.value)}
                                onFocus={(e) => e.target.select()} />
-                      </td>
-                      {/* Costo SKF */}
+                       </td>
+                       {/* Venta (A) */}
+                       <td className="p-2 text-center bg-emerald-50/20">
+                         <div className="font-black text-emerald-600 text-sm">{ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}</div>
+                         <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
+                           <span className="text-slate-400 font-bold italic">FVA:</span>
+                           <input type="number" step="0.01" min="0" disabled={isRowDisabled} className="w-8 border-b outline-none text-center bg-transparent font-bold disabled:opacity-70" value={p.fva} onChange={(e) => handleTableNumericInput(idx, 'fva', e.target.value)} onFocus={(e) => e.target.select()} />
+                         </div>
+                       </td>
+                       {/* Costo SKF */}
                       <td className="p-2 text-center bg-emerald-50/10 font-bold text-slate-700">
                         {landedA > 0 ? `$${landedA.toFixed(2)}` : '—'}
                       </td>
@@ -769,12 +877,6 @@ export const Calculadora = ({ onGuardar }) => {
                             value={p.fobPicard || ''} 
                             onChange={(e) => handleTableNumericInput(idx, 'fobPicard', e.target.value)}
                             onFocus={(e) => e.target.select()}
-                            onBlur={() => aceptarCostoSugerido(idx)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === 'Tab') {
-                                aceptarCostoSugerido(idx);
-                              }
-                            }}
                           />
                         ) : (
                           <span className="text-slate-300">—</span>
@@ -783,27 +885,7 @@ export const Calculadora = ({ onGuardar }) => {
                       {/* Costo Picard */}
                       <td className="p-2 text-center bg-amber-50/20">
                         {esSKF ? (
-                          <input
-                            disabled={isRowDisabled}
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            className={`w-full p-1 border rounded text-center font-bold bg-white outline-none disabled:bg-slate-100 disabled:opacity-70 ${
-                              !p.costoPicardManual && costoSugerido > 0 
-                                ? 'text-slate-400 placeholder:text-slate-400/70 placeholder:italic' 
-                                : 'text-amber-700'
-                            }`}
-                            value={p.costoPicardManual || ''}
-                            placeholder={costoSugerido > 0 ? `${costoSugerido.toFixed(2)}` : '0.00'}
-                            onChange={(e) => handleTableNumericInput(idx, 'costoPicardManual', e.target.value)}
-                            onFocus={(e) => e.target.select()}
-                            onBlur={() => aceptarCostoSugerido(idx)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === 'Tab') {
-                                aceptarCostoSugerido(idx);
-                              }
-                            }}
-                          />
+                          <span className="font-black text-amber-700">{costoEfectivo > 0 ? `$${costoEfectivo.toFixed(2)}` : '—'}</span>
                         ) : (
                           <span className="text-slate-300">—</span>
                         )}

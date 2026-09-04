@@ -128,7 +128,7 @@ function App() {
   }, [user, role]);
 
 
-  const handleGuardarCotizacion = async (items, fa, fm, fl, ad, ta, sc, ax, mj, sg, el, og, rfqId, pdfBase64) => {
+  const handleGuardarCotizacion = async (items, fa, fm, fl, ad, ta, sc, ax, mj, sg, el, og, fletePicard, aduanaPicard, rfqId, pdfBase64) => {
     try {
       if (!rfqId) throw new Error("ID de RFQ no válido");
       
@@ -196,6 +196,8 @@ function App() {
         factorM: fm, 
         fleteAereo: fl, 
         aduanaAerea: ad,
+        fleteAereoPicard: fletePicard,
+        aduanaAereaPicard: aduanaPicard,
         tramiteAduanal: ta,
         scan: sc,
         adimex: ax,
@@ -211,7 +213,7 @@ function App() {
       if (rfqData.notasPedido) updatePayload.notasPedido = rfqData.notasPedido;
 
       const camposComparables = [
-        'productos', 'factorA', 'factorM', 'fleteAereo', 'aduanaAerea',
+        'productos', 'factorA', 'factorM', 'fleteAereo', 'aduanaAerea', 'fleteAereoPicard', 'aduanaAereaPicard',
         'tramiteAduanal', 'scan', 'adimex', 'manejos', 'seguro',
         'entregaLocal', 'otrosGastos', 'estado'
       ];
@@ -305,9 +307,9 @@ function App() {
                   <Route 
                     path="/calculadora/:id" 
                     element={
-                      <Calculadora onGuardar={(items, fa, fm, fl, ad, ta, sc, ax, mj, sg, el, og, pdfBase64) => {
+                      <Calculadora onGuardar={(items, fa, fm, fl, ad, ta, sc, ax, mj, sg, el, og, fletePicard, aduanaPicard, pdfBase64) => {
                         const rfqId = window.location.pathname.split('/').pop();
-                        return handleGuardarCotizacion(items, fa, fm, fl, ad, ta, sc, ax, mj, sg, el, og, rfqId, pdfBase64);
+                        return handleGuardarCotizacion(items, fa, fm, fl, ad, ta, sc, ax, mj, sg, el, og, fletePicard, aduanaPicard, rfqId, pdfBase64);
                       }} />
                     } 
                   />
