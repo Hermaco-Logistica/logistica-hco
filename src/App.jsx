@@ -329,7 +329,7 @@ function App() {
                   <Route path="/" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate title="Solicitudes Globales" role={role} />} />
                   <Route path="/vendedor/nueva" element={<NuevaRFQ />} />
-                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} />} />
+                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido soloPropiasParaPedido />} />
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   <Route path="*" element={<Navigate to="/vendedor" replace />} />

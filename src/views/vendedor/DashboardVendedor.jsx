@@ -113,7 +113,8 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
         totalItemsCotizacion: s.productos?.filter((p) => Number(p.fob || 0) > 0 || Number(p.precio || 0) > 0).length || 0,
         productos: s.productos || [],
         linkOC: s.linkOC || '',
-        notasPedido: s.notasPedido || ''
+        notasPedido: s.notasPedido || '',
+        archivoAdjunto: s.archivoAdjunto || null,
       });
       const tipoTag = esPedidoParcial ? 'Parcial' : 'Completo';
       const mailRes = await fetch('/.netlify/functions/send-email-notification', {
@@ -125,7 +126,10 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           to: destinatarioTo,
           cc: ccEmails,
           subject: `Nuevo Pedido ${tipoTag}: ${s.correlativo} - ${s.cliente}`,
-          bodyHtml: htmlBody
+          bodyHtml: htmlBody,
+          attachment: s.archivoAdjunto?.url
+            ? { url: s.archivoAdjunto.url, nombre: s.archivoAdjunto.nombre }
+            : undefined,
         })
       });
 

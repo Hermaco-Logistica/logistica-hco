@@ -1,5 +1,12 @@
 export const generarPlantillaNuevaRFQ = (savedData) => {
   const cantidadTotal = savedData.productos.reduce((acc, p) => acc + (Number(p.cant) || 0), 0);
+  const comentariosVendedor = String(savedData.comentariosVendedor || '').trim();
+  const comentariosCitados = comentariosVendedor
+    ? `<div style="margin-top: 20px; padding: 14px 16px; background-color: #f8fafc; border-left: 4px solid #0f172a; border-radius: 6px;">
+        <p style="margin: 0 0 6px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #475569;">Comentarios del Vendedor</p>
+        <blockquote style="margin: 0; font-size: 13px; font-style: italic; line-height: 1.5; color: #334155; white-space: pre-wrap;">“${comentariosVendedor.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')}”</blockquote>
+      </div>`
+    : '';
 
   return `
     <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
@@ -13,6 +20,7 @@ export const generarPlantillaNuevaRFQ = (savedData) => {
         <p style="margin: 5px 0;"><strong>Nombre Vendedor:</strong> ${savedData.vendedorNombre}</p>
         <p style="margin: 5px 0;"><strong>Cantidad total:</strong> ${cantidadTotal}</p>
         <p style="margin: 5px 0;"><strong>Validez solicitada:</strong> ${savedData.validez}</p>
+        ${comentariosCitados}
 
         <table style="width: 100%; border-collapse: collapse; margin-top: 25px;">
           <thead>

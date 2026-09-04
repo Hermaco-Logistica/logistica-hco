@@ -9,7 +9,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { to, cc, subject, bodyHtml, from, replyTo } = JSON.parse(event.body || '{}');
+    const { to, cc, subject, bodyHtml, from, replyTo, attachment } = JSON.parse(event.body || '{}');
 
     if (!to || !to.length) {
       return {
@@ -41,6 +41,30 @@ export const handler = async (event) => {
 
     if (cc && cc.length) {
       emailPayload.cc = Array.isArray(cc) ? cc : [cc];
+    }
+
+    if (attachment?.url) {
+      let attachmentUrl;
+      try {
+        attachmentUrl = new URL(attachment.url);
+      } catch {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ message: 'URL de archivo adjunto no válida' }),
+        };
+      }
+
+      if (attachmentUrl.protocol !== 'https:' || attachmentUrl.hostname !== 'firebasestorage.googleapis.com') {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ message: 'El archivo adjunto debe provenir de Firebase Storage' }),
+        };
+      }
+
+      const filename = String(attachment.nombre || 'archivo-adjunto')
+        .replace(/[\\/:*?"<>|]/g, '_')
+        .slice(0, 180);
+      emailPayload.attachments = [{ path: attachmentUrl.toString(), filename }];
     }
 
     const { data, error } = await resend.emails.send(emailPayload);

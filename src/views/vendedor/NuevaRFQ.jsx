@@ -37,6 +37,7 @@ export const NuevaRFQ = () => {
   const [mostrarSugerenciasProducto, setMostrarSugerenciasProducto] = useState([false]);
   const [loading, setLoading] = useState(false);
   const [validez, setValidez] = useState('5 días hábiles');
+  const [comentariosVendedor, setComentariosVendedor] = useState('');
   const [modalNuevoProd, setModalNuevoProd] = useState({ isOpen: false, idx: null, sku: '', producto: '', marca: '', saving: false });
   const debounceRef = useRef(null);
   const marcasDebounceRef = useRef([]);
@@ -375,6 +376,7 @@ export const NuevaRFQ = () => {
           cliente: clienteNormalizado,
           correlativo,
           validez,
+          comentariosVendedor: comentariosVendedor.trim(),
           vendedorId: auth.currentUser.uid,
           vendedorEmail: auth.currentUser.email,
           vendedorNombre: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
@@ -535,6 +537,21 @@ export const NuevaRFQ = () => {
               onChange={(e) => setValidez(e.target.value)}
             />
           </div>
+        </div>
+
+        <div className="bg-white p-8 rounded-4xl border border-slate-200 shadow-xl shadow-slate-100">
+          <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest" htmlFor="comentarios-vendedor">
+            Comentarios del Vendedor
+          </label>
+          <textarea
+            id="comentarios-vendedor"
+            rows={4}
+            maxLength={2000}
+            className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm font-semibold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white"
+            placeholder="Información adicional para Compras..."
+            value={comentariosVendedor}
+            onChange={(e) => setComentariosVendedor(e.target.value)}
+          />
         </div>
 
         {/* Listado de Productos */}
