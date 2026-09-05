@@ -205,3 +205,41 @@ export const generarPlantillaNuevoPedido = (orderData) => {
     </div>
   `;
 };
+
+// ── Notificación al vendedor cuando compras asigna sus items a una OC ────────
+// itemsVendedor: [{ correlativo, idRFQ, descripcion, desc, fechaCompromiso }]
+export const generarPlantillaOCAsignada = ({ numOC, itemsVendedor }) => {
+  const porRFQ = itemsVendedor.reduce((acc, item) => {
+    const key = item.correlativo || item.idRFQ || 'S/N';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push({
+      descripcion: item.descripcion || item.desc || 'Ítem sin descripción',
+      fechaCompromiso: item.fechaCompromiso || null,
+    });
+    return acc;
+  }, {});
+
+  const bloques = Object.entries(porRFQ).map(([rfq, productos]) => `
+    <div style="margin-bottom:16px;">
+      <p style="margin:0 0 6px;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;color:#0f172a;">${rfq}</p>
+      <ul style="margin:0;padding-left:18px;">
+        ${productos.map(p => `<li style="font-size:13px;color:#334155;margin-bottom:5px;">
+          ${p.descripcion}${p.fechaCompromiso ? `<span style="margin-left:8px;font-size:10px;font-weight:700;color:#64748b;">· Entrega prometida: ${p.fechaCompromiso}</span>` : ''}
+        </li>`).join('')}
+      </ul>
+    </div>`).join('');
+
+  return `
+    <div style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;">
+      <div style="background:#0f172a;padding:24px 28px;">
+        <p style="margin:0;font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;color:#94a3b8;">Hermaco · Compras</p>
+        <h2 style="margin:8px 0 0;font-size:20px;font-weight:900;color:#ffffff;">OC Asignada: ${numOC}</h2>
+      </div>
+      <div style="padding:24px 28px;">
+        <p style="font-size:13px;color:#475569;margin:0 0 20px;">Los siguientes productos de tus solicitudes han sido vinculados a la Orden de Compra <strong>${numOC}</strong>:</p>
+        ${bloques}
+        <p style="margin-top:20px;font-size:12px;color:#334155;">Puedes realizar el seguimiento de tu pedido en el <strong>Dashboard de Pedidos de LogisticaHCO</strong>.</p>
+        <p style="margin-top:20px;font-size:11px;color:#94a3b8;">Este es un correo automático del Sistema de Logística Hermaco.</p>
+      </div>
+    </div>`;
+};

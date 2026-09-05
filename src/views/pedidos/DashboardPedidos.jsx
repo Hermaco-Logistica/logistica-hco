@@ -15,6 +15,7 @@ import {
 } from '../../services/proveedoresService';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { usePersistedState } from '../../hooks/usePersistedState';
+import { generarPlantillaOCAsignada } from '../../utils/emailTemplates';
 
 export const DashboardPedidos = ({ role }) => {
   const [itemsPedidos, setItemsPedidos] = useState([]);
@@ -124,7 +125,9 @@ export const DashboardPedidos = ({ role }) => {
                 fechaReferencia: data.fechaPedido || data.fechaCreacion || data.fechaCotizacion || null,
                 fobReal: p.fobReal || p.fob || 0,
                 fechaCompromiso: p.fechaCompromiso, 
-                diasPrometidos: p.diasPrometidos
+                diasPrometidos: p.diasPrometidos,
+                vendedorEmail: data.vendedorEmail || '',
+                vendedorNombre: data.vendedorNombre || '',
               });
             }
           });
@@ -332,7 +335,7 @@ export const DashboardPedidos = ({ role }) => {
           });
           return;
         }
-      } catch (_) {}
+      } catch { /* ignorado */ }
 
       setTrackingModal({
         open: true,
@@ -446,6 +449,43 @@ export const DashboardPedidos = ({ role }) => {
           await updateDoc(rfqRef, { productos: productosActualizados });
         }
       }
+
+      // ── Correos por vendedor ──────────────────────────────────────────────
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const CC_FIJOS = ['compras@hermaco.net', 'chernandez@hermaco.net', 'fsalinas@hermaco.net', 'oventura@hermaco.net'];
+
+      // Agrupar items por vendedorEmail
+      const porVendedor = itemsAProcesar.reduce((acc, item) => {
+        const email = item.vendedorEmail || 'sin-email';
+        if (!acc[email]) acc[email] = { nombre: item.vendedorNombre || email.split('@')[0], items: [] };
+        acc[email].items.push(item);
+        return acc;
+      }, {});
+
+      await Promise.allSettled(
+        Object.entries(porVendedor).map(async ([vendEmail, { items: itemsV }]) => {
+          const to = isLocal ? ['rvides@hermaco.net'] : [vendEmail].filter(Boolean);
+          const cc = isLocal ? ['rvides@hermaco.net'] : CC_FIJOS;
+          if (!to.length || to[0] === 'sin-email') return;
+
+          try {
+            await fetch('/.netlify/functions/send-email-notification', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                from: isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : 'compras@hermaco.net <compras@hermaco.net>',
+                to,
+                cc,
+                subject: `OC Asignada ${numOC} — Tus productos ya tienen orden de compra`,
+                bodyHtml: generarPlantillaOCAsignada({ numOC, itemsVendedor: itemsV }),
+              }),
+            });
+          } catch (e) {
+            console.error(`Error enviando correo a ${vendEmail}:`, e);
+          }
+        })
+      );
+      // ─────────────────────────────────────────────────────────────────────
 
       alert(`Éxito: Items vinculados a la OC ${numOC}`);
       setSeleccionados([]);
