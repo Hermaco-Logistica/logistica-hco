@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, collection, addDoc, serverTimestamp, updateDoc, onSnapshot } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
-import { db, auth, storage } from '../../firebase';
-import { ChevronLeft, Clock, Tag, Calendar, CheckCircle2, ShoppingCart, Link as LinkIcon, AlertCircle, Printer, X, Paperclip, Upload, FileText } from 'lucide-react';
+import { db, auth } from '../../firebase';
+import { ChevronLeft, Clock, Tag, CheckCircle2, ShoppingCart, Link as LinkIcon, AlertCircle, Printer, X, Paperclip, FileText, Trash2 } from 'lucide-react';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
 import { generarPlantillaNuevoPedido } from '../../utils/emailTemplates';
 import { emailConfig } from '../../config/emailConfig';
@@ -14,14 +13,15 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   const [rfq, setRfq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [enviandoPedido, setEnviandoPedido] = useState(false);
+  const [mensajePedido, setMensajePedido] = useState('');
   const [verPreview, setVerPreview] = useState(false);
 
   const [seleccionados, setSeleccionados] = useState({});
   const [modalidades, setModalidades] = useState({});
   const [linkOC, setLinkOC] = useState('');
   const [notasPedido, setNotasPedido] = useState('');
-  const [archivoAdjunto, setArchivoAdjunto] = useState(null);
-  const [subiendoArchivo, setSubiendoArchivo] = useState(false);
+  // Adjuntos múltiples: [{ archivo: File, nombre: string, tipo: string }]
+  const [archivosAdjuntos, setArchivosAdjuntos] = useState([]);
 
   const esItemYaPedido = (p) => {
     if (!p) return false;
@@ -34,6 +34,9 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   const pedidoYaCreado = (rfq?.estado === 'Pedido' || rfq?.estado === 'Comprado') || (rfq?.estado === 'Pedido Parcial' && !hayItemsPendientesDePedir);
   const esPropietarioDeRFQ = rfq?.vendedorId === auth.currentUser?.uid;
   const puedeConfirmarPedido = canGenerarPedido && (!soloPropiasParaPedido || esPropietarioDeRFQ) && hayItemsPendientesDePedir;
+  const totalItemsSeleccionables = rfq?.productos?.filter(p => Number(p.fob || 0) > 0 && !esItemYaPedido(p)).length ?? 0;
+  const totalItemsSeleccionados = Object.values(seleccionados).filter(Boolean).length;
+  const seraParcial = puedeConfirmarPedido && totalItemsSeleccionados > 0 && totalItemsSeleccionados < totalItemsSeleccionables;
   const productosDelPedido = pedidoYaCreado
     ? (rfq?.productos || [])
         .map((item, idx) => ({ item, idx }))
@@ -115,7 +118,6 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         setRfq({ id: docSnap.id, ...data });
         if (data.linkOC) setLinkOC(data.linkOC);
         if (data.notasPedido) setNotasPedido(data.notasPedido);
-        setArchivoAdjunto(data.archivoAdjunto || null);
         
         const selInit = {};
         const modInit = {};
@@ -141,45 +143,35 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     return () => unsubscribe();
   }, [id, navigate]);
 
-  const handleAdjuntarArchivo = async (event) => {
-    const archivo = event.target.files?.[0];
+  // ── Adjuntos múltiples directo a correo, sin límite en frontend ──────────
+  const handleAdjuntarArchivos = (event) => {
+    const nuevos = Array.from(event.target.files || []);
     event.target.value = '';
-    if (!archivo) return;
-
-    const limiteArchivo = 5 * 1024 * 1024;
-    if (archivo.size > limiteArchivo) {
-      alert('El archivo no puede superar 5 MB.');
-      return;
-    }
-
-    setSubiendoArchivo(true);
-    try {
-      const storagePath = `solicitudes/${id}/adjuntos/documentacion`;
-      const archivoRef = ref(storage, storagePath);
-      await uploadBytes(archivoRef, archivo, {
-        contentType: archivo.type || 'application/octet-stream',
-        customMetadata: { originalName: archivo.name },
-      });
-      const url = await getDownloadURL(archivoRef);
-      const adjunto = {
-        nombre: archivo.name,
-        url,
-        storagePath,
-        tamano: archivo.size,
-        tipo: archivo.type || 'application/octet-stream',
-        subidoPor: auth.currentUser?.uid || '',
-        subidoEn: serverTimestamp(),
-      };
-
-      await updateDoc(doc(db, 'solicitudes', id), { archivoAdjunto: adjunto });
-      setArchivoAdjunto(adjunto);
-    } catch (error) {
-      console.error('Error adjuntando archivo:', error);
-      alert('No se pudo adjuntar el archivo.');
-    } finally {
-      setSubiendoArchivo(false);
-    }
+    if (!nuevos.length) return;
+    setArchivosAdjuntos(prev => [
+      ...prev,
+      ...nuevos.map(f => ({ archivo: f, nombre: f.name, tipo: f.type || 'application/octet-stream' }))
+    ]);
   };
+
+  const handleEliminarArchivo = (index) => {
+    setArchivosAdjuntos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const prepararAdjuntosParaCorreo = async () => {
+    if (!archivosAdjuntos.length) return undefined;
+    return Promise.all(
+      archivosAdjuntos.map(({ archivo, nombre }) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve({ content: String(reader.result || '').split(',')[1] || '', nombre });
+          reader.onerror = reject;
+          reader.readAsDataURL(archivo);
+        })
+      )
+    );
+  };
+  // ─────────────────────────────────────────────────────────────────────────
 
   const handleCrearPedido = async () => {
     if (!puedeConfirmarPedido) {
@@ -190,6 +182,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     if (indicesSeleccionados.length === 0) return alert("Selecciona productos para el pedido.");
 
     setEnviandoPedido(true);
+    setMensajePedido('Creando pedido...');
     try {
       const productosActualizadosParaRFQ = [...rfq.productos];
       const productosParaPedido = indicesSeleccionados.map(idx => {
@@ -239,13 +232,15 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
       const todosLosItemsPedidos = productosActualizadosParaRFQ.every(p => esItemYaPedido(p));
       const estadoNuevoSolicitud = todosLosItemsPedidos ? 'Pedido' : 'Pedido Parcial';
 
+      setMensajePedido('Actualizando solicitud...');
       await updateDoc(doc(db, "solicitudes", id), {
         estado: estadoNuevoSolicitud,
         productos: productosActualizadosParaRFQ,
         linkOC: valorLinkOC,
         notasPedido: valorNotasPedido,
         fechaPedido: serverTimestamp(),
-        pedidoEmailEnviado: false
+        pedidoEmailEnviado: false,
+        tieneAdjuntos: archivosAdjuntos.length > 0,
       });
 
       // --- LÓGICA DE CORREO AUTOMÁTICO AL CREAR PEDIDO ---
@@ -279,12 +274,17 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         productos: productosActualizadosParaRFQ,
         linkOC: linkOC || "",
         notasPedido: notasPedido || "",
-        archivoAdjunto: rfq.archivoAdjunto || null,
       };
 
       const htmlBody = generarPlantillaNuevoPedido(orderDataForEmail);
       const tipoTag = esPedidoParcial ? 'Parcial' : 'Completo';
 
+      if (archivosAdjuntos.length > 0) {
+        setMensajePedido(`Procesando ${archivosAdjuntos.length} adjunto(s)...`);
+      }
+      const attachments = await prepararAdjuntosParaCorreo();
+
+      setMensajePedido('Enviando correo...');
       try {
         const mailRes = await fetch('/.netlify/functions/send-email-notification', {
           method: 'POST',
@@ -296,9 +296,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
             cc: ccEmails,
             subject: `Nuevo Pedido ${tipoTag}: ${rfq.correlativo} - ${rfq.cliente}`,
             bodyHtml: htmlBody,
-            attachment: rfq.archivoAdjunto?.url
-              ? { url: rfq.archivoAdjunto.url, nombre: rfq.archivoAdjunto.nombre }
-              : undefined,
+            attachments,
           })
         });
 
@@ -315,6 +313,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
       alert("Error al procesar pedido.");
     } finally {
       setEnviandoPedido(false);
+      setMensajePedido('');
     }
   };
 
@@ -490,21 +489,35 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
               />
             </div>
             <div className="border-t border-slate-100 pt-4">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 italic">Archivo Adjunto</label>
-              <div className="flex flex-wrap items-center gap-2">
-                <label className={`inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-wide transition-colors ${subiendoArchivo ? 'cursor-wait bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-emerald-600'}`}>
-                  {subiendoArchivo ? <Upload size={14} className="animate-pulse" /> : <Paperclip size={14} />}
-                  {subiendoArchivo ? 'Subiendo...' : 'Adjuntar archivo'}
-                  <input type="file" className="sr-only" disabled={subiendoArchivo} onChange={handleAdjuntarArchivo} />
-                </label>
-                <span className="text-[9px] font-bold text-slate-400">Máx. 5 MB</span>
-              </div>
-              {archivoAdjunto?.url && (
-                <a href={archivoAdjunto.url} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-bold text-blue-600 transition-colors hover:border-blue-200 hover:bg-blue-50">
-                  <FileText size={15} />
-                  <span className="min-w-0 flex-1 truncate">{archivoAdjunto.nombre || 'Archivo adjunto'}</span>
-                  <span className="shrink-0 text-[9px] uppercase">Abrir</span>
-                </a>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 italic">
+                Archivos Adjuntos
+                {archivosAdjuntos.length > 0 && (
+                  <span className="ml-2 bg-emerald-500 text-white rounded-full px-1.5 py-0.5 text-[9px]">{archivosAdjuntos.length}</span>
+                )}
+              </label>
+              <label className={`inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-wide transition-colors ${!puedeConfirmarPedido ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-emerald-600'}`}>
+                <Paperclip size={14} />
+                Adjuntar archivos
+                <input type="file" multiple className="sr-only" disabled={!puedeConfirmarPedido} onChange={handleAdjuntarArchivos} />
+              </label>
+              {archivosAdjuntos.length > 0 && (
+                <ul className="mt-3 space-y-1.5">
+                  {archivosAdjuntos.map((f, i) => (
+                    <li key={i} className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                      <FileText size={13} className="shrink-0 text-slate-400" />
+                      <span className="min-w-0 flex-1 truncate text-xs font-bold text-slate-700">{f.nombre}</span>
+                      <span className="shrink-0 text-[9px] text-slate-400 font-bold">{(f.archivo.size / 1024).toFixed(0)} KB</span>
+                      <button type="button" onClick={() => handleEliminarArchivo(i)} className="shrink-0 text-slate-300 hover:text-red-500 transition-colors">
+                        <Trash2 size={13} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {seraParcial && (
+                <p className="mt-2 text-[9px] font-bold text-amber-500 uppercase tracking-wide leading-relaxed">
+                  ⚠ Pedido parcial — los adjuntos se envían solo en este correo y no quedan guardados en la solicitud.
+                </p>
               )}
             </div>
           </div>
@@ -571,7 +584,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
           >
             <ShoppingCart size={20} />
             {puedeConfirmarPedido
-              ? (enviandoPedido ? 'GENERANDO...' : 'CONFIRMAR Y ENVIAR PEDIDO')
+              ? (enviandoPedido ? (mensajePedido || 'GENERANDO...') : 'CONFIRMAR Y ENVIAR PEDIDO')
               : (pedidoYaCreado ? 'PEDIDO YA GENERADO' : 'SOLO VISUALIZACION')}
           </button>
           

@@ -127,9 +127,6 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           cc: ccEmails,
           subject: `Nuevo Pedido ${tipoTag}: ${s.correlativo} - ${s.cliente}`,
           bodyHtml: htmlBody,
-          attachment: s.archivoAdjunto?.url
-            ? { url: s.archivoAdjunto.url, nombre: s.archivoAdjunto.nombre }
-            : undefined,
         })
       });
 
