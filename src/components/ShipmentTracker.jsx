@@ -70,7 +70,7 @@ const getDsvNormalizedEventTimestamp = (event) => (
   || null
 );
 
-export const ShipmentTracker = ({ shipmentData }) => {
+export const ShipmentTracker = ({ shipmentData, estadoManual }) => {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [cargoOpen, setCargoOpen] = useState(false);
 
@@ -119,11 +119,21 @@ export const ShipmentTracker = ({ shipmentData }) => {
                 <p className="text-lg font-black text-slate-800 uppercase tracking-tight">{raw.shipmentId}</p>
               )}
               {statusLabel && (
-                <p className="text-[11px] font-bold text-emerald-600 uppercase mt-1">{statusLabel}</p>
+                <p className="text-[11px] font-bold text-emerald-600 uppercase mt-1">
+                  {isDsv && estadoManual === 'Aduana'
+                    ? 'En proceso de aduana'
+                    : isDsv && estadoManual === 'Recibido'
+                      ? 'Recibido'
+                      : statusLabel}
+                </p>
               )}
               {latestEvent && (
                 <p className="text-[10px] font-bold text-slate-400 uppercase mt-1">
-                  Ultimo estado: {getDsvEventLabel(latestEvent.raw || {})}
+                  Ultimo estado: {isDsv && estadoManual === 'Aduana'
+                    ? 'En proceso de aduana'
+                    : isDsv && estadoManual === 'Recibido'
+                      ? 'Recibido'
+                      : getDsvEventLabel(latestEvent.raw || {})}
                 </p>
               )}
             </div>

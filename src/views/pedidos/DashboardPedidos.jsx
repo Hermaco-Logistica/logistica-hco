@@ -6,7 +6,7 @@ import {
   ChevronDown, Package, DollarSign, Hash, ClipboardCheck, 
   Activity, Calendar, Truck, Trash2
 } from 'lucide-react';
-import { ShipmentTrackerCompact } from '../../components/ShipmentTracker';
+import { TrackingModal } from '../../components/TrackingModal';
 import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/trackingStatusService';
 import {
   buscarProveedoresGuardados,
@@ -16,6 +16,7 @@ import {
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { usePersistedState } from '../../hooks/usePersistedState';
 import { generarPlantillaOCAsignada } from '../../utils/emailTemplates';
+import { interpretarEstadoLogistico } from '../../utils/interpretarEstadoLogistico';
 
 export const DashboardPedidos = ({ role }) => {
   const [itemsPedidos, setItemsPedidos] = useState([]);
@@ -250,7 +251,7 @@ export const DashboardPedidos = ({ role }) => {
     ));
   };
 
-  const openTrackingModal = async (trackingNumber, rfqLabel) => {
+  const openTrackingModal = async (trackingNumber, rfqLabel, ocId = null, estadoActual = 'Pedido', fechaCambioManual = null) => {
     const cleanNumber = String(trackingNumber || '').trim().toUpperCase();
     if (!cleanNumber) {
       setTrackingModal({
@@ -260,6 +261,8 @@ export const DashboardPedidos = ({ role }) => {
         data: null,
         trackingNumber: '',
         rfqLabel,
+        ocEstado: estadoActual,
+        fechaUltimoEstado: fechaCambioManual,
       });
       setTrackingNotice('');
       return;
@@ -272,52 +275,49 @@ export const DashboardPedidos = ({ role }) => {
       data: null,
       trackingNumber: cleanNumber,
       rfqLabel,
+      ocEstado: estadoActual,
+      fechaUltimoEstado: fechaCambioManual,
     });
     setTrackingNotice('');
 
     try {
+      let freshData = null;
       if (trackingStatusEnabled) {
-        const freshData = await consultarTrackingStatus(cleanNumber);
-        setTrackingModal({
-          open: true,
-          loading: false,
-          error: freshData ? '' : 'Sin respuesta de tracking guardada',
-          data: freshData || null,
-          trackingNumber: cleanNumber,
-          rfqLabel,
-        });
-        if (freshData?.rateLimited) {
-          setTrackingNotice('Mostrando ultimo dato guardado. Podras actualizar en unos minutos.');
-        } else if (freshData?.stale) {
-          setTrackingNotice('Actualizando, mostrando ultimo dato guardado.');
+        freshData = await consultarTrackingStatus(cleanNumber);
+      } else {
+        const cacheRef = doc(db, 'tracking_cache', cleanNumber);
+        const cacheSnap = await getDoc(cacheRef);
+        if (cacheSnap.exists()) {
+          freshData = cacheSnap.data()?.payload || null;
         }
-        return;
       }
 
-      const cacheRef = doc(db, 'tracking_cache', cleanNumber);
-      const cacheSnap = await getDoc(cacheRef);
-      if (!cacheSnap.exists()) {
-        setTrackingModal({
-          open: true,
-          loading: false,
-          error: 'Sin respuesta de tracking guardada',
-          data: null,
-          trackingNumber: cleanNumber,
-          rfqLabel,
-        });
-        setTrackingNotice('');
-        return;
-      }
-
-      const cacheData = cacheSnap.data();
       setTrackingModal({
         open: true,
         loading: false,
-        error: '',
-        data: cacheData?.payload || null,
+        error: freshData ? '' : 'Sin respuesta de tracking guardada',
+        data: freshData,
         trackingNumber: cleanNumber,
         rfqLabel,
+        ocEstado: estadoActual,
+        fechaUltimoEstado: fechaCambioManual,
       });
+
+      if (freshData?.rateLimited) {
+        setTrackingNotice('Mostrando ultimo dato guardado. Podras actualizar en unos minutos.');
+      } else if (freshData?.stale) {
+        setTrackingNotice('Actualizando, mostrando ultimo dato guardado.');
+      }
+
+      if (freshData && ocId) {
+        const estadoNuevo = interpretarEstadoLogistico(freshData, estadoActual);
+        if (estadoNuevo !== estadoActual) {
+          await updateDoc(doc(db, 'ordenesCompra', ocId), {
+            estado: estadoNuevo,
+            ultimaActualizacion: serverTimestamp(),
+          });
+        }
+      }
     } catch (err) {
       console.error("Error consultando tracking en modal:", err);
       // Fallback a Firestore directo en caso de error
@@ -325,14 +325,26 @@ export const DashboardPedidos = ({ role }) => {
         const cacheRef = doc(db, 'tracking_cache', cleanNumber);
         const cacheSnap = await getDoc(cacheRef);
         if (cacheSnap.exists()) {
+          const fallbackData = cacheSnap.data()?.payload || null;
           setTrackingModal({
             open: true,
             loading: false,
             error: '',
-            data: cacheSnap.data()?.payload || null,
+            data: fallbackData,
             trackingNumber: cleanNumber,
             rfqLabel,
+            ocEstado: estadoActual,
+            fechaUltimoEstado: fechaCambioManual,
           });
+          if (fallbackData && ocId) {
+            const estadoNuevo = interpretarEstadoLogistico(fallbackData, estadoActual);
+            if (estadoNuevo !== estadoActual) {
+              await updateDoc(doc(db, 'ordenesCompra', ocId), {
+                estado: estadoNuevo,
+                ultimaActualizacion: serverTimestamp(),
+              });
+            }
+          }
           return;
         }
       } catch { /* ignorado */ }
@@ -344,6 +356,8 @@ export const DashboardPedidos = ({ role }) => {
         data: null,
         trackingNumber: cleanNumber,
         rfqLabel,
+        ocEstado: estadoActual,
+        fechaUltimoEstado: fechaCambioManual,
       });
     }
   };
@@ -391,17 +405,73 @@ export const DashboardPedidos = ({ role }) => {
 
   const getInfoOC = (numOC) => {
     const oc = ordenesExistentes.find(o => o.numeroOC === numOC);
-    if (!oc) return { label: 'Por Procesar', color: 'bg-amber-100 text-amber-600', prov: 'Pendiente', mod: '-', rawEstado: 'Pendiente' };
+    if (!oc) {
+      return {
+        label: 'Por Procesar',
+        prov: 'Pendiente',
+        mod: '-',
+        rawEstado: 'Pendiente',
+        dotColor: 'bg-slate-300',
+        activeClass: 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100/80',
+        disabledClass: 'bg-slate-50/50 border-slate-200/60 text-slate-400',
+      };
+    }
 
-    const ultimaMod = oc.ultimaActualizacion ? formatFechaHora(oc.ultimaActualizacion) : 'Sin cambios';
-    const estados = {
-      'Pedido': { label: 'OC Generada', color: 'bg-blue-100 text-blue-600' },
-      'En Tránsito': { label: 'En Tránsito', color: 'bg-purple-100 text-purple-600' },
-      'Recibido': { label: 'Recibido (Almacén)', color: 'bg-emerald-100 text-emerald-600' },
-      'Entregado': { label: 'Entregado Cliente', color: 'bg-slate-900 text-white' }
+    const fechaMod = oc.fechaUltimoEstado || oc.ultimaActualizacion;
+    const ultimaMod = fechaMod ? formatFechaHora(fechaMod) : 'Sin cambios';
+    const configEstados = {
+      'Pedido': {
+        label: 'OC Generada',
+        dotColor: 'bg-blue-500',
+        activeClass: 'bg-blue-50/60 border-blue-200/70 text-blue-700 hover:bg-blue-100/80 hover:border-blue-300 shadow-xs shadow-blue-500/5',
+        disabledClass: 'bg-slate-50/60 border-slate-200/70 text-slate-400',
+      },
+      'Tránsito': {
+        label: 'En Tránsito',
+        dotColor: 'bg-indigo-500',
+        activeClass: 'bg-indigo-50/60 border-indigo-200/70 text-indigo-700 hover:bg-indigo-100/80 hover:border-indigo-300 shadow-xs shadow-indigo-500/5',
+        disabledClass: 'bg-slate-50/60 border-slate-200/70 text-slate-400',
+      },
+      'En Tránsito': {
+        label: 'En Tránsito',
+        dotColor: 'bg-indigo-500',
+        activeClass: 'bg-indigo-50/60 border-indigo-200/70 text-indigo-700 hover:bg-indigo-100/80 hover:border-indigo-300 shadow-xs shadow-indigo-500/5',
+        disabledClass: 'bg-slate-50/60 border-slate-200/70 text-slate-400',
+      },
+      'Aduana': {
+        label: 'En Aduana',
+        dotColor: 'bg-amber-500',
+        activeClass: 'bg-amber-50/60 border-amber-200/70 text-amber-700 hover:bg-amber-100/80 hover:border-amber-300 shadow-xs shadow-amber-500/5',
+        disabledClass: 'bg-slate-50/60 border-slate-200/70 text-slate-400',
+      },
+      'Recibido': {
+        label: 'Recibido (Almacén)',
+        dotColor: 'bg-emerald-500',
+        activeClass: 'bg-emerald-50/60 border-emerald-200/70 text-emerald-700 hover:bg-emerald-100/80 hover:border-emerald-300 shadow-xs shadow-emerald-500/5',
+        disabledClass: 'bg-slate-50/60 border-slate-200/70 text-slate-400',
+      },
+      'Entregado': {
+        label: 'Entregado Cliente',
+        dotColor: 'bg-slate-900',
+        activeClass: 'bg-slate-900 border-slate-900 text-white hover:bg-slate-800 shadow-xs shadow-slate-900/10',
+        disabledClass: 'bg-slate-100 border-slate-200 text-slate-400',
+      },
     };
 
-    return { ...(estados[oc.estado] || { label: oc.estado, color: 'bg-slate-100' }), prov: oc.proveedor, mod: ultimaMod, rawEstado: oc.estado };
+    const cfg = configEstados[oc.estado] || {
+      label: oc.estado || 'Actualización',
+      dotColor: 'bg-slate-400',
+      activeClass: 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100',
+      disabledClass: 'bg-slate-50/50 border-slate-200 text-slate-400',
+    };
+
+    return {
+      ...cfg,
+      color: cfg.activeClass,
+      prov: oc.proveedor,
+      mod: ultimaMod,
+      rawEstado: oc.estado,
+    };
   };
 
   const procesarAsignacion = async (ocExistente = null) => {
@@ -499,7 +569,7 @@ export const DashboardPedidos = ({ role }) => {
     return ocInfo.prov;
   }).filter(p => p && p !== 'Pendiente')));
 
-  const estadosLogicosDisponibles = ['Por Procesar', 'OC Generada', 'En Tránsito', 'Recibido (Almacén)', 'Entregado Cliente'];
+  const estadosLogicosDisponibles = ['Por Procesar', 'OC Generada', 'En Tránsito', 'En Aduana', 'Recibido (Almacén)', 'Entregado Cliente'];
 
   // Calendario popover helpers
   const handleSelectDiaConfirmado = (diaDate) => {
@@ -899,16 +969,42 @@ export const DashboardPedidos = ({ role }) => {
                     </div>
                   </td>
                   <td className="p-6">
-                    <button
-                      type="button"
-                      onClick={() => openTrackingModal(trackingNumber, rfqLabel)}
-                      disabled={!trackingNumber}
-                      title={trackingNumber ? 'Ver detalle de tracking' : 'Sin tracking asociado'}
-                      className={`inline-flex flex-col px-3 py-1.5 rounded-xl border ${ocInfo.color} border-current bg-opacity-10 w-full max-w-35 ${trackingNumber ? 'hover:opacity-90' : 'cursor-not-allowed opacity-60'}`}
-                    >
-                      <span className="text-[9px] font-black uppercase text-center">{ocInfo.label}</span>
-                      <span className="text-[7px] font-bold opacity-70 text-center mt-0.5 tracking-tighter">MOD: {ocInfo.mod}</span>
-                    </button>
+                    {trackingNumber ? (
+                      <button
+                        type="button"
+                        onClick={() => openTrackingModal(trackingNumber, rfqLabel, ocDetalle?.id, ocDetalle?.estado, ocDetalle?.fechaUltimoEstado)}
+                        title="Ver seguimiento de tracking"
+                        className={`group relative flex items-center justify-between gap-2.5 px-3 py-2 rounded-2xl border transition-all duration-200 w-full max-w-[155px] cursor-pointer hover:-translate-y-0.5 active:translate-y-0 text-left ${ocInfo.activeClass}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ocInfo.dotColor} group-hover:scale-125 transition-transform`} />
+                          <div className="min-w-0">
+                            <p className="text-[10px] font-black uppercase tracking-tight truncate leading-tight">
+                              {ocInfo.label}
+                            </p>
+                            <p className="text-[7.5px] font-bold opacity-60 uppercase tracking-tighter truncate mt-0.5">
+                              {ocInfo.mod}
+                            </p>
+                          </div>
+                        </div>
+                        <Truck size={12} className="shrink-0 opacity-40 group-hover:opacity-90 group-hover:translate-x-0.5 transition-all" />
+                      </button>
+                    ) : (
+                      <div
+                        title={`Sin tracking asociado${ocInfo.mod !== 'Sin cambios' ? ` • Último cambio: ${ocInfo.mod}` : ''}`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-2xl border transition-all w-full max-w-[155px] select-none cursor-default ${ocInfo.disabledClass}`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ocInfo.dotColor}`} />
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold uppercase tracking-tight truncate leading-tight">
+                            {ocInfo.label}
+                          </p>
+                          <p className="text-[7.5px] font-bold opacity-60 uppercase tracking-tighter truncate mt-0.5">
+                            {ocInfo.mod !== 'Sin cambios' ? ocInfo.mod : 'Sin tracking'}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </td>
                   <td className="p-6 text-center">
                     {item.numOC ? (
@@ -946,55 +1042,19 @@ export const DashboardPedidos = ({ role }) => {
         </div>
       )}
 
-      {trackingModal.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
-          <div className="w-full max-w-xl rounded-3xl bg-white shadow-2xl border border-slate-100 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-              <div>
-                <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Detalle de tracking</p>
-                <p className="text-sm font-black text-slate-800">
-                  {role === 'comprador'
-                    ? (trackingModal.trackingNumber || '--')
-                    : (trackingModal.rfqLabel || '--')}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setTrackingModal({
-                  open: false,
-                  loading: false,
-                  error: '',
-                  data: null,
-                  trackingNumber: '',
-                  rfqLabel: '',
-                })}
-                className="text-xs font-black uppercase text-slate-400 hover:text-slate-800"
-              >
-                Cerrar
-              </button>
-            </div>
-
-            <div className="p-6">
-              {trackingNotice && (
-                <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[10px] font-bold uppercase text-amber-700">
-                  {trackingNotice}
-                </div>
-              )}
-              {trackingModal.loading && (
-                <p className="text-xs font-black text-slate-400 uppercase">Cargando...</p>
-              )}
-
-              {!trackingModal.loading && trackingModal.error && (
-                <p className="text-xs font-black text-rose-600 uppercase">{trackingModal.error}</p>
-              )}
-
-              {!trackingModal.loading && trackingModal.data && (
-                <ShipmentTrackerCompact shipmentData={trackingModal.data} />
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <TrackingModal
+        open={trackingModal.open}
+        onClose={() => setTrackingModal(prev => ({ ...prev, open: false }))}
+        data={trackingModal.data}
+        loading={trackingModal.loading}
+        error={trackingModal.error}
+        notice={trackingNotice}
+        trackingNumber={trackingModal.trackingNumber}
+        rfqLabel={trackingModal.rfqLabel}
+        estadoActual={trackingModal.ocEstado || 'Pedido'}
+        fechaUltimoEstado={trackingModal.fechaUltimoEstado}
+        role={role}
+      />
     </div>
   );
 };

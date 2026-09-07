@@ -138,7 +138,7 @@ class ApiClient {
                if (!ct.includes('application/json')) return null;
                return await retryRes.json();
             }
-          } catch (refreshErr) {
+          } catch {
              throw err; 
           }
         }

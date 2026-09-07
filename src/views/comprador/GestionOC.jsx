@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, onSnapshot, doc, updateDoc, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, orderBy, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {
   Truck, Globe, ChevronRight, ArrowLeft, Calendar, Hash,
@@ -9,6 +9,7 @@ import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/t
 import { ShipmentTracker } from '../../components/ShipmentTracker';
 import { usePersistedState } from '../../hooks/usePersistedState';
 import { normalizarBusqueda } from '../../utils/normalizers';
+import { interpretarEstadoLogistico } from '../../utils/interpretarEstadoLogistico';
 
 export const GestionOC = ({ readOnly = false }) => {
   const [ordenes, setOrdenes] = useState([]);
@@ -46,13 +47,23 @@ export const GestionOC = ({ readOnly = false }) => {
     const unsubscribe = onSnapshot(q, (snap) => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setOrdenes(data);
-      if (ocSeleccionada) {
-        const actualizada = data.find(o => o.id === ocSeleccionada.id);
-        if (actualizada) setOcSeleccionada(actualizada);
-      }
+      setOcSeleccionada(prev => {
+        if (!prev) return null;
+        const actualizada = data.find(o => o.id === prev.id);
+        if (!actualizada) return prev;
+        if (
+          actualizada.estado === prev.estado &&
+          actualizada.tracking === prev.tracking &&
+          actualizada.ultimaActualizacion?.seconds === prev.ultimaActualizacion?.seconds &&
+          actualizada.fechaUltimoEstado?.seconds === prev.fechaUltimoEstado?.seconds
+        ) {
+          return prev;
+        }
+        return { ...prev, ...actualizada };
+      });
     });
     return () => unsubscribe();
-  }, [ocSeleccionada]);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -66,10 +77,15 @@ export const GestionOC = ({ readOnly = false }) => {
   const cambiarEstado = async (e, id, nuevoEstado) => {
     if (readOnly) return;
     e.stopPropagation();
+    const ahora = new Date();
+    // 1. Actualización optimista inmediata (0ms)
+    setOcSeleccionada(prev => (prev ? { ...prev, estado: nuevoEstado, fechaUltimoEstado: ahora } : prev));
     try {
       const ocRef = doc(db, "ordenesCompra", id);
-      await updateDoc(ocRef, { estado: nuevoEstado, fechaUltimoEstado: new Date() });
-      setOcSeleccionada(prev => ({ ...prev, estado: nuevoEstado }));
+      await updateDoc(ocRef, {
+        estado: nuevoEstado,
+        fechaUltimoEstado: serverTimestamp(),
+      });
     } catch (error) {
       console.error("Error al cambiar estado:", error);
     }
@@ -101,6 +117,18 @@ export const GestionOC = ({ readOnly = false }) => {
       setTrackingError('');
       const result = await consultarTrackingStatus(trackingInput.trim());
       setTrackingData(result);
+
+      if (ocSeleccionada?.id && result) {
+        const estadoNuevo = interpretarEstadoLogistico(result, ocSeleccionada.estado);
+        if (estadoNuevo !== ocSeleccionada.estado) {
+          const ocRef = doc(db, 'ordenesCompra', ocSeleccionada.id);
+          await updateDoc(ocRef, {
+            estado: estadoNuevo,
+            ultimaActualizacion: serverTimestamp(),
+          });
+          setOcSeleccionada(prev => ({ ...prev, estado: estadoNuevo }));
+        }
+      }
     } catch {
       setTrackingData(null);
       setTrackingError('No fue posible consultar el tracking en este momento');
@@ -228,8 +256,18 @@ export const GestionOC = ({ readOnly = false }) => {
               <h2 className="text-4xl font-black text-white italic uppercase tracking-tighter">{ocSeleccionada.numeroOC}</h2>
               <p className="text-slate-400 font-bold text-sm mt-1 uppercase tracking-wider">{ocSeleccionada.proveedor}</p>
             </div>
-            <div className="text-right">
-              <p className="text-slate-500 font-black text-[10px] uppercase mb-2 text-right">Estado Logístico</p>
+            <div className="text-right flex flex-col items-end">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-slate-500 font-black text-[9.5px] uppercase tracking-wider">Estado Logístico</span>
+                {ocSeleccionada.fechaUltimoEstado && (
+                  <>
+                    <span className="text-slate-700 font-black text-[9px]">•</span>
+                    <span className="text-slate-400 font-bold text-[9px] tracking-tight">
+                      Actualizado {formatFechaHora(ocSeleccionada.fechaUltimoEstado)}
+                    </span>
+                  </>
+                )}
+              </div>
               <div className="flex gap-2">
                 {['Pedido', 'Tránsito', 'Aduana', 'Recibido'].map(est => (
                   <button
@@ -295,7 +333,7 @@ export const GestionOC = ({ readOnly = false }) => {
               </div>
             </div>
 
-            <ShipmentTracker shipmentData={trackingData} />
+            <ShipmentTracker shipmentData={trackingData} estadoManual={ocSeleccionada?.estado} />
 
             {/* TABLA DE ÍTEMS */}
             <table className="w-full border-separate border-spacing-y-2">

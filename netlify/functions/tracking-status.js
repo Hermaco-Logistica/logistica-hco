@@ -277,7 +277,7 @@ async function fetchTrackingFromDsv(trackingNumber) {
 async function fetchTrackingFromDhl(trackingNumber) {
   const upstreamUrl = process.env.DHL_TRACKING_API_URL;
   const apiKey = process.env.DHL_API_KEY;
-  const apiSecret = process.env.DHL_API_SECRET;
+  const _apiSecret = process.env.DHL_API_SECRET;
 
   if (!upstreamUrl) {
     return getMockTracking(trackingNumber);
@@ -295,7 +295,7 @@ async function fetchTrackingFromDhl(trackingNumber) {
   let url;
   try {
     url = new URL(normalizedUrl);
-  } catch (error) {
+  } catch {
     throw new Error('DHL_TRACKING_API_URL_INVALID');
   }
   url.searchParams.set('trackingNumber', trackingNumber);
@@ -306,8 +306,8 @@ async function fetchTrackingFromDhl(trackingNumber) {
     headers['x-api-key'] = apiKey;
   }
   // Remove Basic Auth header to prevent gateway conflicts with DHL-API-Key
-  // if (apiKey && apiSecret) {
-  //   headers.Authorization = `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString('base64')}`;
+  // if (apiKey && _apiSecret) {
+  //   headers.Authorization = `Basic ${Buffer.from(`${apiKey}:${_apiSecret}`).toString('base64')}`;
   // }
 
   const response = await fetch(url.toString(), { method: 'GET', headers });
@@ -326,7 +326,9 @@ async function fetchTrackingFromDhl(trackingNumber) {
     let errorDetail = '';
     try {
       errorDetail = await response.text();
-    } catch (_) {}
+    } catch {
+      // ignore
+    }
     throw new Error(`DHL tracking error: ${response.status} - ${errorDetail}`);
   }
 
