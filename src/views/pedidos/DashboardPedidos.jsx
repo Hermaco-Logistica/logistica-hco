@@ -514,7 +514,8 @@ export const DashboardPedidos = ({ role }) => {
             ...productosActualizados[item.indexOriginal],
             estadoItem: 'Comprado',
             numOC: numOC,
-            fobReal: Number(item.fobReal)
+            fobReal: Number(item.fobReal),
+            fechaOC: serverTimestamp()
           };
           await updateDoc(rfqRef, { productos: productosActualizados });
         }

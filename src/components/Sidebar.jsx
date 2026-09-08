@@ -9,7 +9,8 @@ import {
   PackageCheck,
   Settings,
   Lightbulb,
-  PanelLeftClose
+  PanelLeftClose,
+  BarChart3
 } from 'lucide-react';
 import { FindexSettingsModal } from './FindexSettingsModal';
 import { usePersistedState } from '../hooks/usePersistedState';
@@ -87,6 +88,12 @@ export const Sidebar = ({ role, userEmail, onLogout, isFindexSettingsOpen, setIs
       icon: <ShoppingBag size={18} />,
       path: '/gestion-oc',
       show: role === 'comprador' || role === 'administrador'
+    },
+    {
+      label: 'Análisis y estadísticas',
+      icon: <BarChart3 size={18} />,
+      path: '/analisis',
+      show: role !== 'vendedor'
     }
   ];
 

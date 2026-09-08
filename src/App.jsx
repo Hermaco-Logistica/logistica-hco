@@ -16,6 +16,15 @@ import { DashboardVendedor } from './views/vendedor/DashboardVendedor';
 import { NuevaRFQ } from './views/vendedor/NuevaRFQ';
 import { DetalleRFQVendedor } from './views/vendedor/DetalleRFQVendedor';
 import { DashboardPedidos } from './views/pedidos/DashboardPedidos';
+import { AnalisisEstadisticas } from './views/analisis/AnalisisEstadisticas';
+import { DetalleSolicitudesAnalisis } from './views/analisis/DetalleSolicitudesAnalisis';
+import { DetalleClientesAnalisis } from './views/analisis/DetalleClientesAnalisis';
+import { DetalleVendedoresAnalisis } from './views/analisis/DetalleVendedoresAnalisis';
+import { DetalleVendedorHistorial } from './views/analisis/DetalleVendedorHistorial';
+import { DetalleProductosAnalisis } from './views/analisis/DetalleProductosAnalisis';
+import { DetalleProductoHistorial } from './views/analisis/DetalleProductoHistorial';
+import { DetalleClienteHistorial } from './views/analisis/DetalleClienteHistorial';
+import { DetalleLogisticaAnalisis } from './views/analisis/DetalleLogisticaAnalisis';
 
 const resolveRoleFromEmail = (email = '') => {
   const value = email.toLowerCase();
@@ -167,7 +176,11 @@ function App() {
             fob: Number(newItem.fob) > 0 ? newItem.fob : itemExistenteBD.fob
           };
         }
-        return newItem;
+        const tieneFob = Number(newItem.fob || 0) > 0;
+        return {
+          ...newItem,
+          fechaCotizacion: itemExistenteBD.fechaCotizacion || (tieneFob ? new Date() : null)
+        };
       });
 
       // LÓGICA DE ESTADO GLOBAL DE LA SOLICITUD
@@ -286,6 +299,22 @@ function App() {
 
   const appThemeClass = `role-${role || 'default'}`;
 
+  const rutasAnalisis = (
+    <>
+      <Route path="/analisis" element={<AnalisisEstadisticas role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis/solicitudes" element={<Navigate to="/analisis/solicitudes/todas" replace />} />
+      <Route path="/analisis/solicitudes/:tipoEstado" element={<DetalleSolicitudesAnalisis role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis/clientes" element={<DetalleClientesAnalisis role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis/cliente/:clienteId" element={<DetalleClienteHistorial role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis/vendedores" element={<DetalleVendedoresAnalisis role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis/vendedor/:vendedorId" element={<DetalleVendedorHistorial role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis/productos" element={<DetalleProductosAnalisis role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis/producto/:productId" element={<DetalleProductoHistorial role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis/logistica" element={(isComprador || isAdmin) ? <DetalleLogisticaAnalisis role={role} /> : <Navigate to="/analisis" replace />} />
+      <Route path="/analisis/logistica/:filtro" element={(isComprador || isAdmin) ? <DetalleLogisticaAnalisis role={role} /> : <Navigate to="/analisis" replace />} />
+    </>
+  );
+
   return (
     <Router>
       {!user ? (
@@ -313,6 +342,7 @@ function App() {
                       }} />
                     } 
                   />
+                  {rutasAnalisis}
                   <Route path="*" element={<Navigate to="/compras" replace />} />
                 </>
               ) : isVendedor ? (
@@ -322,6 +352,8 @@ function App() {
                   <Route path="/vendedor/nueva" element={<NuevaRFQ />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
+                  <Route path="/analisis" element={<Navigate to="/vendedor" replace />} />
+                  <Route path="/analisis/*" element={<Navigate to="/vendedor" replace />} />
                   <Route path="*" element={<Navigate to="/vendedor" replace />} />
                 </>
               ) : isGerente ? (
@@ -332,6 +364,7 @@ function App() {
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido soloPropiasParaPedido />} />
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
+                  {rutasAnalisis}
                   <Route path="*" element={<Navigate to="/vendedor" replace />} />
                 </>
               ) : isAdmin ? (
@@ -343,6 +376,7 @@ function App() {
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   <Route path="/gestion-oc" element={<GestionOC readOnly />} />
+                  {rutasAnalisis}
                   <Route path="*" element={<Navigate to="/vendedor" replace />} />
                 </>
               ) : (
