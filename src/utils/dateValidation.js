@@ -240,15 +240,21 @@ export const validarRangoFechas = (fechaInicio, fechaFin) => {
  * @returns {{ periodo: string, fechaInicio: string, fechaFin: string }}
  */
 export const cargarFiltroPeriodoStorage = () => {
-  const fallback = { periodo: '30d', fechaInicio: '', fechaFin: '' };
+  const fallback = { periodo: '30d', fechaInicio: '', fechaFin: '', anioHistorico: null };
   try {
     const dataRaw = sessionStorage.getItem(STORAGE_KEY_PERIODO);
     if (!dataRaw) return fallback;
     const data = JSON.parse(dataRaw);
     if (!data || typeof data !== 'object') return fallback;
 
-    const periodosValidos = ['7d', '30d', '90d', 'this_year', 'custom', 'all'];
-    const periodo = periodosValidos.includes(data.periodo) ? data.periodo : '30d';
+    const periodosValidos = ['7d', '30d', '90d', 'this_year', 'custom', 'historico'];
+    // Migrar 'all' legacy → 'historico' con año 'todos' para mantener el comportamiento original
+    let periodo = data.periodo;
+    if (periodo === 'all') {
+      periodo = 'historico';
+      if (!data.anioHistorico) data.anioHistorico = 'todos';
+    }
+    periodo = periodosValidos.includes(periodo) ? periodo : '30d';
 
     let fechaInicio = typeof data.fechaInicio === 'string' ? data.fechaInicio : '';
     let fechaFin = typeof data.fechaFin === 'string' ? data.fechaFin : '';
@@ -263,7 +269,10 @@ export const cargarFiltroPeriodoStorage = () => {
       }
     }
 
-    return { periodo, fechaInicio, fechaFin };
+    // Recuperar año histórico: número de año o 'todos'
+    const anioHistorico = data.anioHistorico || null;
+
+    return { periodo, fechaInicio, fechaFin, anioHistorico };
   } catch {
     return fallback;
   }
@@ -273,14 +282,15 @@ export const cargarFiltroPeriodoStorage = () => {
  * Guarda la selección de período/rango en sessionStorage
  * @param {{ periodo: string, fechaInicio?: string, fechaFin?: string }} datos 
  */
-export const guardarFiltroPeriodoStorage = ({ periodo, fechaInicio = '', fechaFin = '' }) => {
+export const guardarFiltroPeriodoStorage = ({ periodo, fechaInicio = '', fechaFin = '', anioHistorico = null }) => {
   try {
     sessionStorage.setItem(
       STORAGE_KEY_PERIODO,
       JSON.stringify({
         periodo: periodo || '30d',
         fechaInicio: fechaInicio || '',
-        fechaFin: fechaFin || ''
+        fechaFin: fechaFin || '',
+        anioHistorico: anioHistorico || null
       })
     );
   } catch (e) {

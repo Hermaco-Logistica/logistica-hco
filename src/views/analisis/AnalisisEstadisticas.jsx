@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -34,7 +32,7 @@ import {
 
 import { useSessionState } from '../../hooks/usePersistedState';
 
-export const AnalisisEstadisticas = ({ role, solicitudes = [] }) => {
+export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
 
@@ -43,17 +41,17 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [] }) => {
   const [periodo, setPeriodo] = useState(filtroPeriodoInicial.periodo);
   const [fechaInicio, setFechaInicio] = useState(filtroPeriodoInicial.fechaInicio);
   const [fechaFin, setFechaFin] = useState(filtroPeriodoInicial.fechaFin);
+  const [anioHistorico, setAnioHistorico] = useState(() => filtroPeriodoInicial.anioHistorico || getAnioActualElSalvador());
   const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [clienteSearch, setClienteSearch] = useSessionState('analisis_cliente_search', '');
   const [ordenarProductosPor, setOrdenarProductosPor] = useSessionState('analisis_top_prod_orden', 'veces'); // 'veces' (default) | 'unidades'
-  const [ordenesCompra, setOrdenesCompra] = useState([]);
   const [pageVendedores, setPageVendedores] = useState(1);
   const itemsPerPageVendedores = 5;
 
   // Persistir última selección de período/rango en sessionStorage
   useEffect(() => {
-    guardarFiltroPeriodoStorage({ periodo, fechaInicio, fechaFin });
-  }, [periodo, fechaInicio, fechaFin]);
+    guardarFiltroPeriodoStorage({ periodo, fechaInicio, fechaFin, anioHistorico });
+  }, [periodo, fechaInicio, fechaFin, anioHistorico]);
 
   const hoyElSalvador = useMemo(() => getHoyElSalvador(), []);
   const anioActualSV = useMemo(() => getAnioActualElSalvador(), []);
@@ -97,20 +95,6 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [] }) => {
 
 
 
-  // Cargar órdenes de compra en tiempo real para métricas logísticas (solo comprador o admin)
-  useEffect(() => {
-    if (!puedeVerLogistica) return;
-    try {
-      const unsub = onSnapshot(collection(db, 'ordenesCompra'), (snap) => {
-        setOrdenesCompra(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      }, (err) => {
-        console.warn("No se pudo cargar ordenesCompra:", err);
-      });
-      return () => unsub();
-    } catch (e) {
-      console.warn("Error al suscribirse a ordenesCompra:", e);
-    }
-  }, [puedeVerLogistica]);
 
   const parseDate = (val) => {
     if (!val) return null;
@@ -129,6 +113,16 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [] }) => {
   // Lista de vendedores únicos para el selector
   const vendedoresDisponibles = useMemo(() => {
     return Array.from(new Set(solicitudes.map(s => s.vendedorNombre).filter(Boolean))).sort();
+  }, [solicitudes]);
+
+  // Años disponibles en los datos (para el selector de "Histórico por año")
+  const aniosDisponibles = useMemo(() => {
+    const years = new Set();
+    solicitudes.forEach(s => {
+      const fecha = parseDate(s.fechaS || s.fechaCreacion);
+      if (fecha) years.add(fecha.getFullYear());
+    });
+    return [...years].sort((a, b) => b - a); // descendente: año más reciente primero
   }, [solicitudes]);
 
   // Filtrado de solicitudes según período, vendedor y cliente
@@ -152,7 +146,14 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [] }) => {
             const dFin = parseFinDiaElSalvador(fechaFin);
             if (dFin && fecha > dFin) return false;
           }
+        } else if (periodo === 'historico') {
+          // Histórico por año: si hay un año específico seleccionado, filtrar por él
+          if (anioHistorico !== 'todos') {
+            if (fecha.getFullYear() !== anioHistorico) return false;
+          }
+          // Si anioHistorico === 'todos', no aplicar filtro de fecha (todo el historial)
         } else if (periodo !== 'all') {
+          // Períodos relativos (7d, 30d, 90d, this_year)
           const diffDias = (ahora.getTime() - fecha.getTime()) / (1000 * 3600 * 24);
           if (periodo === '7d' && diffDias > 7) return false;
           if (periodo === '30d' && diffDias > 30) return false;
@@ -172,7 +173,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [] }) => {
 
       return true;
     });
-  }, [solicitudes, periodo, fechaInicio, fechaFin, vendedorFilter, clienteSearch, validacionRango, anioActualSV]);
+  }, [solicitudes, periodo, fechaInicio, fechaFin, anioHistorico, vendedorFilter, clienteSearch, validacionRango, anioActualSV]);
 
   // Cálculos y métricas principales
   const metricas = useMemo(() => {
@@ -363,6 +364,13 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [] }) => {
         return true;
       }
 
+      if (periodo === 'historico') {
+        if (anioHistorico !== 'todos') {
+          if (fecha.getFullYear() !== anioHistorico) return false;
+        }
+        return true;
+      }
+
       if (periodo !== 'all') {
         const diffDias = (ahora.getTime() - fecha.getTime()) / (1000 * 3600 * 24);
         if (periodo === '7d' && diffDias > 7) return false;
@@ -394,7 +402,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [] }) => {
     });
 
     return { total, enTransito, enAduana, entregadas, pendientes };
-  }, [ordenesCompra, periodo, fechaInicio, fechaFin, validacionRango, anioActualSV]);
+  }, [ordenesCompra, periodo, fechaInicio, fechaFin, anioHistorico, validacionRango, anioActualSV]);
 
   const formatearDinero = (val) => {
     return new Intl.NumberFormat('en-US', {
@@ -435,7 +443,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [] }) => {
             { id: '90d', label: '90D' },
             { id: 'this_year', label: 'Este Año' },
             { id: 'custom', label: 'Rango' },
-            { id: 'all', label: 'Histórico' }
+            { id: 'historico', label: 'Histórico' }
           ].map((p) => (
             <button
               key={p.id}
@@ -505,6 +513,40 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [] }) => {
               <div className="flex items-center gap-1.5 text-[11px] text-rose-600 bg-rose-50 border border-rose-200/80 px-2.5 py-1 rounded-lg font-medium animate-in fade-in">
                 <AlertCircle size={13} className="shrink-0 text-rose-500" />
                 <span>{validacionRango.errorGeneral}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {periodo === 'historico' && (
+          <div className="flex flex-col gap-1.5 w-full sm:w-auto animate-in fade-in duration-200">
+            <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 px-2.5 rounded-xl border border-slate-200/80 shrink-0">
+              <Calendar size={13} className="text-slate-400 shrink-0" />
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Año</span>
+              <select
+                value={anioHistorico}
+                onChange={(e) => { 
+                  const val = e.target.value;
+                  setAnioHistorico(val === 'todos' ? 'todos' : parseInt(val, 10)); 
+                  setPageVendedores(1); 
+                }}
+                className="border border-slate-200/80 bg-white text-slate-700 rounded-lg px-2 py-1 text-xs outline-none font-mono focus:border-slate-400 cursor-pointer"
+              >
+                {aniosDisponibles.map(a => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+                <option value="todos">Todo el historial</option>
+              </select>
+              {anioHistorico !== 'todos' && (
+                <span className="text-[10px] font-semibold text-slate-500 pl-1.5 border-l border-slate-200">
+                  Mostrando datos de {anioHistorico}
+                </span>
+              )}
+            </div>
+            {anioHistorico === 'todos' && (
+              <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-lg font-medium animate-in fade-in">
+                <AlertCircle size={13} className="shrink-0 text-amber-500" />
+                <span>Puede ser lento con muchos años de datos</span>
               </div>
             )}
           </div>

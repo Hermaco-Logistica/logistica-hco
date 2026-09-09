@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase';
 import { 
   ArrowLeft, 
   Search, 
@@ -23,7 +21,7 @@ import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, evaluarEstadoGanada } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 
-export const DetalleClienteHistorial = ({ role, solicitudes = [] }) => {
+export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const { clienteId } = useParams();
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
@@ -33,7 +31,6 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [] }) => {
   const [filterModalidad, setFilterModalidad] = useSessionState('analisis_cli_hist_modalidad', '');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const [ordenesCompra, setOrdenesCompra] = useState([]);
 
   // Scroll horizontal por arrastre (drag) para la tabla, además del swipe nativo táctil
   const scrollContainerRef = useRef(null);
@@ -62,24 +59,6 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [] }) => {
     el.scrollLeft = dragStartScrollLeftRef.current - walk;
   }, []);
 
-  // Suscribirse a órdenes de compra para cruzar Fecha OC por número de OC
-  useEffect(() => {
-    let active = true;
-    try {
-      const unsub = onSnapshot(collection(db, 'ordenesCompra'), (snap) => {
-        if (!active) return;
-        setOrdenesCompra(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      }, (err) => {
-        console.warn("Error cargando ordenesCompra:", err);
-      });
-      return () => {
-        active = false;
-        unsub();
-      };
-    } catch (e) {
-      console.warn(e);
-    }
-  }, []);
 
   const mapFechasOC = useMemo(() => {
     const map = {};

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { auth, db, provider } from './firebase'; 
 import { onAuthStateChanged, signOut, signInWithPopup } from 'firebase/auth';
-import { collection, query, onSnapshot, where, doc, updateDoc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, where, limit, doc, updateDoc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { emailConfig } from './config/emailConfig';
 
 
@@ -58,6 +58,7 @@ function App() {
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
   const [solicitudes, setSolicitudes] = useState([]);
+  const [ordenesCompra, setOrdenesCompra] = useState([]);
   const [isFindexSettingsOpen, setIsFindexSettingsOpen] = useState(false);
   const [isFindexActive, setIsFindexActive] = useState(true);
 
@@ -127,13 +128,26 @@ function App() {
   useEffect(() => {
     if (!user || !role) return;
     const q = (role === 'comprador' || role === 'gerente' || role === 'administrador')
-      ? collection(db, "solicitudes") 
+      ? query(collection(db, "solicitudes"), limit(2000))
       : query(collection(db, "solicitudes"), where("vendedorId", "==", user.uid));
 
     const unsubscribe = onSnapshot(q, (snap) => {
       setSolicitudes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
     return () => unsubscribe();
+  }, [user, role]);
+
+  // Listener centralizado de ordenesCompra (evita 5 listeners duplicados en vistas de análisis)
+  useEffect(() => {
+    if (!user || !role) return;
+    // Solo roles que acceden a análisis/logística necesitan esta colección
+    if (role !== 'comprador' && role !== 'gerente' && role !== 'administrador') return;
+    const unsub = onSnapshot(collection(db, 'ordenesCompra'), (snap) => {
+      setOrdenesCompra(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }, (err) => {
+      console.warn("Error cargando ordenesCompra:", err);
+    });
+    return () => unsub();
   }, [user, role]);
 
 
@@ -301,17 +315,17 @@ function App() {
 
   const rutasAnalisis = (
     <>
-      <Route path="/analisis" element={<AnalisisEstadisticas role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis" element={<AnalisisEstadisticas role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
       <Route path="/analisis/solicitudes" element={<Navigate to="/analisis/solicitudes/todas" replace />} />
       <Route path="/analisis/solicitudes/:tipoEstado" element={<DetalleSolicitudesAnalisis role={role} solicitudes={solicitudes} />} />
       <Route path="/analisis/clientes" element={<DetalleClientesAnalisis role={role} solicitudes={solicitudes} />} />
-      <Route path="/analisis/cliente/:clienteId" element={<DetalleClienteHistorial role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis/cliente/:clienteId" element={<DetalleClienteHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
       <Route path="/analisis/vendedores" element={<DetalleVendedoresAnalisis role={role} solicitudes={solicitudes} />} />
-      <Route path="/analisis/vendedor/:vendedorId" element={<DetalleVendedorHistorial role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis/vendedor/:vendedorId" element={<DetalleVendedorHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
       <Route path="/analisis/productos" element={<DetalleProductosAnalisis role={role} solicitudes={solicitudes} />} />
-      <Route path="/analisis/producto/:productId" element={<DetalleProductoHistorial role={role} solicitudes={solicitudes} />} />
-      <Route path="/analisis/logistica" element={(isComprador || isAdmin) ? <DetalleLogisticaAnalisis role={role} /> : <Navigate to="/analisis" replace />} />
-      <Route path="/analisis/logistica/:filtro" element={(isComprador || isAdmin) ? <DetalleLogisticaAnalisis role={role} /> : <Navigate to="/analisis" replace />} />
+      <Route path="/analisis/producto/:productId" element={<DetalleProductoHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
+      <Route path="/analisis/logistica" element={(isComprador || isAdmin) ? <DetalleLogisticaAnalisis role={role} ordenesCompra={ordenesCompra} /> : <Navigate to="/analisis" replace />} />
+      <Route path="/analisis/logistica/:filtro" element={(isComprador || isAdmin) ? <DetalleLogisticaAnalisis role={role} ordenesCompra={ordenesCompra} /> : <Navigate to="/analisis" replace />} />
     </>
   );
 

@@ -1,21 +1,18 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '../../firebase';
 import { ArrowLeft, Search, ExternalLink, Calendar, Globe } from 'lucide-react';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 
-export const DetalleLogisticaAnalisis = ({ role }) => {
+export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
   const { filtro } = useParams();
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
 
-  const [ordenes, setOrdenes] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [tabActual, setTabActual] = useSessionState('analisis_logistica_tab', filtro || 'todas');
 
+  // Sincronizar tab con la URL cuando cambia
   useEffect(() => {
     if (filtro) {
       setTabActual(filtro);
@@ -76,29 +73,17 @@ export const DetalleLogisticaAnalisis = ({ role }) => {
     }).format(d);
   };
 
-  useEffect(() => {
-    let active = true;
-    // Suscripción sin orderBy para evitar requerir índices compuestos en Firestore
-    const unsub = onSnapshot(collection(db, 'ordenesCompra'), (snap) => {
-      if (!active) return;
-      const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      // Ordenar en memoria por fechaCreacion descendente
-      docs.sort((a, b) => {
-        const dateA = parseDate(a.fechaCreacion)?.getTime() || 0;
-        const dateB = parseDate(b.fechaCreacion)?.getTime() || 0;
-        return dateB - dateA;
-      });
-      setOrdenes(docs);
-      setLoading(false);
-    }, (err) => {
-      console.warn("Error cargando ordenesCompra:", err);
-      if (active) setLoading(false);
+  // Ordenar las órdenes de compra por fechaCreacion descendente (antes lo hacía el listener)
+  const ordenes = useMemo(() => {
+    const docs = [...ordenesCompra];
+    docs.sort((a, b) => {
+      const dateA = parseDate(a.fechaCreacion)?.getTime() || 0;
+      const dateB = parseDate(b.fechaCreacion)?.getTime() || 0;
+      return dateB - dateA;
     });
-    return () => {
-      active = false;
-      unsub();
-    };
-  }, []);
+    return docs;
+  }, [ordenesCompra]);
+
 
   // Filtrar por tab
   const ordenesPorTab = useMemo(() => {
@@ -221,11 +206,7 @@ export const DetalleLogisticaAnalisis = ({ role }) => {
 
       {/* TABLA DE ÓRDENES */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col">
-        {loading ? (
-          <div className="text-center py-16 text-slate-400 text-xs font-medium animate-pulse">
-            Cargando órdenes de compra...
-          </div>
-        ) : paginatedOrdenes.length === 0 ? (
+        {paginatedOrdenes.length === 0 ? (
           <div className="text-center py-16 text-slate-400 text-xs font-medium">
             No se encontraron órdenes con los filtros seleccionados.
           </div>
