@@ -247,7 +247,7 @@ export const cargarFiltroPeriodoStorage = () => {
     const data = JSON.parse(dataRaw);
     if (!data || typeof data !== 'object') return fallback;
 
-    const periodosValidos = ['7d', '30d', '90d', 'this_year', 'custom', 'historico'];
+    const periodosValidos = ['7d', '30d', '90d', 'this_month', 'this_year', 'custom', 'historico'];
     // Migrar 'all' legacy → 'historico' con año 'todos' para mantener el comportamiento original
     let periodo = data.periodo;
     if (periodo === 'all') {

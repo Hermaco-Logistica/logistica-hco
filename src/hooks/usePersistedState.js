@@ -56,3 +56,41 @@ export function useSessionState(key, defaultValue) {
 
   return [state, setState];
 }
+
+// Almacén en memoria volátil de la SPA (solo persiste entre rutas, se limpia al recargar o cerrar pestaña)
+const memoryStore = new Map();
+
+/**
+ * Igual que useState, pero persiste el valor en la memoria de la SPA (RAM de JS).
+ * Se mantiene al navegar entre rutas (ej. lista <-> detalle), pero se reinicia
+ * limpiamente a su valor inicial al recargar la página (F5) o cerrar la pestaña.
+ * @param {string} key - Clave única en el store en memoria
+ * @param {*} defaultValue - Valor inicial si no hay nada guardado en memoria
+ */
+export function useMemoryState(key, defaultValue) {
+  const [state, setState] = useState(() => {
+    return memoryStore.has(key) ? memoryStore.get(key) : defaultValue;
+  });
+
+  useEffect(() => {
+    if (state === undefined) {
+      memoryStore.delete(key);
+    } else {
+      memoryStore.set(key, state);
+    }
+  }, [key, state]);
+
+  return [state, setState];
+}
+
+export function clearMemoryStore(prefix) {
+  if (!prefix) {
+    memoryStore.clear();
+    return;
+  }
+  for (const key of memoryStore.keys()) {
+    if (key.startsWith(prefix)) {
+      memoryStore.delete(key);
+    }
+  }
+}

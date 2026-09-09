@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Search, ExternalLink, Calendar, Globe } from 'lucide-react';
+import { ArrowLeft, Search, ExternalLink, Calendar, Globe, Download } from 'lucide-react';
+import { exportarLogisticaExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
@@ -125,7 +126,8 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
   }, [ordenesPorTab, searchTerm]);
 
   const totalPages = Math.max(1, Math.ceil(ordenesFiltradas.length / itemsPerPage));
-  const paginatedOrdenes = ordenesFiltradas.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedOrdenes = ordenesFiltradas.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
 
   // Restricción de acceso: únicamente comprador y administrador
   if (role && role !== 'comprador' && role !== 'administrador') {
@@ -199,8 +201,39 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
             className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
           />
         </div>
-        <div className="text-[11px] font-medium text-slate-400 font-mono">
-          Mostrando <strong className="text-slate-700 font-semibold">{ordenesFiltradas.length}</strong> órdenes
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              const tabTitulos = {
+                todas: 'TODAS LAS ÓRDENES DE COMPRA',
+                pendientes: 'ÓRDENES PENDIENTES',
+                transito: 'ÓRDENES EN TRÁNSITO',
+                aduana: 'ÓRDENES EN ADUANA',
+                entregadas: 'ÓRDENES ENTREGADAS'
+              };
+              const tituloTab = tabTitulos[tabActual] || 'ÓRDENES DE COMPRA Y TRACKING';
+              const filtrosActivos = [`Pestaña: ${tituloTab}`];
+              if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
+
+              exportarLogisticaExcel(
+                ordenesFiltradas,
+                `ordenes_logistica_${tabActual}`,
+                {
+                  titulo: `CONTROL DE LOGÍSTICA - ${tituloTab}`,
+                  periodoLabel: filtrosActivos.join(' | ')
+                }
+              );
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            title="Exportar órdenes de compra e ítems a Excel"
+          >
+            <Download size={13} />
+            <span>Exportar Excel</span>
+          </button>
+          <div className="text-[11px] font-medium text-slate-400 font-mono">
+            Mostrando <strong className="text-slate-700 font-semibold">{ordenesFiltradas.length}</strong> órdenes
+          </div>
         </div>
       </div>
 
@@ -302,19 +335,19 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
           <div className="p-3 border-t border-slate-100 flex items-center justify-between">
             <button 
               type="button"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+              disabled={safeCurrentPage === 1}
               className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
             >
               Anterior
             </button>
             <span className="text-[11px] font-medium text-slate-400">
-              Página {currentPage} de {totalPages} ({ordenesFiltradas.length} órdenes)
+              Página {safeCurrentPage} de {totalPages} ({ordenesFiltradas.length} órdenes)
             </span>
             <button 
               type="button"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+              disabled={safeCurrentPage === totalPages}
               className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
             >
               Siguiente

@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Search, Package, ExternalLink, Calendar, User, Building, Link as LinkIcon, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Search, Package, ExternalLink, Calendar, User, Building, Link as LinkIcon, CheckCircle2, Download, X } from 'lucide-react';
+import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { Badge } from '../../components/Badge';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, evaluarEstadoGanada } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 
-export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [] }) => {
+export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const { tipoEstado } = useParams();
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
@@ -21,6 +22,8 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [] }) => {
   }, [tipoEstado, setTabActual]);
 
   const [searchTerm, setSearchTerm] = useSessionState('analisis_solicitudes_search', '');
+  const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
+  const [clienteFilter, setClienteFilter] = useSessionState('analisis_cliente_search', '');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -87,9 +90,15 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [] }) => {
     return Array.from(ocs);
   };
 
-  // Filtrar según el tab activo
+  // Filtrar según el tab activo y filtros contextuales (vendedor / cliente)
   const solicitudesPorEstado = useMemo(() => {
     return solicitudes.filter((s) => {
+      if (vendedorFilter && s.vendedorNombre !== vendedorFilter) return false;
+      if (clienteFilter) {
+        const term = normalizarBusqueda(clienteFilter);
+        if (!normalizarBusqueda(s.cliente || '').includes(term)) return false;
+      }
+
       const est = s.estado || 'Pendiente';
       if (tabActual === 'pendiente') {
         return est === 'Pendiente';
@@ -105,7 +114,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [] }) => {
       }
       return true;
     });
-  }, [solicitudes, tabActual]);
+  }, [solicitudes, tabActual, vendedorFilter, clienteFilter]);
 
   // Filtrar por término de búsqueda
   const solicitudesFiltradas = useMemo(() => {
@@ -133,7 +142,8 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [] }) => {
   }, [solicitudesFiltradas]);
 
   const totalPages = Math.max(1, Math.ceil(solicitudesOrdenadas.length / itemsPerPage));
-  const paginatedSolicitudes = solicitudesOrdenadas.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedSolicitudes = solicitudesOrdenadas.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
 
   const irADetalle = (s) => {
     if (role === 'comprador' && s.estado === 'Pendiente') {
@@ -208,18 +218,84 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [] }) => {
 
       {/* FILTROS Y BÚSQUEDA */}
       <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row gap-2.5 items-center justify-between">
-        <div className="relative w-full sm:w-80">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Buscar por correlativo, cliente, vendedor, producto u OC..."
-            value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
-          />
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-80">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Buscar por correlativo, cliente, vendedor, producto u OC..."
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
+            />
+          </div>
+          {vendedorFilter && (
+            <div className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-white border border-slate-200/90 rounded-full text-xs shadow-2xs transition-all hover:border-slate-300">
+              <User size={11} className="text-slate-400 shrink-0" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Vendedor:</span>
+              <span className="font-semibold text-slate-800">{vendedorFilter}</span>
+              <button 
+                type="button" 
+                onClick={() => { setVendedorFilter(''); setCurrentPage(1); }}
+                className="w-4 h-4 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                title="Quitar filtro de vendedor"
+              >
+                <X size={10} strokeWidth={2.5} />
+              </button>
+            </div>
+          )}
+          {clienteFilter && (
+            <div className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-white border border-slate-200/90 rounded-full text-xs shadow-2xs transition-all hover:border-slate-300">
+              <Building size={11} className="text-slate-400 shrink-0" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cliente:</span>
+              <span className="font-semibold text-slate-800">{clienteFilter}</span>
+              <button 
+                type="button" 
+                onClick={() => { setClienteFilter(''); setCurrentPage(1); }}
+                className="w-4 h-4 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                title="Quitar filtro de cliente"
+              >
+                <X size={10} strokeWidth={2.5} />
+              </button>
+            </div>
+          )}
         </div>
-        <div className="text-[11px] font-medium text-slate-400 font-mono">
-          Mostrando <strong className="text-slate-700 font-semibold">{solicitudesFiltradas.length}</strong> solicitudes
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              const tabTitulos = {
+                todas: 'TODAS LAS SOLICITUDES',
+                pendiente: 'SOLICITUDES PENDIENTES',
+                cotizadas: 'SOLICITUDES COTIZADAS',
+                pedidos: 'PEDIDOS GANADOS',
+                parciales: 'PEDIDOS PARCIALES'
+              };
+              const tituloTab = tabTitulos[tabActual] || 'SOLICITUDES (RFQS)';
+              const filtrosActivos = [`Pestaña: ${tituloTab}`];
+              if (vendedorFilter) filtrosActivos.push(`Vendedor: ${vendedorFilter}`);
+              if (clienteFilter && clienteFilter.trim()) filtrosActivos.push(`Cliente: "${clienteFilter.trim()}"`);
+              if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
+
+              exportarTodosLosMovimientosExcel(
+                solicitudesFiltradas,
+                ordenesCompra,
+                `movimientos_solicitudes_${tabActual}`,
+                {
+                  titulo: `CONTROL DE LOGÍSTICA - ${tituloTab}`,
+                  periodoLabel: filtrosActivos.join(' | ')
+                }
+              );
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            title="Exportar todos los movimientos de las solicitudes filtradas a Excel"
+          >
+            <Download size={13} />
+            <span>Exportar Movimientos</span>
+          </button>
+          <div className="text-[11px] font-medium text-slate-400 font-mono">
+            Mostrando <strong className="text-slate-700 font-semibold">{solicitudesFiltradas.length}</strong> solicitudes
+          </div>
         </div>
       </div>
 
@@ -377,19 +453,19 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [] }) => {
           <div className="p-3 border-t border-slate-100 flex items-center justify-between">
             <button 
               type="button"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+              disabled={safeCurrentPage === 1}
               className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
             >
               Anterior
             </button>
             <span className="text-[11px] font-medium text-slate-400">
-              Página {currentPage} de {totalPages} ({solicitudesFiltradas.length} solicitudes)
+              Página {safeCurrentPage} de {totalPages} ({solicitudesFiltradas.length} solicitudes)
             </span>
             <button 
               type="button"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+              disabled={safeCurrentPage === totalPages}
               className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
             >
               Siguiente

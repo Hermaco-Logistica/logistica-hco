@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Search, Building } from 'lucide-react';
+import { ArrowLeft, Search, Building, Download } from 'lucide-react';
+import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 
-export const DetalleClientesAnalisis = ({ role, solicitudes = [] }) => {
+export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
   const [searchTerm, setSearchTerm] = useSessionState('analisis_clientes_dir_search', '');
@@ -57,12 +58,23 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [] }) => {
         s.productos.forEach((p) => {
           const cant = Number(p.cant || 1);
           const fob = Number(p.fob || 0);
-          const unitario = Number(p.precioUnitario || fob);
-          if (unitario > 0 || fob > 0) {
-            item.montoTotal += (unitario > 0 ? unitario : fob) * cant;
+          let unitario = Number(p.precioUnitario || p.precio || 0);
+          if (!unitario && p.subtotal && cant > 0) {
+            unitario = Number(p.subtotal) / cant;
           }
-          if (p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || est === 'Pedido') {
-            item.montoPedidos += (unitario > 0 ? unitario : fob) * cant;
+          if (!unitario && fob > 0) {
+            unitario = fob;
+          }
+
+          if (unitario > 0) {
+            item.montoTotal += unitario * cant;
+          }
+
+          const esItemPedido = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || 
+            (est === 'Pedido' && p.estadoItem !== 'Cotizado' && p.estadoItem !== 'Pendiente');
+
+          if (esItemPedido) {
+            item.montoPedidos += unitario * cant;
           }
         });
       }
@@ -92,13 +104,15 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [] }) => {
   }, [clientesFiltrados, criterioOrden]);
 
   const totalPages = Math.max(1, Math.ceil(clientesOrdenados.length / itemsPerPage));
-  const paginatedClientes = clientesOrdenados.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedClientes = clientesOrdenados.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
 
   const formatearDinero = (val) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      maximumFractionDigits: 0
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(val || 0);
   };
 
@@ -171,8 +185,30 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [] }) => {
             className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
           />
         </div>
-        <div className="text-[11px] font-medium text-slate-400 font-mono">
-          Mostrando <strong className="text-slate-700 font-semibold">{clientesFiltrados.length}</strong> clientes
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              const solsAExportar = searchTerm.trim()
+                ? clientesFiltrados.flatMap(c => c.solicitudesList || [])
+                : solicitudes;
+              const periodoLabel = searchTerm.trim()
+                ? `Todos los registros | Búsqueda cliente: "${searchTerm.trim()}"`
+                : 'Todos los registros de clientes';
+              exportarTodosLosMovimientosExcel(solsAExportar, ordenesCompra, 'movimientos_clientes', {
+                titulo: 'CONTROL DE LOGÍSTICA - MOVIMIENTOS POR CLIENTES',
+                periodoLabel
+              });
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            title="Exportar todos los movimientos de clientes a Excel"
+          >
+            <Download size={13} />
+            <span>Exportar Movimientos</span>
+          </button>
+          <div className="text-[11px] font-medium text-slate-400 font-mono">
+            Mostrando <strong className="text-slate-700 font-semibold">{clientesFiltrados.length}</strong> clientes
+          </div>
         </div>
       </div>
 
@@ -273,19 +309,19 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [] }) => {
           <div className="p-3 border-t border-slate-100 flex items-center justify-between">
             <button 
               type="button"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+              disabled={safeCurrentPage === 1}
               className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
             >
               Anterior
             </button>
             <span className="text-[11px] font-medium text-slate-400">
-              Página {currentPage} de {totalPages} ({clientesFiltrados.length} clientes)
+              Página {safeCurrentPage} de {totalPages} ({clientesFiltrados.length} clientes)
             </span>
             <button 
               type="button"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+              disabled={safeCurrentPage === totalPages}
               className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
             >
               Siguiente

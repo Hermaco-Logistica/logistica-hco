@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Search, Zap } from 'lucide-react';
+import { ArrowLeft, Search, Zap, Clock, Download } from 'lucide-react';
+import { extraerTodosLosMovimientos, exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
-import { getRoleTheme, formatearTiempoRespuesta } from './theme';
+import { getRoleTheme, formatearTiempoRespuesta, formatearTiempoCierre } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 
-export const DetalleVendedoresAnalisis = ({ role, solicitudes = [] }) => {
+export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
   const [searchTerm, setSearchTerm] = useSessionState('analisis_vend_dir_search', '');
@@ -58,7 +59,8 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [] }) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      maximumFractionDigits: 0
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(val || 0);
   };
 
@@ -68,10 +70,12 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [] }) => {
 
     solicitudes.forEach((s) => {
       const nombre = (s.vendedorNombre || 'Sin asignar').trim();
+      const email = (s.vendedorEmail || '').trim();
+
       if (!map[nombre]) {
         map[nombre] = {
           vendedor: nombre,
-          email: s.vendedorEmail || '',
+          email: email,
           totalRFQs: 0,
           cotizadas: 0,
           pedidos: 0,
@@ -80,7 +84,9 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [] }) => {
           montoCotizado: 0,
           montoPedidos: 0,
           totalDiasRespuesta: 0,
-          rfqConTiempo: 0
+          rfqConTiempoRespuesta: 0,
+          totalDiasCierre: 0,
+          pedidosConTiempoCierre: 0
         };
       }
 
@@ -101,23 +107,53 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [] }) => {
         s.productos.forEach((p) => {
           const cant = Number(p.cant || 1);
           const fob = Number(p.fob || 0);
-          const unitario = Number(p.precioUnitario || fob);
-          if (unitario > 0 || fob > 0) {
-            item.montoCotizado += (unitario > 0 ? unitario : fob) * cant;
+          let unitario = Number(p.precioUnitario || p.precio || 0);
+          if (!unitario && p.subtotal && cant > 0) {
+            unitario = Number(p.subtotal) / cant;
           }
-          if (p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || est === 'Pedido') {
-            item.montoPedidos += (unitario > 0 ? unitario : fob) * cant;
+          if (!unitario && fob > 0) {
+            unitario = fob;
+          }
+
+          if (unitario > 0) {
+            item.montoCotizado += unitario * cant;
+          }
+
+          const esItemPedido = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || 
+            (est === 'Pedido' && p.estadoItem !== 'Cotizado' && p.estadoItem !== 'Pendiente');
+
+          if (esItemPedido) {
+            item.montoPedidos += unitario * cant;
           }
         });
       }
 
-      // Tiempo de respuesta
+      // Fechas de cotización y avances
       const fInicio = parseDate(s.fechaS || s.fechaCreacion);
-      const fCot = parseDate(s.fechaCotizacion);
+      let fCot = parseDate(s.fechaCotizacion || s.fechaRespuesta);
+      if (!fCot && Array.isArray(s.productos)) {
+        const itemConCot = s.productos.find(p => p.fechaCotizacion);
+        if (itemConCot) {
+          fCot = parseDate(itemConCot.fechaCotizacion);
+        }
+      }
+
+      // 1. Métrica de Comprador: Tiempo de respuesta (Creación -> Cotización / Avances)
       if (fInicio && fCot && fCot >= fInicio) {
-        const dias = (fCot.getTime() - fInicio.getTime()) / (1000 * 3600 * 24);
-        item.totalDiasRespuesta += dias;
-        item.rfqConTiempo++;
+        const diasResp = (fCot.getTime() - fInicio.getTime()) / (1000 * 3600 * 24);
+        item.totalDiasRespuesta += diasResp;
+        item.rfqConTiempoRespuesta++;
+      }
+
+      // 2. Métrica del Vendedor: Tiempo de cierre (Cotización confirmada -> Pedido)
+      const fPedido = parseDate(
+        s.fechaPedido || s.fechaOC || s.fechaOrdenCompra ||
+        (Array.isArray(s.productos) ? (s.productos.find(p => p.fechaPedido || p.fechaOC)?.fechaPedido || s.productos.find(p => p.fechaPedido || p.fechaOC)?.fechaOC) : null)
+      );
+      if (fCot && fPedido && fPedido >= fCot) {
+        const diasCierre = (fPedido.getTime() - fCot.getTime()) / (1000 * 3600 * 24);
+        item.totalDiasCierre += diasCierre;
+        item.pedidosConTiempoCierre++;
       }
     });
 
@@ -149,7 +185,8 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [] }) => {
   }, [vendedoresFiltrados, criterioOrden]);
 
   const totalPages = Math.max(1, Math.ceil(vendedoresOrdenados.length / itemsPerPage));
-  const paginatedVendedores = vendedoresOrdenados.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedVendedores = vendedoresOrdenados.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
 
   // Bloqueo estricto para rol vendedor
   if (role === 'vendedor') {
@@ -221,8 +258,34 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [] }) => {
             className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
           />
         </div>
-        <div className="text-[11px] font-medium text-slate-400 font-mono">
-          Mostrando <strong className="text-slate-700 font-semibold">{vendedoresFiltrados.length}</strong> vendedores
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              let movs = extraerTodosLosMovimientos(solicitudes, ordenesCompra);
+              if (searchTerm.trim()) {
+                const term = normalizarBusqueda(searchTerm);
+                movs = movs.filter(m =>
+                  normalizarBusqueda(m.vendedor || '').includes(term)
+                );
+              }
+              const periodoLabel = searchTerm.trim()
+                ? `Todos los registros | Búsqueda vendedor: "${searchTerm.trim()}"`
+                : 'Todos los registros de vendedores';
+              exportarMovimientosExcel(movs, 'movimientos_vendedores', {
+                titulo: 'CONTROL DE LOGÍSTICA - MOVIMIENTOS POR VENDEDORES',
+                periodoLabel
+              });
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            title="Exportar todos los movimientos de vendedores a Excel"
+          >
+            <Download size={13} />
+            <span>Exportar Movimientos</span>
+          </button>
+          <div className="text-[11px] font-medium text-slate-400 font-mono">
+            Mostrando <strong className="text-slate-700 font-semibold">{vendedoresFiltrados.length}</strong> vendedores
+          </div>
         </div>
       </div>
 
@@ -253,7 +316,8 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [] }) => {
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Efectividad</th>
                   <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Monto Cotizado</th>
                   <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Monto en Pedidos</th>
-                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Resp. Promedio</th>
+                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap" title="Tiempo promedio que toma compras en cotizar la solicitud (Creación → Cotización / Avances)">Resp. Comprador</th>
+                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap" title="Tiempo promedio que toma el vendedor en cerrar la venta desde la cotización (Cotización → Pedido)">Cierre Vendedor</th>
                   <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Acción</th>
                 </tr>
               </thead>
@@ -265,7 +329,10 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [] }) => {
                     : 0;
 
                   const respInfo = formatearTiempoRespuesta(
-                    v.rfqConTiempo > 0 ? (v.totalDiasRespuesta / v.rfqConTiempo) : null
+                    v.rfqConTiempoRespuesta > 0 ? (v.totalDiasRespuesta / v.rfqConTiempoRespuesta) : null
+                  );
+                  const cierreInfo = formatearTiempoCierre(
+                    v.pedidosConTiempoCierre > 0 ? (v.totalDiasCierre / v.pedidosConTiempoCierre) : null
                   );
 
                   return (
@@ -336,18 +403,38 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [] }) => {
                           <span className="font-mono text-slate-400 text-xs">---</span>
                         ) : respInfo.esRapido ? (
                           <span 
-                            className="inline-flex items-center gap-1 font-mono font-bold text-[11px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80"
-                            title={`${respInfo.valor} ${respInfo.unidad} (${respInfo.subtexto})`}
+                            className="inline-flex items-center gap-1 font-mono font-bold text-[11px] px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/80"
+                            title={`Compras cotizó en ${respInfo.valor} ${respInfo.unidad} (${respInfo.subtexto || 'Creación → Cotización'})`}
                           >
-                            <Zap size={11} className="shrink-0" />
+                            <Clock size={11} className="shrink-0 text-blue-600" />
                             {respInfo.textoCorto}
                           </span>
                         ) : (
                           <span 
                             className="font-mono text-slate-600 text-xs font-semibold"
-                            title={`${respInfo.valor} ${respInfo.unidad}`}
+                            title={`Compras cotizó en ${respInfo.valor} ${respInfo.unidad}`}
                           >
                             {respInfo.textoCorto}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
+                        {cierreInfo.valor === '---' ? (
+                          <span className="font-mono text-slate-400 text-xs">---</span>
+                        ) : cierreInfo.esRapido ? (
+                          <span 
+                            className="inline-flex items-center gap-1 font-mono font-bold text-[11px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80"
+                            title={`Vendedor cerró pedido en ${cierreInfo.valor} ${cierreInfo.unidad} (${cierreInfo.subtexto})`}
+                          >
+                            <Zap size={11} className="shrink-0" />
+                            {cierreInfo.textoCorto}
+                          </span>
+                        ) : (
+                          <span 
+                            className="font-mono text-slate-600 text-xs font-semibold"
+                            title={`Vendedor cerró pedido en ${cierreInfo.valor} ${cierreInfo.unidad}`}
+                          >
+                            {cierreInfo.textoCorto}
                           </span>
                         )}
                       </td>
@@ -373,19 +460,19 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [] }) => {
           <div className="p-3 border-t border-slate-100 flex items-center justify-between">
             <button 
               type="button"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+              disabled={safeCurrentPage === 1}
               className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
             >
               Anterior
             </button>
             <span className="text-[11px] font-medium text-slate-400">
-              Página {currentPage} de {totalPages} ({vendedoresFiltrados.length} vendedores)
+              Página {safeCurrentPage} de {totalPages} ({vendedoresFiltrados.length} vendedores)
             </span>
             <button 
               type="button"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+              disabled={safeCurrentPage === totalPages}
               className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
             >
               Siguiente

@@ -151,7 +151,6 @@ export const DashboardPedidos = ({ role }) => {
         return getMs(b.fechaReferencia) - getMs(a.fechaReferencia);
       });
       setItemsPedidos(tempItems);
-      setCurrentPage(1);
     });
 
     return () => { unsubOCs(); unsubSolicitudes(); };
@@ -666,8 +665,9 @@ export const DashboardPedidos = ({ role }) => {
   }
 
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
-  const paginatedItems = filteredItems.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedItems = filteredItems.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
 
   return (
     <div className="max-w-400 mx-auto animate-in fade-in duration-500 pb-10">
@@ -1024,18 +1024,18 @@ export const DashboardPedidos = ({ role }) => {
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-6 px-6 py-4 bg-slate-900 rounded-3xl text-white">
           <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+            disabled={safeCurrentPage === 1}
             className="px-4 py-2 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
           >
             Anterior
           </button>
           <span className="text-xs font-bold uppercase tracking-widest text-slate-300">
-            Página {currentPage} de {totalPages} ({filteredItems.length} ítems)
+            Página {safeCurrentPage} de {totalPages} ({filteredItems.length} ítems)
           </span>
           <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+            disabled={safeCurrentPage === totalPages}
             className="px-4 py-2 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
           >
             Siguiente

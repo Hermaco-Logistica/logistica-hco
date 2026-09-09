@@ -174,8 +174,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   });
 
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(sortedSolicitudes.length / itemsPerPage);
-  const paginatedSolicitudes = sortedSolicitudes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(sortedSolicitudes.length / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedSolicitudes = sortedSolicitudes.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
 
   const imprimirVistaCotizacion = () => {
     if (!solicitudVista) return;
@@ -525,18 +526,18 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-6 px-6 py-4 bg-slate-900 rounded-3xl text-white">
           <button
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+            disabled={safeCurrentPage === 1}
             className="px-4 py-2 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
           >
             Anterior
           </button>
           <span className="text-xs font-bold uppercase tracking-widest text-slate-300">
-            Página {currentPage} de {totalPages} ({sortedSolicitudes.length} solicitudes)
+            Página {safeCurrentPage} de {totalPages} ({sortedSolicitudes.length} solicitudes)
           </span>
           <button
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+            disabled={safeCurrentPage === totalPages}
             className="px-4 py-2 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all"
           >
             Siguiente

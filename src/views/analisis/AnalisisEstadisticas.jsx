@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { 
-  BarChart3, 
   TrendingUp, 
   Package, 
   CheckCircle2, 
@@ -16,10 +15,14 @@ import {
   Layers,
   Search,
   Zap,
-  AlertCircle
+  AlertCircle,
+  Download,
+  Info,
+  X
 } from 'lucide-react';
+import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
-import { getRoleTheme, formatearTiempoRespuesta } from './theme';
+import { getRoleTheme, formatearTiempoRespuesta, formatearTiempoCierre } from './theme';
 import {
   getHoyElSalvador,
   getAnioActualElSalvador,
@@ -55,6 +58,22 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
 
   const hoyElSalvador = useMemo(() => getHoyElSalvador(), []);
   const anioActualSV = useMemo(() => getAnioActualElSalvador(), []);
+  const rangoEsteMesSV = useMemo(() => {
+    const hoy = getHoyElSalvador();
+    const [yStr, mStr] = hoy.split('-');
+    const y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    const sigY = m === 12 ? y + 1 : y;
+    const sigM = m === 12 ? 1 : m + 1;
+    const inicio = new Date(`${yStr}-${mStr}-01T00:00:00-06:00`);
+    const fin = new Date(`${sigY}-${String(sigM).padStart(2, '0')}-01T00:00:00-06:00`);
+    const nombresMeses = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    const nombreMes = nombresMeses[m - 1] || '';
+    return { inicio, fin, label: `${nombreMes} ${y}` };
+  }, []);
 
   // Validación en frontend de fechas (imposibles, futuras, incoherencias)
   const validacionRango = useMemo(() => {
@@ -153,11 +172,12 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
           }
           // Si anioHistorico === 'todos', no aplicar filtro de fecha (todo el historial)
         } else if (periodo !== 'all') {
-          // Períodos relativos (7d, 30d, 90d, this_year)
+          // Períodos relativos (7d, 30d, 90d, this_month, this_year)
           const diffDias = (ahora.getTime() - fecha.getTime()) / (1000 * 3600 * 24);
           if (periodo === '7d' && diffDias > 7) return false;
           if (periodo === '30d' && diffDias > 30) return false;
           if (periodo === '90d' && diffDias > 90) return false;
+          if (periodo === 'this_month' && (fecha < rangoEsteMesSV.inicio || fecha >= rangoEsteMesSV.fin)) return false;
           if (periodo === 'this_year' && fecha.getFullYear() !== anioActualSV) return false;
         }
       }
@@ -173,9 +193,9 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
 
       return true;
     });
-  }, [solicitudes, periodo, fechaInicio, fechaFin, anioHistorico, vendedorFilter, clienteSearch, validacionRango, anioActualSV]);
+  }, [solicitudes, periodo, fechaInicio, fechaFin, anioHistorico, vendedorFilter, clienteSearch, validacionRango, anioActualSV, rangoEsteMesSV]);
 
-  // Cálculos y métricas principales
+  // Métricas consolidadas sobre solicitudesFiltradas (reactivas a período, vendedor y cliente)
   const metricas = useMemo(() => {
     const total = solicitudesFiltradas.length;
     let pendientes = 0;
@@ -185,8 +205,10 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     let pedidosParcial = 0;
     let montoCotizadoTotal = 0;
     let montoPedidoTotal = 0;
-    let totalDiasCotizacion = 0;
-    let cotizacionesConTiempo = 0;
+    let totalDiasRespuesta = 0;
+    let rfqConTiempoRespuesta = 0;
+    let totalDiasCierre = 0;
+    let pedidosConTiempoCierre = 0;
 
     solicitudesFiltradas.forEach((s) => {
       const estado = s.estado || 'Pendiente';
@@ -196,31 +218,56 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       else if (estado === 'Pedido') pedidos++;
       else if (estado === 'Pedido Parcial') pedidosParcial++;
 
-      // Cálculo de montos en base a productos
       if (Array.isArray(s.productos)) {
         s.productos.forEach((p) => {
           const cant = Number(p.cant || 1);
           const fob = Number(p.fob || 0);
-          const fobReal = Number(p.fobReal || fob);
-          const unitario = Number(p.precioUnitario || fob);
-
-          if (fob > 0 || unitario > 0) {
-            montoCotizadoTotal += (unitario > 0 ? unitario : fob) * cant;
+          let unitario = Number(p.precioUnitario || p.precio || 0);
+          if (!unitario && p.subtotal && cant > 0) {
+            unitario = Number(p.subtotal) / cant;
+          }
+          if (!unitario && fob > 0) {
+            unitario = fob;
           }
 
-          if (p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || estado === 'Pedido') {
-            montoPedidoTotal += (fobReal > 0 ? fobReal : (unitario > 0 ? unitario : fob)) * cant;
+          if (unitario > 0) {
+            montoCotizadoTotal += unitario * cant;
+          }
+
+          const esItemPedido = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || 
+            (estado === 'Pedido' && p.estadoItem !== 'Cotizado' && p.estadoItem !== 'Pendiente');
+          if (esItemPedido && unitario > 0) {
+            montoPedidoTotal += unitario * cant;
           }
         });
       }
 
-      // Tiempo de respuesta entre creación y cotización
+      // Fechas de cotización y avances
       const fInicio = parseDate(s.fechaS || s.fechaCreacion);
-      const fCot = parseDate(s.fechaCotizacion);
+      let fCot = parseDate(s.fechaCotizacion || s.fechaRespuesta);
+      if (!fCot && Array.isArray(s.productos)) {
+        const itemConCot = s.productos.find(p => p.fechaCotizacion);
+        if (itemConCot) {
+          fCot = parseDate(itemConCot.fechaCotizacion);
+        }
+      }
+
+      // 1. Métrica de Comprador: Tiempo de respuesta (Creación -> Cotización / Avances)
       if (fInicio && fCot && fCot >= fInicio) {
-        const dias = (fCot.getTime() - fInicio.getTime()) / (1000 * 3600 * 24);
-        totalDiasCotizacion += dias;
-        cotizacionesConTiempo++;
+        const diasResp = (fCot.getTime() - fInicio.getTime()) / (1000 * 3600 * 24);
+        totalDiasRespuesta += diasResp;
+        rfqConTiempoRespuesta++;
+      }
+
+      // 2. Métrica del Vendedor: Tiempo de cierre (Cotización confirmada -> Pedido)
+      const fPedido = parseDate(
+        s.fechaPedido || s.fechaOC || s.fechaOrdenCompra ||
+        (Array.isArray(s.productos) ? (s.productos.find(p => p.fechaPedido || p.fechaOC)?.fechaPedido || s.productos.find(p => p.fechaPedido || p.fechaOC)?.fechaOC) : null)
+      );
+      if (fCot && fPedido && fPedido >= fCot) {
+        const diasCierre = (fPedido.getTime() - fCot.getTime()) / (1000 * 3600 * 24);
+        totalDiasCierre += diasCierre;
+        pedidosConTiempoCierre++;
       }
     });
 
@@ -229,10 +276,15 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       ? ((pedidos / totalCotizadasDirectas) * 100).toFixed(1)
       : 0;
 
-    const tiempoPromedioDiasRaw = cotizacionesConTiempo > 0 
-      ? (totalDiasCotizacion / cotizacionesConTiempo)
+    const tiempoRespuestaDiasRaw = rfqConTiempoRespuesta > 0 
+      ? (totalDiasRespuesta / rfqConTiempoRespuesta)
       : null;
-    const tiempoRespuestaInfo = formatearTiempoRespuesta(tiempoPromedioDiasRaw);
+    const tiempoRespuestaInfo = formatearTiempoRespuesta(tiempoRespuestaDiasRaw);
+
+    const tiempoCierreDiasRaw = pedidosConTiempoCierre > 0 
+      ? (totalDiasCierre / pedidosConTiempoCierre)
+      : null;
+    const tiempoCierreInfo = formatearTiempoCierre(tiempoCierreDiasRaw);
 
     return {
       total,
@@ -240,74 +292,60 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       cotizadas: cotizadas + cotizadasParcial,
       cotizadasCompletas: cotizadas,
       cotizadasParciales: cotizadasParcial,
-      pedidos, // Solo pedidos ganados completos al 100%
+      pedidos,
       pedidosCompletos: pedidos,
       pedidosParciales: pedidosParcial,
       tasaConversion,
       montoCotizadoTotal,
       montoPedidoTotal,
-      tiempoPromedioDias: tiempoRespuestaInfo.valor,
+      tiempoPromedioDias: tiempoCierreInfo.valor,
+      tiempoCierreInfo,
       tiempoRespuestaInfo
     };
   }, [solicitudesFiltradas]);
 
-  // Top productos más cotizados y ganados
   const topProductos = useMemo(() => {
     const map = {};
     solicitudesFiltradas.forEach((s) => {
       if (!Array.isArray(s.productos)) return;
       s.productos.forEach((p) => {
-        const desc = (p.desc || p.descripcion || 'Sin descripción').trim().toUpperCase();
-        const key = normalizarBusqueda(desc);
-        if (!key) return;
-
+        const desc = (p.desc || p.descripcion || '').trim().toUpperCase();
+        if (!desc) return;
+        const key = desc;
         const cant = Number(p.cant || 1);
-        const marca = p.marca?.trim() || '';
-        const esGanado = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || s.estado === 'Pedido' || s.estado === 'Comprado';
-
+        const marca = (p.marca || '').trim();
+        const ganado = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || 
+          (s.estado === 'Pedido' && p.estadoItem !== 'Cotizado' && p.estadoItem !== 'Pendiente');
         if (!map[key]) {
-          map[key] = {
-            desc,
-            marca,
-            veces: 0,
-            unidades: 0,
-            ganadas: 0,
-            unidadesGanadas: 0
-          };
+          map[key] = { desc, marca, veces: 0, unidades: 0, ganadas: 0, unidadesGanadas: 0 };
         }
         map[key].veces++;
         map[key].unidades += cant;
-        if (esGanado) {
+        if (ganado) {
           map[key].ganadas++;
           map[key].unidadesGanadas += cant;
         }
         if (!map[key].marca && marca) map[key].marca = marca;
       });
     });
-
     return Object.values(map)
       .sort((a, b) => {
-        if (ordenarProductosPor === 'unidades') {
-          return b.unidades - a.unidades || b.veces - a.veces;
-        }
-        if (ordenarProductosPor === 'ganadas') {
-          return b.ganadas - a.ganadas || b.veces - a.veces;
-        }
+        if (ordenarProductosPor === 'unidades') return b.unidades - a.unidades || b.veces - a.veces;
+        if (ordenarProductosPor === 'ganadas') return b.ganadas - a.ganadas || b.veces - a.veces;
         return b.veces - a.veces || b.unidades - a.unidades;
       })
       .slice(0, 5);
   }, [solicitudesFiltradas, ordenarProductosPor]);
 
-  // Desempeño por vendedor
   const statsVendedores = useMemo(() => {
     const map = {};
     solicitudesFiltradas.forEach((s) => {
       const vend = s.vendedorNombre || 'Sin asignar';
       if (!map[vend]) {
-        map[vend] = { nombre: vend, total: 0, cotizadas: 0, pedidos: 0 };
+        map[vend] = { nombre: vend, total: 0, cotizadas: 0, pedidos: 0, pedidosParciales: 0 };
       }
       map[vend].total++;
-      if (['Cotizado', 'Cotizado Parcial', 'Pedido', 'Pedido Parcial'].includes(s.estado)) {
+      if (['Cotizado', 'Cotizado Parcial', 'Pedido', 'Pedido Parcial', 'Comprado'].includes(s.estado)) {
         map[vend].cotizadas++;
       }
       if (s.estado === 'Pedido' || s.estado === 'Comprado') {
@@ -323,7 +361,6 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
   const safePageVendedores = Math.min(pageVendedores, totalPagesVendedores);
   const paginatedVendedores = statsVendedores.slice((safePageVendedores - 1) * itemsPerPageVendedores, safePageVendedores * itemsPerPageVendedores);
 
-  // Top clientes
   const topClientes = useMemo(() => {
     const map = {};
     solicitudesFiltradas.forEach((s) => {
@@ -338,8 +375,13 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         map[cli].pedidosParciales = (map[cli].pedidosParciales || 0) + 1;
       }
     });
-    return Object.values(map).sort((a, b) => b.total - a.total).slice(0, 5);
-  }, [solicitudesFiltradas]);
+    let list = Object.values(map).sort((a, b) => b.total - a.total);
+    if (clienteSearch) {
+      const term = normalizarBusqueda(clienteSearch);
+      list = list.filter(c => normalizarBusqueda(c.cliente).includes(term));
+    }
+    return list.slice(0, 5);
+  }, [solicitudesFiltradas, clienteSearch]);
 
   // Resumen de órdenes de compra
   const statsLogistica = useMemo(() => {
@@ -376,6 +418,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         if (periodo === '7d' && diffDias > 7) return false;
         if (periodo === '30d' && diffDias > 30) return false;
         if (periodo === '90d' && diffDias > 90) return false;
+        if (periodo === 'this_month' && (fecha < rangoEsteMesSV.inicio || fecha >= rangoEsteMesSV.fin)) return false;
         if (periodo === 'this_year' && fecha.getFullYear() !== anioActualSV) return false;
       }
 
@@ -402,13 +445,14 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     });
 
     return { total, enTransito, enAduana, entregadas, pendientes };
-  }, [ordenesCompra, periodo, fechaInicio, fechaFin, anioHistorico, validacionRango, anioActualSV]);
+  }, [ordenesCompra, periodo, fechaInicio, fechaFin, anioHistorico, validacionRango, anioActualSV, rangoEsteMesSV]);
 
   const formatearDinero = (val) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      maximumFractionDigits: 0
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(val || 0);
   };
 
@@ -440,6 +484,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
           {[
             { id: '7d', label: '7D' },
             { id: '30d', label: '30D' },
+            { id: 'this_month', label: 'Este Mes' },
             { id: '90d', label: '90D' },
             { id: 'this_year', label: 'Este Año' },
             { id: 'custom', label: 'Rango' },
@@ -573,7 +618,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
             type="text"
             placeholder="Filtrar por cliente..."
             value={clienteSearch}
-            onChange={(e) => setClienteSearch(e.target.value)}
+            onChange={(e) => { setClienteSearch(e.target.value); setPageVendedores(1); }}
             className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400"
           />
         </div>
@@ -586,13 +631,70 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
               setClienteSearch(''); 
               setFechaInicio(''); 
               setFechaFin(''); 
+              setPageVendedores(1);
               guardarFiltroPeriodoStorage({ periodo, fechaInicio: '', fechaFin: '' });
             }}
-            className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline px-2 py-1 cursor-pointer whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200/80 text-slate-600 hover:text-slate-900 border border-slate-200/80 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shadow-2xs"
+            title="Restablecer todos los filtros"
           >
-            Limpiar filtros
+            <X size={12} className="text-slate-400" />
+            <span>Limpiar filtros</span>
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={() => {
+            const fmtSV = (strDate) => {
+              if (!strDate) return '';
+              try {
+                const parts = strDate.split('-');
+                if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                return strDate;
+              } catch {
+                return strDate;
+              }
+            };
+
+            let periodoDesc = 'Todos los registros';
+            if (periodo === '7d') periodoDesc = 'Últimos 7 días';
+            else if (periodo === '30d') periodoDesc = 'Últimos 30 días';
+            else if (periodo === 'this_month') periodoDesc = `Este Mes (${rangoEsteMesSV.label})`;
+            else if (periodo === '90d') periodoDesc = 'Últimos 90 días';
+            else if (periodo === 'this_year') periodoDesc = `Año actual (${anioActualSV})`;
+            else if (periodo === 'historico') {
+              periodoDesc = anioHistorico === 'todos' ? 'Todo el histórico' : `Año histórico ${anioHistorico}`;
+            } else if (periodo === 'custom') {
+              const dIni = fmtSV(fechaInicio) || 'Inicio';
+              const dFin = fmtSV(fechaFin) || 'Fin';
+              periodoDesc = `Rango personalizado: ${dIni} al ${dFin}`;
+            }
+
+            const filtrosActivos = [periodoDesc];
+            if (vendedorFilter) filtrosActivos.push(`Vendedor: ${vendedorFilter}`);
+            if (clienteSearch && clienteSearch.trim()) filtrosActivos.push(`Cliente: "${clienteSearch.trim()}"`);
+            const labelCompleto = filtrosActivos.join(' | ');
+
+            const fileSlug = periodo === 'custom'
+              ? `rango_${fechaInicio || 'inicio'}_${fechaFin || 'fin'}`
+              : (periodo === 'historico' ? `historico_${anioHistorico}` : periodo);
+
+            exportarTodosLosMovimientosExcel(
+              solicitudesFiltradas,
+              ordenesCompra,
+              `movimientos_logistica_${fileSlug}`,
+              {
+                titulo: 'CONTROL DE LOGÍSTICA - REPORTE COMPLETO DE MOVIMIENTOS',
+                periodoLabel: labelCompleto
+              }
+            );
+          }}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+          title="Exportar todos los movimientos a Excel"
+        >
+          <Download size={13} />
+          <span>Exportar Excel</span>
+        </button>
 
         <div className="text-xs text-slate-400 font-medium ml-auto hidden md:block">
           <strong className="text-slate-700 font-semibold">{solicitudesFiltradas.length}</strong> solicitudes
@@ -629,7 +731,29 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
           className={`bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between hover:${theme.flujoEstados?.pedidos?.border || 'border-emerald-300'} transition-all cursor-pointer group`}
         >
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Conversión a Pedido</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Conversión a Pedido</span>
+              <div 
+                onClick={(e) => e.stopPropagation()}
+                className="relative group/tip inline-flex items-center cursor-help"
+              >
+                <Info size={13} className="text-slate-400 hover:text-slate-600 transition-colors" />
+                <div className="absolute bottom-full left-0 sm:left-1/2 sm:-translate-x-1/2 mb-2 w-72 p-3 bg-slate-900/95 backdrop-blur-xs text-white text-[11px] rounded-xl shadow-xl border border-slate-700/80 opacity-0 invisible group-hover/tip:opacity-100 group-hover/tip:visible transition-all duration-150 z-50 pointer-events-none normal-case tracking-normal">
+                  <p className="font-bold text-slate-100 mb-1 flex items-center gap-1.5">
+                    <TrendingUp size={12} className="text-emerald-400" />
+                    Cálculo de la Métrica:
+                  </p>
+                  <div className="bg-slate-800/90 font-mono text-[10px] px-2.5 py-1.5 rounded-lg border border-slate-700/80 text-emerald-300 font-semibold mb-2">
+                    (Pedidos Ganados ÷ Total Cotizadas) × 100
+                  </div>
+                  <ul className="text-slate-300 text-[10px] space-y-1 leading-tight list-disc pl-3">
+                    <li><strong className="text-white">Numerador:</strong> RFQs cerradas como Pedido (100% ganadas).</li>
+                    <li><strong className="text-white">Denominador:</strong> Total de RFQs cotizadas (Cotizadas + Pedidos + Parciales).</li>
+                    <li><strong className="text-white">Excluye:</strong> RFQs que aún están en estado Pendiente (sin cotizar).</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
             <div className={`w-8 h-8 rounded-xl ${theme.flujoEstados?.pedidos?.badge || 'bg-emerald-50 text-emerald-600'} flex items-center justify-center group-hover:scale-105 transition-transform`}>
               <TrendingUp size={16} />
             </div>
@@ -668,38 +792,77 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
           </div>
         </div>
 
-        {/* KPI 4: Tiempo Promedio de Respuesta */}
+        {/* KPI 4: Tiempos Operativos (Cierre Vendedor & Respuesta Comprador) */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tiempo de Respuesta</span>
-            <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${
-              metricas.tiempoRespuestaInfo?.esRapido 
-                ? 'bg-emerald-50 text-emerald-600' 
-                : 'bg-slate-100/80 text-slate-600'
-            }`}>
-              {metricas.tiempoRespuestaInfo?.esRapido ? <Zap size={16} /> : <Clock size={16} />}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tiempos Operativos</span>
+              {vendedorFilter && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/60 truncate max-w-[110px]" title={`Filtrado por: ${vendedorFilter}`}>
+                  {vendedorFilter}
+                </span>
+              )}
+            </div>
+            <div className="w-8 h-8 rounded-xl bg-slate-100/80 text-slate-600 flex items-center justify-center shrink-0">
+              <Clock size={16} />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl lg:text-3xl font-black text-slate-900 tracking-tight flex items-baseline gap-1.5 font-mono">
-              <span>{metricas.tiempoRespuestaInfo?.valor || '---'}</span>
-              {metricas.tiempoRespuestaInfo?.unidad && (
-                <span className="text-sm font-bold text-slate-500 font-sans">
-                  {metricas.tiempoRespuestaInfo.unidad}
+          <div className="mt-2.5 space-y-2">
+            {/* Cierre Vendedor */}
+            <div 
+              className="flex items-center justify-between gap-2" 
+              title={vendedorFilter 
+                ? `Tiempo promedio de ${vendedorFilter} para cerrar el pedido tras recibir cotización` 
+                : 'Tiempo promedio general de los vendedores para concretar pedidos tras la cotización'
+              }
+            >
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                <span className="text-xs font-semibold text-slate-700 truncate">
+                  {vendedorFilter ? `Cierre (${vendedorFilter.split(' ')[0]})` : 'Cierre Vendedor'}
                 </span>
-              )}
+              </div>
+              <div className="font-mono font-bold text-slate-900 text-xs shrink-0 flex items-baseline gap-1">
+                {metricas.tiempoCierreInfo?.valor !== '---' ? (
+                  <>
+                    <span className="text-sm font-black">{metricas.tiempoCierreInfo.valor}</span>
+                    <span className="text-[10px] font-medium text-slate-500 font-sans">{metricas.tiempoCierreInfo.unidad}</span>
+                  </>
+                ) : (
+                  <span className="text-slate-400">---</span>
+                )}
+              </div>
             </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              {metricas.tiempoRespuestaInfo?.etiqueta && (
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${metricas.tiempoRespuestaInfo.badgeClase}`}>
-                  {metricas.tiempoRespuestaInfo.esRapido && <Zap size={10} className="shrink-0" />}
-                  <span>{metricas.tiempoRespuestaInfo.etiqueta}</span>
+
+            {/* Resp. Comprador */}
+            <div 
+              className="flex items-center justify-between gap-2 border-t border-slate-100 pt-1.5" 
+              title={vendedorFilter 
+                ? `Tiempo promedio que compras tardó en cotizarle a ${vendedorFilter}` 
+                : 'Tiempo promedio general de compras para cotizar las solicitudes recibidas'
+              }
+            >
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+                <span className="text-xs font-semibold text-slate-700 truncate">
+                  {vendedorFilter ? `Compras a ${vendedorFilter.split(' ')[0]}` : 'Resp. Comprador'}
                 </span>
-              )}
-              <span className="text-xs font-medium text-slate-500">
-                {metricas.tiempoRespuestaInfo?.subtexto || 'Promedio creación → cotización'}
-              </span>
+              </div>
+              <div className="font-mono font-bold text-slate-900 text-xs shrink-0 flex items-baseline gap-1">
+                {metricas.tiempoRespuestaInfo?.valor !== '---' ? (
+                  <>
+                    <span className="text-sm font-black">{metricas.tiempoRespuestaInfo.valor}</span>
+                    <span className="text-[10px] font-medium text-slate-500 font-sans">{metricas.tiempoRespuestaInfo.unidad}</span>
+                  </>
+                ) : (
+                  <span className="text-slate-400">---</span>
+                )}
+              </div>
             </div>
+          </div>
+          <div className="mt-2 text-[10px] text-slate-400 font-medium truncate flex items-center justify-between border-t border-slate-50 pt-1">
+            <span>{vendedorFilter ? 'Cotiz. → Pedido vend.' : 'Cotiz. → Pedido (Global)'}</span>
+            <span>{vendedorFilter ? 'Creac. → Cotiz. compras' : 'Creac. → Cotiz. (Global)'}</span>
           </div>
         </div>
       </div>
@@ -732,74 +895,126 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 tipo: 'pendiente',
                 label: 'Pendiente de Cotizar', 
                 count: metricas.pendientes, 
-                color: theme.flujoEstados?.pendiente?.color || 'bg-rose-500', 
-                barBg: theme.flujoEstados?.pendiente?.barBg || 'bg-rose-100/60',
-                textColor: theme.flujoEstados?.pendiente?.textColor || 'text-rose-600',
-                desc: 'Solicitudes en espera de cotización por compras'
+                icon: Clock,
+                iconBg: theme.flujoEstados?.pendiente?.iconBg || 'bg-amber-50 text-amber-600 border-amber-200/80',
+                barGradient: theme.flujoEstados?.pendiente?.barGradient || 'from-amber-500 to-amber-600',
+                subGradient: theme.flujoEstados?.pendiente?.subGradient || 'from-amber-400 to-amber-500',
+                textColor: theme.flujoEstados?.pendiente?.textColor || 'text-amber-700',
+                desc: 'Solicitudes en espera de cotización por compras',
+                completas: metricas.pendientes,
+                parciales: 0
               },
               { 
                 tipo: 'cotizadas',
                 label: 'Cotizadas / Parciales', 
                 count: metricas.cotizadas, 
-                color: theme.flujoEstados?.cotizadas?.color || 'bg-sky-600', 
-                barBg: theme.flujoEstados?.cotizadas?.barBg || 'bg-sky-100/60',
+                icon: DollarSign,
+                iconBg: theme.flujoEstados?.cotizadas?.iconBg || 'bg-sky-50 text-sky-600 border-sky-200/80',
+                barGradient: theme.flujoEstados?.cotizadas?.barGradient || 'from-sky-500 to-blue-600',
+                subGradient: theme.flujoEstados?.cotizadas?.subGradient || 'from-sky-400 to-blue-400',
                 textColor: theme.flujoEstados?.cotizadas?.textColor || 'text-sky-700',
                 desc: 'Precios enviados al vendedor o cliente',
+                completas: metricas.cotizadasCompletas,
+                parciales: metricas.cotizadasParciales,
                 subdetail: `${metricas.cotizadasCompletas} completas · ${metricas.cotizadasParciales} parciales`
               },
               { 
                 tipo: 'pedidos',
                 label: 'Pedidos Confirmados / Parciales', 
                 count: metricas.pedidos, 
-                color: theme.flujoEstados?.pedidos?.color || 'bg-emerald-600', 
-                barBg: theme.flujoEstados?.pedidos?.barBg || 'bg-emerald-100/60',
+                icon: CheckCircle2,
+                iconBg: theme.flujoEstados?.pedidos?.iconBg || 'bg-emerald-50 text-emerald-600 border-emerald-200/80',
+                barGradient: theme.flujoEstados?.pedidos?.barGradient || 'from-emerald-500 to-teal-600',
+                subGradient: theme.flujoEstados?.pedidos?.subGradient || 'from-emerald-400 to-teal-400',
                 textColor: theme.flujoEstados?.pedidos?.textColor || 'text-emerald-700',
                 desc: 'Aprobadas para adquisición y entrega logística',
+                completas: metricas.pedidosCompletos,
+                parciales: metricas.pedidosParciales,
                 subdetail: `${metricas.pedidosCompletos} confirmados · ${metricas.pedidosParciales} parciales`
               }
             ].map((item) => {
               const porcentaje = metricas.total > 0 
-                ? ((item.count / metricas.total) * 100).toFixed(1)
+                ? Number(((item.count / metricas.total) * 100).toFixed(1))
                 : 0;
+              const IconComponent = item.icon;
+              const totalSegmentos = (item.completas || 0) + (item.parciales || 0);
+              const pctCompletas = totalSegmentos > 0 
+                ? ((item.completas || 0) / totalSegmentos) * 100 
+                : 100;
+              const pctParciales = totalSegmentos > 0 
+                ? ((item.parciales || 0) / totalSegmentos) * 100 
+                : 0;
+
               return (
                 <div 
                   key={item.tipo}
                   onClick={() => navigate(`/analisis/solicitudes/${item.tipo}`)}
-                  className="p-3.5 bg-slate-50/60 hover:bg-slate-100/70 rounded-xl border border-slate-100 hover:border-slate-200 transition-all cursor-pointer group"
+                  className="p-4 bg-slate-50/70 hover:bg-white rounded-xl border border-slate-200/70 hover:border-slate-300 hover:shadow-xs transition-all cursor-pointer group"
                 >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-slate-800 group-hover:text-slate-900 transition-colors">
-                          {item.label}
-                        </span>
-                        <ChevronRight size={13} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                  <div className="flex items-center justify-between mb-2.5">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg ${item.iconBg} flex items-center justify-center shrink-0 border shadow-2xs group-hover:scale-105 transition-transform`}>
+                        <IconComponent size={15} />
                       </div>
-                      <p className="text-[11px] text-slate-400 font-medium">
-                        {item.desc}
-                      </p>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-slate-800 group-hover:text-slate-900 transition-colors">
+                            {item.label}
+                          </span>
+                          <ChevronRight size={13} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                        </div>
+                        <p className="text-[11px] text-slate-400 font-medium">
+                          {item.desc}
+                        </p>
+                      </div>
                     </div>
                     <div className="text-right">
-                      <div>
+                      <div className="flex items-baseline justify-end gap-1.5">
                         <span className={`text-base font-black ${item.textColor} font-mono`}>
                           {item.count}
                         </span>
-                        <span className="text-xs font-bold text-slate-400 ml-1.5">
-                          ({porcentaje}%)
+                        <span className="text-[11px] font-mono font-bold text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200/80 shadow-2xs">
+                          {porcentaje}%
                         </span>
                       </div>
                       {item.subdetail && (
-                        <span className="text-[10px] font-medium text-slate-400 block -mt-0.5">
+                        <span className="text-[10px] font-medium text-slate-400 block mt-0.5">
                           {item.subdetail}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className={`w-full h-2 rounded-full ${item.barBg} overflow-hidden`}>
-                    <div 
-                      className={`h-full rounded-full ${item.color} transition-all duration-500`}
-                      style={{ width: `${porcentaje}%` }}
-                    />
+
+                  {/* Barra corporativa con micro-regla y segmentación */}
+                  <div className="relative w-full h-2.5 bg-slate-200/60 rounded-md p-0.5 border border-slate-200/80 shadow-inner overflow-hidden flex items-center">
+                    {/* Ticks guía de escala 25%, 50%, 75% */}
+                    <div className="absolute inset-0 flex justify-between px-[25%] pointer-events-none opacity-25 z-0">
+                      <div className="w-px h-full bg-slate-400" />
+                      <div className="w-px h-full bg-slate-400" />
+                    </div>
+
+                    {/* Barra rellena proporcional */}
+                    {porcentaje > 0 && (
+                      <div 
+                        className="h-full rounded-xs flex overflow-hidden shadow-xs transition-all duration-700 relative z-10"
+                        style={{ width: `${porcentaje}%` }}
+                      >
+                        {/* Segmento principal (Completas) */}
+                        <div 
+                          className={`h-full bg-gradient-to-r ${item.barGradient} transition-all duration-500`}
+                          style={{ width: pctParciales > 0 ? `${pctCompletas}%` : '100%' }}
+                          title={item.completas ? `${item.completas} completas` : undefined}
+                        />
+                        {/* Segmento secundario (Parciales si existen) */}
+                        {pctParciales > 0 && (
+                          <div 
+                            className={`h-full bg-gradient-to-r ${item.subGradient || item.barGradient} border-l border-white/40 transition-all duration-500`}
+                            style={{ width: `${pctParciales}%` }}
+                            title={`${item.parciales} parciales`}
+                          />
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -829,36 +1044,64 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 No hay registros en el período
               </div>
             ) : (
-              <div className="space-y-3 mt-2">
+              <div className="space-y-2.5 mt-2">
                 {topClientes.map((c, idx) => {
                   const maxTotal = topClientes[0]?.total || 1;
-                  const pct = Math.round((c.total / maxTotal) * 100);
+                  const pct = Math.max(8, Math.round((c.total / maxTotal) * 100));
+                  const pedidosRatio = c.total > 0 ? (c.pedidos / c.total) : 0;
+                  const pedidosPct = Math.round(pedidosRatio * 100);
+
                   return (
                     <div 
                       key={idx} 
-                      className="space-y-1.5 cursor-pointer group"
+                      className="p-2.5 rounded-xl hover:bg-slate-50/80 border border-transparent hover:border-slate-200/70 transition-all cursor-pointer group space-y-2"
                       onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}`)}
                       title={`Ver historial de ${c.cliente}`}
                     >
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-slate-800 truncate max-w-[180px] group-hover:text-slate-900 transition-colors" title={c.cliente}>
-                          <span className="text-slate-400 font-mono text-[11px] mr-1.5">#{idx + 1}</span>
-                          {c.cliente}
-                        </span>
-                        <span className="text-slate-500 font-mono text-[11px]">
-                          <strong className="text-slate-800 font-semibold">{c.total}</strong> RFQ
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-6 h-6 rounded-md bg-slate-900 text-white font-mono font-bold text-[10px] flex items-center justify-center shrink-0 shadow-2xs group-hover:bg-blue-600 transition-colors">
+                            {c.cliente ? c.cliente.charAt(0).toUpperCase() : 'C'}
+                          </div>
+                          <span className="font-semibold text-slate-800 truncate group-hover:text-blue-600 transition-colors" title={c.cliente}>
+                            <span className="text-slate-400 font-mono text-[10px] mr-1">#{idx + 1}</span>
+                            {c.cliente}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
+                          <span className="font-bold text-slate-800">{c.total}</span>
+                          <span className="text-slate-400 text-[10px]">RFQ</span>
                           {c.pedidos > 0 && (
-                            <span className={`${theme.flujoEstados?.pedidos?.textColor || 'text-emerald-600'} font-semibold ml-1.5`}>
-                              ({c.pedidos} ped)
+                            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60 font-mono" title={`${c.pedidos} pedidos ganados`}>
+                              {pedidosPct}% conv
                             </span>
                           )}
-                        </span>
+                        </div>
                       </div>
-                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+
+                      {/* Barra Corporativa de Doble Indicador (Volumen + Pedidos Ganados) */}
+                      <div className="relative w-full h-2 bg-slate-100/90 rounded-md p-0.5 border border-slate-200/60 shadow-inner flex items-center overflow-hidden">
+                        {/* Contenedor proporcional relativo al Top 1 */}
                         <div 
-                          className="h-full bg-slate-800 rounded-full transition-all duration-500" 
+                          className="h-full rounded-xs flex overflow-hidden shadow-2xs transition-all duration-700"
                           style={{ width: `${pct}%` }}
-                        />
+                        >
+                          {/* Segmento Pedidos Ganados (Esmeralda) */}
+                          {c.pedidos > 0 && (
+                            <div 
+                              className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
+                              style={{ width: `${pedidosPct}%` }}
+                              title={`${c.pedidos} pedidos ganados (${pedidosPct}%)`}
+                            />
+                          )}
+                          {/* Segmento Cotizado / En Proceso (Gris Corporativo) */}
+                          <div 
+                            className="h-full bg-gradient-to-r from-slate-600 to-slate-700 transition-all duration-500"
+                            style={{ width: c.pedidos > 0 ? `${100 - pedidosPct}%` : '100%' }}
+                            title={`${c.total - c.pedidos} cotizadas sin pedido`}
+                          />
+                        </div>
                       </div>
                     </div>
                   );

@@ -14,8 +14,11 @@ import {
   DollarSign,
   Clock,
   Link as LinkIcon,
-  CheckCircle2
+  CheckCircle2,
+  Download,
+  X
 } from 'lucide-react';
+import { exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { Badge } from '../../components/Badge';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, evaluarEstadoGanada } from './theme';
@@ -29,6 +32,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
   const [searchTerm, setSearchTerm] = useSessionState('analisis_cli_hist_search', '');
   const [filterEstado, setFilterEstado] = useSessionState('analisis_cli_hist_estado', '');
   const [filterModalidad, setFilterModalidad] = useSessionState('analisis_cli_hist_modalidad', '');
+  const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -126,11 +130,12 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
     const IVA_TASA = 0.13;
 
     solicitudes.forEach((s) => {
+      if (vendedorFilter && s.vendedorNombre !== vendedorFilter) return;
       const clienteNombre = (s.cliente || 'Consumidor Final').trim();
       const normCliente = normalizarBusqueda(clienteNombre);
 
-      // Coincidencia exacta o normalizada
-      if (normCliente === targetKey || (targetKey && normCliente.includes(targetKey))) {
+      // Coincidencia exacta del cliente (sin agrupar similares ni subcadenas)
+      if (normCliente === targetKey) {
         if (clienteNombre && (!nombreOficial || clienteNombre.length > nombreOficial.length)) {
           nombreOficial = clienteNombre;
         }
@@ -189,8 +194,20 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           // OC Referencia
           const ocRef = p.numOC || p.ocRef || p.numeroOC || s.numeroOC || s.linkOC || '';
 
-          // Estado del ítem o de la solicitud
-          const estadoItem = p.estadoItem || s.estado || 'Pendiente';
+          // Estado del ítem a nivel individual (ítem por ítem)
+          let estadoItem = p.estadoItem;
+          if (estadoItem === 'Pedido Parcial' || estadoItem === 'Comprado') {
+            estadoItem = 'Pedido';
+          } else if (!estadoItem) {
+            if (s.estado === 'Pedido' || s.estado === 'Comprado') {
+              estadoItem = 'Pedido';
+            } else if (s.estado === 'Pedido Parcial') {
+              const tienePrecio = Number(p.fob || p.precioUnitario || 0) > 0;
+              estadoItem = tienePrecio ? 'Cotizado' : 'Pendiente';
+            } else {
+              estadoItem = s.estado || 'Pendiente';
+            }
+          }
 
           // Fechas diferenciadas:
           // 1. Fecha Solicitud
@@ -245,12 +262,20 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
         vendedores: Array.from(vendedoresSet).join(', ') || 'Sin vendedor asignado'
       }
     };
-  }, [solicitudes, targetKey, decodedSearch, mapFechasOC]);
+  }, [solicitudes, targetKey, decodedSearch, mapFechasOC, vendedorFilter]);
 
   // Filtrado de la tabla según filtros y búsqueda
   const movimientosFiltrados = useMemo(() => {
     return movimientos.filter((m) => {
-      if (filterEstado && m.estado !== filterEstado) return false;
+      if (filterEstado) {
+        if (filterEstado === 'Pedido Parcial') {
+          if (m.estado !== 'Pedido Parcial' && m.solicitudOriginal?.estado !== 'Pedido Parcial') return false;
+        } else if (filterEstado === 'Pedido') {
+          if (m.estado !== 'Pedido' && m.estado !== 'Comprado') return false;
+        } else if (m.estado !== filterEstado) {
+          return false;
+        }
+      }
       if (filterModalidad && m.modalidad !== filterModalidad) return false;
 
       if (searchTerm.trim()) {
@@ -283,13 +308,15 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
       unidadesTotales += Number(m.unidades || 0);
       sumaValorNeto += Number(m.valorNeto || 0);
       sumaTotalConIva += Number(m.totalConIva || 0);
-      if (m.producto) productosSet.add(normalizarBusqueda(m.producto));
+      if (m.producto) productosSet.add(m.producto.trim().toUpperCase());
       if (m.correlativo) rfqsSet.add(m.correlativo);
-      if (m.estado === 'Pedido' || m.estado === 'Comprado') {
+      const resGanada = evaluarEstadoGanada(m);
+      if (resGanada.esGanada) {
         pedidosCount++;
         unidadesEnPedido += Number(m.unidades || 0);
-      } else if (m.estado === 'Pedido Parcial') {
+      } else if (resGanada.esParcial && (m.estado === 'Pedido Parcial' || m.solicitudOriginal?.estado === 'Pedido Parcial')) {
         parcialesCount++;
+        unidadesEnPedido += Number(m.unidades || 0);
       }
     });
 
@@ -314,7 +341,8 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
   }, [movimientosFiltrados, movimientos.length]);
 
   const totalPages = Math.max(1, Math.ceil(movimientosFiltrados.length / itemsPerPage));
-  const paginatedMovimientos = movimientosFiltrados.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedMovimientos = movimientosFiltrados.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
 
   const irADetalle = (m) => {
     if (role === 'comprador' && m.estado === 'Pendiente') {
@@ -453,15 +481,32 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
 
       {/* FILTROS Y BÚSQUEDA */}
       <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row gap-2.5 items-center justify-between">
-        <div className="relative w-full sm:w-80">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Buscar por RFQ, producto, marca, vendedor u OC..."
-            value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
-          />
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-80">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Buscar por RFQ, producto, marca, vendedor u OC..."
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
+            />
+          </div>
+          {vendedorFilter && (
+            <div className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-white border border-slate-200/90 rounded-full text-xs shadow-2xs transition-all hover:border-slate-300">
+              <User size={11} className="text-slate-400 shrink-0" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Vendedor:</span>
+              <span className="font-semibold text-slate-800">{vendedorFilter}</span>
+              <button 
+                type="button" 
+                onClick={() => { setVendedorFilter(''); setCurrentPage(1); }}
+                className="w-4 h-4 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                title="Quitar filtro de vendedor"
+              >
+                <X size={10} strokeWidth={2.5} />
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -501,6 +546,30 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
               Limpiar
             </button>
           )}
+
+          <button
+            type="button"
+            onClick={() => {
+              const filtrosActivos = ['Historial Completo'];
+              if (filterEstado) filtrosActivos.push(`Estado: ${filterEstado}`);
+              if (filterModalidad) filtrosActivos.push(`Modalidad: ${filterModalidad}`);
+              if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
+
+              exportarMovimientosExcel(
+                movimientosFiltrados,
+                `historial_cliente_${infoCliente.nombre || clienteId}`,
+                {
+                  titulo: `CONTROL DE LOGÍSTICA - HISTORIAL DE CLIENTE: ${(infoCliente.nombre || clienteId).toUpperCase()}`,
+                  periodoLabel: filtrosActivos.join(' | ')
+                }
+              );
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs ml-auto"
+            title="Exportar movimientos del cliente a Excel"
+          >
+            <Download size={13} />
+            <span>Exportar Excel</span>
+          </button>
         </div>
       </div>
 
@@ -528,6 +597,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Resp.</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha OC</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Producto</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Marca</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Vendedor</th>
                   <th className="py-2.5 px-3 text-center whitespace-nowrap">Modalidad</th>
                   <th className="py-2.5 px-3 text-center whitespace-nowrap">Unidades</th>
@@ -549,9 +619,19 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                     <tr key={m.idMov} className="hover:bg-slate-50/80 transition-colors">
                       {/* Correlativo RFQ */}
                       <td className="py-2.5 px-3 whitespace-nowrap">
-                        <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 border border-slate-200/80 inline-block whitespace-nowrap">
-                          {m.correlativo}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 border border-slate-200/80 inline-block whitespace-nowrap">
+                            {m.correlativo}
+                          </span>
+                          {m.solicitudOriginal?.estado === 'Pedido Parcial' && (
+                            <span 
+                              className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200/80 shrink-0 whitespace-nowrap"
+                              title="La solicitud original es Pedido Parcial"
+                            >
+                              Parcial
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Fecha Solicitud */}
@@ -598,12 +678,18 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                           >
                             {truncarTexto(m.producto, 28)}
                           </button>
-                          {m.marca && (
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200/60 shrink-0">
-                              {m.marca}
-                            </span>
-                          )}
                         </div>
+                      </td>
+
+                      {/* Marca */}
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        {m.marca ? (
+                          <span className="text-[11px] font-semibold text-slate-700 uppercase">
+                            {m.marca}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300 text-[11px]">---</span>
+                        )}
                       </td>
 
                       {/* Vendedor */}
@@ -721,19 +807,19 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           <div className="p-3 border-t border-slate-100 flex items-center justify-between">
             <button 
               type="button"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+              disabled={safeCurrentPage === 1}
               className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
             >
               Anterior
             </button>
             <span className="text-[11px] font-medium text-slate-400">
-              Página {currentPage} de {totalPages} ({movimientosFiltrados.length} productos)
+              Página {safeCurrentPage} de {totalPages} ({movimientosFiltrados.length} productos)
             </span>
             <button 
               type="button"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+              disabled={safeCurrentPage === totalPages}
               className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
             >
               Siguiente

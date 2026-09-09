@@ -317,13 +317,14 @@ function App() {
     <>
       <Route path="/analisis" element={<AnalisisEstadisticas role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
       <Route path="/analisis/solicitudes" element={<Navigate to="/analisis/solicitudes/todas" replace />} />
-      <Route path="/analisis/solicitudes/:tipoEstado" element={<DetalleSolicitudesAnalisis role={role} solicitudes={solicitudes} />} />
-      <Route path="/analisis/clientes" element={<DetalleClientesAnalisis role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis/solicitudes/:tipoEstado" element={<DetalleSolicitudesAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
+      <Route path="/analisis/clientes" element={<DetalleClientesAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
       <Route path="/analisis/cliente/:clienteId" element={<DetalleClienteHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
-      <Route path="/analisis/vendedores" element={<DetalleVendedoresAnalisis role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis/vendedores" element={<DetalleVendedoresAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
       <Route path="/analisis/vendedor/:vendedorId" element={<DetalleVendedorHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
-      <Route path="/analisis/productos" element={<DetalleProductosAnalisis role={role} solicitudes={solicitudes} />} />
+      <Route path="/analisis/productos" element={<DetalleProductosAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
       <Route path="/analisis/producto/:productId" element={<DetalleProductoHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
+      <Route path="/analisis/producto/*" element={<DetalleProductoHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
       <Route path="/analisis/logistica" element={(isComprador || isAdmin) ? <DetalleLogisticaAnalisis role={role} ordenesCompra={ordenesCompra} /> : <Navigate to="/analisis" replace />} />
       <Route path="/analisis/logistica/:filtro" element={(isComprador || isAdmin) ? <DetalleLogisticaAnalisis role={role} ordenesCompra={ordenesCompra} /> : <Navigate to="/analisis" replace />} />
     </>
