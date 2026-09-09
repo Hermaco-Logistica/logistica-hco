@@ -107,10 +107,15 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
       if (docSnap.exists()) {
         const data = docSnap.data();
         
-        // PROTECCIÓN DE RUTA: Si es vendedor, verificar que sea el dueño
+        // PROTECCIÓN DE RUTA: Solo los vendedores tienen restringido ver solicitudes de otros
         const email = auth.currentUser?.email || '';
-        const esVendedor = !email.toLowerCase().match(/admin|gerente|compras/);
-        if (esVendedor && data.vendedorId !== auth.currentUser?.uid) {
+        const puedeVerCualquierSolicitud = role === 'gerente' || role === 'administrador' || role === 'comprador' ||
+          Boolean(email.toLowerCase().match(/admin|gerente|compras/));
+
+        const esDuenio = (data.vendedorId && data.vendedorId === auth.currentUser?.uid) ||
+          (data.vendedorEmail && auth.currentUser?.email && data.vendedorEmail.toLowerCase() === auth.currentUser.email.toLowerCase());
+
+        if (!puedeVerCualquierSolicitud && !esDuenio) {
           alert('Acceso Denegado: Esta solicitud pertenece a otro vendedor.');
           navigate('/vendedor');
           return;
