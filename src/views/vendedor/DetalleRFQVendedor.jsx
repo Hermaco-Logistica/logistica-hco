@@ -7,7 +7,7 @@ import CotizacionDocumento from '../../components/CotizacionDocumento';
 import { generarPlantillaNuevoPedido } from '../../utils/emailTemplates';
 import { emailConfig } from '../../config/emailConfig';
 
-export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPedido = false }) => {
+export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPedido = false, role }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [rfq, setRfq] = useState(null);
@@ -106,10 +106,12 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
       if (docSnap.exists()) {
         const data = docSnap.data();
         
-        // PROTECCIÓN DE RUTA: Si es vendedor, verificar que sea el dueño
-        const email = auth.currentUser?.email || '';
-        const esVendedor = !email.toLowerCase().match(/admin|gerente|compras/);
-        if (esVendedor && data.vendedorId !== auth.currentUser?.uid) {
+        // PROTECCIÓN DE RUTA: Solo si el rol es estrictamente 'vendedor' se restringe a sus propias solicitudes.
+        // Los roles 'gerente', 'administrador' y 'comprador' tienen acceso para consultar cualquier solicitud.
+        const puedeVerCualquierSolicitud = role === 'gerente' || role === 'administrador' || role === 'comprador' ||
+          Boolean(auth.currentUser?.email?.toLowerCase().match(/admin|gerente|compras/));
+
+        if (!puedeVerCualquierSolicitud && data.vendedorId && data.vendedorId !== auth.currentUser?.uid) {
           alert('Acceso Denegado: Esta solicitud pertenece a otro vendedor.');
           navigate('/vendedor');
           return;
@@ -141,7 +143,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     });
 
     return () => unsubscribe();
-  }, [id, navigate]);
+  }, [id, navigate, role]);
 
   // ── Adjuntos múltiples directo a correo, sin límite en frontend ──────────
   const handleAdjuntarArchivos = (event) => {
@@ -356,6 +358,20 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
           )}
         </div>
       </div>
+
+      {!puedeConfirmarPedido && !pedidoYaCreado && (
+        <div className="mb-6 bg-blue-50/80 border border-blue-200/80 text-blue-900 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+            <span>
+              <strong>Modo de solo lectura:</strong> Esta solicitud pertenece a <u>{rfq?.vendedorNombre || rfq?.vendedorEmail || 'otro vendedor'}</u>. Puedes revisar y auditar la cotización, pero solo el vendedor asignado puede confirmar y enviar el pedido.
+            </span>
+          </div>
+          <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-100/80 text-blue-800 uppercase tracking-wider shrink-0 self-start sm:self-auto font-mono">
+            Solo Visualización
+          </span>
+        </div>
+      )}
 
       <div className="bg-white rounded-4xl shadow-2xl border border-slate-200 overflow-hidden mb-8">
         <table className="w-full text-left border-collapse">
