@@ -7,7 +7,7 @@ import CotizacionDocumento from '../../components/CotizacionDocumento';
 import { generarPlantillaNuevoPedido } from '../../utils/emailTemplates';
 import { emailConfig } from '../../config/emailConfig';
 
-export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPedido = false }) => {
+export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPedido = false, role }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [rfq, setRfq] = useState(null);
@@ -32,7 +32,8 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
 
   const hayItemsPendientesDePedir = rfq?.productos?.some(p => Number(p.fob || 0) > 0 && !esItemYaPedido(p));
   const pedidoYaCreado = (rfq?.estado === 'Pedido' || rfq?.estado === 'Comprado') || (rfq?.estado === 'Pedido Parcial' && !hayItemsPendientesDePedir);
-  const esPropietarioDeRFQ = rfq?.vendedorId === auth.currentUser?.uid;
+  const esPropietarioDeRFQ = (rfq?.vendedorId && rfq.vendedorId === auth.currentUser?.uid) ||
+    (rfq?.vendedorEmail && auth.currentUser?.email && rfq.vendedorEmail.toLowerCase() === auth.currentUser.email.toLowerCase());
   const puedeConfirmarPedido = canGenerarPedido && (!soloPropiasParaPedido || esPropietarioDeRFQ) && hayItemsPendientesDePedir;
   const totalItemsSeleccionables = rfq?.productos?.filter(p => Number(p.fob || 0) > 0 && !esItemYaPedido(p)).length ?? 0;
   const totalItemsSeleccionados = Object.values(seleccionados).filter(Boolean).length;
@@ -106,10 +107,15 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
       if (docSnap.exists()) {
         const data = docSnap.data();
         
-        // PROTECCIÓN DE RUTA: Si es vendedor, verificar que sea el dueño
+        // PROTECCIÓN DE RUTA: Solo los vendedores tienen restringido ver solicitudes de otros
         const email = auth.currentUser?.email || '';
-        const esVendedor = !email.toLowerCase().match(/admin|gerente|compras/);
-        if (esVendedor && data.vendedorId !== auth.currentUser?.uid) {
+        const puedeVerCualquierSolicitud = role === 'gerente' || role === 'administrador' || role === 'comprador' ||
+          Boolean(email.toLowerCase().match(/admin|gerente|compras/));
+
+        const esDuenio = (data.vendedorId && data.vendedorId === auth.currentUser?.uid) ||
+          (data.vendedorEmail && auth.currentUser?.email && data.vendedorEmail.toLowerCase() === auth.currentUser.email.toLowerCase());
+
+        if (!puedeVerCualquierSolicitud && !esDuenio) {
           alert('Acceso Denegado: Esta solicitud pertenece a otro vendedor.');
           navigate('/vendedor');
           return;
@@ -132,7 +138,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         setModalidades(prev => Object.keys(prev).length ? prev : modInit);
       } else {
         alert("Solicitud no encontrada.");
-        navigate('/vendedor');
+        navigate(role === 'comprador' ? '/compras' : '/vendedor');
       }
       setLoading(false);
     }, (error) => {
@@ -141,7 +147,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     });
 
     return () => unsubscribe();
-  }, [id, navigate]);
+  }, [id, navigate, role]);
 
   // ── Adjuntos múltiples directo a correo, sin límite en frontend ──────────
   const handleAdjuntarArchivos = (event) => {
@@ -317,6 +323,14 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     }
   };
 
+  const handleVolver = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate(role === 'comprador' ? '/compras' : '/vendedor');
+    }
+  };
+
   if (loading) return (
     <div className="h-full flex items-center justify-center font-black text-slate-400 animate-pulse uppercase tracking-widest">
       Cargando Detalle de Cotización...
@@ -327,7 +341,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     <div className="max-w-7xl mx-auto animate-in fade-in duration-500 pb-20">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/vendedor')} className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600">
+          <button onClick={handleVolver} className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600">
             <ChevronLeft size={24} />
           </button>
           <div>
@@ -356,6 +370,20 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
           )}
         </div>
       </div>
+
+      {!puedeConfirmarPedido && !pedidoYaCreado && (
+        <div className="mb-6 bg-blue-50/80 border border-blue-200/80 text-blue-900 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0"></span>
+            <span>
+              <strong>Modo de solo lectura:</strong> Esta solicitud pertenece a <u>{rfq?.vendedorNombre || rfq?.vendedorEmail || 'otro vendedor'}</u>. Puedes revisar y auditar la cotización, pero solo el vendedor asignado puede confirmar y enviar el pedido.
+            </span>
+          </div>
+          <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-blue-100/80 text-blue-800 uppercase tracking-wider shrink-0 self-start sm:self-auto font-mono">
+            Solo Visualización
+          </span>
+        </div>
+      )}
 
       <div className="bg-white rounded-4xl shadow-2xl border border-slate-200 overflow-hidden mb-8">
         <table className="w-full text-left border-collapse">

@@ -358,6 +358,7 @@ function App() {
                     } 
                   />
                   {rutasAnalisis}
+                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} role={role} />} />
                   <Route path="*" element={<Navigate to="/compras" replace />} />
                 </>
               ) : isVendedor ? (
@@ -365,7 +366,7 @@ function App() {
                   <Route path="/" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate role={role} />} />
                   <Route path="/vendedor/nueva" element={<NuevaRFQ />} />
-                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido />} />
+                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido role={role} />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   <Route path="/analisis" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/analisis/*" element={<Navigate to="/vendedor" replace />} />
@@ -376,7 +377,7 @@ function App() {
                   <Route path="/" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate title="Solicitudes Globales" role={role} />} />
                   <Route path="/vendedor/nueva" element={<NuevaRFQ />} />
-                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido soloPropiasParaPedido />} />
+                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido soloPropiasParaPedido role={role} />} />
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   {rutasAnalisis}
@@ -385,9 +386,9 @@ function App() {
               ) : isAdmin ? (
                 <>
                   <Route path="/" element={<Navigate to="/vendedor" replace />} />
-                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate={false} title="Solicitudes Globales" role={role} />} />
+                  <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate title="Solicitudes Globales" role={role} />} />
                   <Route path="/vendedor/nueva" element={<NuevaRFQ />} />
-                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} />} />
+                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido soloPropiasParaPedido role={role} />} />
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   <Route path="/gestion-oc" element={<GestionOC readOnly />} />
