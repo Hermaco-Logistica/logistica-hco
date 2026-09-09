@@ -359,6 +359,7 @@ function App() {
                     } 
                   />
                   {rutasAnalisis}
+                  <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} role={role} />} />
                   <Route path="*" element={<Navigate to="/compras" replace />} />
                 </>
               ) : isVendedor ? (

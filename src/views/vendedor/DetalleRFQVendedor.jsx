@@ -32,7 +32,8 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
 
   const hayItemsPendientesDePedir = rfq?.productos?.some(p => Number(p.fob || 0) > 0 && !esItemYaPedido(p));
   const pedidoYaCreado = (rfq?.estado === 'Pedido' || rfq?.estado === 'Comprado') || (rfq?.estado === 'Pedido Parcial' && !hayItemsPendientesDePedir);
-  const esPropietarioDeRFQ = rfq?.vendedorId === auth.currentUser?.uid;
+  const esPropietarioDeRFQ = (rfq?.vendedorId && rfq.vendedorId === auth.currentUser?.uid) ||
+    (rfq?.vendedorEmail && auth.currentUser?.email && rfq.vendedorEmail.toLowerCase() === auth.currentUser.email.toLowerCase());
   const puedeConfirmarPedido = canGenerarPedido && (!soloPropiasParaPedido || esPropietarioDeRFQ) && hayItemsPendientesDePedir;
   const totalItemsSeleccionables = rfq?.productos?.filter(p => Number(p.fob || 0) > 0 && !esItemYaPedido(p)).length ?? 0;
   const totalItemsSeleccionados = Object.values(seleccionados).filter(Boolean).length;
@@ -106,12 +107,10 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
       if (docSnap.exists()) {
         const data = docSnap.data();
         
-        // PROTECCIÓN DE RUTA: Solo si el rol es estrictamente 'vendedor' se restringe a sus propias solicitudes.
-        // Los roles 'gerente', 'administrador' y 'comprador' tienen acceso para consultar cualquier solicitud.
-        const puedeVerCualquierSolicitud = role === 'gerente' || role === 'administrador' || role === 'comprador' ||
-          Boolean(auth.currentUser?.email?.toLowerCase().match(/admin|gerente|compras/));
-
-        if (!puedeVerCualquierSolicitud && data.vendedorId && data.vendedorId !== auth.currentUser?.uid) {
+        // PROTECCIÓN DE RUTA: Si es vendedor, verificar que sea el dueño
+        const email = auth.currentUser?.email || '';
+        const esVendedor = !email.toLowerCase().match(/admin|gerente|compras/);
+        if (esVendedor && data.vendedorId !== auth.currentUser?.uid) {
           alert('Acceso Denegado: Esta solicitud pertenece a otro vendedor.');
           navigate('/vendedor');
           return;
@@ -134,7 +133,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         setModalidades(prev => Object.keys(prev).length ? prev : modInit);
       } else {
         alert("Solicitud no encontrada.");
-        navigate('/vendedor');
+        navigate(role === 'comprador' ? '/compras' : '/vendedor');
       }
       setLoading(false);
     }, (error) => {
@@ -319,6 +318,14 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     }
   };
 
+  const handleVolver = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate(role === 'comprador' ? '/compras' : '/vendedor');
+    }
+  };
+
   if (loading) return (
     <div className="h-full flex items-center justify-center font-black text-slate-400 animate-pulse uppercase tracking-widest">
       Cargando Detalle de Cotización...
@@ -329,7 +336,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     <div className="max-w-7xl mx-auto animate-in fade-in duration-500 pb-20">
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/vendedor')} className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600">
+          <button onClick={handleVolver} className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600">
             <ChevronLeft size={24} />
           </button>
           <div>
