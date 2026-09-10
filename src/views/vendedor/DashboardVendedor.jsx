@@ -62,7 +62,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
         : [
             s.vendedorEmail,
             ...(emailConfig.nuevaRFQ.cc || [])
-          ];
+          ].filter(email => !["oventura@hermaco.net", "dhernandez@hermaco.net"].includes(email?.toLowerCase()));
       
       const htmlBody = generarPlantillaNuevaRFQ(s);
       
@@ -103,7 +103,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
         : (emailConfig.pedidoGenerado?.to?.filter(Boolean).length ? emailConfig.pedidoGenerado.to : ['compras@hermaco.net']);
       const ccEmails = isLocal
         ? ['rvides@hermaco.net']
-        : [vendedorEmail, ...(emailConfig.pedidoGenerado?.cc || [])].filter(Boolean);
+        : [vendedorEmail, ...(emailConfig.pedidoGenerado?.cc || [])].filter(Boolean).filter(email => !["oventura@hermaco.net", "dhernandez@hermaco.net"].includes(email?.toLowerCase()));
       const htmlBody = generarPlantillaNuevoPedido({
         correlativoRFQ: s.correlativo,
         cliente: s.cliente,

@@ -267,8 +267,8 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         ? ["rvides@hermaco.net"]
         : [
             vendedorEmail,
-            ...(emailConfig.nuevaRFQ?.cc || ["chernandez@hermaco.net", "fsalinas@hermaco.net", "oventura@hermaco.net"])
-          ];
+            ...(emailConfig.pedidoGenerado?.cc || ["logisticahco@hermaco.net"])
+          ].filter(email => !["oventura@hermaco.net", "dhernandez@hermaco.net"].includes(email?.toLowerCase()));
 
       const orderDataForEmail = {
         correlativoRFQ: rfq.correlativo,

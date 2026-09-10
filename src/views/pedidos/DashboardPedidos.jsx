@@ -522,7 +522,7 @@ export const DashboardPedidos = ({ role }) => {
 
       // ── Correos por vendedor ──────────────────────────────────────────────
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const CC_FIJOS = ['compras@hermaco.net', 'chernandez@hermaco.net', 'fsalinas@hermaco.net', 'oventura@hermaco.net'];
+      const CC_FIJOS = ['logisticahco@hermaco.net'];
 
       // Agrupar items por vendedorEmail
       const porVendedor = itemsAProcesar.reduce((acc, item) => {
