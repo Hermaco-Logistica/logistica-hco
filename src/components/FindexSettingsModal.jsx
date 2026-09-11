@@ -65,30 +65,31 @@ export const FindexSettingsModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in fade-in sm:zoom-in-95 duration-200">
         
         {/* Header */}
-        <div className="bg-slate-900 px-6 py-4 flex items-center justify-between">
+        <div className="bg-slate-900 px-5 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-white/10 p-2 rounded-lg">
+            <div className="bg-white/10 p-2 rounded-lg shrink-0">
               <Settings className="text-white w-5 h-5" />
             </div>
-            <h2 className="text-white font-black text-sm uppercase tracking-widest">
+            <h2 className="text-white font-black text-xs sm:text-sm uppercase tracking-widest">
               Conexión con Findex
             </h2>
           </div>
           <button 
+            type="button"
             onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="text-slate-400 hover:text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg touch-manipulation cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-6">
-          <p className="text-sm text-slate-500 mb-6 font-medium">
+        <div className="p-5 sm:p-6 overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-6">
+          <p className="text-xs sm:text-sm text-slate-500 mb-5 sm:mb-6 font-medium leading-relaxed">
             Ingresa tus credenciales de Findex para habilitar la búsqueda en tiempo real. Se guardarán encriptadas de forma segura.
           </p>
 
@@ -102,7 +103,7 @@ export const FindexSettingsModal = ({ isOpen, onClose }) => {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-sm font-bold text-slate-700"
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-base sm:text-sm font-bold text-slate-700"
               />
             </div>
 
@@ -116,12 +117,12 @@ export const FindexSettingsModal = ({ isOpen, onClose }) => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-12 rounded-xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-sm font-bold text-slate-700"
+                  className="w-full px-4 py-3 pr-12 rounded-xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-base sm:text-sm font-bold text-slate-700"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1 touch-manipulation cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -143,7 +144,7 @@ export const FindexSettingsModal = ({ isOpen, onClose }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-slate-900 hover:bg-emerald-600 text-white font-black uppercase tracking-widest text-[10px] py-4 rounded-xl transition-all shadow-lg hover:shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full bg-slate-900 hover:bg-emerald-600 text-white font-black uppercase tracking-widest text-xs sm:text-[10px] py-3.5 sm:py-4 rounded-xl transition-all shadow-lg hover:shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50 min-h-[44px] touch-manipulation cursor-pointer"
               >
                 {loading && <Loader2 className="w-4 h-4 animate-spin" />}
                 {loading ? 'ENCRIPTANDO Y GUARDANDO...' : 'GUARDAR CREDENCIALES'}

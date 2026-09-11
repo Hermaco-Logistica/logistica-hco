@@ -4,7 +4,8 @@ import { auth, db, provider } from './firebase';
 import { onAuthStateChanged, signOut, signInWithPopup } from 'firebase/auth';
 import { collection, query, onSnapshot, where, limit, doc, updateDoc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { emailConfig } from './config/emailConfig';
-
+import { Menu, Lightbulb } from 'lucide-react';
+import { BottomTabBar } from './components/mobile';
 
 // Componentes y Vistas
 import { Sidebar } from './components/Sidebar';
@@ -61,6 +62,7 @@ function App() {
   const [ordenesCompra, setOrdenesCompra] = useState([]);
   const [isFindexSettingsOpen, setIsFindexSettingsOpen] = useState(false);
   const [isFindexActive, setIsFindexActive] = useState(true);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   useEffect(() => {
     import('./services/apiClient').then(({ apiClient }) => {
@@ -338,9 +340,48 @@ function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       ) : (
-        <div className={`tf-app-shell ${appThemeClass} flex h-screen overflow-hidden`}>
-          <Sidebar role={role} userEmail={user.email} onLogout={() => signOut(auth)} isFindexSettingsOpen={isFindexSettingsOpen} setIsFindexSettingsOpen={setIsFindexSettingsOpen} isFindexActive={isFindexActive} />
-          <main className="flex-1 overflow-y-auto p-8">
+        <div className={`tf-app-shell ${appThemeClass} flex flex-col md:flex-row h-screen h-dvh overflow-hidden`}>
+          {/* TOP BAR MÓVIL (visible solo en < md) */}
+          <header className="sticky top-0 z-30 flex md:hidden items-center justify-between bg-slate-900 px-4 py-3 text-white border-b border-white/10 shadow-md shrink-0 select-none">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-black text-xl italic tracking-tighter uppercase leading-none truncate">
+                Logistica<span className="text-emerald-400 underline decoration-2 underline-offset-4">HCO</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => { if (!isFindexActive) setIsFindexSettingsOpen(true); }}
+                title={isFindexActive ? "Inventario Activo" : "Inventario Inactivo - Click para re-autenticar"}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  isFindexActive 
+                    ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)] cursor-default' 
+                    : 'text-white/40 hover:text-white cursor-pointer'
+                }`}
+              >
+                <Lightbulb size={17} className={isFindexActive ? "fill-yellow-400" : ""} />
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setMobileDrawerOpen(true)}
+              className="p-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer shrink-0"
+              aria-label="Abrir menú de navegación"
+            >
+              <Menu size={22} />
+            </button>
+          </header>
+
+          <Sidebar 
+            role={role} 
+            userEmail={user.email} 
+            onLogout={() => signOut(auth)} 
+            isFindexSettingsOpen={isFindexSettingsOpen} 
+            setIsFindexSettingsOpen={setIsFindexSettingsOpen} 
+            isFindexActive={isFindexActive}
+            mobileOpen={mobileDrawerOpen}
+            onCloseMobile={() => setMobileDrawerOpen(false)}
+          />
+          <main className="flex-1 overflow-y-auto p-3.5 sm:p-5 md:p-6 lg:p-8 pb-24 md:pb-8 w-full min-w-0">
             <Routes>
               {isComprador ? (
                 <>
@@ -401,6 +442,11 @@ function App() {
               )}
             </Routes>
           </main>
+          {/* BARRA DE NAVEGACIÓN INFERIOR FIJA (MÓVIL < md) */}
+          <BottomTabBar 
+            role={role} 
+            onOpenDrawer={() => setMobileDrawerOpen(true)} 
+          />
         </div>
       )}
     </Router>

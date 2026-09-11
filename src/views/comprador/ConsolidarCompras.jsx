@@ -196,50 +196,54 @@ export const ConsolidarCompras = () => {
 
   return (
     <div className="max-w-7xl mx-auto animate-in fade-in duration-500 pb-20">
-      <div className="mb-8">
-        <h1 className="text-3xl font-black text-slate-800 italic uppercase tracking-tighter">Consolidación de Compras</h1>
-        <p className="text-slate-500 font-bold text-[10px] uppercase tracking-[0.2em]">Asignación de Proveedores y Costos Reales</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-800 italic uppercase tracking-tighter">Consolidación de Compras</h1>
+        <p className="text-slate-500 font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.2em]">Asignación de Proveedores y Costos Reales</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+        <div className="lg:col-span-2 space-y-3 sm:space-y-4">
           {items.map((item, idx) => {
             const isSel = seleccionados.find(i => i.idRFQ === item.idRFQ && i.indexOriginal === item.indexOriginal);
             return (
               <div 
                 key={idx} 
-                className={`p-5 rounded-3xl border-2 transition-all flex justify-between items-center ${
+                className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl border-2 transition-all flex flex-col sm:flex-row justify-between sm:items-center gap-3 ${
                   isSel ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 bg-white'
                 }`}
               >
-                <div className="flex gap-4 items-center">
-                  <button onClick={() => toggleSeleccion(item)} className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${isSel ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-200'}`}>
+                <div className="flex gap-3 sm:gap-4 items-center">
+                  <button 
+                    type="button"
+                    onClick={() => toggleSeleccion(item)} 
+                    className={`min-w-[36px] min-h-[36px] sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center cursor-pointer touch-manipulation shrink-0 ${isSel ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-200'}`}
+                  >
                     <Plus size={14} />
                   </button>
-                  <div>
-                    <p className="font-black text-xs uppercase text-slate-800">{item.descripcion}</p>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Ref: {item.correlativo} | Cliente: {item.cliente}</p>
+                  <div className="min-w-0">
+                    <p className="font-black text-xs uppercase text-slate-800 leading-snug">{item.descripcion}</p>
+                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">Ref: {item.correlativo} | Cliente: {item.cliente}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-6 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-100">
                   {isSel && (
-                    <div className="flex flex-col items-end">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Confirmar FOB</span>
-                      <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 mt-1">
+                    <div className="flex flex-col items-start sm:items-end">
+                      <span className="text-[8.5px] font-black text-slate-400 uppercase tracking-widest">Confirmar FOB</span>
+                      <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 mt-0.5">
                         <span className="text-emerald-500 font-black text-xs">$</span>
                         <input 
                           type="number" 
-                          className="w-20 outline-none font-black text-xs text-slate-700 bg-transparent"
+                          className="w-20 outline-none font-black text-base sm:text-xs text-slate-700 bg-transparent"
                           defaultValue={item.fob}
                           onChange={(e) => actualizarFobConfirmado(item.idRFQ, item.indexOriginal, e.target.value)}
                         />
                       </div>
                     </div>
                   )}
-                  <div className="text-right min-w-20">
-                    <span className="block font-black text-lg text-slate-800">{item.cantidad}</span>
-                    <span className="text-[9px] font-black text-slate-400 uppercase">{item.modalidad}</span>
+                  <div className="text-right min-w-16 sm:min-w-20">
+                    <span className="block font-black text-base sm:text-lg text-slate-800 leading-none">{item.cantidad}</span>
+                    <span className="text-[8.5px] sm:text-[9px] font-black text-slate-400 uppercase">{item.modalidad}</span>
                   </div>
                 </div>
               </div>
@@ -248,21 +252,21 @@ export const ConsolidarCompras = () => {
         </div>
 
         <div className="lg:col-span-1">
-          <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl sticky top-8">
-            <h2 className="text-white font-black uppercase italic text-lg mb-6 flex items-center gap-2">
+          <div className="bg-slate-900 rounded-2xl sm:rounded-[2.5rem] p-5 sm:p-8 shadow-2xl sticky top-4 sm:top-8">
+            <h2 className="text-white font-black uppercase italic text-base sm:text-lg mb-5 sm:mb-6 flex items-center gap-2">
               <ShoppingBag className="text-emerald-400" /> Detalle de Compra
             </h2>
             <div className="space-y-4">
               <input 
                 type="text" placeholder="NÚMERO DE OC"
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white text-xs font-bold outline-none focus:border-emerald-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3.5 sm:p-4 text-white text-base sm:text-xs font-bold outline-none focus:border-emerald-500"
                 onChange={(e) => setDatosOC({...datosOC, numeroOC: e.target.value.toUpperCase()})}
               />
               <div className="relative">
                 <input
                   type="text"
                   placeholder="PROVEEDOR"
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white text-xs font-bold outline-none focus:border-emerald-500"
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3.5 sm:p-4 text-white text-base sm:text-xs font-bold outline-none focus:border-emerald-500"
                   value={datosOC.proveedor}
                   onKeyDown={manejarTeclasProveedor}
                   onFocus={() => {
@@ -313,8 +317,9 @@ export const ConsolidarCompras = () => {
                 )}
               </div>
               <button 
+                type="button"
                 onClick={handleCrearOrdenCompra}
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-4 rounded-2xl transition-all uppercase tracking-widest text-xs mt-4"
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-black py-3.5 sm:py-4 rounded-2xl transition-all uppercase tracking-widest text-xs mt-4 min-h-[44px] touch-manipulation cursor-pointer flex items-center justify-center"
               >
                 Generar Orden de Compra
               </button>

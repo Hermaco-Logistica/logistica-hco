@@ -98,7 +98,8 @@ export default function CotizacionDocumento({ cotizacionData }) {
   };
 
   return (
-    <div className="cotizacion-documento" style={pageStyle}>
+    <div className="w-full overflow-x-auto">
+      <div className="cotizacion-documento min-w-[650px] sm:min-w-0" style={pageStyle}>
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '18px' }}>
         <tbody>
           <tr>
@@ -235,7 +236,7 @@ export default function CotizacionDocumento({ cotizacionData }) {
           </tr>
         </tbody>
       </table>
-
     </div>
+  </div>
   );
 }

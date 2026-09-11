@@ -10,12 +10,22 @@ import {
   Settings,
   Lightbulb,
   PanelLeftClose,
-  BarChart3
+  BarChart3,
+  X
 } from 'lucide-react';
 import { FindexSettingsModal } from './FindexSettingsModal';
 import { usePersistedState } from '../hooks/usePersistedState';
 
-export const Sidebar = ({ role, userEmail, onLogout, isFindexSettingsOpen, setIsFindexSettingsOpen, isFindexActive }) => {
+export const Sidebar = ({ 
+  role, 
+  userEmail, 
+  onLogout, 
+  isFindexSettingsOpen, 
+  setIsFindexSettingsOpen, 
+  isFindexActive,
+  mobileOpen = false,
+  onCloseMobile = () => {}
+}) => {
   const location = useLocation();
   const [collapsed, setCollapsed] = usePersistedState('sidebar_collapsed', false);
 
@@ -100,8 +110,9 @@ export const Sidebar = ({ role, userEmail, onLogout, isFindexSettingsOpen, setIs
   return (
     <>
       <FindexSettingsModal isOpen={isFindexSettingsOpen} onClose={() => setIsFindexSettingsOpen(false)} />
+      {/* SIDEBAR DESKTOP (solo visible en pantallas medianas y grandes >= md) */}
       <aside
-        className={`tf-sidebar-shell h-full flex flex-col p-3 transition-[width] duration-300 ease-in-out shadow-2xl relative z-10 shrink-0 select-none overflow-x-hidden ${
+        className={`tf-sidebar-shell h-full hidden md:flex flex-col p-3 transition-[width] duration-300 ease-in-out shadow-2xl relative z-10 shrink-0 select-none overflow-x-hidden ${
           collapsed ? 'w-20' : 'w-72'
         }`}
       >
@@ -261,6 +272,112 @@ export const Sidebar = ({ role, userEmail, onLogout, isFindexSettingsOpen, setIs
           </div>
         </div>
       </aside>
+
+      {/* DRAWER MÓVIL OFF-CANVAS (solo visible en pantallas pequeñas < md) */}
+      <div 
+        className={`fixed inset-0 z-50 transition-opacity duration-300 md:hidden ${
+          mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Backdrop oscuro con blur */}
+        <div 
+          className="absolute inset-0 bg-black/60 backdrop-blur-xs" 
+          onClick={onCloseMobile}
+          aria-hidden="true"
+        />
+
+        {/* Panel deslizante lateral */}
+        <aside
+          className={`tf-sidebar-shell relative w-72 max-w-[85vw] h-full flex flex-col p-4 shadow-2xl transition-transform duration-300 ease-out select-none ${
+            mobileOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}
+        >
+          {/* Header del drawer con botón de cierre */}
+          <div className="flex items-center justify-between mb-6 pb-3 border-b border-white/10">
+            <div className="flex items-center gap-2">
+              <h1 className="text-white font-black text-xl italic tracking-tighter uppercase leading-none truncate select-none">
+                Logistica<span className={`${currentTheme.accentText} underline decoration-2 underline-offset-4`}>HCO</span>
+              </h1>
+              <button
+                type="button"
+                onClick={() => { if (!isFindexActive) { setIsFindexSettingsOpen(true); onCloseMobile(); } }}
+                title={isFindexActive ? "Inventario Activo" : "Inventario Inactivo - Click para re-autenticar"}
+                className={`p-1.5 rounded-lg ${isFindexActive ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)] cursor-default' : 'text-white/40 hover:text-white cursor-pointer'}`}
+              >
+                <Lightbulb size={17} className={isFindexActive ? "fill-yellow-400" : ""} />
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={onCloseMobile}
+              className="p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+              aria-label="Cerrar menú lateral"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          {/* Navegación dentro del drawer */}
+          <nav className="flex-1 space-y-1.5 overflow-y-auto">
+            {menuItems.map((item, idx) => (
+              item.show && (
+                <Link
+                  key={idx}
+                  to={item.path}
+                  onClick={onCloseMobile}
+                  className={`w-full flex items-center h-12 rounded-xl transition-all duration-200 px-3.5 ${
+                    location.pathname === item.path
+                      ? `${currentTheme.active} translate-x-1 font-black`
+                      : 'text-white/70 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <span className="shrink-0 w-8 flex items-center justify-center">
+                    {item.icon}
+                  </span>
+                  <span className="ml-3 font-black text-xs uppercase tracking-wider">
+                    {item.label}
+                  </span>
+                </Link>
+              )
+            ))}
+          </nav>
+
+          {/* Footer del drawer con perfil y acciones */}
+          <div className="mt-auto border-t border-white/10 pt-4 space-y-2">
+            <div className="flex items-center px-2 py-1 mb-1">
+              <div className="shrink-0 w-9 h-9 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center text-white font-black text-xs uppercase">
+                {userEmail?.[0] || 'U'}
+              </div>
+              <div className="ml-3 min-w-0">
+                <p className="text-white font-black text-xs truncate leading-tight">{userEmail}</p>
+                <p className={`${currentTheme.roleText} font-black text-[10px] uppercase italic tracking-widest mt-0.5`}>{role}</p>
+              </div>
+            </div>
+
+            <button 
+              type="button"
+              onClick={() => { setIsFindexSettingsOpen(true); onCloseMobile(); }}
+              className="w-full flex items-center h-11 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-bold text-xs uppercase tracking-wider transition-colors px-3 cursor-pointer"
+            >
+              <span className="shrink-0 w-8 flex items-center justify-center">
+                <Settings size={18} />
+              </span>
+              <span className="ml-3">Findex Auth</span>
+            </button>
+
+            <button 
+              type="button"
+              onClick={() => { onCloseMobile(); onLogout(); }}
+              className="w-full flex items-center h-11 rounded-xl text-white/70 hover:text-rose-300 hover:bg-white/10 font-bold text-xs uppercase tracking-wider transition-colors px-3 cursor-pointer"
+            >
+              <span className="shrink-0 w-8 flex items-center justify-center">
+                <LogOut size={18} />
+              </span>
+              <span className="ml-3">Cerrar Sesión</span>
+            </button>
+          </div>
+        </aside>
+      </div>
     </>
   );
 };

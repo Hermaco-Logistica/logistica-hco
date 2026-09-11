@@ -94,10 +94,13 @@ export const TrackingModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-      <div className="w-full max-w-lg rounded-[2rem] bg-white shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-950/60 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-150">
+      <div className="w-full max-w-lg rounded-t-3xl sm:rounded-[2rem] bg-white shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[88vh] sm:max-h-[90vh]">
+        {/* Mobile drag handle */}
+        <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mt-2.5 sm:hidden shrink-0" />
+
         {/* HEADER */}
-        <div className="p-6 pb-4 border-b border-slate-100 flex items-start justify-between gap-4">
+        <div className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-slate-100 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1.5">
               <div className="h-6 w-14 bg-white border border-slate-200/80 rounded-lg overflow-hidden shrink-0">
@@ -125,7 +128,7 @@ export const TrackingModal = ({
                       type="button"
                       onClick={copiarGuia}
                       title="Copiar guía"
-                      className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                      className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer touch-manipulation min-w-[32px] min-h-[32px] flex items-center justify-center"
                     >
                       {copiado ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                     </button>
@@ -145,14 +148,14 @@ export const TrackingModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+            className="p-2 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer min-w-[40px] min-h-[40px] flex items-center justify-center touch-manipulation"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* BODY */}
-        <div className="p-6 overflow-y-auto space-y-4">
+        <div className="p-4 sm:p-6 overflow-y-auto space-y-4">
           {notice && (
             <div className="rounded-xl border border-amber-200/80 bg-amber-50/70 px-3.5 py-2.5 text-[10px] font-bold text-amber-800 flex items-center gap-2">
               <Clock size={13} className="shrink-0 text-amber-600" />
@@ -291,11 +294,11 @@ export const TrackingModal = ({
         </div>
 
         {/* FOOTER */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:pb-4">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-slate-900 text-white text-[10px] font-black uppercase hover:bg-slate-800 transition-colors cursor-pointer"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-900 text-white text-xs sm:text-[10px] font-black uppercase hover:bg-slate-800 transition-colors cursor-pointer min-h-[44px] sm:min-h-0 flex items-center justify-center touch-manipulation"
           >
             Cerrar
           </button>

@@ -524,7 +524,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                   value={fechaInicio}
                   max={fechaFin && fechaFin <= hoyElSalvador ? fechaFin : hoyElSalvador}
                   onChange={(e) => { setFechaInicio(e.target.value); setPageVendedores(1); }}
-                  className={`border rounded-lg px-2 py-0.5 text-xs outline-none font-mono transition-colors ${
+                  className={`border rounded-lg px-2 py-0.5 text-base sm:text-xs outline-none font-mono transition-colors ${
                     validacionRango.errorInicio 
                       ? 'border-rose-400 text-rose-800 bg-rose-50/50 focus:border-rose-500' 
                       : 'border-slate-200/80 bg-white text-slate-700 focus:border-slate-400'
@@ -540,7 +540,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                   min={fechaInicio || undefined}
                   max={hoyElSalvador}
                   onChange={(e) => { setFechaFin(e.target.value); setPageVendedores(1); }}
-                  className={`border rounded-lg px-2 py-0.5 text-xs outline-none font-mono transition-colors ${
+                  className={`border rounded-lg px-2 py-0.5 text-base sm:text-xs outline-none font-mono transition-colors ${
                     validacionRango.errorFin 
                       ? 'border-rose-400 text-rose-800 bg-rose-50/50 focus:border-rose-500' 
                       : 'border-slate-200/80 bg-white text-slate-700 focus:border-slate-400'
@@ -602,7 +602,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
             <select
               value={vendedorFilter}
               onChange={(e) => { setVendedorFilter(e.target.value); setPageVendedores(1); }}
-              className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-slate-400 cursor-pointer"
+              className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 sm:py-1.5 text-base sm:text-xs font-medium text-slate-700 outline-none focus:border-slate-400 cursor-pointer"
             >
               <option value="">Todos los vendedores ({vendedoresDisponibles.length})</option>
               {vendedoresDisponibles.map((vend) => (
@@ -619,7 +619,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
             placeholder="Filtrar por cliente..."
             value={clienteSearch}
             onChange={(e) => { setClienteSearch(e.target.value); setPageVendedores(1); }}
-            className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400"
+            className="w-full pl-9 pr-3 py-2 sm:py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-base sm:text-xs text-slate-700 outline-none focus:border-slate-400"
           />
         </div>
 

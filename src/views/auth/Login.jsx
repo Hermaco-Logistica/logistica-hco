@@ -2,8 +2,8 @@ import React from 'react';
 
 export const Login = ({ loginFn }) => {
   return (
-    <div className="h-screen flex items-center justify-center bg-slate-900">
-      <div className="bg-white p-10 rounded-3xl shadow-2xl text-center max-w-sm w-full">
+    <div className="min-h-dvh flex items-center justify-center bg-slate-900 p-4">
+      <div className="bg-white p-8 sm:p-10 rounded-3xl shadow-2xl text-center max-w-sm w-full">
         <h1 className="text-4xl font-extrabold mb-2 text-slate-800 tracking-tighter">logisticaHCO</h1>
         <p className="text-slate-400 mb-8 text-[10px] font-black uppercase tracking-[0.2em]">Logística y Compras</p>
         <button 
