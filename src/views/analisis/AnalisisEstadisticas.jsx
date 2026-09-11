@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { AnalisisEstadisticasMobile } from './AnalisisEstadisticasMobile';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { 
   TrendingUp, 
@@ -41,6 +42,13 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
 
   // Cargar última selección guardada en sessionStorage (o default 30d)
   const [filtroPeriodoInicial] = useState(() => cargarFiltroPeriodoStorage());
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const [periodo, setPeriodo] = useState(filtroPeriodoInicial.periodo);
   const [fechaInicio, setFechaInicio] = useState(filtroPeriodoInicial.fechaInicio);
   const [fechaFin, setFechaFin] = useState(filtroPeriodoInicial.fechaFin);
@@ -456,56 +464,8 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     }).format(val || 0);
   };
 
-  // Bloqueo estricto para rol vendedor
-  if (role === 'vendedor') {
-    return <Navigate to="/vendedor" replace />;
-  }
-
-  return (
-    <div className="animate-in fade-in duration-500 max-w-7xl mx-auto space-y-6 pb-12">
-      {/* CABECERA MINIMALISTA & ROL */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              Análisis & Estadísticas
-            </h1>
-            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${theme.bgBadge}`}>
-              {theme.label}
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Métricas operativas consolidadas, trazabilidad de solicitudes y rendimiento comercial
-          </p>
-        </div>
-
-        {/* SELECTOR DE PERÍODO SEGMENTADO */}
-        <div className="inline-flex flex-wrap items-center bg-white p-1 rounded-2xl border border-slate-200/90 shadow-xs self-start sm:self-auto">
-          {[
-            { id: '7d', label: '7D' },
-            { id: '30d', label: '30D' },
-            { id: 'this_month', label: 'Este Mes' },
-            { id: '90d', label: '90D' },
-            { id: 'this_year', label: 'Este Año' },
-            { id: 'custom', label: 'Rango' },
-            { id: 'historico', label: 'Histórico' }
-          ].map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => { setPeriodo(p.id); setPageVendedores(1); }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                periodo === p.id 
-                  ? theme.activePeriod
-                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
+  const renderFiltros = () => (
+    <>
       {/* BARRA DE FILTROS MINIMALISTA */}
       <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row gap-3 items-center">
         <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold shrink-0">
@@ -700,6 +660,81 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
           <strong className="text-slate-700 font-semibold">{solicitudesFiltradas.length}</strong> solicitudes
         </div>
       </div>
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <AnalisisEstadisticasMobile
+        theme={theme}
+        role={role}
+        periodo={periodo}
+        setPeriodo={setPeriodo}
+        metricas={metricas}
+        statsVendedores={statsVendedores}
+        topClientes={topClientes}
+        topProductos={topProductos}
+        statsLogistica={statsLogistica}
+        puedeVerLogistica={puedeVerLogistica}
+        formatearDinero={formatearDinero}
+        navigate={navigate}
+        resetPage={() => setPageVendedores(1)}
+        FiltrosComponent={renderFiltros()}
+      />
+    );
+  }
+
+  // Bloqueo estricto para rol vendedor
+  if (role === 'vendedor') {
+    return <Navigate to="/vendedor" replace />;
+  }
+
+  return (
+    <div className="animate-in fade-in duration-500 max-w-7xl mx-auto space-y-6 pb-12">
+      {/* CABECERA MINIMALISTA & ROL */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              Análisis & Estadísticas
+            </h1>
+            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${theme.bgBadge}`}>
+              {theme.label}
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">
+            Métricas operativas consolidadas, trazabilidad de solicitudes y rendimiento comercial
+          </p>
+        </div>
+
+        {/* SELECTOR DE PERÍODO SEGMENTADO */}
+        <div className="inline-flex flex-wrap items-center bg-white p-1 rounded-2xl border border-slate-200/90 shadow-xs self-start sm:self-auto">
+          {[
+            { id: '7d', label: '7D' },
+            { id: '30d', label: '30D' },
+            { id: 'this_month', label: 'Este Mes' },
+            { id: '90d', label: '90D' },
+            { id: 'this_year', label: 'Este Año' },
+            { id: 'custom', label: 'Rango' },
+            { id: 'historico', label: 'Histórico' }
+          ].map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => { setPeriodo(p.id); setPageVendedores(1); }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                periodo === p.id 
+                  ? theme.activePeriod
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {renderFiltros()}
 
       {/* TARJETAS KPI MINIMALISTAS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1087,17 +1122,17 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                           className="h-full rounded-xs flex overflow-hidden shadow-2xs transition-all duration-700"
                           style={{ width: `${pct}%` }}
                         >
-                          {/* Segmento Pedidos Ganados (Esmeralda) */}
+                          {/* Segmento Pedidos Ganados (Esmeralda por defecto, pero ahora depende del tema) */}
                           {c.pedidos > 0 && (
                             <div 
-                              className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
+                              className={`h-full bg-gradient-to-r ${theme.flujoEstados?.pedidos?.barGradient || 'from-emerald-500 to-teal-500'} transition-all duration-500`}
                               style={{ width: `${pedidosPct}%` }}
                               title={`${c.pedidos} pedidos ganados (${pedidosPct}%)`}
                             />
                           )}
-                          {/* Segmento Cotizado / En Proceso (Gris Corporativo) */}
+                          {/* Segmento Cotizado / En Proceso (Tema según rol) */}
                           <div 
-                            className="h-full bg-gradient-to-r from-slate-600 to-slate-700 transition-all duration-500"
+                            className={`h-full bg-gradient-to-r ${theme.flujoEstados?.cotizadas?.barGradient || 'from-slate-600 to-slate-700'} transition-all duration-500`}
                             style={{ width: c.pedidos > 0 ? `${100 - pedidosPct}%` : '100%' }}
                             title={`${c.total - c.pedidos} cotizadas sin pedido`}
                           />
@@ -1205,7 +1240,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                       <span className="text-[10px] font-mono font-bold text-slate-400">
                         #{idx + 1}
                       </span>
-                      {p.ganadas > 0 && (
+                      {p.ganadas > 0 && p.ganadas === p.veces && (
                         <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60">
                           <CheckCircle2 size={10} className="shrink-0 text-emerald-600" />
                           Ganado

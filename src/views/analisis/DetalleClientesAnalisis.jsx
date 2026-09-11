@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Search, Building, Download } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
@@ -13,6 +13,16 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
   const [criterioOrden, setCriterioOrden] = useSessionState('analisis_clientes_dir_orden', 'total'); // 'total' | 'pedidos' | 'monto'
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    document.querySelector('main')?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    const btn = document.getElementById(`ord-cli-${criterioOrden}`);
+    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [criterioOrden]);
 
   // Agrupar solicitudes por cliente (sin duplicados por mayúsculas, tildes o espacios)
   const todosLosClientes = useMemo(() => {
@@ -150,8 +160,8 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
         </div>
 
         {/* ORDENAMIENTO */}
-        <div className="inline-flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs">
-          <span className="text-[10px] font-medium text-slate-400 ml-2">Ordenar:</span>
+        <div className="flex overflow-x-auto whitespace-nowrap items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <span className="text-[10px] font-medium text-slate-400 ml-2 shrink-0">Ordenar:</span>
           {[
             { id: 'total', label: 'Más RFQs' },
             { id: 'pedidos', label: 'Más Pedidos' },
@@ -159,9 +169,10 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
           ].map((ord) => (
             <button
               key={ord.id}
+              id={`ord-cli-${ord.id}`}
               type="button"
               onClick={() => { setCriterioOrden(ord.id); setCurrentPage(1); }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
                 criterioOrden === ord.id 
                   ? 'bg-slate-900 text-white shadow-xs font-semibold' 
                   : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
@@ -174,8 +185,8 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
       </div>
 
       {/* BUSCADOR */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row gap-2.5 items-center justify-between">
-        <div className="relative w-full sm:w-80">
+      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+        <div className="relative w-full md:w-80">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
@@ -185,7 +196,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
             className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
           <button
             type="button"
             onClick={() => {
@@ -200,135 +211,208 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                 periodoLabel
               });
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
             title="Exportar todos los movimientos de clientes a Excel"
           >
             <Download size={13} />
             <span>Exportar Movimientos</span>
           </button>
-          <div className="text-[11px] font-medium text-slate-400 font-mono">
+          <div className="text-[11px] font-medium text-slate-400 font-mono self-end sm:self-auto">
             Mostrando <strong className="text-slate-700 font-semibold">{clientesFiltrados.length}</strong> clientes
           </div>
         </div>
       </div>
 
-      {/* TABLA DE CLIENTES */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-        {paginatedClientes.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-xs font-medium">
-            No se encontraron clientes con el filtro aplicado.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-2.5 px-3.5">#</th>
-                  <th className="py-2.5 px-3.5">Cliente</th>
-                  <th className="py-2.5 px-3.5 text-center">Total RFQs</th>
-                  <th className="py-2.5 px-3.5 text-center">Cotizadas</th>
-                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ganadas (Pedidos)</th>
-                  <th className="py-2.5 px-3.5 text-center">Conversión</th>
-                  <th className="py-2.5 px-3.5 text-right">Volumen Estimado</th>
-                  <th className="py-2.5 px-3.5 text-right">Detalle</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {paginatedClientes.map((c, idx) => {
-                  const numGlobal = (currentPage - 1) * itemsPerPage + idx + 1;
-                  const convPct = c.cotizadas > 0 
-                    ? Math.round((c.pedidos / c.cotizadas) * 100) 
-                    : 0;
-
-                  return (
-                    <tr key={c.cliente} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-2.5 px-3.5 text-slate-400 font-mono text-[11px]">
-                        {numGlobal}
-                      </td>
-                      <td className="py-2.5 px-3.5">
-                        <div 
-                          className="flex items-center gap-2 cursor-pointer group"
-                          onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}`)}
-                          title={`Ver historial de ${c.cliente}`}
-                        >
-                          <div className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-[10px] shrink-0 group-hover:bg-slate-800 group-hover:text-white transition-colors">
-                            <Building size={12} />
-                          </div>
-                          <span className="font-semibold text-slate-800 text-xs truncate max-w-[240px] group-hover:text-slate-900 transition-colors">
-                            {c.cliente}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-3.5 text-center font-mono text-slate-600">
-                        {c.totalRFQs}
-                      </td>
-                      <td className="py-2.5 px-3.5 text-center font-mono text-slate-600">
-                        {c.cotizadas}
-                      </td>
-                      <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
-                        <span>{c.pedidos}</span>
+      {paginatedClientes.length === 0 ? (
+        <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl border border-slate-200/80 shadow-xs">
+          No se encontraron clientes con el filtro aplicado.
+        </div>
+      ) : (
+        <>
+          {/* VISTA MÓVIL (Tarjetas) */}
+          <div className="md:hidden space-y-3">
+            {paginatedClientes.map((c, idx) => {
+              const numGlobal = (currentPage - 1) * itemsPerPage + idx + 1;
+              const convPct = c.cotizadas > 0 
+                ? Math.round((c.pedidos / c.cotizadas) * 100) 
+                : 0;
+              return (
+                <div key={c.cliente} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 relative">
+                  <div className="flex justify-between items-start">
+                    <div 
+                      className="flex items-center gap-3 cursor-pointer group"
+                      onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}`)}
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-700 shrink-0 border border-slate-200/60 group-hover:bg-slate-800 group-hover:text-white transition-colors">
+                        <Building size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-blue-600 transition-colors">{c.cliente}</h3>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold px-2 py-1 bg-slate-100 text-slate-600 border border-slate-200/60 rounded-lg shrink-0">#{numGlobal}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] text-slate-400 font-medium">RFQs</span>
+                      <span className="font-bold font-mono text-slate-700">{c.totalRFQs}</span>
+                    </div>
+                    <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50 flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] text-blue-600/70 font-medium">Cotizadas</span>
+                      <span className="font-bold font-mono text-blue-700">{c.cotizadas}</span>
+                    </div>
+                    <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] text-emerald-600/70 font-medium">Pedidos</span>
+                      <div className="flex items-center gap-1">
+                        <span className="font-bold font-mono text-emerald-700">{c.pedidos}</span>
                         {c.pedidosParciales > 0 && (
-                          <span className="text-[10px] font-normal text-sky-600 block" title={`${c.pedidosParciales} pedidos parciales`}>
-                            +{c.pedidosParciales} parc.
+                          <span className="text-[9px] font-normal text-sky-600 font-mono" title={`${c.pedidosParciales} pedidos parciales`}>
+                            +{c.pedidosParciales}
                           </span>
                         )}
-                      </td>
-                      <td className="py-2.5 px-3.5 text-center">
-                        <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold border ${
-                          convPct > 50 
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
-                            : convPct > 0 
-                            ? 'bg-blue-50 text-blue-700 border-blue-200/60' 
-                            : 'bg-slate-50 text-slate-400 border-slate-200/60'
-                        }`}>
-                          {convPct}%
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3.5 text-right font-mono font-semibold text-slate-900">
-                        {formatearDinero(c.montoTotal)}
-                      </td>
-                      <td className="py-2.5 px-3.5 text-right">
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}`)}
-                          className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-800 hover:text-white text-slate-600 font-semibold text-xs transition-colors cursor-pointer whitespace-nowrap"
-                        >
-                          Historial →
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1.5 border-t border-slate-100 pt-2 text-[11px]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Volumen Estimado</span>
+                      <span className="font-mono font-bold text-slate-800">{formatearDinero(c.montoTotal)}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Conversión</span>
+                      <span className="font-mono font-bold text-blue-600">{convPct}%</span>
+                    </div>
+                  </div>
 
-        {/* PAGINACIÓN DE 10 EN 10 */}
-        {totalPages > 1 && (
-          <div className="p-3 border-t border-slate-100 flex items-center justify-between">
-            <button 
-              type="button"
-              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-              disabled={safeCurrentPage === 1}
-              className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-            >
-              Anterior
-            </button>
-            <span className="text-[11px] font-medium text-slate-400">
-              Página {safeCurrentPage} de {totalPages} ({clientesFiltrados.length} clientes)
-            </span>
-            <button 
-              type="button"
-              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
-              disabled={safeCurrentPage === totalPages}
-              className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-            >
-              Siguiente
-            </button>
+                  <div className="pt-2 border-t border-slate-100">
+                    <button 
+                      onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}`)} 
+                      className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 rounded-xl text-xs font-bold transition-colors shadow-xs"
+                    >
+                      Ver Historial
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
-      </div>
+
+          {/* VISTA DESKTOP (Tabla original) */}
+          <div className="hidden md:flex bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex-col">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="py-2.5 px-3.5">#</th>
+                    <th className="py-2.5 px-3.5">Cliente</th>
+                    <th className="py-2.5 px-3.5 text-center">Total RFQs</th>
+                    <th className="py-2.5 px-3.5 text-center">Cotizadas</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ganadas (Pedidos)</th>
+                    <th className="py-2.5 px-3.5 text-center">Conversión</th>
+                    <th className="py-2.5 px-3.5 text-right">Volumen Estimado</th>
+                    <th className="py-2.5 px-3.5 text-right">Detalle</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700">
+                  {paginatedClientes.map((c, idx) => {
+                    const numGlobal = (currentPage - 1) * itemsPerPage + idx + 1;
+                    const convPct = c.cotizadas > 0 
+                      ? Math.round((c.pedidos / c.cotizadas) * 100) 
+                      : 0;
+
+                    return (
+                      <tr key={c.cliente} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-2.5 px-3.5 text-slate-400 font-mono text-[11px]">
+                          {numGlobal}
+                        </td>
+                        <td className="py-2.5 px-3.5">
+                          <div 
+                            className="flex items-center gap-2 cursor-pointer group"
+                            onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}`)}
+                            title={`Ver historial de ${c.cliente}`}
+                          >
+                            <div className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-[10px] shrink-0 group-hover:bg-slate-800 group-hover:text-white transition-colors">
+                              <Building size={12} />
+                            </div>
+                            <span className="font-semibold text-slate-800 text-xs truncate max-w-[240px] group-hover:text-slate-900 transition-colors">
+                              {c.cliente}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3.5 text-center font-mono text-slate-600">
+                          {c.totalRFQs}
+                        </td>
+                        <td className="py-2.5 px-3.5 text-center font-mono text-slate-600">
+                          {c.cotizadas}
+                        </td>
+                        <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
+                          <span>{c.pedidos}</span>
+                          {c.pedidosParciales > 0 && (
+                            <span className="text-[10px] font-normal text-sky-600 block" title={`${c.pedidosParciales} pedidos parciales`}>
+                              +{c.pedidosParciales} parc.
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3.5 text-center">
+                          <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold border ${
+                            convPct > 50 
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
+                              : convPct > 0 
+                              ? 'bg-blue-50 text-blue-700 border-blue-200/60' 
+                              : 'bg-slate-50 text-slate-400 border-slate-200/60'
+                          }`}>
+                            {convPct}%
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3.5 text-right font-mono font-semibold text-slate-900">
+                          {formatearDinero(c.montoTotal)}
+                        </td>
+                        <td className="py-2.5 px-3.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}`)}
+                            className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-800 hover:text-white text-slate-600 font-semibold text-xs transition-colors cursor-pointer whitespace-nowrap"
+                          >
+                            Historial →
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* PAGINACIÓN DE 10 EN 10 */}
+      {totalPages > 1 && (
+        <div className="p-3 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+          <button 
+            type="button"
+            onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+            disabled={safeCurrentPage === 1}
+            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
+          >
+            Anterior
+          </button>
+          <span className="text-[11px] font-medium text-slate-400 text-center px-2">
+            Página <span className="font-bold text-slate-600">{safeCurrentPage}</span> de {totalPages} <br className="sm:hidden" />
+            <span className="hidden sm:inline">({clientesFiltrados.length} clientes)</span>
+          </span>
+          <button 
+            type="button"
+            onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+            disabled={safeCurrentPage === totalPages}
+            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
     </div>
   );
 };

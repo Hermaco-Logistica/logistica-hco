@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Search, Package, ChevronRight, Download, X, User, Building } from 'lucide-react';
 import { extraerTodosLosMovimientos, exportarMovimientosExcel } from '../../utils/exportarExcel';
@@ -15,6 +15,16 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
   const [ordenarPor, setOrdenarPor] = useSessionState('analisis_prod_dir_orden', 'veces'); // 'veces' (default) | 'unidades' | 'pedidos'
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    document.querySelector('main')?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    const btn = document.getElementById(`ord-prod-${ordenarPor}`);
+    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [ordenarPor]);
 
   // Agrupar productos de todas las solicitudes (filtradas por vendedor / cliente si están activos)
   const todosLosProductos = useMemo(() => {
@@ -138,8 +148,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
         </div>
 
         {/* SELECTOR DE ORDENAMIENTO */}
-        <div className="inline-flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs">
-          <span className="text-[10px] font-medium text-slate-400 ml-2">Ordenar:</span>
+        <div className="flex overflow-x-auto whitespace-nowrap items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <span className="text-[10px] font-medium text-slate-400 ml-2 shrink-0">Ordenar:</span>
           {[
             { id: 'veces', label: 'Más cotizados' },
             { id: 'unidades', label: 'Mayor volumen' },
@@ -147,9 +157,10 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
           ].map((btn) => (
             <button
               key={btn.id}
+              id={`ord-prod-${btn.id}`}
               type="button"
               onClick={() => { setOrdenarPor(btn.id); setCurrentPage(1); }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
                 ordenarPor === btn.id 
                   ? 'bg-slate-900 text-white shadow-xs font-semibold' 
                   : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
@@ -162,9 +173,9 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
       </div>
 
       {/* BUSCADOR Y FILTROS CONTEXTUALES */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row gap-2.5 items-center justify-between">
+      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <div className="relative w-full sm:w-80">
+          <div className="relative w-full md:w-80">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
@@ -205,7 +216,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
             </div>
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
           <button
             type="button"
             onClick={() => {
@@ -234,134 +245,198 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                 periodoLabel: filtrosActivos.join(' | ')
               });
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
             title="Exportar todos los movimientos de productos a Excel"
           >
             <Download size={13} />
             <span>Exportar Movimientos</span>
           </button>
-          <div className="text-[11px] font-medium text-slate-400 font-mono">
+          <div className="text-[11px] font-medium text-slate-400 font-mono self-end sm:self-auto">
             Mostrando <strong className="text-slate-700 font-semibold">{productosFiltrados.length}</strong> productos
           </div>
         </div>
       </div>
 
-      {/* TABLA DE PRODUCTOS */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-        {paginatedProductos.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-xs font-medium">
-            No se encontraron productos con los criterios seleccionados.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-2.5 px-3.5">#</th>
-                  <th className="py-2.5 px-3.5">Descripción del Producto</th>
-                  <th className="py-2.5 px-3.5">Marca</th>
-                  <th className="py-2.5 px-3.5 text-center">Veces Cotizado</th>
-                  <th className="py-2.5 px-3.5 text-center">Unidades Cotizadas</th>
-                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Cotizaciones Ganadas</th>
-                  <th className="py-2.5 px-3.5 text-center">Unidades Pedidas</th>
-                  <th className="py-2.5 px-3.5 text-center">Clientes</th>
-                  <th className="py-2.5 px-3.5 text-right">Historial</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {paginatedProductos.map((p, idx) => {
-                  const numGlobal = (currentPage - 1) * itemsPerPage + idx + 1;
-                  return (
-                    <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-2.5 px-3.5 text-slate-400 font-mono text-[11px]">
-                        {numGlobal}
-                      </td>
-                      <td className="py-2.5 px-3.5">
-                        <div 
-                          onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}`)}
-                          className="flex items-center gap-2 cursor-pointer group/item"
-                        >
-                          <div className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-[10px] shrink-0 group-hover/item:bg-slate-800 group-hover/item:text-white transition-colors">
-                            <Package size={12} />
-                          </div>
-                          <span className="font-semibold text-slate-800 text-xs max-w-sm truncate group-hover/item:text-blue-600 transition-colors uppercase" title={p.desc}>
-                            {p.desc}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-2.5 px-3.5 text-slate-600">
-                        <span className="truncate max-w-[150px] inline-block text-[11px]" title={p.marcaPrincipal}>
-                          {p.marcaPrincipal}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3.5 text-center">
-                        <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-xs font-semibold">
-                          {p.vecesCotizado} RFQ{p.vecesCotizado > 1 ? 's' : ''}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3.5 text-center">
-                        <span className="inline-block font-mono text-slate-800 font-semibold text-xs">
-                          {p.unidadesCotizadas.toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3.5 text-center">
-                        <span className="inline-flex items-center gap-1 font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 text-xs">
-                          {p.vecesPedido}
-                          {p.vecesCotizado > 0 && (
-                            <span className="text-[10px] font-medium text-emerald-600">
-                              ({Math.round((p.vecesPedido / p.vecesCotizado) * 100)}%)
-                            </span>
-                          )}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700">
-                        {p.unidadesPedidas.toLocaleString()}
-                      </td>
-                      <td className="py-2.5 px-3.5 text-center font-mono text-slate-500">
-                        {p.totalClientes}
-                      </td>
-                      <td className="py-2.5 px-3.5 text-right">
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}`)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-800 hover:text-white text-slate-600 font-semibold text-xs transition-colors cursor-pointer whitespace-nowrap"
-                        >
-                          Historial <ChevronRight size={11} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {paginatedProductos.length === 0 ? (
+        <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl border border-slate-200/80 shadow-xs">
+          No se encontraron productos con los criterios seleccionados.
+        </div>
+      ) : (
+        <>
+          {/* VISTA MÓVIL (Tarjetas) */}
+          <div className="md:hidden space-y-3">
+            {paginatedProductos.map((p, idx) => {
+              const numGlobal = (currentPage - 1) * itemsPerPage + idx + 1;
+              return (
+                <div key={p.id} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 relative">
+                  <div className="flex justify-between items-start">
+                    <div 
+                      className="flex items-center gap-3 cursor-pointer group"
+                      onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}`)}
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-700 shrink-0 border border-slate-200/60 group-hover:bg-slate-800 group-hover:text-white transition-colors">
+                        <Package size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-sm line-clamp-2 group-hover:text-blue-600 transition-colors uppercase">{p.desc}</h3>
+                        <p className="text-[10px] text-slate-500 line-clamp-1">{p.marcaPrincipal}</p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold px-2 py-1 bg-slate-100 text-slate-600 border border-slate-200/60 rounded-lg shrink-0">#{numGlobal}</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] text-slate-400 font-medium">Cotizados</span>
+                      <span className="font-bold font-mono text-slate-700">{p.vecesCotizado} <span className="text-[9px] font-normal">veces</span></span>
+                    </div>
+                    <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] text-emerald-600/70 font-medium">Ganados</span>
+                      <span className="font-bold font-mono text-emerald-700">{p.vecesPedido} <span className="text-[9px] font-normal">veces</span></span>
+                    </div>
+                    <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] text-slate-400 font-medium">Und. Cotizadas</span>
+                      <span className="font-bold font-mono text-slate-700">{p.unidadesCotizadas.toLocaleString()}</span>
+                    </div>
+                    <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
+                      <span className="text-[10px] text-emerald-600/70 font-medium">Und. Pedidas</span>
+                      <span className="font-bold font-mono text-emerald-700">{p.unidadesPedidas.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1.5 border-t border-slate-100 pt-2 text-[11px]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Clientes</span>
+                      <span className="font-mono font-bold text-slate-800">{p.totalClientes}</span>
+                    </div>
+                  </div>
 
-        {/* PAGINACIÓN DE 10 EN 10 */}
-        {totalPages > 1 && (
-          <div className="p-3 border-t border-slate-100 flex items-center justify-between">
-            <button 
-              type="button"
-              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-              disabled={safeCurrentPage === 1}
-              className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-            >
-              Anterior
-            </button>
-            <span className="text-[11px] font-medium text-slate-400">
-              Página {safeCurrentPage} de {totalPages} ({productosFiltrados.length} productos)
-            </span>
-            <button 
-              type="button"
-              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
-              disabled={safeCurrentPage === totalPages}
-              className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-            >
-              Siguiente
-            </button>
+                  <div className="pt-2 border-t border-slate-100">
+                    <button 
+                      onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}`)} 
+                      className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 rounded-xl text-xs font-bold transition-colors shadow-xs"
+                    >
+                      Ver Historial
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        )}
-      </div>
+
+          {/* VISTA DESKTOP (Tabla original) */}
+          <div className="hidden md:flex bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex-col">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="py-2.5 px-3.5">#</th>
+                    <th className="py-2.5 px-3.5">Descripción del Producto</th>
+                    <th className="py-2.5 px-3.5">Marca</th>
+                    <th className="py-2.5 px-3.5 text-center">Veces Cotizado</th>
+                    <th className="py-2.5 px-3.5 text-center">Unidades Cotizadas</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Cotizaciones Ganadas</th>
+                    <th className="py-2.5 px-3.5 text-center">Unidades Pedidas</th>
+                    <th className="py-2.5 px-3.5 text-center">Clientes</th>
+                    <th className="py-2.5 px-3.5 text-right">Historial</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700">
+                  {paginatedProductos.map((p, idx) => {
+                    const numGlobal = (currentPage - 1) * itemsPerPage + idx + 1;
+                    return (
+                      <tr key={p.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-2.5 px-3.5 text-slate-400 font-mono text-[11px]">
+                          {numGlobal}
+                        </td>
+                        <td className="py-2.5 px-3.5">
+                          <div 
+                            onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}`)}
+                            className="flex items-center gap-2 cursor-pointer group/item"
+                          >
+                            <div className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-[10px] shrink-0 group-hover/item:bg-slate-800 group-hover/item:text-white transition-colors">
+                              <Package size={12} />
+                            </div>
+                            <span className="font-semibold text-slate-800 text-xs max-w-sm truncate group-hover/item:text-blue-600 transition-colors uppercase" title={p.desc}>
+                              {p.desc}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-2.5 px-3.5 text-slate-600">
+                          <span className="truncate max-w-[150px] inline-block text-[11px]" title={p.marcaPrincipal}>
+                            {p.marcaPrincipal}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3.5 text-center">
+                          <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-xs font-semibold">
+                            {p.vecesCotizado} RFQ{p.vecesCotizado > 1 ? 's' : ''}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3.5 text-center">
+                          <span className="inline-block font-mono text-slate-800 font-semibold text-xs">
+                            {p.unidadesCotizadas.toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3.5 text-center">
+                          <span className="inline-flex items-center gap-1 font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 text-xs">
+                            {p.vecesPedido}
+                            {p.vecesCotizado > 0 && (
+                              <span className="text-[10px] font-medium text-emerald-600">
+                                ({Math.round((p.vecesPedido / p.vecesCotizado) * 100)}%)
+                              </span>
+                            )}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700">
+                          {p.unidadesPedidas.toLocaleString()}
+                        </td>
+                        <td className="py-2.5 px-3.5 text-center font-mono text-slate-500">
+                          {p.totalClientes}
+                        </td>
+                        <td className="py-2.5 px-3.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}`)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-800 hover:text-white text-slate-600 font-semibold text-xs transition-colors cursor-pointer whitespace-nowrap"
+                          >
+                            Historial <ChevronRight size={11} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* PAGINACIÓN DE 10 EN 10 */}
+      {totalPages > 1 && (
+        <div className="p-3 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+          <button 
+            type="button"
+            onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+            disabled={safeCurrentPage === 1}
+            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
+          >
+            Anterior
+          </button>
+          <span className="text-[11px] font-medium text-slate-400 text-center px-2">
+            Página <span className="font-bold text-slate-600">{safeCurrentPage}</span> de {totalPages} <br className="sm:hidden" />
+            <span className="hidden sm:inline">({productosFiltrados.length} productos)</span>
+          </span>
+          <button 
+            type="button"
+            onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+            disabled={safeCurrentPage === totalPages}
+            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
     </div>
   );
 };

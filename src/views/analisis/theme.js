@@ -21,6 +21,7 @@ export const ROLE_THEMES = {
     flujoEstados: {
       pendiente: {
         color: 'bg-amber-500',
+        hex: '#f59e0b',
         barBg: 'bg-amber-100/70',
         textColor: 'text-amber-700',
         iconBg: 'bg-amber-50 text-amber-600 border-amber-200/80',
@@ -31,6 +32,7 @@ export const ROLE_THEMES = {
       },
       cotizadas: {
         color: 'bg-blue-600',
+        hex: '#2563eb',
         barBg: 'bg-blue-100/70',
         textColor: 'text-blue-700',
         iconBg: 'bg-blue-50 text-blue-600 border-blue-200/80',
@@ -41,6 +43,7 @@ export const ROLE_THEMES = {
       },
       pedidos: {
         color: 'bg-emerald-600',
+        hex: '#059669',
         barBg: 'bg-emerald-100/70',
         textColor: 'text-emerald-700',
         iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-200/80',
@@ -67,6 +70,7 @@ export const ROLE_THEMES = {
     flujoEstados: {
       pendiente: {
         color: 'bg-amber-500',
+        hex: '#f59e0b',
         barBg: 'bg-amber-100/70',
         textColor: 'text-amber-700',
         iconBg: 'bg-amber-50 text-amber-600 border-amber-200/80',
@@ -77,6 +81,7 @@ export const ROLE_THEMES = {
       },
       cotizadas: {
         color: 'bg-purple-600',
+        hex: '#9333ea',
         barBg: 'bg-purple-100/70',
         textColor: 'text-purple-700',
         iconBg: 'bg-purple-50 text-purple-600 border-purple-200/80',
@@ -87,6 +92,7 @@ export const ROLE_THEMES = {
       },
       pedidos: {
         color: 'bg-emerald-600',
+        hex: '#059669',
         barBg: 'bg-emerald-100/70',
         textColor: 'text-emerald-700',
         iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-200/80',
@@ -113,6 +119,7 @@ export const ROLE_THEMES = {
     flujoEstados: {
       pendiente: {
         color: 'bg-amber-500',
+        hex: '#f59e0b',
         barBg: 'bg-amber-100/70',
         textColor: 'text-amber-700',
         iconBg: 'bg-amber-50 text-amber-600 border-amber-200/80',
@@ -123,6 +130,7 @@ export const ROLE_THEMES = {
       },
       cotizadas: {
         color: 'bg-teal-600',
+        hex: '#0d9488',
         barBg: 'bg-teal-100/70',
         textColor: 'text-teal-700',
         iconBg: 'bg-teal-50 text-teal-600 border-teal-200/80',
@@ -133,6 +141,7 @@ export const ROLE_THEMES = {
       },
       pedidos: {
         color: 'bg-emerald-600',
+        hex: '#059669',
         barBg: 'bg-emerald-100/70',
         textColor: 'text-emerald-700',
         iconBg: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
@@ -159,6 +168,7 @@ export const ROLE_THEMES = {
     flujoEstados: {
       pendiente: {
         color: 'bg-amber-500',
+        hex: '#f59e0b',
         barBg: 'bg-amber-100/70',
         textColor: 'text-amber-700',
         iconBg: 'bg-amber-50 text-amber-600 border-amber-200/80',
@@ -169,6 +179,7 @@ export const ROLE_THEMES = {
       },
       cotizadas: {
         color: 'bg-rose-600',
+        hex: '#e11d48',
         barBg: 'bg-rose-100/70',
         textColor: 'text-rose-700',
         iconBg: 'bg-rose-50 text-rose-600 border-rose-200/80',
@@ -179,6 +190,7 @@ export const ROLE_THEMES = {
       },
       pedidos: {
         color: 'bg-emerald-600',
+        hex: '#059669',
         barBg: 'bg-emerald-100/70',
         textColor: 'text-emerald-700',
         iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-200/80',
@@ -205,6 +217,7 @@ export const ROLE_THEMES = {
     flujoEstados: {
       pendiente: {
         color: 'bg-amber-500',
+        hex: '#f59e0b',
         barBg: 'bg-amber-100/70',
         textColor: 'text-amber-700',
         iconBg: 'bg-amber-50 text-amber-600 border-amber-200/80',
@@ -215,6 +228,7 @@ export const ROLE_THEMES = {
       },
       cotizadas: {
         color: 'bg-slate-600',
+        hex: '#475569',
         barBg: 'bg-slate-200/70',
         textColor: 'text-slate-700',
         iconBg: 'bg-sky-50 text-sky-600 border-sky-200/80',
@@ -225,6 +239,7 @@ export const ROLE_THEMES = {
       },
       pedidos: {
         color: 'bg-emerald-600',
+        hex: '#059669',
         barBg: 'bg-emerald-100/70',
         textColor: 'text-emerald-700',
         iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-200/80',

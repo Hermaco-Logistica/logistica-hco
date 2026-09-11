@@ -13,6 +13,16 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
 
   const [tabActual, setTabActual] = useSessionState('analisis_logistica_tab', filtro || 'todas');
 
+  useEffect(() => {
+    document.querySelector('main')?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    const btn = document.getElementById(`tab-log-${tabActual}`);
+    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [tabActual]);
+
   // Sincronizar tab con la URL cuando cambia
   useEffect(() => {
     if (filtro) {
@@ -170,28 +180,31 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
           </div>
         </div>
 
-        {/* TABS DE ESTADO LOGÍSTICO */}
-        <div className="inline-flex flex-wrap gap-1 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => { setTabActual(t.id); setCurrentPage(1); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                tabActual === t.id 
-                  ? 'bg-slate-900 text-white shadow-xs font-semibold' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
+        {/* TABS DE ESTADO LOGÍSTICO (Sticky en móvil) */}
+        <div className="sticky top-0 z-20 bg-slate-50/80 backdrop-blur-md pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 sm:bg-transparent">
+          <div className="flex overflow-x-auto whitespace-nowrap gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                id={`tab-log-${t.id}`}
+                type="button"
+                onClick={() => { setTabActual(t.id); setCurrentPage(1); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
+                  tabActual === t.id 
+                    ? 'bg-slate-900 text-white shadow-xs font-semibold' 
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* BUSCADOR */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row gap-2.5 items-center justify-between">
-        <div className="relative w-full sm:w-80">
+      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+        <div className="relative w-full md:w-80">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
@@ -201,7 +214,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
             className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
           />
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
           <button
             type="button"
             onClick={() => {
@@ -225,136 +238,207 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
                 }
               );
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
             title="Exportar órdenes de compra e ítems a Excel"
           >
             <Download size={13} />
             <span>Exportar Excel</span>
           </button>
-          <div className="text-[11px] font-medium text-slate-400 font-mono">
+          <div className="text-[11px] font-medium text-slate-400 font-mono self-end sm:self-auto">
             Mostrando <strong className="text-slate-700 font-semibold">{ordenesFiltradas.length}</strong> órdenes
           </div>
         </div>
       </div>
 
       {/* TABLA DE ÓRDENES */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col">
+      <div className="flex flex-col gap-3">
         {paginatedOrdenes.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-xs font-medium">
+          <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl border border-slate-200/80 shadow-xs">
             No se encontraron órdenes con los filtros seleccionados.
           </div>
         ) : (
-          <div
-            ref={scrollContainerRef}
-            onMouseDown={handleDragStart}
-            onMouseMove={handleDragMove}
-            onMouseUp={handleDragEnd}
-            onMouseLeave={handleDragEnd}
-            className="overflow-x-auto overflow-y-auto overscroll-contain cursor-grab active:cursor-grabbing select-none h-[52vh] min-h-[380px] max-h-[620px] sm:h-[56vh] lg:h-[60vh]"
-            style={{ WebkitOverflowScrolling: 'touch' }}
-          >
-            <table className="min-w-full w-max text-left text-xs">
-              <thead className="sticky top-0 z-10">
-                <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <th className="py-2.5 px-3.5 whitespace-nowrap"># OC</th>
-                  <th className="py-2.5 px-3.5 whitespace-nowrap">Proveedor</th>
-                  <th className="py-2.5 px-3.5 whitespace-nowrap">Tracking</th>
-                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Estado Logístico</th>
-                  <th className="py-2.5 px-3.5 whitespace-nowrap">Fecha Creación</th>
-                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ítems</th>
-                  <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
-                {paginatedOrdenes.map((oc) => {
-                  const est = (oc.estado || 'Pendiente');
-                  const estLower = est.toLowerCase();
-                  const cantItems = oc.items?.length || 0;
-                  const numOC = oc.numeroOC || oc.numero || oc.ocRef || 'S/N';
+          <>
+            {/* VISTA MÓVIL (Tarjetas) */}
+            <div className="md:hidden space-y-3">
+              {paginatedOrdenes.map((oc) => {
+                const est = (oc.estado || 'Pendiente');
+                const estLower = est.toLowerCase();
+                const cantItems = oc.items?.length || 0;
+                const numOC = oc.numeroOC || oc.numero || oc.ocRef || 'S/N';
+                
+                const badgeClass = estLower.includes('entregad') || estLower.includes('delivered')
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
+                  : estLower.includes('aduana')
+                  ? 'bg-sky-50 text-sky-700 border-sky-200/60'
+                  : estLower.includes('transito') || estLower.includes('tránsito')
+                  ? 'bg-amber-50 text-amber-700 border-amber-200/60'
+                  : 'bg-slate-100 text-slate-600 border-slate-200/60';
 
-                  return (
-                    <tr key={oc.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-2.5 px-3.5 font-mono font-semibold text-slate-800 whitespace-nowrap">
-                        {numOC}
-                      </td>
-                      <td className="py-2.5 px-3.5 text-slate-700 whitespace-nowrap font-medium">
-                        <span className="truncate max-w-[220px] block" title={oc.proveedor}>
-                          {oc.proveedor || 'Sin proveedor'}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3.5 whitespace-nowrap">
-                        {oc.tracking ? (
-                          <span className="inline-flex items-center gap-1 font-mono text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/60">
-                            <Globe size={11} className="text-slate-400" /> {oc.tracking}
-                          </span>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">Sin tracking</span>
-                        )}
-                      </td>
-                      <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
-                        <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
-                          estLower.includes('entregad') || estLower.includes('delivered')
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
-                            : estLower.includes('aduana')
-                            ? 'bg-sky-50 text-sky-700 border-sky-200/60'
-                            : estLower.includes('transito') || estLower.includes('tránsito')
-                            ? 'bg-amber-50 text-amber-700 border-amber-200/60'
-                            : 'bg-slate-100 text-slate-600 border-slate-200/60'
-                        }`}>
-                          {est}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3.5 text-slate-500 whitespace-nowrap font-mono text-[11px]">
-                        <div className="flex items-center gap-1.5">
-                          <Calendar size={12} className="text-slate-400" />
+                return (
+                  <div key={oc.id} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 relative">
+                    <div className="flex justify-between items-start">
+                      <div className="flex flex-col">
+                        <span className="font-mono text-sm font-bold text-slate-800">{numOC}</span>
+                        <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-500">
+                          <Calendar size={10} />
                           <span>{formatFecha(oc.fechaCreacion)}</span>
                         </div>
-                      </td>
-                      <td className="py-2.5 px-3.5 text-center font-mono text-slate-700 whitespace-nowrap">
-                        {cantItems}
-                      </td>
-                      <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => navigate('/gestion-oc')}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-800 hover:text-white text-slate-600 font-semibold text-xs transition-colors cursor-pointer"
-                        >
-                          Gestionar <ExternalLink size={11} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                      </div>
+                      <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold border ${badgeClass}`}>
+                        {est}
+                      </span>
+                    </div>
 
-        {/* PAGINACIÓN DE 10 EN 10 */}
-        {totalPages > 1 && (
-          <div className="p-3 border-t border-slate-100 flex items-center justify-between">
-            <button 
-              type="button"
-              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-              disabled={safeCurrentPage === 1}
-              className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-            >
-              Anterior
-            </button>
-            <span className="text-[11px] font-medium text-slate-400">
-              Página {safeCurrentPage} de {totalPages} ({ordenesFiltradas.length} órdenes)
-            </span>
-            <button 
-              type="button"
-              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
-              disabled={safeCurrentPage === totalPages}
-              className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-            >
-              Siguiente
-            </button>
-          </div>
+                    <div className="space-y-1.5 pt-1">
+                      <div className="text-slate-700 font-medium text-xs truncate" title={oc.proveedor}>
+                        {oc.proveedor || 'Sin proveedor'}
+                      </div>
+                      
+                      {oc.tracking ? (
+                        <span className="inline-flex items-center gap-1 font-mono text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/60 w-max">
+                          <Globe size={11} className="text-slate-400" /> {oc.tracking}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-[11px] block">Sin tracking</span>
+                      )}
+                    </div>
+                    
+                    <div className="border-t border-slate-100 pt-2 flex items-center justify-between text-xs">
+                      <span className="text-slate-500">Ítems:</span>
+                      <span className="font-bold font-mono text-slate-700">{cantItems}</span>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 mt-2">
+                      <button 
+                        onClick={() => navigate('/gestion-oc')} 
+                        className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80 rounded-xl text-xs font-bold transition-colors shadow-xs inline-flex justify-center items-center gap-1.5"
+                      >
+                        Gestionar <ExternalLink size={12} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* VISTA DESKTOP (Tabla original) */}
+            <div className="hidden md:flex bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex-col">
+              <div
+                ref={scrollContainerRef}
+                onMouseDown={handleDragStart}
+                onMouseMove={handleDragMove}
+                onMouseUp={handleDragEnd}
+                onMouseLeave={handleDragEnd}
+                className="overflow-x-auto overflow-y-auto overscroll-contain cursor-grab active:cursor-grabbing select-none h-[52vh] min-h-[380px] max-h-[620px] sm:h-[56vh] lg:h-[60vh]"
+                style={{ WebkitOverflowScrolling: 'touch' }}
+              >
+                <table className="min-w-full w-max text-left text-xs">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      <th className="py-2.5 px-3.5 whitespace-nowrap"># OC</th>
+                      <th className="py-2.5 px-3.5 whitespace-nowrap">Proveedor</th>
+                      <th className="py-2.5 px-3.5 whitespace-nowrap">Tracking</th>
+                      <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Estado Logístico</th>
+                      <th className="py-2.5 px-3.5 whitespace-nowrap">Fecha Creación</th>
+                      <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ítems</th>
+                      <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                    {paginatedOrdenes.map((oc) => {
+                      const est = (oc.estado || 'Pendiente');
+                      const estLower = est.toLowerCase();
+                      const cantItems = oc.items?.length || 0;
+                      const numOC = oc.numeroOC || oc.numero || oc.ocRef || 'S/N';
+
+                      return (
+                        <tr key={oc.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="py-2.5 px-3.5 font-mono font-semibold text-slate-800 whitespace-nowrap">
+                            {numOC}
+                          </td>
+                          <td className="py-2.5 px-3.5 text-slate-700 whitespace-nowrap font-medium">
+                            <span className="truncate max-w-[220px] block" title={oc.proveedor}>
+                              {oc.proveedor || 'Sin proveedor'}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3.5 whitespace-nowrap">
+                            {oc.tracking ? (
+                              <span className="inline-flex items-center gap-1 font-mono text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/60">
+                                <Globe size={11} className="text-slate-400" /> {oc.tracking}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 text-[11px]">Sin tracking</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
+                            <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
+                              estLower.includes('entregad') || estLower.includes('delivered')
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
+                                : estLower.includes('aduana')
+                                ? 'bg-sky-50 text-sky-700 border-sky-200/60'
+                                : estLower.includes('transito') || estLower.includes('tránsito')
+                                ? 'bg-amber-50 text-amber-700 border-amber-200/60'
+                                : 'bg-slate-100 text-slate-600 border-slate-200/60'
+                            }`}>
+                              {est}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3.5 text-slate-500 whitespace-nowrap font-mono text-[11px]">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar size={12} className="text-slate-400" />
+                              <span>{formatFecha(oc.fechaCreacion)}</span>
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3.5 text-center font-mono text-slate-700 whitespace-nowrap">
+                            {cantItems}
+                          </td>
+                          <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => navigate('/gestion-oc')}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-800 hover:text-white text-slate-600 font-semibold text-xs transition-colors cursor-pointer"
+                            >
+                              Gestionar <ExternalLink size={11} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
         )}
       </div>
+
+      {/* PAGINACIÓN DE 10 EN 10 */}
+      {totalPages > 1 && (
+        <div className="p-3 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+          <button 
+            type="button"
+            onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+            disabled={safeCurrentPage === 1}
+            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
+          >
+            Anterior
+          </button>
+          <span className="text-[11px] font-medium text-slate-400 text-center px-2">
+            Página <span className="font-bold text-slate-600">{safeCurrentPage}</span> de {totalPages} <br className="sm:hidden" />
+            <span className="hidden sm:inline">({paginatedOrdenes.length} regs)</span>
+          </span>
+          <button 
+            type="button"
+            onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+            disabled={safeCurrentPage === totalPages}
+            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
     </div>
   );
 };
+
+export default DetalleLogisticaAnalisis;
