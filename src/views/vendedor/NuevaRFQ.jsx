@@ -409,7 +409,7 @@ export const NuevaRFQ = () => {
         : [
             auth.currentUser.email,
             ...(emailConfig.nuevaRFQ.cc || [])
-          ];
+          ].filter(email => !["oventura@hermaco.net", "dhernandez@hermaco.net"].includes(email?.toLowerCase()));
       
       const htmlBody = generarPlantillaNuevaRFQ(savedData);
       

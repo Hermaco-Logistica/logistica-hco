@@ -8,10 +8,7 @@ export const emailConfig = {
     ],
     // En copia (CC)
     cc: [
-      "compras@hermaco.net",
-      "chernandez@hermaco.net",
-      "fsalinas@hermaco.net",
-      "oventura@hermaco.net"
+      "logisticahco@hermaco.net"
     ]
   },
 
@@ -21,9 +18,7 @@ export const emailConfig = {
       "compras@hermaco.net"
     ],
     cc: [
-      "chernandez@hermaco.net",
-      "fsalinas@hermaco.net",
-      "oventura@hermaco.net"
+      "logisticahco@hermaco.net"
     ]
   },
   // Configuración de notificaciones cuando el vendedor genera un pedido
@@ -34,9 +29,7 @@ export const emailConfig = {
     ],
     // En copia (CC)
     cc: [
-      "chernandez@hermaco.net",
-      "fsalinas@hermaco.net",
-      "oventura@hermaco.net"
+      "logisticahco@hermaco.net"
     ]
   }
 };
