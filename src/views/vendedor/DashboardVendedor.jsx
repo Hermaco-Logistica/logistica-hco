@@ -18,7 +18,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   const [currentPage, setCurrentPage] = useState(1);
 
   // Estados de filtros (persistidos en localStorage)
-  const [filterAccion, setFilterAccion] = usePersistedState('dv_filterAccion', '');
+  const [ setFilterAccion] = usePersistedState('dv_filterAccion', '');
   const [filterEstado, setFilterEstado] = usePersistedState('dv_filterEstado', '');
   const [filterVendedor, setFilterVendedor] = usePersistedState('dv_filterVendedor', '');
   const [searchTerm, setSearchTerm] = usePersistedState('dv_searchTerm', '');
@@ -145,11 +145,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
     }
   };
 
-  const obtenerEstadoAccion = (estado) => {
-    if (estado === 'Cotizado Parcial') return 'Cotizado Parcial';
-    if (estado === 'Cotizado') return 'Cotizado';
-    return 'Cotizar';
-  };
+
 
   // Obtener listas únicas de vendedores y estados para los filtros selectores
   const vendedoresDisponibles = Array.from(new Set(solicitudes.map(s => s.vendedorNombre).filter(Boolean)));
@@ -158,10 +154,6 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   // Aplicar filtros
   const filteredSolicitudes = solicitudes.filter((s) => {
     if (role === 'vendedor' && s.vendedorId !== auth.currentUser?.uid) return false;
-    if (filterAccion) {
-      const accionReal = obtenerEstadoAccion(s.estado);
-      if (accionReal !== filterAccion) return false;
-    }
     if (filterEstado && s.estado !== filterEstado) return false;
     if (role !== 'vendedor' && filterVendedor && s.vendedorNombre !== filterVendedor) return false;
     
@@ -260,7 +252,6 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   };
 
   const filtrosActivosCount = [
-    filterAccion,
     filterEstado,
     filterVendedor,
     (fechaInicio || fechaFin)
@@ -312,7 +303,6 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
             <button
               onClick={() => {
                 setSearchTerm('');
-                setFilterAccion('');
                 setFilterEstado('');
                 setFilterVendedor('');
                 setFechaInicio(null);
@@ -329,19 +319,6 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
 
         {mostrarFiltrosMobile && (
           <div className="pt-3 border-t border-slate-100 space-y-2.5 animate-in fade-in duration-200">
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Acción</label>
-              <select 
-                value={filterAccion} 
-                onChange={(e) => { setFilterAccion(e.target.value); setCurrentPage(1); }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 cursor-pointer"
-              >
-                <option value="">TODAS LAS ACCIONES</option>
-                <option value="Cotizar">COTIZAR</option>
-                <option value="Cotizado">COTIZADO</option>
-                <option value="Cotizado Parcial">COTIZADO PARCIAL</option>
-              </select>
-            </div>
             <div>
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Estado</label>
               <select 
@@ -388,7 +365,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       </div>
 
       {/* CONTROLES DE FILTROS DESKTOP (visible en >= md) */}
-      <div className={`hidden md:grid grid-cols-1 sm:grid-cols-2 ${role === 'vendedor' ? 'md:grid-cols-5' : 'md:grid-cols-6'} gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm`}>
+      <div className={`hidden md:grid grid-cols-1 sm:grid-cols-2 ${role === 'vendedor' ? 'md:grid-cols-4' : 'md:grid-cols-5'} gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm`}>
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (Ref / Cliente)</label>
           <input 
@@ -398,19 +375,6 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
           />
-        </div>
-        <div>
-          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Acción</label>
-          <select 
-            value={filterAccion} 
-            onChange={(e) => { setFilterAccion(e.target.value); setCurrentPage(1); }}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
-          >
-            <option value="">TODAS LAS ACCIONES</option>
-            <option value="Cotizar">COTIZAR</option>
-            <option value="Cotizado">COTIZADO</option>
-            <option value="Cotizado Parcial">COTIZADO PARCIAL</option>
-          </select>
         </div>
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Estado</label>

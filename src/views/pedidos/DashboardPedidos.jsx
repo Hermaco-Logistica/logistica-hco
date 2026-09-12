@@ -680,7 +680,7 @@ export const DashboardPedidos = ({ role }) => {
   ].filter(Boolean).length;
 
   return (
-    <div className="max-w-400 mx-auto animate-in fade-in duration-500 pb-10">
+    <div className="w-full animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6">
         <div>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-800 italic uppercase tracking-tighter">
@@ -803,7 +803,7 @@ export const DashboardPedidos = ({ role }) => {
       </div>
 
       {/* PANEL DE FILTROS DESKTOP (visible en >= md) */}
-      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 mb-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+      <div className={`hidden md:grid grid-cols-1 sm:grid-cols-2 ${(role === 'comprador' || role === 'administrador') ? 'md:grid-cols-6' : 'md:grid-cols-5'} gap-4 mb-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm`}>
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (Ítem / Ref / Cliente)</label>
           <input 
@@ -1136,7 +1136,7 @@ export const DashboardPedidos = ({ role }) => {
 
       {/* VISTA DESKTOP: TABLA CLÁSICA (hidden en < md, visible en >= md) */}
       <div className="hidden md:block bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-x-auto">
-        <table className="w-full border-collapse min-w-[900px]">
+        <table className={`w-full border-collapse ${(role === 'comprador' || role === 'administrador') ? 'min-w-[1250px]' : 'min-w-[1000px]'}`}>
           <thead>
             <tr className="bg-slate-900 text-[9px] text-slate-400 font-black uppercase tracking-[0.15em]">
               <th 
@@ -1254,7 +1254,7 @@ export const DashboardPedidos = ({ role }) => {
                       </div>
                     )}
                   </td>
-                  <td className="p-6 text-center">
+                  <td className="p-6 text-center whitespace-nowrap">
                     {item.numOC ? (
                       <span className="bg-slate-100 text-slate-800 text-[10px] font-black px-2 py-1 rounded border border-slate-200">
                         {item.numOC}

@@ -34,6 +34,7 @@ export function useCountUp(target, duration = 1000, start = false) {
 
   useEffect(() => {
     if (!start) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCount(0); // Reset when not in view
       return;
     }
