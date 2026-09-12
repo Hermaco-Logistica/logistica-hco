@@ -441,6 +441,8 @@ function App() {
                 <Route path="*" element={<Navigate to="/login" replace />} />
               )}
             </Routes>
+            {/* Espaciador explícito para que el BottomTabBar no cubra el contenido (paginación) en scroll */}
+            <div className="h-24 md:hidden shrink-0 w-full"></div>
           </main>
           {/* BARRA DE NAVEGACIÓN INFERIOR FIJA (MÓVIL < md) */}
           <BottomTabBar 
