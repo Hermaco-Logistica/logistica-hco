@@ -103,13 +103,17 @@ export const TrackingModal = ({
         <div className="p-4 sm:p-6 pb-3 sm:pb-4 border-b border-slate-100 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1.5">
-              <div className="h-6 w-14 bg-white border border-slate-200/80 rounded-lg overflow-hidden shrink-0">
-                {provider === 'DSV' ? (
-                  <img src="/dsv_logo.jpg" alt="DSV" className="w-full h-full object-cover" />
-                ) : (
-                  <img src="/dhl.svg" alt="DHL" className="w-full h-full object-cover" />
-                )}
-              </div>
+              {trackingNumber?.toUpperCase().startsWith('1Z') ? (
+                <img src="/ups_logo.png" alt="UPS" className="h-6 w-auto object-contain shrink-0" />
+              ) : (
+                <div className="h-6 w-14 bg-white border border-slate-200/80 rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
+                  {provider === 'DSV' ? (
+                    <img src="/dsv_logo.jpg" alt="DSV" className="w-full h-full object-cover" />
+                  ) : (
+                    <img src="/dhl.svg" alt="DHL" className="w-full h-full object-cover" />
+                  )}
+                </div>
+              )}
               {rfqLabel && (
                 <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider truncate">
                   {rfqLabel}
@@ -135,12 +139,12 @@ export const TrackingModal = ({
                   )}
                 </div>
                 <p className="text-[9px] font-bold uppercase text-slate-400 mt-0.5 tracking-tight">
-                  {provider === 'DSV' ? 'Seguimiento de Embarque' : 'Seguimiento Aéreo'}
+                  {trackingNumber?.toUpperCase().startsWith('1Z') ? 'Seguimiento UPS' : provider === 'DSV' ? 'Seguimiento de Embarque' : 'Seguimiento Aéreo'}
                 </p>
               </div>
             ) : (
               <p className="text-xs font-black uppercase text-slate-700 mt-1">
-                {provider === 'DSV' ? 'Seguimiento de Embarque' : 'Seguimiento Aéreo'}
+                {trackingNumber?.toUpperCase().startsWith('1Z') ? 'Seguimiento UPS' : provider === 'DSV' ? 'Seguimiento de Embarque' : 'Seguimiento Aéreo'}
               </p>
             )}
           </div>

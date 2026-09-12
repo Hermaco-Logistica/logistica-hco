@@ -16,7 +16,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Estados de filtros (persistidos en localStorage)
-  const [filterAccion, setFilterAccion] = usePersistedState('dc_filterAccion', '');
+  const [ setFilterAccion] = usePersistedState('dc_filterAccion', '');
   const [filterEstado, setFilterEstado] = usePersistedState('dc_filterEstado', '');
   const [filterVendedor, setFilterVendedor] = usePersistedState('dc_filterVendedor', '');
   const [searchTerm, setSearchTerm] = usePersistedState('dc_searchTerm', '');
@@ -121,10 +121,6 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
   // Aplicar filtros
   const filteredSolicitudes = solicitudes.filter((s) => {
-    if (filterAccion) {
-      const accionReal = obtenerEstadoAccion(s.estado);
-      if (accionReal !== filterAccion) return false;
-    }
     if (filterEstado && s.estado !== filterEstado) return false;
     if (filterVendedor && s.vendedorNombre !== filterVendedor) return false;
     
@@ -265,7 +261,6 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   };
 
   const filtrosActivosCount = [
-    filterAccion,
     filterEstado,
     filterVendedor,
     (fechaInicio || fechaFin)
@@ -309,7 +304,6 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             <button
               onClick={() => {
                 setSearchTerm('');
-                setFilterAccion('');
                 setFilterEstado('');
                 setFilterVendedor('');
                 setFechaInicio(null);
@@ -326,19 +320,6 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
         {mostrarFiltrosMobile && (
           <div className="pt-3 border-t border-slate-100 space-y-2.5 animate-in fade-in duration-200">
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Acción</label>
-              <select 
-                value={filterAccion} 
-                onChange={(e) => { setFilterAccion(e.target.value); setCurrentPage(1); }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 cursor-pointer"
-              >
-                <option value="">TODAS LAS ACCIONES</option>
-                <option value="Cotizar">COTIZAR</option>
-                <option value="Cotizado">COTIZADO</option>
-                <option value="Cotizado Parcial">COTIZADO PARCIAL</option>
-              </select>
-            </div>
             <div>
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Estado</label>
               <select 
@@ -383,7 +364,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       </div>
 
       {/* CONTROLES DE FILTROS DESKTOP (visible en >= md) */}
-      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (Ref / Cliente)</label>
           <input 
@@ -393,19 +374,6 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
             className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
           />
-        </div>
-        <div>
-          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Acción</label>
-          <select 
-            value={filterAccion} 
-            onChange={(e) => { setFilterAccion(e.target.value); setCurrentPage(1); }}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
-          >
-            <option value="">TODAS LAS ACCIONES</option>
-            <option value="Cotizar">COTIZAR</option>
-            <option value="Cotizado">COTIZADO</option>
-            <option value="Cotizado Parcial">COTIZADO PARCIAL</option>
-          </select>
         </div>
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Estado</label>
@@ -665,7 +633,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
       {/* VISTA DESKTOP: TABLA CLÁSICA (hidden en < md, visible en >= md) */}
       <div className="hidden md:block tf-surface-panel overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[700px]">
+        <table className="w-full text-left border-collapse min-w-175">
           <thead>
             <tr className="tf-table-head-dark text-[10px] uppercase font-black tracking-widest">
               <th className="p-4">Referencia / Cliente</th>
