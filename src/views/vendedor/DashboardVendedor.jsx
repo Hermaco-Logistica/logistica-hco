@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/Badge';
 import { 
   Calendar as CalendarIcon, Trash2, AlertTriangle, Filter, 
-  ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Hash 
+  ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Hash, Package 
 } from 'lucide-react';
 import { MobileBadge } from '../../components/mobile';
 import { usePersistedState } from '../../hooks/usePersistedState';
