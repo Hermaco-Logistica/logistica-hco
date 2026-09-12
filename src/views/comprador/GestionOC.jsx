@@ -16,6 +16,13 @@ export const GestionOC = ({ readOnly = false }) => {
   const [ordenes, setOrdenes] = useState([]);
   const [ocSeleccionada, setOcSeleccionada] = useState(null);
   const [trackingInput, setTrackingInput] = useState('');
+
+  useEffect(() => {
+    if (ocSeleccionada) {
+      document.querySelector('main')?.scrollTo(0, 0);
+      window.scrollTo(0, 0);
+    }
+  }, [ocSeleccionada]);
   const [trackingData, setTrackingData] = useState(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
   const [trackingError, setTrackingError] = useState('');

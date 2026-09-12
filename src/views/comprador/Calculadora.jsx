@@ -38,6 +38,11 @@ export const Calculadora = ({ onGuardar }) => {
   const [guardando, setGuardando] = useState(false);
   const [factorM, setFactorM] = useState(1.07);
 
+  useEffect(() => {
+    document.querySelector('main')?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+  }, []);
+
   // Estados del cotizador DHL Belgium / QS USA
   const [dhlWeight, setDhlWeight] = useState('');
   const [qsWeight, setQsWeight] = useState('');

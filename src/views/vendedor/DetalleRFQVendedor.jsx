@@ -30,6 +30,11 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   const [documentacionOpen, setDocumentacionOpen] = useState(false);
   const [modalidadesOpen, setModalidadesOpen] = useState(false);
 
+  useEffect(() => {
+    document.querySelector('main')?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
+  }, []);
+
   const esItemYaPedido = (p) => {
     if (!p) return false;
     if (p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado') return true;
