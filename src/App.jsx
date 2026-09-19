@@ -15,7 +15,11 @@ import { Calculadora } from './views/comprador/Calculadora';
 import { GestionOC } from './views/comprador/GestionOC';
 import { DashboardVendedor } from './views/vendedor/DashboardVendedor';
 import { NuevaRFQ } from './views/vendedor/NuevaRFQ';
+import { NuevoPedido } from './views/vendedor/NuevoPedido';
+import { NuevaSolicitudGateway } from './views/vendedor/NuevaSolicitudGateway';
+import { RevisionPedidoManual } from './views/comprador/RevisionPedidoManual';
 import { DetalleRFQVendedor } from './views/vendedor/DetalleRFQVendedor';
+import { DetallePedidoManual } from './views/vendedor/DetallePedidoManual';
 import { DashboardPedidos } from './views/pedidos/DashboardPedidos';
 import { AnalisisEstadisticas } from './views/analisis/AnalisisEstadisticas';
 import { DetalleSolicitudesAnalisis } from './views/analisis/DetalleSolicitudesAnalisis';
@@ -400,15 +404,20 @@ function App() {
                     } 
                   />
                   {rutasAnalisis}
+                  <Route path="/compras/revision-pedido/:id" element={<RevisionPedidoManual />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} role={role} />} />
+                  <Route path="/vendedor/pedido-manual/:id" element={<DetallePedidoManual canGenerarPedido={false} role={role} />} />
                   <Route path="*" element={<Navigate to="/compras" replace />} />
                 </>
               ) : isVendedor ? (
                 <>
                   <Route path="/" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate role={role} />} />
-                  <Route path="/vendedor/nueva" element={<NuevaRFQ />} />
+                  <Route path="/vendedor/nueva" element={<NuevaSolicitudGateway />} />
+                  <Route path="/vendedor/nueva-rfq" element={<NuevaRFQ />} />
+                  <Route path="/vendedor/nuevo-pedido" element={<NuevoPedido />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido role={role} />} />
+                  <Route path="/vendedor/pedido-manual/:id" element={<DetallePedidoManual canGenerarPedido role={role} />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   <Route path="/analisis" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/analisis/*" element={<Navigate to="/vendedor" replace />} />
@@ -418,8 +427,11 @@ function App() {
                 <>
                   <Route path="/" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate title="Solicitudes Globales" role={role} />} />
-                  <Route path="/vendedor/nueva" element={<NuevaRFQ />} />
+                  <Route path="/vendedor/nueva" element={<NuevaSolicitudGateway />} />
+                  <Route path="/vendedor/nueva-rfq" element={<NuevaRFQ />} />
+                  <Route path="/vendedor/nuevo-pedido" element={<NuevoPedido />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido soloPropiasParaPedido role={role} />} />
+                  <Route path="/vendedor/pedido-manual/:id" element={<DetallePedidoManual canGenerarPedido soloPropiasParaPedido role={role} />} />
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   {rutasAnalisis}
@@ -429,10 +441,14 @@ function App() {
                 <>
                   <Route path="/" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate title="Solicitudes Globales" role={role} />} />
-                  <Route path="/vendedor/nueva" element={<NuevaRFQ />} />
+                  <Route path="/vendedor/nueva" element={<NuevaSolicitudGateway />} />
+                  <Route path="/vendedor/nueva-rfq" element={<NuevaRFQ />} />
+                  <Route path="/vendedor/nuevo-pedido" element={<NuevoPedido />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido soloPropiasParaPedido role={role} />} />
+                  <Route path="/vendedor/pedido-manual/:id" element={<DetallePedidoManual canGenerarPedido soloPropiasParaPedido role={role} />} />
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
+                  <Route path="/compras/revision-pedido/:id" element={<RevisionPedidoManual />} />
                   <Route path="/gestion-oc" element={<GestionOC readOnly />} />
                   {rutasAnalisis}
                   <Route path="*" element={<Navigate to="/vendedor" replace />} />

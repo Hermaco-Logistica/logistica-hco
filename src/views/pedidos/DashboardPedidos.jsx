@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc, getDocFromServer, query, where } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { 
   CheckSquare, Square, Link as LinkIcon, 
@@ -507,11 +507,26 @@ export const DashboardPedidos = ({ role }) => {
         });
       }
 
-      for (const item of itemsAProcesar) {
-        const rfqRef = doc(db, "solicitudes", item.idRFQ);
-        const rfqSnap = await getDoc(rfqRef);
-        if (rfqSnap.exists()) {
-          const productosActualizados = [...rfqSnap.data().productos];
+      // Agrupar por idRFQ para evitar race condition:
+      // si dos ítems del mismo RFQ se procesan en serie, el segundo getDoc
+      // puede devolver datos cacheados sin el cambio del primero y sobrescribirlo.
+      const porRFQ = itemsAProcesar.reduce((acc, item) => {
+        if (!acc[item.idRFQ]) acc[item.idRFQ] = [];
+        acc[item.idRFQ].push(item);
+        return acc;
+      }, {});
+
+      for (const [rfqId, items] of Object.entries(porRFQ)) {
+        const rfqRef = doc(db, "solicitudes", rfqId);
+        // Forzar lectura desde el servidor (no caché) para evitar sobreescritura con datos viejos
+        const rfqSnap = await getDocFromServer(rfqRef);
+        if (!rfqSnap.exists()) {
+          console.warn(`[DashboardPedidos] Solicitud ${rfqId} no existe en servidor`);
+          continue;
+        }
+        const productosActualizados = [...rfqSnap.data().productos];
+        // Aplicar todos los cambios de este RFQ en un solo array antes de escribir
+        for (const item of items) {
           productosActualizados[item.indexOriginal] = {
             ...productosActualizados[item.indexOriginal],
             estadoItem: 'Comprado',
@@ -519,8 +534,9 @@ export const DashboardPedidos = ({ role }) => {
             fobReal: Number(item.fobReal),
             fechaOC: new Date()
           };
-          await updateDoc(rfqRef, { productos: productosActualizados });
         }
+        await updateDoc(rfqRef, { productos: productosActualizados });
+        console.log(`[DashboardPedidos] Solicitud ${rfqId} actualizada correctamente`);
       }
 
       // ── Correos por vendedor ──────────────────────────────────────────────

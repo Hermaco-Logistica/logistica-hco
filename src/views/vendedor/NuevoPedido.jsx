@@ -17,8 +17,9 @@ import { buscarProductos, guardarProductoLocal } from '../../services/productosS
 import { generarPlantillaNuevaRFQ } from '../../utils/emailTemplates';
 import { emailConfig } from '../../config/emailConfig';
 import { StickyActionBar } from '../../components/mobile';
+import { NuevoPedidoMobileCard } from '../../components/pedidos/NuevoPedidoMobileCard';
 
-export const NuevaRFQ = () => {
+export const NuevoPedido = () => {
   const navigate = useNavigate();
   const [cliente, setCliente] = useState('');
   const [sugerenciasCliente, setSugerenciasCliente] = useState([]);
@@ -26,7 +27,7 @@ export const NuevaRFQ = () => {
   const [buscandoCliente, setBuscandoCliente] = useState(false);
   const [errorCliente, setErrorCliente] = useState('');
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
-  const [productos, setProductos] = useState([{ desc: '', marca: '', cant: 1 }]);
+  const [productos, setProductos] = useState([{ desc: '', marca: '', cant: 1, precio: 0, tiempoEntrega: '', modalidad: 'Aéreo' }]);
   const [sugerenciasMarca, setSugerenciasMarca] = useState([[]]);
   const [indiceSugerenciaMarca, setIndiceSugerenciaMarca] = useState([-1]);
   const [buscandoMarca, setBuscandoMarca] = useState([false]);
@@ -37,12 +38,15 @@ export const NuevaRFQ = () => {
   const [buscandoProducto, setBuscandoProducto] = useState([false]);
   const [mostrarSugerenciasProducto, setMostrarSugerenciasProducto] = useState([false]);
   const [loading, setLoading] = useState(false);
-  const [validez, setValidez] = useState('5 días hábiles');
+  const [validez, setValidez] = useState('10 días hábiles');
   const [comentariosVendedor, setComentariosVendedor] = useState('');
   const [modalNuevoProd, setModalNuevoProd] = useState({ isOpen: false, idx: null, sku: '', producto: '', marca: '', saving: false });
   const debounceRef = useRef(null);
   const marcasDebounceRef = useRef([]);
   const productosDebounceRef = useRef([]);
+
+  // Ir al inicio al entrar a la vista
+  useEffect(() => { (document.querySelector('main') || window).scrollTo({ top: 0, behavior: 'instant' }); }, []);
 
   useEffect(() => {
     const termino = cliente.trim();
@@ -82,7 +86,7 @@ export const NuevaRFQ = () => {
 
   // Añadir una nueva fila de producto
   const addFila = () => {
-    setProductos([...productos, { desc: '', marca: '', cant: 1 }]);
+    setProductos([...productos, { desc: '', marca: '', cant: 1, precio: 0, tiempoEntrega: '', modalidad: 'Aéreo' }]);
     setSugerenciasMarca((prev) => [...prev, []]);
     setIndiceSugerenciaMarca((prev) => [...prev, -1]);
     setBuscandoMarca((prev) => [...prev, false]);
@@ -371,7 +375,7 @@ export const NuevaRFQ = () => {
           nextNum = (counterDoc.data().lastNum || 0) + 1;
         }
 
-        const correlativo = `RFQ-${nextNum.toString().padStart(4, '0')}`;
+        const correlativo = `PED-${nextNum.toString().padStart(4, '0')}`;
         
         const dataParaGuardar = {
           cliente: clienteNormalizado,
@@ -381,21 +385,26 @@ export const NuevaRFQ = () => {
           vendedorId: auth.currentUser.uid,
           vendedorEmail: auth.currentUser.email,
           vendedorNombre: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
-          estado: 'Pendiente',
+          estado: 'Enviado a Compras',
+          tipo: 'Pedido Manual',
           fechaS: serverTimestamp(),
           productos: productos.map(p => ({
             ...p,
             marca: normalizarNombreMarca(p.marca),
             descripcion: p.desc, 
             disponible: false,
-            fob: 0,
-            fva: 1.30,
-            fvm: 1.25,
-            selected: true
+            fob: p.precio || 0,
+            fechaCompromiso: p.tiempoEntrega || '',
+            modalidad: p.modalidad || 'Aéreo',
+            fva: 1,
+            fvm: 1,
+            factorA: 1,
+            factorM: 1,
+            selected: true,
+            estadoItem: 'Pendiente'
           }))
         };
 
-        transaction.set(counterRef, { lastNum: nextNum }, { merge: true });
         transaction.set(counterRef, { lastNum: nextNum }, { merge: true });
         transaction.set(nuevaSolicitudRef, dataParaGuardar);
         return { ...dataParaGuardar, id: nuevaSolicitudRef.id };
@@ -423,7 +432,7 @@ export const NuevaRFQ = () => {
             replyTo: auth.currentUser.email,
             to: destinatarioTo,
             cc: ccEmails,
-            subject: `Nueva RFQ: ${savedData.correlativo} - ${savedData.cliente}`,
+            subject: `Nuevo Pedido Manual: ${savedData.correlativo} - ${savedData.cliente}`,
             bodyHtml: htmlBody
           })
         });
@@ -448,22 +457,23 @@ export const NuevaRFQ = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom-4 duration-500 pb-52 md:pb-12">
+    <div className="w-full max-w-[1700px] mx-auto px-3 sm:px-4 md:px-6 lg:px-10 animate-in slide-in-from-bottom-4 duration-500 pb-52 md:pb-12">
       <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic">NUEVA SOLICITUD</h1>
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tighter italic">NUEVO PEDIDO MANUAL</h1>
           <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Detalles para el equipo de compras</p>
         </div>
         <button 
           type="button"
           onClick={() => window.history.back()} 
-          className="text-slate-400 hover:text-slate-600 font-black text-xs uppercase tracking-widest"
+          className="shrink-0 text-slate-400 hover:text-slate-600 font-black text-xs uppercase tracking-widest"
         >
           Cancelar
         </button>
       </div>
 
       <form onSubmit={guardarRFQ} className="space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
         {/* Card Cliente */}
         <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl border border-slate-200 shadow-xl shadow-slate-100">
           <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Nombre del Cliente / Empresa</label>
@@ -533,7 +543,7 @@ export const NuevaRFQ = () => {
               type="text" 
               required
               className="w-full text-base sm:text-lg font-bold outline-none border-b-2 border-slate-100 focus:border-emerald-500 transition-all pb-1 text-slate-700"
-              placeholder="EJ: 5 DÍAS HÁBILES, 15 DÍAS"
+              placeholder="EJ: 10 DÍAS HÁBILES, 15 DÍAS"
               value={validez}
               onChange={(e) => setValidez(e.target.value)}
             />
@@ -554,6 +564,7 @@ export const NuevaRFQ = () => {
             onChange={(e) => setComentariosVendedor(e.target.value)}
           />
         </div>
+        </div>
 
         {/* Listado de Productos */}
         <div className="bg-white rounded-3xl sm:rounded-4xl border border-slate-200 shadow-xl shadow-slate-100 overflow-visible">
@@ -568,209 +579,53 @@ export const NuevaRFQ = () => {
             </button>
           </div>
           
-          {/* Vista Móvil (< md): Tarjetas de Ítems */}
-          <div className="p-3 sm:p-4 md:hidden space-y-4">
+          {/* Vista Móvil/Tablet/Laptop (< xl): Tarjetas de Ítems */}
+          <div className="p-3 sm:p-4 xl:hidden grid grid-cols-1 lg:grid-cols-2 gap-4">
             {productos.map((p, idx) => (
-              <div key={idx} className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80 space-y-3 relative">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-200/60">
-                  <span className="text-xs font-black text-slate-700 uppercase tracking-wider">
-                    Ítem #{idx + 1}
-                  </span>
-                  {productos.length > 1 && (
-                    <button 
-                      type="button"
-                      onClick={() => removeFila(idx)}
-                      className="w-8 h-8 rounded-xl flex items-center justify-center text-rose-500 hover:bg-rose-50 transition-all font-bold"
-                      aria-label="Eliminar ítem"
-                    >
-                      <X size={16} />
-                    </button>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 tracking-widest">
-                    Descripción del Repuesto
-                  </label>
-                  <div className="relative">
-                    <input 
-                      type="text" 
-                      required
-                      className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 uppercase text-base focus:border-emerald-500 transition-all shadow-xs"
-                      placeholder="SKU o nombre del ítem..."
-                      value={p.desc}
-                      onFocus={() => {
-                        updateMarcaState(setMostrarSugerenciasProducto, idx, true);
-                        if ((sugerenciasProducto[idx] || []).length > 0 && indiceSugerenciaProducto[idx] < 0) {
-                          updateMarcaState(setIndiceSugerenciaProducto, idx, 0);
-                        }
-                      }}
-                      onBlur={() =>
-                        setTimeout(() => {
-                          updateMarcaState(setMostrarSugerenciasProducto, idx, false);
-                          updateMarcaState(setIndiceSugerenciaProducto, idx, -1);
-                        }, 200)
-                      }
-                      onKeyDown={(e) => manejarTeclasProducto(e, idx)}
-                      onChange={(e) => {
-                        updateProducto(idx, 'desc', e.target.value.toUpperCase());
-                        updateMarcaState(setMostrarSugerenciasProducto, idx, true);
-                        buscarProductosConDebounce(idx, e.target.value);
-                      }}
-                    />
-                    {buscandoProducto[idx] && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <Loader2 size={16} className="animate-spin text-slate-400" />
-                      </div>
-                    )}
-
-                    {mostrarSugerenciasProducto[idx] && String(p.desc || '').trim().length >= 1 && (
-                      <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg py-1">
-                        {buscandoProducto[idx] && (
-                          <div className="px-4 py-2 flex items-center gap-2 text-xs font-medium text-slate-400 italic">
-                            <Loader2 size={14} className="animate-spin" />
-                            <span>Buscando en catálogo...</span>
-                          </div>
-                        )}
-
-                        {!buscandoProducto[idx] && (sugerenciasProducto[idx] || []).length === 0 && (
-                          <div className="px-4 py-2 text-xs font-medium text-slate-400 italic">Sin resultados. Se guardará como texto libre.</div>
-                        )}
-
-                        {!buscandoProducto[idx] && (sugerenciasProducto[idx] || []).map((s, sIdx) => (
-                          <button
-                            key={s.id}
-                            type="button"
-                            className={`w-full text-left px-4 py-2 transition-colors ${
-                              sIdx === indiceSugerenciaProducto[idx] ? 'bg-slate-100' : 'hover:bg-slate-50'
-                            }`}
-                            onMouseEnter={() => updateMarcaState(setIndiceSugerenciaProducto, idx, sIdx)}
-                            onMouseDown={() => {
-                              seleccionarSugerenciaProducto(idx, s);
-                            }}
-                          >
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[15px] font-black text-slate-900 tracking-tight">{s.s}</span>
-                                {s.local && <span className="text-[10px] px-1.5 rounded border border-slate-200 text-slate-400 italic">local</span>}
-                              </div>
-                              <span className="text-[11px] font-semibold text-slate-500 uppercase truncate mt-0.5">{s.n}</span>
-                              <span className="text-[10px] font-medium text-slate-400 mt-0.5">{s.m} — {s.c}</span>
-                            </div>
-                          </button>
-                        ))}
-                        {!buscandoProducto[idx] && (sugerenciasProducto[idx] || []).length === 0 && (
-                          <div className="p-2 border-t border-slate-100 bg-slate-50 rounded-b-lg">
-                            <button
-                              type="button"
-                              className="w-full text-left px-3 py-2 text-xs font-bold text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded flex items-center gap-2 transition-colors"
-                              onMouseDown={() => {
-                                setModalNuevoProd({ isOpen: true, idx, sku: p.desc || '', producto: '', marca: productos[idx]?.marca || '', saving: false });
-                                updateMarcaState(setMostrarSugerenciasProducto, idx, false);
-                              }}
-                            >
-                              <PlusCircle size={14} />
-                              Agregar "{p.desc}" al catálogo
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="col-span-2">
-                    <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 tracking-widest">
-                      Marca / Referencia
-                    </label>
-                    <div className="relative">
-                      <input 
-                        type="text" 
-                        className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-blue-600 text-base italic focus:border-emerald-500 transition-all shadow-xs"
-                        placeholder="Marca..."
-                        value={p.marca}
-                        onFocus={() => {
-                          updateMarcaState(setMostrarSugerenciasMarca, idx, true);
-                          if ((sugerenciasMarca[idx] || []).length > 0 && indiceSugerenciaMarca[idx] < 0) {
-                            updateMarcaState(setIndiceSugerenciaMarca, idx, 0);
-                          }
-                        }}
-                        onBlur={() =>
-                          setTimeout(() => {
-                            updateMarcaState(setMostrarSugerenciasMarca, idx, false);
-                            updateMarcaState(setIndiceSugerenciaMarca, idx, -1);
-                          }, 120)
-                        }
-                        onKeyDown={(e) => manejarTeclasMarca(e, idx)}
-                        onChange={(e) => {
-                          const marcaEnMayusculas = e.target.value.toUpperCase();
-                          updateProducto(idx, 'marca', marcaEnMayusculas);
-                          updateMarcaState(setMostrarSugerenciasMarca, idx, true);
-                          buscarMarcasConDebounce(idx, marcaEnMayusculas);
-                        }}
-                      />
-
-                      {mostrarSugerenciasMarca[idx] && String(p.marca || '').trim().length >= 2 && (
-                        <div className="absolute z-50 mt-2 w-full max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
-                          {buscandoMarca[idx] && (
-                            <div className="px-4 py-3 text-xs font-bold text-slate-500">Buscando marcas guardadas...</div>
-                          )}
-
-                          {!buscandoMarca[idx] && !errorMarca[idx] && (sugerenciasMarca[idx] || []).length === 0 && (
-                            <div className="px-4 py-3 text-xs font-bold text-slate-500">No hay coincidencias. Se guardará como nueva al enviar.</div>
-                          )}
-
-                          {!buscandoMarca[idx] && errorMarca[idx] && (
-                            <div className="px-4 py-3 text-xs font-bold text-rose-600">{errorMarca[idx]}</div>
-                          )}
-
-                          {!buscandoMarca[idx] && (sugerenciasMarca[idx] || []).map((s, sIdx) => (
-                            <button
-                              key={s.id}
-                              type="button"
-                              className={`w-full text-left px-4 py-3 border-b last:border-b-0 border-slate-100 ${
-                                sIdx === indiceSugerenciaMarca[idx] ? 'bg-slate-50' : 'hover:bg-slate-50'
-                              }`}
-                              onMouseEnter={() => updateMarcaState(setIndiceSugerenciaMarca, idx, sIdx)}
-                              onMouseDown={() => {
-                                seleccionarSugerenciaMarca(idx, s.nombre || '');
-                              }}
-                            >
-                              <p className="text-sm font-black text-slate-700 uppercase">{s.nombre}</p>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[9px] font-black text-slate-400 uppercase mb-1 tracking-widest">
-                      Cant.
-                    </label>
-                    <input 
-                      type="number" 
-                      min="1"
-                      className="w-full p-3 bg-white border border-slate-200 rounded-xl text-center font-black text-slate-700 text-base outline-none focus:border-emerald-500 transition-all shadow-xs"
-                      value={p.cant}
-                      onChange={(e) => updateProducto(idx, 'cant', parseInt(e.target.value) || 1)}
-                    />
-                  </div>
-                </div>
-              </div>
+              <NuevoPedidoMobileCard
+                key={idx}
+                idx={idx}
+                p={p}
+                productosLen={productos.length}
+                removeFila={removeFila}
+                updateProducto={updateProducto}
+                sugerenciasProducto={sugerenciasProducto[idx]}
+                buscandoProducto={buscandoProducto[idx]}
+                mostrarSugerenciasProducto={mostrarSugerenciasProducto[idx]}
+                indiceSugerenciaProducto={indiceSugerenciaProducto[idx]}
+                setMostrarSugerenciasProducto={setMostrarSugerenciasProducto}
+                setIndiceSugerenciaProducto={setIndiceSugerenciaProducto}
+                updateMarcaState={updateMarcaState}
+                buscarProductosConDebounce={buscarProductosConDebounce}
+                manejarTeclasProducto={manejarTeclasProducto}
+                seleccionarSugerenciaProducto={seleccionarSugerenciaProducto}
+                setModalNuevoProd={setModalNuevoProd}
+                sugerenciasMarca={sugerenciasMarca[idx]}
+                buscandoMarca={buscandoMarca[idx]}
+                mostrarSugerenciasMarca={mostrarSugerenciasMarca[idx]}
+                indiceSugerenciaMarca={indiceSugerenciaMarca[idx]}
+                setMostrarSugerenciasMarca={setMostrarSugerenciasMarca}
+                setIndiceSugerenciaMarca={setIndiceSugerenciaMarca}
+                buscarMarcasConDebounce={buscarMarcasConDebounce}
+                manejarTeclasMarca={manejarTeclasMarca}
+                seleccionarSugerenciaMarca={seleccionarSugerenciaMarca}
+                errorMarca={errorMarca[idx]}
+              />
             ))}
           </div>
 
-          {/* Vista Escritorio (>= md): Tabla tradicional */}
-          <div className="p-2 hidden md:block">
-            <table className="w-full">
+          {/* Vista Escritorio (>= xl): Tabla tradicional */}
+          <div className="hidden xl:block p-2">
+            <table className="w-full min-w-[880px] table-fixed">
               <thead className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
                 <tr>
-                  <th className="p-4 text-left">Descripción del Repuesto</th>
-                  <th className="p-4 text-left">Marca / Referencia</th>
-                  <th className="p-4 text-center w-24">Cant.</th>
-                  <th className="p-4 w-10"></th>
+                  <th className="p-4 text-left w-[29%]">Descripción del Repuesto</th>
+                  <th className="p-3 w-[18%] text-left">Marca</th>
+                  <th className="p-3 w-[9%] text-center">Cant.</th>
+                  <th className="p-3 w-[13%] text-left">Precio Venta (OC)</th>
+                  <th className="p-3 w-[14%] text-left">T. Entrega Solicitado</th>
+                  <th className="p-3 w-[13%] text-left">Modalidad</th>
+                  <th className="p-4 w-[4%]"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -932,6 +787,38 @@ export const NuevaRFQ = () => {
                         value={p.cant}
                         onChange={(e) => updateProducto(idx, 'cant', parseInt(e.target.value) || 1)}
                       />
+                    </td>
+                    <td className="p-2">
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                        <input 
+                          type="number" 
+                          min="0" step="0.01"
+                          className="w-full p-3 pl-7 bg-slate-100 rounded-xl font-black text-emerald-700 outline-none focus:bg-emerald-50 focus:text-emerald-600 transition-all"
+                          value={p.precio || ''}
+                          onChange={(e) => updateProducto(idx, 'precio', parseFloat(e.target.value) || '')}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </td>
+                    <td className="p-2">
+                      <input 
+                        type="text" 
+                        className="w-full p-3 bg-slate-100 rounded-xl font-bold text-slate-700 outline-none focus:bg-emerald-50 focus:text-emerald-600 transition-all"
+                        value={p.tiempoEntrega || ''}
+                        onChange={(e) => updateProducto(idx, 'tiempoEntrega', e.target.value)}
+                        placeholder="Ej: 10 días"
+                      />
+                    </td>
+                    <td className="p-2">
+                      <select
+                        value={p.modalidad || 'Aéreo'}
+                        onChange={(e) => updateProducto(idx, 'modalidad', e.target.value)}
+                        className="w-full p-3 bg-slate-100 rounded-xl font-black text-slate-700 text-xs outline-none focus:bg-emerald-50 focus:text-emerald-600 transition-all cursor-pointer"
+                      >
+                        <option value="Aéreo">Aéreo</option>
+                        <option value="Marítimo">Marítimo</option>
+                      </select>
                     </td>
                     <td className="p-2 text-center">
                       {productos.length > 1 && (

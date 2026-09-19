@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/Badge';
 import { 
   Calendar as CalendarIcon, Trash2, AlertTriangle, Filter, 
-  ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Hash 
+  ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Hash, Package
 } from 'lucide-react';
 import { MobileBadge } from '../../components/mobile';
 import { usePersistedState } from '../../hooks/usePersistedState';
@@ -265,12 +265,20 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Estado de RFQs enviadas</p>
         </div>
         {canCreate && (
-          <button 
-            onClick={() => navigate('/vendedor/nueva')}
-            className="w-full sm:w-auto justify-center bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-2xl text-xs sm:text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 flex items-center gap-2 cursor-pointer active:scale-95"
-          >
-            + Nueva RFQ
-          </button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <button 
+              onClick={() => navigate('/vendedor/nueva')}
+              className="flex-1 sm:flex-none justify-center bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-2xl text-xs sm:text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 flex items-center gap-2 cursor-pointer active:scale-95"
+            >
+              + Nueva RFQ
+            </button>
+            <button 
+              onClick={() => navigate('/vendedor/nuevo-pedido')}
+              className="flex-1 sm:flex-none justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl text-xs sm:text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-100 flex items-center gap-2 cursor-pointer active:scale-95"
+            >
+              + Pedido Manual
+            </button>
+          </div>
         )}
       </div>
 
@@ -500,7 +508,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
             return (
               <div
                 key={s.id}
-                onClick={() => navigate(`/vendedor/detalle/${s.id}`)}
+                onClick={() => navigate(s.tipo === 'Pedido Manual' ? `/vendedor/pedido-manual/${s.id}` : `/vendedor/detalle/${s.id}`)}
                 className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer relative active:scale-[0.98] touch-manipulation"
               >
                 {/* Header: Correlativo + Alertas (Izq) y Estado (Der) */}
@@ -690,7 +698,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   </td>
                   <td className="p-4 text-center">
                     <button 
-                      onClick={() => navigate(`/vendedor/detalle/${s.id}`)}
+                      onClick={() => navigate(s.tipo === 'Pedido Manual' ? `/vendedor/pedido-manual/${s.id}` : `/vendedor/detalle/${s.id}`)}
                       className="bg-white border-2 border-slate-100 hover:border-slate-900 text-slate-900 px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm"
                     >
                       Ver Detalle

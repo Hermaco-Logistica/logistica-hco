@@ -22,6 +22,8 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   const [verPreview, setVerPreview] = useState(false);
 
   const [seleccionados, setSeleccionados] = useState({});
+  const [contraOfertas, setContraOfertas] = useState({});
+  const [enviandoContraOferta, setEnviandoContraOferta] = useState(false);
   const [modalidades, setModalidades] = useState({});
   const [linkOC, setLinkOC] = useState('');
   const [notasPedido, setNotasPedido] = useState('');
@@ -30,6 +32,52 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   const [documentacionOpen, setDocumentacionOpen] = useState(false);
   const [modalidadesOpen, setModalidadesOpen] = useState(false);
 
+  const enviarContraOferta = async (idx) => {
+    if (!window.confirm('¿Enviar este nuevo precio/tiempo a compras para su revisión?')) return;
+    setEnviandoContraOferta(true);
+    try {
+      const docRef = doc(db, 'solicitudes', id);
+      const updatedProductos = [...rfq.productos];
+      const oferta = contraOfertas[idx] || {};
+      
+      updatedProductos[idx] = {
+        ...updatedProductos[idx],
+        fob: Number(oferta.fob || updatedProductos[idx].fob),
+        fechaCompromiso: oferta.fechaCompromiso || updatedProductos[idx].fechaCompromiso,
+        estadoItem: 'Pendiente' // Regresa a compras
+      };
+
+      // Recalcular estado global
+      const todosAprobados = updatedProductos.every(p => p.estadoItem === 'Pedido');
+      const todosDenegados = updatedProductos.every(p => p.estadoItem === 'Denegado' || p.estadoItem === 'Rechazado' || p.estadoItem === 'Cancelado');
+      const algunDevuelto = updatedProductos.some(p => p.estadoItem === 'Cotizado');
+      
+      let nuevoEstado = 'Enviado a Compras';
+      if (todosAprobados) nuevoEstado = 'Pedido';
+      else if (todosDenegados) nuevoEstado = 'Denegado';
+      else if (algunDevuelto) nuevoEstado = 'Cotizado Parcial';
+
+      await updateDoc(docRef, {
+        productos: updatedProductos,
+        estado: nuevoEstado
+      });
+
+      alert('Contraoferta enviada a Compras');
+      
+      // Limpiar estado local
+      setContraOfertas(prev => {
+        const next = { ...prev };
+        delete next[idx];
+        return next;
+      });
+    } catch (error) {
+      console.error('Error enviando contraoferta:', error);
+      alert('Error al enviar contraoferta');
+    } finally {
+      setEnviandoContraOferta(false);
+    }
+  };
+
   const esItemYaPedido = (p) => {
     if (!p) return false;
     if (p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado') return true;
@@ -37,12 +85,14 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     return false;
   };
 
-  const hayItemsPendientesDePedir = rfq?.productos?.some(p => Number(p.fob || 0) > 0 && !esItemYaPedido(p));
+  const esItemDenegado = (p) => p && (p.estadoItem === 'Denegado' || p.estadoItem === 'Cancelado' || p.estadoItem === 'Rechazado');
+
+  const hayItemsPendientesDePedir = rfq?.productos?.some(p => Number(p.fob || 0) > 0 && !esItemYaPedido(p) && !esItemDenegado(p));
   const pedidoYaCreado = (rfq?.estado === 'Pedido' || rfq?.estado === 'Comprado') || (rfq?.estado === 'Pedido Parcial' && !hayItemsPendientesDePedir);
   const esPropietarioDeRFQ = (rfq?.vendedorId && rfq.vendedorId === auth.currentUser?.uid) ||
     (rfq?.vendedorEmail && auth.currentUser?.email && rfq.vendedorEmail.toLowerCase() === auth.currentUser.email.toLowerCase());
   const puedeConfirmarPedido = canGenerarPedido && (!soloPropiasParaPedido || esPropietarioDeRFQ) && hayItemsPendientesDePedir;
-  const totalItemsSeleccionables = rfq?.productos?.filter(p => Number(p.fob || 0) > 0 && !esItemYaPedido(p)).length ?? 0;
+  const totalItemsSeleccionables = rfq?.productos?.filter(p => Number(p.fob || 0) > 0 && !esItemYaPedido(p) && !esItemDenegado(p)).length ?? 0;
   const totalItemsSeleccionados = Object.values(seleccionados).filter(Boolean).length;
   const seraParcial = puedeConfirmarPedido && totalItemsSeleccionados > 0 && totalItemsSeleccionados < totalItemsSeleccionables;
   const productosDelPedido = pedidoYaCreado
@@ -135,7 +185,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         const selInit = {};
         const modInit = {};
         data.productos.forEach((p, idx) => {
-          if (Number(p.fob) > 0 && !esItemYaPedido(p)) {
+          if (Number(p.fob) > 0 && !esItemYaPedido(p) && !esItemDenegado(p)) {
             selInit[idx] = false;
             modInit[idx] = 'A';
           }
@@ -644,15 +694,20 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                 const fobVal = Number(p.fob || 0);
                 const estaCotizado = fobVal > 0;
                 const yaFuePedido = esItemYaPedido(p);
+                const fueDenegado = esItemDenegado(p);
                 const ventaA = fobVal * (p.factorA || rfq.factorA || 1) * (p.fva || 1.30);
                 const ventaM = fobVal * (p.factorM || rfq.factorM || 1.08) * (p.fvm || 1.25);
 
                 return (
-                  <tr key={idx} className={`${seleccionados[idx] ? 'bg-slate-50' : (yaFuePedido ? 'bg-emerald-50/20' : 'bg-white')} hover:bg-slate-50/50 transition-colors ${!estaCotizado ? 'opacity-60 bg-slate-50/30' : ''}`}>
+                  <tr key={idx} className={`${seleccionados[idx] ? 'bg-slate-50' : (yaFuePedido ? 'bg-emerald-50/20' : fueDenegado ? 'bg-rose-50/20' : 'bg-white')} hover:bg-slate-50/50 transition-colors ${(!estaCotizado || fueDenegado) ? 'opacity-60 bg-slate-50/30' : ''}`}>
                     <td className="p-5 text-center">
                       {yaFuePedido ? (
                         <div className="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-sm" title="Ítem ya pedido previamente">
                           <CheckCircle2 size={16} />
+                        </div>
+                      ) : fueDenegado ? (
+                        <div className="w-7 h-7 rounded-lg bg-rose-500 text-white flex items-center justify-center mx-auto shadow-sm" title="Ítem denegado por Compras">
+                          <X size={16} />
                         </div>
                       ) : estaCotizado ? (
                         <button
@@ -687,6 +742,11 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                             {(!p.modalidad || p.modalidad === 'Aéreo') ? <Plane size={10} /> : <Ship size={10} />}
                           </span>
                         </span>
+                      ) : fueDenegado ? (
+                        <span className="inline-flex items-center gap-1.5 text-[8px] px-2 py-0.5 rounded-full font-black uppercase mt-2 tracking-widest bg-rose-50 text-rose-700 border border-rose-200/60">
+                          <X size={10} className="text-rose-500" />
+                          <span>Denegado</span>
+                        </span>
                       ) : !estaCotizado && (
                         (p.enConsulta || p.estadoItem === 'En consulta') ? (
                           <span className="inline-flex items-center gap-1 text-[8px] bg-amber-500 text-white px-2.5 py-0.5 rounded-full font-black uppercase mt-2 shadow-sm">
@@ -702,40 +762,95 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                       )}
                     </td>
                     <td className="p-5 text-center font-black text-slate-400 text-lg">{p.cant}</td>
-                    <td className="p-5 text-center bg-emerald-50/30">
-                      {estaCotizado ? <><div className="text-emerald-700 font-black text-base">${ventaA.toFixed(2)}</div><div className="text-[9px] text-emerald-500 font-bold uppercase">Total: ${(ventaA * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
-                    </td>
-                    <td className="p-5 text-center bg-blue-50/30">
-                      {estaCotizado ? <><div className="text-blue-700 font-black text-base">${ventaM.toFixed(2)}</div><div className="text-[9px] text-blue-500 font-bold uppercase">Total: ${(ventaM * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
-                    </td>
+                    {rfq?.tipo === 'Pedido Manual' ? (
+                      <td className="p-5 text-center bg-emerald-50/30">
+                        {estaCotizado ? (
+                          p.estadoItem === 'Cotizado' ? (
+                            <div className="flex flex-col gap-2">
+                              <div className="relative">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                <input
+                                  type="number"
+                                  value={contraOfertas[idx]?.fob !== undefined ? contraOfertas[idx].fob : p.fob}
+                                  onChange={(e) => setContraOfertas(prev => ({ ...prev, [idx]: { ...prev[idx], fob: e.target.value } }))}
+                                  className="w-24 pl-6 p-1.5 bg-white border border-emerald-300 rounded outline-none focus:border-emerald-500 font-bold text-emerald-700 text-sm mx-auto block"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-emerald-700 font-black text-base">${ventaA.toFixed(2)}</div>
+                          )
+                        ) : <span className="text-slate-300 italic font-bold">---</span>}
+                      </td>
+                    ) : (
+                      <>
+                        <td className="p-5 text-center bg-emerald-50/30">
+                          {estaCotizado ? <><div className="text-emerald-700 font-black text-base">${ventaA.toFixed(2)}</div><div className="text-[9px] text-emerald-500 font-bold uppercase">Total: ${(ventaA * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
+                        </td>
+                        <td className="p-5 text-center bg-blue-50/30">
+                          {estaCotizado ? <><div className="text-blue-700 font-black text-base">${ventaM.toFixed(2)}</div><div className="text-[9px] text-blue-500 font-bold uppercase">Total: ${(ventaM * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
+                        </td>
+                      </>
+                    )}
                     <td className="p-5 text-center">
                       {yaFuePedido ? (
                         <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
                           {p.modalidad || 'Aéreo'}
                         </span>
                       ) : seleccionados[idx] ? (
-                        <select
-                          value={modalidades[idx]}
-                          onChange={(e) => setModalidades(prev => ({ ...prev, [idx]: e.target.value }))}
-                          disabled={!puedeConfirmarPedido}
-                          className="bg-slate-100 border-none rounded-lg p-2 font-black text-[10px] uppercase text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <option value="A">Aéreo</option><option value="M">Marítimo</option>
-                        </select>
+                        rfq?.tipo === 'Pedido Manual' ? (
+                          <span className="text-emerald-600 font-black uppercase text-xs">Aceptado</span>
+                        ) : (
+                          <select
+                            value={modalidades[idx]}
+                            onChange={(e) => setModalidades(prev => ({ ...prev, [idx]: e.target.value }))}
+                            disabled={!puedeConfirmarPedido}
+                            className="bg-slate-100 border-none rounded-lg p-2 font-black text-[10px] uppercase text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <option value="A">Aéreo</option><option value="M">Marítimo</option>
+                          </select>
+                        )
                       ) : <span className="text-slate-300 italic text-[10px]">{estaCotizado ? 'Elegir para pedir' : 'Esperando'}</span>}
                     </td>
                     <td className="p-5">
                       {estaCotizado ? (
-                        <div className="space-y-2">
-                          <div className="flex flex-col">
-                             <span className="text-[9px] font-black text-emerald-600 uppercase">Aéreo</span>
-                             <span className="font-bold text-slate-700">{p.entregaA} d.h. <span className="text-slate-400 font-medium ml-1">({obtenerFechaEstimada(p.entregaA)})</span></span>
+                        rfq?.tipo === 'Pedido Manual' ? (
+                          <div className="flex flex-col gap-2">
+                            {p.estadoItem === 'Cotizado' ? (
+                              <>
+                                <input
+                                  type="text"
+                                  value={contraOfertas[idx]?.fechaCompromiso !== undefined ? contraOfertas[idx].fechaCompromiso : (p.fechaCompromiso || p.entregaA || '')}
+                                  onChange={(e) => setContraOfertas(prev => ({ ...prev, [idx]: { ...prev[idx], fechaCompromiso: e.target.value } }))}
+                                  className="w-full p-1.5 bg-white border border-slate-300 rounded outline-none focus:border-emerald-500 font-bold text-slate-700 text-sm"
+                                />
+                                {(contraOfertas[idx]?.fob !== undefined || contraOfertas[idx]?.fechaCompromiso !== undefined) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => enviarContraOferta(idx)}
+                                    disabled={enviandoContraOferta}
+                                    className="mt-1 text-[10px] uppercase font-black tracking-widest text-white bg-amber-500 hover:bg-amber-600 p-1.5 rounded-md transition-colors"
+                                  >
+                                    Reenviar a Compras
+                                  </button>
+                                )}
+                              </>
+                            ) : (
+                              <span className="font-bold text-slate-700">{p.fechaCompromiso || p.entregaA || 'N/A'}</span>
+                            )}
                           </div>
-                          <div className="flex flex-col">
-                             <span className="text-[9px] font-black text-blue-600 uppercase">Marítimo</span>
-                             <span className="font-bold text-slate-700">{p.entregaM} d.h. <span className="text-slate-400 font-medium ml-1">({obtenerFechaEstimada(p.entregaM)})</span></span>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="flex flex-col">
+                               <span className="text-[9px] font-black text-emerald-600 uppercase">Aéreo</span>
+                               <span className="font-bold text-slate-700">{p.entregaA} d.h. <span className="text-slate-400 font-medium ml-1">({obtenerFechaEstimada(p.entregaA)})</span></span>
+                            </div>
+                            <div className="flex flex-col">
+                               <span className="text-[9px] font-black text-blue-600 uppercase">Marítimo</span>
+                               <span className="font-bold text-slate-700">{p.entregaM} d.h. <span className="text-slate-400 font-medium ml-1">({obtenerFechaEstimada(p.entregaM)})</span></span>
+                            </div>
                           </div>
-                        </div>
+                        )
                       ) : '—'}
                     </td>
                   </tr>

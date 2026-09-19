@@ -11,7 +11,7 @@ export const generarPlantillaNuevaRFQ = (savedData) => {
   return `
     <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
       <div style="background-color: #0f172a; padding: 20px; text-align: center;">
-        <h2 style="color: #ffffff; margin: 0; font-size: 20px;">NUEVA SOLICITUD DE COMPRA (RFQ)</h2>
+        <h2 style="color: #ffffff; margin: 0; font-size: 20px;">${savedData.tipo === 'Pedido Manual' ? 'NUEVO PEDIDO MANUAL' : 'NUEVA SOLICITUD DE COMPRA (RFQ)'}</h2>
       </div>
       <div style="padding: 20px;">
         <p style="margin: 5px 0;"><strong>Correlativo:</strong> <span style="color: #10b981; font-weight: bold;">${savedData.correlativo}</span></p>
@@ -28,6 +28,7 @@ export const generarPlantillaNuevaRFQ = (savedData) => {
               <th style="padding: 12px; font-size: 12px; text-transform: uppercase;">Producto</th>
               <th style="padding: 12px; font-size: 12px; text-transform: uppercase;">Marca</th>
               <th style="padding: 12px; font-size: 12px; text-transform: uppercase; text-align: center;">Cant.</th>
+              ${savedData.tipo === 'Pedido Manual' ? '<th style="padding: 12px; font-size: 12px; text-transform: uppercase; text-align: right;">Precio Venta</th>' : ''}
             </tr>
           </thead>
           <tbody>
@@ -36,6 +37,7 @@ export const generarPlantillaNuevaRFQ = (savedData) => {
                 <td style="padding: 12px; font-size: 13px;">${String(p.descripcion || '').toUpperCase()}</td>
                 <td style="padding: 12px; font-size: 13px;">${p.marca || '-'}</td>
                 <td style="padding: 12px; font-size: 13px; text-align: center; font-weight: bold;">${p.cant}</td>
+                ${savedData.tipo === 'Pedido Manual' ? `<td style="padding: 12px; font-size: 13px; text-align: right;">$${Number(p.fob || p.precio || 0).toFixed(2)}</td>` : ''}
               </tr>
             `).join('')}
           </tbody>

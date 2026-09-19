@@ -112,9 +112,9 @@ export const BottomTabBar = ({ role, onOpenDrawer }) => {
             icon: <PackageCheck size={20} />
           },
           {
-            label: 'Análisis',
-            path: '/analisis',
-            icon: <BarChart3 size={20} />
+            label: 'Nueva',
+            path: '/vendedor/nueva',
+            icon: <FilePlus size={20} />
           },
           {
             label: 'Más',

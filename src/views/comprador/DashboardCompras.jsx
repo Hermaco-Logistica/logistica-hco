@@ -497,7 +497,11 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                 key={s.id}
                 onClick={() => {
                   if (!readOnly) {
-                    navigate(`/calculadora/${s.id}`);
+                    if (s.tipo === 'Pedido Manual') {
+                      navigate(`/compras/revision-pedido/${s.id}`);
+                    } else {
+                      navigate(`/calculadora/${s.id}`);
+                    }
                   } else {
                     abrirVistaCotizacion(s);
                   }
@@ -567,7 +571,21 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                     className="flex items-center justify-end gap-2"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {s.estado === 'Cotizado' || s.estado === 'Pedido' || (
+                    {s.tipo === 'Pedido Manual' ? (
+                      <button 
+                        onClick={() => {
+                          if (!readOnly) navigate(`/compras/revision-pedido/${s.id}`);
+                        }}
+                        disabled={readOnly}
+                        className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border ${
+                          readOnly
+                            ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                            : 'bg-purple-600 hover:bg-purple-700 text-white'
+                        }`}
+                      >
+                        {readOnly ? 'En proceso' : 'Revisar Pedido'}
+                      </button>
+                    ) : s.estado === 'Cotizado' || s.estado === 'Pedido' || (
                       (s.estado === 'Cotizado Parcial' || s.estado === 'Pedido Parcial') && !tienePendientes
                     ) ? (
                       <>
@@ -693,7 +711,21 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   </td>
                   <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-2">
-                      {s.estado === 'Cotizado' || s.estado === 'Pedido' || (
+                      {s.tipo === 'Pedido Manual' ? (
+                        <button 
+                          onClick={() => {
+                            if (!readOnly) navigate(`/compras/revision-pedido/${s.id}`);
+                          }}
+                          disabled={readOnly}
+                          className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border ${
+                            readOnly
+                              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                              : 'bg-purple-600 hover:bg-purple-700 text-white'
+                          }`}
+                        >
+                          {readOnly ? 'En proceso' : 'Revisar Pedido'}
+                        </button>
+                      ) : s.estado === 'Cotizado' || s.estado === 'Pedido' || (
                         (s.estado === 'Cotizado Parcial' || s.estado === 'Pedido Parcial') && !tienePendientesPorCotizar
                       ) ? (
                         <>
