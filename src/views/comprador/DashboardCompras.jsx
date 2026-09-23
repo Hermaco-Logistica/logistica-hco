@@ -101,10 +101,19 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
     return 'bg-white border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white';
   };
 
-  const calcularItemsCotizados = (solicitud) => solicitud.productos?.filter((p) => Number(p.fob) > 0) || [];
+  const calcularItemsCotizados = (solicitud) => {
+    if (solicitud.tipo === 'Pedido Manual') {
+      return solicitud.productos?.filter((p) => Number(p.precio) > 0) || [];
+    }
+    return solicitud.productos?.filter((p) => Number(p.fob) > 0) || [];
+  };
 
   const formatearTotal = (solicitud, mod) => {
     const itemsConPrecio = calcularItemsCotizados(solicitud);
+    if (solicitud.tipo === 'Pedido Manual') {
+      const total = itemsConPrecio.reduce((acc, p) => acc + (Number(p.precio || 0) * Number(p.cantidad || p.cant || 0)), 0);
+      return formatMoneda(total); // Mostrar subtotal sin IVA en el dashboard
+    }
     const total = itemsConPrecio.reduce((acc, p) => {
       const factor = mod === 'A'
         ? (p.factorA || solicitud.factorA || 1)
@@ -491,6 +500,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             const totalA = formatearTotal(s, 'A');
             const totalM = formatearTotal(s, 'M');
             const fechaResp = s.fechaCotizacion || s.fechaRespuesta;
+            const esPedidoManualTerminado = s.tipo === 'Pedido Manual' && s.productos && s.productos.length > 0 && s.productos.every(p => ['Pedido', 'Comprado', 'Denegado', 'Cancelado', 'Rechazado'].includes(p.estadoItem));
 
             return (
               <div
@@ -529,7 +539,13 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                 </div>
 
                 {/* Resumen minimalista: Totales */}
-                {itemsConPrecio.length > 0 ? (
+                {s.tipo === 'Pedido Manual' ? (
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="flex items-center gap-1.5 bg-yellow-50/50 px-2 py-1 rounded-md border border-yellow-100/50">
+                      <span className="font-mono font-black text-[11px] text-yellow-900">Total: {formatearTotal(s)}</span>
+                    </div>
+                  </div>
+                ) : itemsConPrecio.length > 0 ? (
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex items-center gap-1.5 bg-emerald-50/50 px-2 py-1 rounded-md border border-emerald-100/50">
                       <Plane size={13} className="text-emerald-500" />
@@ -572,19 +588,34 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                     onClick={(e) => e.stopPropagation()}
                   >
                     {s.tipo === 'Pedido Manual' ? (
-                      <button 
-                        onClick={() => {
-                          if (!readOnly) navigate(`/compras/revision-pedido/${s.id}`);
-                        }}
-                        disabled={readOnly}
-                        className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border ${
-                          readOnly
-                            ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                            : 'bg-purple-600 hover:bg-purple-700 text-white'
-                        }`}
-                      >
-                        {readOnly ? 'En proceso' : 'Revisar Pedido'}
-                      </button>
+                      readOnly ? (
+                        <button 
+                          onClick={() => navigate(`/vendedor/pedido-manual/${s.id}`)}
+                          className="px-5 py-2 rounded-xl text-[10px] font-black uppercase bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 transition-all shadow-sm"
+                        >
+                          Ver Pedido
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => abrirVistaCotizacion(s)}
+                            className="px-3.5 py-2 rounded-xl text-[10px] font-black bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 uppercase transition-all shadow-xs"
+                          >
+                            PDF
+                          </button>
+                          <button 
+                            onClick={() => navigate(`/compras/revision-pedido/${s.id}`)}
+                            className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border ${
+                              esPedidoManualTerminado
+                                ? 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300'
+                                : 'bg-blue-600 hover:bg-blue-700 text-white border-transparent'
+                            }`}
+                          >
+                            {esPedidoManualTerminado ? 'Ver Pedido' : 'Revisar Pedido'}
+                          </button>
+                        </>
+                      )
                     ) : s.estado === 'Cotizado' || s.estado === 'Pedido' || (
                       (s.estado === 'Cotizado Parcial' || s.estado === 'Pedido Parcial') && !tienePendientes
                     ) ? (
@@ -600,9 +631,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                           <button
                             type="button"
                             onClick={() => navigate(`/calculadora/${s.id}?readOnly=true`)}
-                            className="px-3.5 py-2 rounded-xl text-[10px] font-black bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 uppercase transition-all shadow-xs"
+                            className="px-5 py-2 rounded-xl text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all shadow-sm border border-emerald-200"
                           >
-                            Detalle
+                            Detalle RFQ
                           </button>
                         )}
                       </>
@@ -669,7 +700,11 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
               const totalA = formatearTotal(s, 'A');
               const totalM = formatearTotal(s, 'M');
 
-              const fechaResp = s.fechaCotizacion || s.fechaRespuesta;
+              const fechaResp = s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en 
+                ? s.ultimaNotificacion.en 
+                : (s.fechaCotizacion || s.fechaRespuesta);
+              
+              const esPedidoManualTerminado = s.tipo === 'Pedido Manual' && s.productos && s.productos.length > 0 && s.productos.every(p => ['Pedido', 'Comprado', 'Denegado', 'Cancelado', 'Rechazado'].includes(p.estadoItem));
 
               return (
                 <tr key={s.id} className="hover:bg-slate-50 transition-colors">
@@ -693,7 +728,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   </td>
                   <td className="p-4">
                     <div className="flex flex-col items-center gap-1">
-                      {itemsConPrecio.length > 0 ? (
+                      {s.tipo === 'Pedido Manual' ? (
+                        <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">Total: {formatearTotal(s)}</span>
+                      ) : itemsConPrecio.length > 0 ? (
                         <>
                           <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">A: {totalA}</span>
                           <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">M: {totalM}</span>
@@ -712,19 +749,34 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-2">
                       {s.tipo === 'Pedido Manual' ? (
-                        <button 
-                          onClick={() => {
-                            if (!readOnly) navigate(`/compras/revision-pedido/${s.id}`);
-                          }}
-                          disabled={readOnly}
-                          className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border ${
-                            readOnly
-                              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                              : 'bg-purple-600 hover:bg-purple-700 text-white'
-                          }`}
-                        >
-                          {readOnly ? 'En proceso' : 'Revisar Pedido'}
-                        </button>
+                        readOnly ? (
+                          <button 
+                            onClick={() => navigate(`/vendedor/pedido-manual/${s.id}`)}
+                            className="px-5 py-2 rounded-xl text-[10px] font-black uppercase bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 transition-all shadow-sm"
+                          >
+                            Ver Pedido
+                          </button>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => abrirVistaCotizacion(s)}
+                              className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition-all uppercase mr-2"
+                            >
+                              PDF
+                            </button>
+                            <button 
+                              onClick={() => navigate(`/compras/revision-pedido/${s.id}`)}
+                              className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border ${
+                                esPedidoManualTerminado
+                                  ? 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300'
+                                  : 'bg-blue-600 hover:bg-blue-700 text-white border-transparent'
+                              }`}
+                            >
+                              {esPedidoManualTerminado ? 'Ver Pedido' : 'Revisar Pedido'}
+                            </button>
+                          </>
+                        )
                       ) : s.estado === 'Cotizado' || s.estado === 'Pedido' || (
                         (s.estado === 'Cotizado Parcial' || s.estado === 'Pedido Parcial') && !tienePendientesPorCotizar
                       ) ? (
@@ -742,7 +794,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                               title="Ver desglose completo en la calculadora (Solo lectura)"
                               className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-all uppercase shadow-sm"
                             >
-                              Ver Detalle
+                              Detalle RFQ
                             </button>
                           )}
                         </>

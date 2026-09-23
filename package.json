@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "netlify dev",
     "dev:vite": "vite",
+    "test": "vitest run",
     "import:clientes": "node scripts/import-clientes.js",
     "import:proveedores": "node scripts/import-proveedores.js",
     "import:productos": "node scripts/import-productos.js",
@@ -32,6 +33,7 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@tailwindcss/postcss": "^4.2.2",
+    "@testing-library/react": "^16.3.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
@@ -40,8 +42,10 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "jsdom": "^29.1.1",
     "postcss": "^8.5.10",
     "tailwindcss": "^4.2.2",
-    "vite": "^8.0.4"
+    "vite": "^8.0.4",
+    "vitest": "^5.0.1"
   }
 }

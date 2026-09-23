@@ -164,6 +164,11 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
       if (docSnap.exists()) {
         const data = docSnap.data();
         
+        if (data.tipo === 'Pedido Manual') {
+          navigate(`/vendedor/pedido-manual/${id}`, { replace: true });
+          return;
+        }
+        
         // PROTECCIÓN DE RUTA: Solo los vendedores tienen restringido ver solicitudes de otros
         const email = auth.currentUser?.email || '';
         const puedeVerCualquierSolicitud = role === 'gerente' || role === 'administrador' || role === 'comprador' ||

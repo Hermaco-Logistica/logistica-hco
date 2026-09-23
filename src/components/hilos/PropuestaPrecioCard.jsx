@@ -101,18 +101,22 @@ export const PropuestaPrecioCard = ({ mensaje, currentUser, onAceptar, onContrao
         <div className="mt-3 pt-3 border-t border-slate-100">
           {!isContra ? (
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => onAceptar(mensaje.id, mensaje.precioPropuesto, mensaje.tiempoEntrega)}
-                className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase py-2 rounded-xl transition-colors flex items-center justify-center gap-1"
-              >
-                <Check size={12} /> Aceptar
-              </button>
-              <button
-                onClick={() => setIsContra(true)}
-                className="flex-1 bg-white border border-slate-200 hover:border-blue-400 text-blue-600 font-black text-[10px] uppercase py-2 rounded-xl transition-colors"
-              >
-                Contraofertar
-              </button>
+              {onAceptar && (
+                <button
+                  onClick={() => onAceptar(mensaje.id, mensaje.precioPropuesto, mensaje.tiempoEntrega, mensaje.modalidad)}
+                  className="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-[10px] uppercase py-2 rounded-xl transition-colors flex items-center justify-center gap-1"
+                >
+                  <Check size={12} /> Aceptar
+                </button>
+              )}
+              {onContraofertar && (
+                <button
+                  onClick={() => setIsContra(true)}
+                  className="flex-1 bg-white hover:bg-slate-50 text-slate-700 font-bold text-[10px] uppercase py-2 rounded-xl border border-slate-200 transition-colors flex items-center justify-center gap-1"
+                >
+                  Ajustar
+                </button>
+              )}
             </div>
           ) : (
             <div className="flex flex-col gap-2 animate-in fade-in zoom-in-95 duration-200">

@@ -1,466 +1,455 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, collection, addDoc, serverTimestamp, updateDoc, onSnapshot, getDocs, query, orderBy } from 'firebase/firestore';
-import { db, auth } from '../../firebase';
+import { auth } from '../../firebase';
 import { 
-  ChevronLeft, CheckCircle2, AlertCircle, X,
-  Clock, Package, MessageSquare, Square, CheckSquare, Send
+  ChevronLeft, CheckCircle2, MessageSquare, ArrowLeftRight, Check, X,
+  ChevronDown, Link as LinkIcon, Save
 } from 'lucide-react';
-
-import { emailConfig } from '../../config/emailConfig';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 import { HiloComentariosItem } from '../../components/hilos/HiloComentariosItem';
-import { useMensajesResumen } from '../../hooks/useMensajesResumen';
-import { sintetizarMensajesLegados } from '../../hooks/useHiloItem';
 import { DetallePedidoMobileCard } from '../../components/pedidos/DetallePedidoMobileCard';
+import { useMensajesResumen } from '../../hooks/useMensajesResumen';
+import { useNegociacionItems } from '../../hooks/useNegociacionItems';
+import { EstadoItemChip } from '../../components/pedidos/negociacion/EstadoItemChip';
+import { OfertaDiff } from '../../components/pedidos/negociacion/OfertaDiff';
+import { FormularioOferta } from '../../components/pedidos/negociacion/FormularioOferta';
+import { ResumenTurnos } from '../../components/pedidos/negociacion/ResumenTurnos';
+import { BarraNotificar } from '../../components/pedidos/negociacion/BarraNotificar';
 
-export const DetallePedidoManual = ({ canGenerarPedido = true, soloPropiasParaPedido = false, role }) => {
+export const DetallePedidoManual = ({ role }) => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [pedido, setPedido] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [enviando, setEnviando] = useState(false);
-  const [seleccionados, setSeleccionados] = useState({});
   const [hiloAbierto, setHiloAbierto] = useState(null);
-  const [modalidades, setModalidades] = useState({});
+  const [filtroTurno, setFiltroTurno] = useState(null);
+  const [linkOC, setLinkOC] = useState('');
+  const [comentariosVendedor, setComentariosVendedor] = useState('');
+  const [documentacionOpen, setDocumentacionOpen] = useState(false);
+  const [editandoDocs, setEditandoDocs] = useState(false);
+  const isFirstLoad = useRef(true);
 
-  const esItemYaPedido = (p) => p && (p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
-  const esItemDenegado = (p) => p && (p.estadoItem === 'Denegado' || p.estadoItem === 'Cancelado' || p.estadoItem === 'Rechazado');
-  
-  const hayItemsPendientesDePedir = pedido?.productos?.some(p => p.estadoItem === 'Cotizado' && !esItemYaPedido(p) && !esItemDenegado(p));
-  const _pedidoYaCreado = pedido?.estado === 'Pedido' || pedido?.estado === 'Comprado';
-  const esPropietario = (pedido?.vendedorId && pedido.vendedorId === auth.currentUser?.uid) ||
-    (pedido?.vendedorEmail && auth.currentUser?.email && pedido.vendedorEmail.toLowerCase() === auth.currentUser.email.toLowerCase());
-  
-  const puedeConfirmarPedido = canGenerarPedido && (!soloPropiasParaPedido || esPropietario) && hayItemsPendientesDePedir;
+  const currentUser = {
+    uid: auth.currentUser?.uid,
+    nombre: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'Vendedor',
+    rol: 'vendedor'
+  };
 
-  // Ir al inicio al entrar a la vista
-  useEffect(() => { (document.querySelector('main') || window).scrollTo({ top: 0, behavior: 'instant' }); }, []);
+  const {
+    solicitud: solicitudBase,
+    itemsServer,
+    borradores,
+    loading,
+    unnotifiedCount,
+    notificacionPendienteEmail,
+    resumenAcciones,
+    turnoCompras,
+    turnoVendedor,
+    cerrados,
+    actions,
+    updateBorrador,
+    clearBorrador
+  } = useNegociacionItems(id, currentUser);
+
+  const { conteos, noLeidos } = useMensajesResumen(id, itemsServer);
+
+  const puedeResponder = Boolean(
+    solicitudBase &&
+    (role === 'administrador' || role === 'gerente' || solicitudBase.vendedorId === currentUser.uid || (!solicitudBase.vendedorId && currentUser.uid))
+  );
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, "solicitudes", id), (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        const email = auth.currentUser?.email || '';
-        const puedeVerCualquierSolicitud = role === 'gerente' || role === 'administrador' || role === 'comprador' ||
-          Boolean(email.toLowerCase().match(/admin|gerente|compras/));
-        const esDuenio = (data.vendedorId === auth.currentUser?.uid) ||
-          (data.vendedorEmail?.toLowerCase() === email.toLowerCase());
+    if (isFirstLoad.current && solicitudBase && !loading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (solicitudBase.linkOC) setLinkOC(solicitudBase.linkOC);
+       
+      if (solicitudBase.comentariosVendedor) setComentariosVendedor(solicitudBase.comentariosVendedor);
+      isFirstLoad.current = false;
+    }
+  }, [solicitudBase, loading]);
 
-        if (!puedeVerCualquierSolicitud && !esDuenio) {
-          alert('Acceso Denegado.');
-          navigate('/vendedor');
-          return;
-        }
-
-        setPedido({ id: docSnap.id, ...data });
-        
-        const selInit = {};
-        data.productos.forEach((p, idx) => {
-          if (p.estadoItem === 'Cotizado' && !esItemYaPedido(p) && !esItemDenegado(p)) {
-            selInit[idx] = false;
-          }
-        });
-        setSeleccionados(prev => Object.keys(prev).length ? prev : selInit);
-      } else {
-        alert("Pedido no encontrado.");
-        navigate('/vendedor');
-      }
-      setLoading(false);
-    });
-    return () => unsub();
-  }, [id, navigate, role]);
-
-
-
-  const handleCrearPedido = async () => {
-    const indices = Object.keys(seleccionados).filter(idx => seleccionados[idx]);
-    if (!indices.length) return alert("Selecciona ítems devueltos para confirmar pedido.");
-
-    setEnviando(true);
+  const handleGuardarDocumentacion = async () => {
+    setEditandoDocs(true);
     try {
-      const prodsAct = [...pedido.productos];
-      const paraPedido = indices.map(idx => {
-        const p = pedido.productos[idx];
-        const itemData = {
-          descripcion: p.descripcion || p.desc,
-          marca: p.marca || 'N/A',
-          cantidad: p.cant,
-          precioUnitario: Number(p.fob || 0),
-          subtotal: Number(p.fob || 0) * p.cant,
-          modalidad: modalidades[idx] || p.modalidad || 'Aéreo',
-          diasPrometidos: parseInt(p.fechaCompromiso) || 0,
-          fechaCompromiso: p.fechaCompromiso || 'Pendiente',
-          estadoItem: 'Pedido',
-          fechaConfirmacion: new Date(),
-          fob: p.fob
-        };
-        prodsAct[idx] = { ...p, ...itemData };
-        return itemData;
+      await updateDoc(doc(db, 'solicitudes', id), {
+        linkOC: linkOC.trim(),
+        comentariosVendedor: comentariosVendedor.trim()
       });
-
-      await addDoc(collection(db, "pedidos"), {
-        idCotizacion: pedido.id,
-        correlativoRFQ: pedido.correlativo,
-        cliente: pedido.cliente,
-        vendedorNombre: pedido.vendedorNombre,
-        productos: paraPedido,
-        linkOC: pedido.linkOC || "",
-        notasPedido: pedido.notasPedido || "",
-        fechaCreacion: serverTimestamp(),
-        estadoGeneral: 'Procesando'
-      });
-
-      const todosPedidos = prodsAct.every(p => esItemYaPedido(p) || esItemDenegado(p));
-      const estadoNuevo = todosPedidos ? 'Pedido' : 'Pedido Parcial';
-
-      await updateDoc(doc(db, "solicitudes", id), {
-        estado: estadoNuevo,
-        productos: prodsAct,
-        fechaPedido: serverTimestamp(),
-        pedidoEmailEnviado: false
-      });
-
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const vendedorEmail = auth.currentUser?.email || pedido.vendedorEmail || '';
-      const vendedorNombre = auth.currentUser?.displayName || pedido.vendedorNombre || vendedorEmail.split('@')[0];
-      const senderFrom = isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : `${vendedorNombre} <${vendedorEmail}>`;
-      const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : (emailConfig.pedidoGenerado?.to || ["compras@hermaco.net"]);
-      
-      const qMensajes = query(collection(db, `solicitudes/${id}/mensajes`), orderBy("createdAt", "asc"));
-      const snapMensajes = await getDocs(qMensajes);
-      const todosMensajesDB = snapMensajes.docs.map(d => d.data());
-
-      const formatearFechaHora = (ts) => {
-        if (!ts) return '';
-        try {
-          const d = ts.toDate ? ts.toDate() : (ts instanceof Date ? ts : new Date(ts));
-          if (isNaN(d.getTime())) return '';
-          return d.toLocaleDateString('es-HN', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          });
-        } catch {
-          return '';
-        }
-      };
-
-      let detallesHtml = '';
-      prodsAct.forEach((p, idx) => {
-        if (!seleccionados[idx]) return;
-
-        const mensajesItemDB = todosMensajesDB.filter(m => m.itemId === idx);
-        const mensajesItem = sintetizarMensajesLegados(p, idx, mensajesItemDB);
-        
-        let historialHtml = '';
-        if (mensajesItem.length > 0) {
-          historialHtml = '<div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid #e2e8f0;">';
-          historialHtml += '<div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Historial de correspondencia</div>';
-          
-          mensajesItem.forEach(m => {
-            const autorNombre = m.autor?.nombre || 'Usuario';
-            const rolTexto = m.autor?.rol ? ` (${m.autor.rol.charAt(0).toUpperCase() + m.autor.rol.slice(1)})` : '';
-            const fechaStr = formatearFechaHora(m.createdAt);
-
-            if (m.tipo === 'texto') {
-              historialHtml += `
-                <div style="margin-bottom: 10px; background-color: #f8fafc; border-left: 3px solid #cbd5e1; padding: 10px 14px; border-radius: 0 4px 4px 0;">
-                  <div style="font-size: 11px; color: #64748b; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #edf2f7;">
-                    <strong style="color: #1e293b;">De:</strong> ${autorNombre}${rolTexto}${fechaStr ? ` &nbsp;|&nbsp; <span>${fechaStr}</span>` : ''}
-                  </div>
-                  <div style="font-size: 12px; color: #334155; line-height: 1.5;">
-                    ${m.texto}
-                  </div>
-                </div>
-              `;
-            } else if (m.tipo === 'propuesta') {
-              const precioPropuesto = Number(m.precioPropuesto || 0);
-              const precioAnterior = Number(m.precioAnterior || 0);
-              const tienePrecioAnterior = precioAnterior > 0 && precioAnterior !== precioPropuesto;
-              const modalidadPropuesta = m.modalidad || '';
-              const modalidadAnterior = m.modalidadAnterior || '';
-              const hayModalidadCambio = modalidadPropuesta && modalidadAnterior && modalidadAnterior !== modalidadPropuesta;
-              const tiempoEntregaPropuesto = m.tiempoEntrega || '';
-              const tiempoEntregaAnterior = m.tiempoEntregaAnterior || '';
-              const hayTiempoCambio = tiempoEntregaPropuesto && tiempoEntregaAnterior && tiempoEntregaAnterior !== tiempoEntregaPropuesto;
-
-              historialHtml += `
-                <div style="margin-bottom: 10px; background-color: #f8fafc; border-left: 3px solid #94a3b8; padding: 10px 14px; border-radius: 0 4px 4px 0;">
-                  <div style="font-size: 11px; color: #64748b; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #edf2f7;">
-                    <strong style="color: #1e293b;">De:</strong> ${autorNombre}${rolTexto}${fechaStr ? ` &nbsp;|&nbsp; <span>${fechaStr}</span>` : ''}
-                    <span style="float: right; font-size: 10px; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; font-weight: 600;">Propuesta de ajuste</span>
-                  </div>
-                  <div style="font-size: 12px; color: #334155; line-height: 1.5;">
-                    <table style="font-size: 12px; color: #334155; border-collapse: collapse; margin-bottom: 4px;">
-                      ${tienePrecioAnterior ? `
-                      <tr>
-                        <td style="padding: 1px 12px 1px 0; color: #64748b;">Precio anterior:</td>
-                        <td style="padding: 1px 0; color: #94a3b8; text-decoration: line-through;">$${precioAnterior.toFixed(2)}</td>
-                      </tr>` : ''}
-                      <tr>
-                        <td style="padding: 1px 12px 1px 0; color: #64748b;">Precio propuesto:</td>
-                        <td style="padding: 1px 0;"><strong>$${precioPropuesto.toFixed(2)}</strong></td>
-                      </tr>
-                      ${tiempoEntregaPropuesto ? `
-                      <tr>
-                        <td style="padding: 1px 12px 1px 0; color: #64748b;">Tiempo de entrega:</td>
-                        <td style="padding: 1px 0;">
-                          ${hayTiempoCambio ? `<span style="text-decoration: line-through; color: #94a3b8; margin-right: 6px;">${!isNaN(tiempoEntregaAnterior) ? `${tiempoEntregaAnterior} días` : tiempoEntregaAnterior}</span>` : ''}
-                          <strong>${!isNaN(tiempoEntregaPropuesto) ? `${tiempoEntregaPropuesto} días` : tiempoEntregaPropuesto}</strong>
-                        </td>
-                      </tr>` : ''}
-                      ${modalidadPropuesta ? `
-                      <tr>
-                        <td style="padding: 1px 12px 1px 0; color: #64748b;">Modalidad:</td>
-                        <td style="padding: 1px 0;">
-                          ${hayModalidadCambio ? `<span style="text-decoration: line-through; color: #94a3b8; margin-right: 6px;">${modalidadAnterior}</span>` : ''}
-                          <strong>${modalidadPropuesta}</strong>
-                        </td>
-                      </tr>` : ''}
-                    </table>
-                    ${m.texto ? `<div style="margin-top: 6px; font-size: 12px; color: #475569; font-style: italic;">"${m.texto}"</div>` : ''}
-                  </div>
-                </div>
-              `;
-            } else if (m.tipo === 'aceptacion') {
-              historialHtml += `
-                <div style="margin-bottom: 10px; background-color: #f8fafc; border-left: 3px solid #64748b; padding: 10px 14px; border-radius: 0 4px 4px 0;">
-                  <div style="font-size: 11px; color: #64748b; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #edf2f7;">
-                    <strong style="color: #1e293b;">De:</strong> ${autorNombre}${rolTexto}${fechaStr ? ` &nbsp;|&nbsp; <span>${fechaStr}</span>` : ''}
-                  </div>
-                  <div style="font-size: 12px; color: #1e293b; line-height: 1.5;">
-                    ✓ <strong>Aceptación:</strong> Se aceptaron los términos y condiciones propuestos.
-                  </div>
-                </div>
-              `;
-            }
-          });
-          historialHtml += '</div>';
-        }
-
-        const fobAcordado = Number(p.fob || 0);
-        const fobPrevioItem = p.fobAnterior !== undefined ? Number(p.fobAnterior) : (p.precioAnterior !== undefined ? Number(p.precioAnterior) : fobAcordado);
-        const hayDiferencia = fobPrevioItem > 0 && fobPrevioItem !== fobAcordado;
-
-        detallesHtml += `
-          <div style="margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background-color: #ffffff;">
-            <table style="width: 100%; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 12px 15px; border-collapse: collapse;">
-              <tr>
-                <td style="font-size: 13px; font-weight: bold; color: #0f172a;">${p.descripcion} (x${p.cant})</td>
-                <td style="text-align: right;">
-                  <span style="color: #475569; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">PEDIDO</span>
-                </td>
-              </tr>
-            </table>
-            <div style="padding: 15px;">
-              <table style="width: 100%; font-size: 12px; color: #334155; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 0 20px 0 0;">
-                    ${hayDiferencia ? `
-                      <span style="color: #64748b; margin-right: 4px;">Precio anterior:</span><span style="text-decoration: line-through; color: #94a3b8; margin-right: 8px;">$${fobPrevioItem.toFixed(2)}</span>
-                      <strong>Precio acordado:</strong> <strong>$${fobAcordado.toFixed(2)}</strong>
-                    ` : `
-                      <strong>Precio acordado:</strong> $${fobAcordado.toFixed(2)}
-                    `}
-                  </td>
-                  <td style="padding: 0 20px 0 0;"><strong>T. Entrega:</strong> ${p.fechaCompromiso || 'Pendiente'}</td>
-                  <td style="padding: 0;"><strong>Modalidad:</strong> ${p.modalidad || 'Aéreo'}</td>
-                </tr>
-              </table>
-              ${historialHtml}
-            </div>
-          </div>
-        `;
-      });
-
-      const htmlBody = `
-        <div style="font-family: Arial, sans-serif; color: #334155; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background-color: #ffffff;">
-          <div style="padding: 20px; text-align: center; border-bottom: 1px solid #e2e8f0; background-color: #f8fafc;">
-            <p style="margin: 0; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #64748b; letter-spacing: 1px;">Sistema Logística Hermaco</p>
-            <h2 style="color: #0f172a; margin: 8px 0 0; font-size: 18px; font-weight: bold; letter-spacing: -0.5px;">Pedido Manual Confirmado</h2>
-          </div>
-          <div style="padding: 20px;">
-            <p style="margin: 4px 0; font-size: 14px;"><strong>Vendedor:</strong> ${vendedorNombre}</p>
-            <p style="margin: 4px 0; font-size: 14px;"><strong>Correlativo:</strong> ${pedido.correlativo}</p>
-            <p style="margin: 4px 0; font-size: 14px;"><strong>Cliente:</strong> ${pedido.cliente}</p>
-            
-            <h3 style="margin-top: 24px; font-size: 12px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; font-weight: bold; letter-spacing: 0.5px;">Detalle de Ítems e Historial</h3>
-            <div style="margin-top: 16px;">
-              ${detallesHtml}
-            </div>
-          </div>
-        </div>
-      `;
-
-      try {
-        const mailRes = await fetch('/.netlify/functions/send-email-notification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: senderFrom,
-            replyTo: vendedorEmail,
-            to: destinatarioTo,
-            subject: `Nuevo Pedido Manual Confirmado: ${pedido.correlativo} - ${pedido.cliente}`,
-            bodyHtml: htmlBody
-          })
-        });
-        if (mailRes.ok) await updateDoc(doc(db, 'solicitudes', id), { pedidoEmailEnviado: true });
-      } catch (e) {
-        console.error("Error email:", e);
-      }
-
-      alert("Pedido confirmado.");
-      navigate('/pedidos');
-    } catch (e) {
-      console.error(e);
-      alert("Error al procesar.");
+      alert("Documentación guardada (visible para Compras)");
+    } catch (err) {
+      console.error(err);
+      alert("Error al guardar");
     } finally {
-      setEnviando(false);
+      setEditandoDocs(false);
     }
   };
 
-  const { conteos, noLeidos, pendientes } = useMensajesResumen(pedido?.id, pedido?.productos);
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (unnotifiedCount > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [unnotifiedCount]);
 
-  if (loading) return <div className="p-8 text-center text-slate-400 font-black animate-pulse">CARGANDO...</div>;
-
-  return (
-    <div className="max-w-5xl mx-auto px-3 sm:px-4 md:px-0 pb-36 md:pb-24 animate-in fade-in">
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate(-1)} className="shrink-0 p-2 hover:bg-slate-200 rounded-full transition-colors">
-          <ChevronLeft size={22} />
-        </button>
-        <div className="min-w-0">
-          <h1 className="text-lg sm:text-2xl font-black text-slate-800 uppercase italic leading-tight">Detalle Pedido Manual</h1>
-          <p className="text-slate-500 text-[10px] sm:text-xs font-bold uppercase tracking-widest truncate">{pedido?.correlativo} - {pedido?.cliente}</p>
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-slate-200 border-t-purple-500 rounded-full animate-spin"></div>
+          <p className="text-slate-400 font-bold text-sm tracking-widest uppercase">Cargando detalles...</p>
         </div>
       </div>
+    );
+  }
 
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-8">
+  if (!solicitudBase) return null;
 
-        {/* Vista móvil: tarjetas */}
-        <div className="md:hidden divide-y divide-slate-100">
-          {pedido?.productos?.map((p, idx) => (
-            <DetallePedidoMobileCard
-              key={idx}
-              p={p}
-              idx={idx}
-              pedido={pedido}
-              esItemYaPedido={esItemYaPedido}
-              esItemDenegado={esItemDenegado}
-              seleccionados={seleccionados}
-              setSeleccionados={setSeleccionados}
-              modalidades={modalidades}
-              setModalidades={setModalidades}
-              conteos={conteos}
-              noLeidos={noLeidos}
-              puedeConfirmarPedido={puedeConfirmarPedido}
-              hiloAbierto={hiloAbierto}
-              setHiloAbierto={setHiloAbierto}
-              currentUser={{ ...auth.currentUser, rol: role }}
-              esPropietario={esPropietario}
-            />
-          ))}
+  const filteredItems = itemsServer.map((item, idx) => ({ item, idx })).filter(({ item }) => {
+    if (!filtroTurno) return true;
+    const turno = item.negociacion?.turno;
+    const res = item.negociacion?.resultado;
+    if (filtroTurno === 'compras') return turno === 'compras';
+    if (filtroTurno === 'vendedor') return turno === 'vendedor';
+    if (filtroTurno === 'cerrados') return res != null;
+    return true;
+  });
+
+  const allClosed = itemsServer.length > 0 && itemsServer.every(p => p.negociacion?.resultado != null && !p.negociacion?.sinNotificar);
+
+  return (
+    <div className="max-w-400 mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-36 fade-in">
+      <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6">
+        <button onClick={() => navigate(-1)} className="shrink-0 p-2 hover:bg-white rounded-full transition-colors shadow-sm bg-white">
+          <ChevronLeft size={24} className="text-slate-600" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-3xl font-black text-slate-800 uppercase italic leading-none tracking-tight truncate">
+            {solicitudBase.cliente}
+          </h1>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-purple-600 font-bold text-[10px] sm:text-xs uppercase tracking-widest bg-purple-100 px-2.5 py-1 rounded-md">
+              {solicitudBase.correlativo}
+            </span>
+          </div>
+        </div>
+        {allClosed && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-full shadow-md whitespace-nowrap self-start md:self-auto">
+            <CheckCircle2 size={18} className="text-emerald-400" />
+            <span className="text-xs font-bold uppercase tracking-widest">Pedido Finalizado</span>
+          </div>
+        )}
+      </div>
+
+      <div className="mb-6 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300">
+        <button 
+          type="button" 
+          onClick={() => setDocumentacionOpen(!documentacionOpen)}
+          className="w-full p-4 sm:p-6 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors cursor-pointer text-left focus:outline-none"
+        >
+          <h2 className="text-sm font-black text-slate-800 uppercase flex items-center gap-2">
+            <LinkIcon size={18} className="text-emerald-500" /> Documentación Extra
+          </h2>
+          <div className={`transform transition-transform duration-300 text-slate-400 ${documentacionOpen ? 'rotate-180' : ''}`}>
+            <ChevronDown size={20} />
+          </div>
+        </button>
+        
+        <div className={`grid transition-all duration-300 ease-in-out ${documentacionOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+          <div className="overflow-hidden">
+            <div className="p-4 sm:p-6 pt-0 border-t border-slate-100 mt-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 italic">Enlace a Orden de Compra</label>
+                  <input
+                    type="text"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 text-sm outline-none focus:border-emerald-500 transition-all font-bold text-slate-700"
+                    placeholder="https://..."
+                    value={linkOC}
+                    onChange={(e) => setLinkOC(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block italic">Notas para Compras</label>
+                  </div>
+                  <textarea
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 text-sm outline-none focus:border-emerald-500 transition-all font-bold text-slate-700 min-h-20"
+                    placeholder="Comentarios sobre el pedido..."
+                    value={comentariosVendedor}
+                    onChange={(e) => setComentariosVendedor(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end mt-4">
+                <button 
+                  onClick={handleGuardarDocumentacion}
+                  disabled={editandoDocs}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl font-black text-[10px] uppercase transition-colors shadow-sm disabled:opacity-50"
+                >
+                  <Save size={14} /> Guardar Documentación
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {turnoVendedor > 0 && (
+        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+          <div className="flex flex-col">
+            <span className="text-sm font-black text-amber-800 uppercase tracking-tight">Atención requerida</span>
+            <span className="text-xs font-medium text-amber-700">{turnoVendedor} ítem{turnoVendedor !== 1 ? 's' : ''} esperan tu respuesta</span>
+          </div>
+          {filtroTurno !== 'vendedor' && (
+            <button 
+              onClick={() => setFiltroTurno('vendedor')}
+              className="px-4 py-2 bg-amber-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-amber-700 transition-colors shadow-sm"
+            >
+              Ver
+            </button>
+          )}
+        </div>
+      )}
+
+      <ResumenTurnos 
+        turnoCompras={turnoCompras}
+        turnoVendedor={turnoVendedor}
+        cerrados={cerrados}
+        filtroActual={filtroTurno}
+        onFiltrar={setFiltroTurno}
+      />
+
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+        <div className="p-4 bg-slate-900 flex justify-between items-center">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Listado de Ítems</span>
         </div>
 
-        {/* Vista escritorio: tabla */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full text-left min-w-[820px]">
-            <thead className="bg-slate-900 text-white text-[10px] uppercase font-black tracking-widest">
+        {/* Vista móvil/tablet (lg: 1024px) */}
+        <div className="lg:hidden divide-y divide-slate-100">
+          {filteredItems.map(({ item, idx }) => (
+            <DetallePedidoMobileCard
+              key={idx}
+              idx={idx}
+              solicitudId={id}
+              itemServer={item}
+              borrador={borradores[idx]}
+              updateBorrador={updateBorrador}
+              clearBorrador={clearBorrador}
+              actions={actions}
+              conteos={conteos}
+              noLeidos={noLeidos}
+              hiloAbierto={hiloAbierto}
+              setHiloAbierto={setHiloAbierto}
+              puedeResponder={puedeResponder}
+            />
+          ))}
+          {filteredItems.length === 0 && (
+            <div className="p-8 text-center text-slate-500 text-sm font-medium">No hay ítems en esta vista.</div>
+          )}
+        </div>
+
+        {/* Vista escritorio (>1024px) */}
+        <div className="hidden lg:block">
+          <table className="w-full text-left">
+            <thead className="text-[10px] uppercase font-black tracking-widest text-slate-400 border-b border-slate-100">
               <tr>
-                <th className="p-4 text-center w-16">Pedir</th>
-                <th className="p-4">Descripción / Marca</th>
-                <th className="p-4 text-center">Cant</th>
-                <th className="p-4">Tiempo Entrega</th>
-                <th className="p-4 text-center w-24">Precio (OC)</th>
-                <th className="p-4 text-center">Subtotal</th>
-                <th className="p-4 text-center">Modalidad</th>
-                <th className="p-4 text-center">Estado</th>
-                <th className="p-4 w-32 text-center">Mensajes</th>
+                <th className="p-4 w-[25%]">Producto</th>
+                <th className="p-4 w-[40%]">Condiciones</th>
+                <th className="p-4 w-28 text-center">Mensajes</th>
+                <th className="p-4 w-[20%] text-right">Estado y Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-xs">
-              {pedido?.productos?.map((p, idx) => {
-                const yaFuePedido = esItemYaPedido(p);
-                const fueDenegado = esItemDenegado(p);
-                const fueDevuelto = p.estadoItem === 'Cotizado';
-                const fob = Number(p.fob || 0);
+            <tbody className="divide-y divide-slate-100">
+              {filteredItems.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="p-8 text-center text-slate-500 text-sm font-medium">No hay ítems en esta vista.</td>
+                </tr>
+              )}
+              {filteredItems.map(({ item: p, idx }) => {
+                const neg = p.negociacion || {};
+                const versionEsperada = neg.version || 0;
+                const isMyTurn = neg.turno === 'vendedor';
+                const hasCounterOffer = neg.ofertaVigente && neg.ofertaAnterior && isMyTurn;
+                const currentFob = neg.ofertaVigente?.precio || p.fob || 0;
+                
+                const draft = borradores[idx];
                 const msgCount = conteos[idx] || 0;
                 const unreadCount = noLeidos[idx] || 0;
-                const _tienePropuesta = pendientes[idx];
+
+                const isUnchanged = draft && 
+                  Number(draft.precio) === Number(neg.ofertaVigente?.precio || p.fob) &&
+                  String(draft.tiempoEntrega) === String(neg.ofertaVigente?.tiempoEntrega || p.fechaCompromiso) &&
+                  String(draft.modalidad) === String(neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo');
+
                 return (
                   <React.Fragment key={idx}>
-                    <tr className={seleccionados[idx] ? 'bg-slate-50' : (yaFuePedido ? 'bg-emerald-50/20' : fueDenegado ? 'bg-rose-50/20' : 'bg-white')}>
-                      <td className="p-4 text-center">
-                        {yaFuePedido ? (
-                          <CheckCircle2 size={16} className="text-emerald-500 mx-auto" />
-                        ) : fueDenegado ? (
-                          <X size={16} className="text-rose-500 mx-auto" />
-                        ) : fueDevuelto ? (
-                          <button onClick={() => setSeleccionados(prev => ({ ...prev, [idx]: !prev[idx] }))} disabled={!puedeConfirmarPedido} className={`mx-auto ${seleccionados[idx] ? 'text-emerald-500' : 'text-slate-300'}`}>
-                            {seleccionados[idx] ? <CheckSquare size={16} /> : <Square size={16} />}
-                          </button>
-                        ) : (
-                          <Clock size={14} className="text-slate-300 mx-auto" />
-                        )}
+                    <tr className={`transition-colors ${isMyTurn ? 'bg-amber-50/20' : 'hover:bg-slate-50'}`}>
+                      <td className="p-4 align-top">
+                        <div className="font-bold text-sm uppercase text-slate-700 leading-tight pr-4">{p.descripcion}</div>
+                        <div className="text-[10px] font-bold text-slate-400 uppercase mt-1">Marca: {p.marca}</div>
                       </td>
-                      <td className="p-4">
-                        <div className="font-black text-slate-800 uppercase">{p.descripcion || p.desc}</div>
-                        <div className="text-[10px] text-blue-600 font-bold uppercase">{p.marca}</div>
-                      </td>
-                      <td className="p-4 text-center font-black text-slate-400 text-lg">{p.cant}</td>
-                      <td className="p-4 font-bold text-slate-600">{p.fechaCompromiso || p.tiempoEntrega || '---'}</td>
-                      <td className="p-4 text-center">
-                        <div className="flex flex-col items-center justify-center gap-1">
-                          <span className={`font-black ${fueDevuelto ? 'text-amber-600' : 'text-emerald-700'}`}>${fob.toFixed(2)}</span>
-                          {fueDevuelto && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse mt-1" title="Propuesta pendiente en el hilo" />}
+                      
+                      <td className="p-4 align-top">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 bg-slate-50 border border-slate-100 p-3 rounded-xl max-w-xl">
+                          <div>
+                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Cant</span>
+                            <span className="font-black text-slate-800 text-sm">{p.cant}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Precio (OC)</span>
+                            {draft ? (
+                              <div className="relative">
+                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-xs">$</span>
+                                <input 
+                                  type="number" 
+                                  min="0.01" step="0.01"
+                                  value={draft.precio !== undefined ? draft.precio : ''} 
+                                  onChange={(e) => updateBorrador(idx, { ...draft, precio: e.target.value })} 
+                                  className="w-full pl-6 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500 font-bold text-slate-700 text-sm" 
+                                />
+                              </div>
+                            ) : (
+                              <span className="font-bold text-slate-700 text-sm">${Number(p.fob || 0).toFixed(2)}</span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Entrega</span>
+                            {draft ? (
+                              <input 
+                                type="text" 
+                                value={draft.tiempoEntrega || ''} 
+                                onChange={(e) => updateBorrador(idx, { ...draft, tiempoEntrega: e.target.value })} 
+                                placeholder="Ej: 5 días" 
+                                className="w-full max-w-[160px] p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500 font-bold text-slate-700 text-sm" 
+                              />
+                            ) : (
+                              <span className="font-bold text-slate-700 text-sm">{p.fechaCompromiso || 'No definido'}</span>
+                            )}
+                          </div>
+                          <div>
+                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Modalidad</span>
+                            {draft ? (
+                              <select 
+                                value={draft.modalidad || 'Aéreo'} 
+                                onChange={(e) => updateBorrador(idx, { ...draft, modalidad: e.target.value })} 
+                                className="w-full max-w-[160px] p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500 font-bold text-slate-700 text-sm cursor-pointer"
+                              >
+                                <option value="Aéreo">Aéreo</option>
+                                <option value="Marítimo">Marítimo</option>
+                              </select>
+                            ) : (
+                              <span className="font-bold text-slate-700 text-sm">{p.modalidad || 'Aéreo'}</span>
+                            )}
+                          </div>
                         </div>
                       </td>
-                      <td className="p-4 text-center font-black text-slate-700">${(fob * p.cant).toFixed(2)}</td>
-                      <td className="p-4 text-center">
-                        {yaFuePedido ? (
-                          <span className="text-xs font-black text-slate-600 bg-slate-100 px-2 py-1 rounded">{p.modalidad || 'Aéreo'}</span>
-                        ) : fueDevuelto && seleccionados[idx] ? (
-                          <select value={modalidades[idx] || p.modalidad || 'Aéreo'} onChange={(e) => setModalidades(prev => ({ ...prev, [idx]: e.target.value }))} className="bg-slate-100 border-none rounded-lg p-1.5 font-black text-[10px] uppercase text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer">
-                            <option value="Aéreo">Aéreo</option>
-                            <option value="Marítimo">Marítimo</option>
-                          </select>
-                        ) : (
-                          <span className="text-[10px] font-bold text-slate-400 italic">{p.modalidad || 'Aéreo'}</span>
-                        )}
+                      
+                      <td className="p-4 text-center align-top">
+                        <button 
+                          onClick={() => setHiloAbierto(hiloAbierto === idx ? null : idx)} 
+                          className={`relative inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-black text-[10px] uppercase transition-colors mt-2 ${hiloAbierto === idx ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`} 
+                        >
+                          <MessageSquare size={14} className={msgCount === 0 ? 'opacity-50' : ''} />
+                          <span className={msgCount === 0 ? 'opacity-50' : ''}>Msgs</span>
+                          {msgCount > 0 && <span className="ml-0.5 opacity-70">({msgCount})</span>}
+                          {unreadCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-blue-500 text-white text-[8px] w-4 h-4 flex items-center justify-center rounded-full shadow-sm">{unreadCount}</span>}
+                        </button>
                       </td>
-                      <td className="p-4 text-center">
-                        {yaFuePedido ? (
-                          <span className="text-[9px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-black uppercase">Aprobado</span>
-                        ) : fueDenegado ? (
-                          <span className="text-[9px] bg-rose-100 text-rose-700 px-2 py-1 rounded font-black uppercase">Denegado</span>
-                        ) : fueDevuelto ? (
-                          <span className="text-[9px] bg-amber-100 text-amber-700 px-2 py-1 rounded font-black uppercase">Ajuste de Compras</span>
-                        ) : (
-                          <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-1 rounded font-black uppercase">En Revisión</span>
-                        )}
-                      </td>
-                      <td className="p-4 text-center">
-                        {esPropietario && (
-                          <button onClick={() => setHiloAbierto(hiloAbierto === idx ? null : idx)} className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl font-black text-[10px] uppercase transition-colors relative ${hiloAbierto === idx ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'}`} aria-expanded={hiloAbierto === idx} aria-label={`Ver conversación, ${msgCount} mensajes`}>
-                            <MessageSquare size={14} className={msgCount === 0 ? 'opacity-50' : ''} />
-                            <span className={msgCount === 0 ? 'opacity-50' : ''}>Mensajes</span>
-                            {unreadCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-blue-500 text-white text-[8px] w-4 h-4 flex items-center justify-center rounded-full shadow-sm">{unreadCount}</span>}
-                          </button>
-                        )}
+                      
+                      <td className="p-4 align-top">
+                        <div className="flex flex-col items-end gap-3">
+                          <EstadoItemChip estado={p.estadoItem} pendingRole={neg.turno} />
+                          
+                          {isMyTurn && puedeResponder ? (
+                            <div className="flex flex-wrap justify-end gap-1.5 w-full mt-2">
+                              {!draft ? (
+                                <>
+                                  <button 
+                                    onClick={() => actions.aceptar(idx, versionEsperada)} 
+                                    className="px-3 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg font-black text-[10px] uppercase transition-colors flex items-center gap-1 shadow-sm"
+                                  >
+                                    <Check size={14} /> Aceptar ${Number(currentFob).toFixed(2)}
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      updateBorrador(idx, {
+                                        precio: currentFob,
+                                        tiempoEntrega: neg.ofertaVigente?.tiempoEntrega || p.fechaCompromiso || '',
+                                        modalidad: neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo'
+                                      });
+                                    }} 
+                                    className="px-3 py-2.5 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-lg font-black text-[10px] uppercase transition-colors flex items-center gap-1"
+                                  >
+                                    <ArrowLeftRight size={14} /> Contraofertar
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      const m = window.prompt("Motivo del rechazo:");
+                                      if (m !== null) actions.rechazar(idx, versionEsperada, m);
+                                    }} 
+                                    className="px-2 py-2 bg-slate-100 text-slate-500 hover:bg-rose-100 hover:text-rose-700 rounded-lg transition-colors"
+                                    title="Rechazar Oferta"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button 
+                                    onClick={() => {
+                                      actions.contraofertar(idx, versionEsperada, draft);
+                                      clearBorrador(idx);
+                                    }} 
+                                    disabled={!draft.precio || isUnchanged}
+                                    className="px-3 py-2.5 bg-amber-500 text-white hover:bg-amber-600 rounded-lg font-black text-[10px] uppercase transition-colors flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    <Check size={14} /> Enviar Contraoferta
+                                  </button>
+                                  <button 
+                                    onClick={() => clearBorrador(idx)} 
+                                    className="px-3 py-2.5 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-lg font-black text-[10px] uppercase transition-colors flex items-center gap-1"
+                                  >
+                                    <X size={14} /> Cancelar
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          ) : neg.sinNotificar && neg.ultimoCambio?.rol === currentUser.rol && !draft ? (
+                            <div className="flex justify-end mt-2">
+                              <button 
+                                onClick={() => actions.deshacer(idx, versionEsperada)}
+                                className="px-3 py-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg text-[10px] font-bold uppercase transition-colors"
+                              >
+                                Deshacer cambio
+                              </button>
+                            </div>
+                          ) : null}
+                        </div>
                       </td>
                     </tr>
+
+                    {hasCounterOffer && (
+                      <tr className="bg-amber-50/20">
+                        <td colSpan={4} className="px-4 pb-4 border-l-4 border-amber-400">
+                          <OfertaDiff actual={neg.ofertaVigente} anterior={neg.ofertaAnterior} label="Ajuste de Compras" />
+                        </td>
+                      </tr>
+                    )}
+
                     {hiloAbierto === idx && (
                       <tr className="bg-slate-50">
-                        <td colSpan={9} className="p-0">
+                        <td colSpan={4} className="p-0 border-t border-slate-100">
                           <HiloComentariosItem
-                            solicitudId={pedido.id}
+                            solicitudId={id}
                             itemId={idx}
                             productoActual={p}
-                            currentUser={{ ...auth.currentUser, rol: role }}
-                            todosLosProductos={pedido.productos}
+                            currentUser={currentUser}
+                            todosLosProductos={[]}
                             onClose={() => setHiloAbierto(null)}
+                            accionesHabilitadas={false}
                           />
                         </td>
                       </tr>
@@ -473,23 +462,16 @@ export const DetallePedidoManual = ({ canGenerarPedido = true, soloPropiasParaPe
         </div>
       </div>
 
-      {puedeConfirmarPedido && Object.values(seleccionados).some(v => v) && (
-        <div className="fixed bottom-[80px] md:bottom-8 left-0 right-0 px-4 md:px-8 z-40 flex justify-center pointer-events-none">
-          <button
-            onClick={handleCrearPedido}
-            disabled={enviando}
-            className="w-full sm:w-auto px-8 py-3.5 bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300 text-white font-black uppercase tracking-widest rounded-2xl transition-all text-sm shadow-[0_8px_30px_rgb(16,185,129,0.3)] hover:shadow-[0_8px_40px_rgb(16,185,129,0.5)] active:scale-[0.98] pointer-events-auto flex items-center justify-center gap-2"
-          >
-            {enviando ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                <span>PROCESANDO...</span>
-              </>
-            ) : (
-              'CONFIRMAR ÍTEMS DEVUELTOS'
-            )}
-          </button>
-        </div>
+      {puedeResponder && (
+        <BarraNotificar 
+          unnotifiedCount={unnotifiedCount}
+          notificacionPendienteEmail={notificacionPendienteEmail}
+          onNotificar={() => actions.notificar(resumenAcciones)}
+          onReintentar={() => actions.reintentarCorreo()}
+          isLoading={false}
+          isVendedor={true}
+          resumenAcciones={resumenAcciones}
+        />
       )}
     </div>
   );

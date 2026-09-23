@@ -40,10 +40,17 @@ export default function CotizacionDocumento({ cotizacionData }) {
     const ventaM = fobVal * (item.factorM || factorM) * (item.fvm || 1.25);
     return acc + (Number(item.cant || 0) * ventaM);
   }, 0);
+
+  const subtotalManual = productos.reduce((acc, item) => {
+    const pU = Number(item.precio || 0);
+    const cant = Number(item.cantidad || item.cant || 0);
+    return acc + (cant * pU);
+  }, 0);
   
   const IVA_TASA = 0.13; 
   const totalAereo = subtotalAereo * (1 + IVA_TASA);
   const totalMaritimo = subtotalMaritimo * (1 + IVA_TASA);
+  const totalManual = subtotalManual * (1 + IVA_TASA);
 
   const FILAS_VISTAS = 18;
   const filas = Array.from(
@@ -97,6 +104,8 @@ export default function CotizacionDocumento({ cotizacionData }) {
     textOverflow: 'ellipsis'
   };
 
+  const esPedidoManual = cotizacionData.tipo === 'Pedido Manual';
+
   return (
     <div className="w-full overflow-x-auto">
       <div className="cotizacion-documento min-w-[650px] sm:min-w-0" style={pageStyle}>
@@ -116,7 +125,7 @@ export default function CotizacionDocumento({ cotizacionData }) {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
                   <tr>
-                    <td style={headerLabelStyle}>N° Cotización</td>
+                    <td style={headerLabelStyle}>{esPedidoManual ? 'N° Pedido Manual' : 'N° Cotización'}</td>
                     <td style={headerValueStyle}>{correlativo}</td>
                     <td style={headerLabelStyle}>Fecha</td>
                     <td style={{ ...headerValueStyle, textAlign: 'right' }}>{fechaFormateada}</td>
@@ -149,19 +158,49 @@ export default function CotizacionDocumento({ cotizacionData }) {
       <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed', marginBottom: '14px' }}>
         <thead>
           <tr>
-            <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '12%' }}>Item</th>
+            <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: esPedidoManual ? '30%' : '12%' }}>Item</th>
             <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '7%' }}>Cantidad</th>
-            <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '11%' }}>Precio Aéreo</th>
-            <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '11%' }}>Precio Marítimo</th>
-            <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '10%' }}>Marca</th>
-            <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '3px', paddingBottom: '3px', width: '13%' }}>Entrega Aéreo<br />(días hábiles)</th>
-            <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '3px', paddingBottom: '3px', width: '13%' }}>Entrega Marítimo<br />(días hábiles)</th>
-            <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '11%' }}>Total Aéreo</th>
-            <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '12%' }}>Total Marítimo</th>
+            
+            {esPedidoManual ? (
+              <>
+                <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '13%' }}>Precio Unitario</th>
+                <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '10%' }}>Marca</th>
+                <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '12%' }}>Vía de Envío</th>
+                <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '3px', paddingBottom: '3px', width: '13%' }}>Entrega<br />(días hábiles)</th>
+                <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '15%' }}>Total</th>
+              </>
+            ) : (
+              <>
+                <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '11%' }}>Precio Aéreo</th>
+                <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '11%' }}>Precio Marítimo</th>
+                <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '10%' }}>Marca</th>
+                <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '3px', paddingBottom: '3px', width: '13%' }}>Entrega Aéreo<br />(días hábiles)</th>
+                <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '3px', paddingBottom: '3px', width: '13%' }}>Entrega Marítimo<br />(días hábiles)</th>
+                <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '11%' }}>Total Aéreo</th>
+                <th style={{ ...cellStyle, backgroundColor: '#1f5b98', color: '#ffffff', textAlign: 'center', fontWeight: 'bold', borderBottom: '1px solid #153d66', paddingTop: '5px', paddingBottom: '5px', width: '12%' }}>Total Marítimo</th>
+              </>
+            )}
           </tr>
         </thead>
         <tbody>
           {filas.map((item, index) => {
+            if (esPedidoManual) {
+              const precioU = Number(item?.precio || 0);
+              const cant = Number(item?.cantidad || item?.cant || 0);
+              const tLine = cant * precioU;
+              return (
+                <tr key={index}>
+                  <td style={{ ...cellStyle, backgroundColor: '#c9dbef', textAlign: 'center', fontWeight: 'normal', color: '#344b61' }}>{getDescripcionItem(item)}</td>
+                  <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.cantidad || item?.cant || ''}</td>
+                  <td style={{ ...cellStyle, textAlign: 'right' }}>{precioU > 0 ? formatMoneda(precioU) : ''}</td>
+                  <td style={{ ...cellStyle, textAlign: 'center', textTransform: 'uppercase' }}>{item?.marca || ''}</td>
+                  <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.modalidad || item?.tipoEnvio || ''}</td>
+                  <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.tiempoEntrega || item?.diasPrometidos || ''}</td>
+                  <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 'bold' }}>{tLine > 0 ? formatMoneda(tLine) : ''}</td>
+                </tr>
+              );
+            }
+
             const esEnConsulta = item?.enConsulta || item?.estadoItem === 'En consulta';
             const fobVal = Number(item?.fob || 0);
             const precioA = fobVal * (item?.factorA || factorA) * (item?.fva || 1.30);
@@ -210,26 +249,45 @@ export default function CotizacionDocumento({ cotizacionData }) {
             <td style={{ width: '22%', verticalAlign: 'top', padding: '0', backgroundColor: '#f2c52e' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
                 <tbody>
-                  <tr>
-                    <td style={{ padding: '5px 8px 3px 8px', color: '#4a3b00' }}>Subtotal aéreo</td>
-                    <td style={{ padding: '5px 8px 3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4a3b00' }}>{formatMoneda(subtotalAereo)}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: '3px 8px', color: '#4a3b00' }}>Subtotal marítimo</td>
-                    <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4a3b00' }}>{formatMoneda(subtotalMaritimo)}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: '3px 8px', color: '#4a3b00' }}>IVA</td>
-                    <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4a3b00' }}>13%</td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: '3px 8px', color: '#4a3b00' }}>Total aéreo</td>
-                    <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4a3b00' }}>{formatMoneda(totalAereo)}</td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: '3px 8px 6px 8px', color: '#4a3b00' }}>Total marítimo</td>
-                    <td style={{ padding: '3px 8px 6px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4a3b00' }}>{formatMoneda(totalMaritimo)}</td>
-                  </tr>
+                  {esPedidoManual ? (
+                    <>
+                      <tr>
+                        <td style={{ padding: '5px 8px 3px 8px', color: '#4a3b00' }}>Subtotal</td>
+                        <td style={{ padding: '5px 8px 3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4a3b00' }}>{formatMoneda(subtotalManual)}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '3px 8px', color: '#4a3b00' }}>IVA</td>
+                        <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4a3b00' }}>13%</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '3px 8px 6px 8px', color: '#4a3b00' }}>Total</td>
+                        <td style={{ padding: '3px 8px 6px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4a3b00' }}>{formatMoneda(totalManual)}</td>
+                      </tr>
+                    </>
+                  ) : (
+                    <>
+                      <tr>
+                        <td style={{ padding: '5px 8px 3px 8px', color: '#4a3b00' }}>Subtotal aéreo</td>
+                        <td style={{ padding: '5px 8px 3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4a3b00' }}>{formatMoneda(subtotalAereo)}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '3px 8px', color: '#4a3b00' }}>Subtotal marítimo</td>
+                        <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4a3b00' }}>{formatMoneda(subtotalMaritimo)}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '3px 8px', color: '#4a3b00' }}>IVA</td>
+                        <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4a3b00' }}>13%</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '3px 8px', color: '#4a3b00' }}>Total aéreo</td>
+                        <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4a3b00' }}>{formatMoneda(totalAereo)}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '3px 8px 6px 8px', color: '#4a3b00' }}>Total marítimo</td>
+                        <td style={{ padding: '3px 8px 6px 8px', textAlign: 'right', fontWeight: 'bold', color: '#4a3b00' }}>{formatMoneda(totalMaritimo)}</td>
+                      </tr>
+                    </>
+                  )}
                 </tbody>
               </table>
             </td>

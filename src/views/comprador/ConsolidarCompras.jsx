@@ -7,6 +7,7 @@ import {
   guardarProveedorSiNoExiste,
   normalizarNombreProveedor,
 } from '../../services/proveedoresService';
+import { itemPedidoConfirmado } from '../../utils/itemHelpers';
 
 export const ConsolidarCompras = () => {
   const [items, setItems] = useState([]);
@@ -33,8 +34,8 @@ export const ConsolidarCompras = () => {
         const rfq = docSnap.data();
         if (rfq.productos) {
           rfq.productos.forEach((prod, index) => {
-            // Solo items que el vendedor marcó como pedido pero no tienen OC asignada
-            if (prod.estadoItem === 'Pedido' && !prod.numOC) {
+            // Solo items confirmados que no tienen OC asignada
+            if (itemPedidoConfirmado(prod) && !prod.numOC) {
               temporal.push({
                 ...prod,
                 idRFQ: docSnap.id,

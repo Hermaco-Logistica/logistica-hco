@@ -176,7 +176,7 @@ export const useHiloItem = (solicitudId, itemId, productoActual) => {
     await batch.commit();
   };
 
-  const aceptarPropuesta = async (propuestaId, precioPropuesto, todosLosProductos, autor, tiempoEntrega = null) => {
+  const aceptarPropuesta = async (propuestaId, precioPropuesto, todosLosProductos, autor, tiempoEntrega = null, modalidad = null) => {
     const batch = writeBatch(db);
     
     // 1. Marcar propuesta como aceptada
@@ -195,44 +195,39 @@ export const useHiloItem = (solicitudId, itemId, productoActual) => {
       createdAt: serverTimestamp()
     });
 
-    // 3. Escribir el FOB al array de productos y cambiar estado a 'Pedido'
+    // 3. Escribir el FOB al array de productos y cambiar estado a 'Cotizado' (acuerdo de precio, pero falta aprobación final)
     const docRef = doc(db, 'solicitudes', solicitudId);
     const productosActualizados = [...todosLosProductos];
     
     productosActualizados[itemId] = {
       ...productosActualizados[itemId],
       fob: Number(precioPropuesto),
-      estadoItem: 'Pedido',
-      fechaConfirmacion: new Date()
+      estadoItem: 'Cotizado'
     };
     if (tiempoEntrega) {
       productosActualizados[itemId].fechaCompromiso = tiempoEntrega;
     }
+    if (modalidad) {
+      productosActualizados[itemId].modalidad = modalidad;
+    }
 
-    // Evaluar estado global
-    const todosProcesados = productosActualizados.every(p => 
-      p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || 
-      p.estadoItem === 'Denegado' || p.estadoItem === 'Cancelado' || p.estadoItem === 'Rechazado'
-    );
-    const algunPedido = productosActualizados.some(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
+    // Evaluar estado global (ya no finalizamos a 'Pedido' automáticamente)
+    const algunDevueltoOCotizado = productosActualizados.some(p => p.estadoItem === 'Cotizado');
     const todosDenegados = productosActualizados.every(p => 
       p.estadoItem === 'Denegado' || p.estadoItem === 'Cancelado' || p.estadoItem === 'Rechazado'
     );
 
-    let nuevoEstado = undefined;
-    if (todosProcesados) {
-      nuevoEstado = todosDenegados ? 'Denegado' : 'Pedido';
-    } else if (algunPedido) {
-      nuevoEstado = 'Pedido Parcial';
+    let nuevoEstado = 'Enviado a Compras';
+    if (todosDenegados) {
+      nuevoEstado = 'Denegado';
+    } else if (algunDevueltoOCotizado) {
+      nuevoEstado = 'Cotizado Parcial';
     }
 
-    const updateData = { productos: productosActualizados };
-    if (nuevoEstado) {
-      updateData.estado = nuevoEstado;
-      if (nuevoEstado === 'Pedido' || nuevoEstado === 'Pedido Parcial') {
-        updateData.fechaPedido = serverTimestamp();
-      }
-    }
+    const updateData = { 
+      productos: productosActualizados,
+      estado: nuevoEstado 
+    };
 
     batch.update(docRef, updateData);
     await batch.commit();

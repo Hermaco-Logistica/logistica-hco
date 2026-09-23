@@ -28,8 +28,14 @@ import { DetalleVendedoresAnalisis } from './views/analisis/DetalleVendedoresAna
 import { DetalleVendedorHistorial } from './views/analisis/DetalleVendedorHistorial';
 import { DetalleProductosAnalisis } from './views/analisis/DetalleProductosAnalisis';
 import { DetalleProductoHistorial } from './views/analisis/DetalleProductoHistorial';
+import { ToastProvider } from './components/ui/Toast';
 import { DetalleClienteHistorial } from './views/analisis/DetalleClienteHistorial';
 import { DetalleLogisticaAnalisis } from './views/analisis/DetalleLogisticaAnalisis';
+
+let NegociacionPreview = null;
+if (import.meta.env.DEV) {
+  NegociacionPreview = React.lazy(() => import('./dev/NegociacionPreview').then(m => ({ default: m.NegociacionPreview })));
+}
 
 const resolveRoleFromEmail = (email = '') => {
   const value = email.toLowerCase();
@@ -337,7 +343,8 @@ function App() {
   );
 
   return (
-    <Router>
+    <ToastProvider>
+      <Router>
       {!user ? (
         <Routes>
           <Route path="/login" element={<Login loginFn={() => signInWithPopup(auth, provider)} />} />
@@ -456,6 +463,16 @@ function App() {
               ) : (
                 <Route path="*" element={<Navigate to="/login" replace />} />
               )}
+              {import.meta.env.DEV && NegociacionPreview && (
+                <Route 
+                  path="/dev/negociacion" 
+                  element={
+                    <React.Suspense fallback={<div>Loading...</div>}>
+                      <NegociacionPreview />
+                    </React.Suspense>
+                  } 
+                />
+              )}
             </Routes>
           </main>
           {/* BARRA DE NAVEGACIÓN INFERIOR FIJA (MÓVIL < md) */}
@@ -465,7 +482,8 @@ function App() {
           />
         </div>
       )}
-    </Router>
+      </Router>
+    </ToastProvider>
   );
 }
 
