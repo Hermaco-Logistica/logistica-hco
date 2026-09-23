@@ -196,23 +196,6 @@ export const DetallePedidoManual = ({ role }) => {
           </div>
         </div>
       </div>
-      
-      {turnoVendedor > 0 && (
-        <div className="mb-6 bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center justify-between shadow-sm">
-          <div className="flex flex-col">
-            <span className="text-sm font-black text-amber-800 uppercase tracking-tight">Atención requerida</span>
-            <span className="text-xs font-medium text-amber-700">{turnoVendedor} ítem{turnoVendedor !== 1 ? 's' : ''} esperan tu respuesta</span>
-          </div>
-          {filtroTurno !== 'vendedor' && (
-            <button 
-              onClick={() => setFiltroTurno('vendedor')}
-              className="px-4 py-2 bg-amber-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-amber-700 transition-colors shadow-sm"
-            >
-              Ver
-            </button>
-          )}
-        </div>
-      )}
 
       <ResumenTurnos 
         turnoCompras={turnoCompras}

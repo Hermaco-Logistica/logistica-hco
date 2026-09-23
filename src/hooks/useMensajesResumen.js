@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
-export const useMensajesResumen = (solicitudId, productos) => {
+export const useMensajesResumen = (solicitudId, productos, currentUserRol) => {
   const [conteos, setConteos] = useState({});
   const [noLeidos, setNoLeidos] = useState({});
   const [pendientes, setPendientes] = useState({});
@@ -20,6 +20,11 @@ export const useMensajesResumen = (solicitudId, productos) => {
         const data = d.data();
         if (data.itemId === undefined) return;
         
+        // Ocultar del resumen mensajes no notificados por la otra parte
+        if (data.sinNotificar && data.autor?.rol && currentUserRol && data.autor.rol !== currentUserRol) {
+          return;
+        }
+
         const itemId = data.itemId;
         counts[itemId] = (counts[itemId] || 0) + 1;
         
@@ -63,7 +68,7 @@ export const useMensajesResumen = (solicitudId, productos) => {
     });
 
     return () => unsub();
-  }, [solicitudId, productos]);
+  }, [solicitudId, productos, currentUserRol]);
 
   return { conteos, noLeidos, pendientes };
 };

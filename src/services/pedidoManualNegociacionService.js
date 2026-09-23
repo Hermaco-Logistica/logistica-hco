@@ -1,5 +1,5 @@
 import { db } from '../firebase';
-import { runTransaction, doc, collection, serverTimestamp, Timestamp, updateDoc, getDoc } from 'firebase/firestore';
+import { runTransaction, doc, collection, serverTimestamp, Timestamp, updateDoc, getDoc, getDocs } from 'firebase/firestore';
 import { construirCorreoActualizacion } from '../utils/emailNegociacion';
 
 export class ConflictoVersionError extends Error {
@@ -213,6 +213,7 @@ async function ejecutarMutacion({ solicitudId, idx, versionEsperada, actor, acci
         modalidad: mutacion.oferta.modalidad,
         modalidadAnterior: negActual.ofertaAnterior ? negActual.ofertaAnterior.modalidad : itemActual.modalidad,
         autor: actor,
+        sinNotificar: true,
         createdAt: Timestamp.now()
       };
       transaction.set(mensajeRef, propuestaInfo);
@@ -233,6 +234,7 @@ async function ejecutarMutacion({ solicitudId, idx, versionEsperada, actor, acci
         accion: accionNombre,
         ronda: mutacion.negociacion.ronda,
         autor: actor,
+        sinNotificar: true,
         createdAt: Timestamp.now()
       };
       transaction.set(mensajeRef, eventoInfo);
@@ -245,6 +247,7 @@ async function ejecutarMutacion({ solicitudId, idx, versionEsperada, actor, acci
         tipo: 'texto',
         autor: actor,
         texto: mutacion.comentario,
+        sinNotificar: true,
         createdAt: Timestamp.now()
       });
     }
@@ -466,6 +469,16 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
   const docRef = doc(db, 'solicitudes', solicitudId);
   let payloadParaCorreo = null;
 
+  // 1. Obtener mensajes sin notificar creados por este actor
+  const mensajesSnap = await getDocs(collection(db, `solicitudes/${solicitudId}/mensajes`));
+  const mensajesSinNotificarRefs = [];
+  mensajesSnap.docs.forEach(mDoc => {
+    const mData = mDoc.data();
+    if (mData.sinNotificar && mData.autor?.rol === actor.rol) {
+      mensajesSinNotificarRefs.push(mDoc.ref);
+    }
+  });
+
   await runTransaction(db, async (transaction) => {
     const docSnap = await transaction.get(docRef);
     if (!docSnap.exists()) throw new Error('Solicitud no encontrada');
@@ -473,6 +486,11 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
     if (solicitud.tipo !== 'Pedido Manual') {
       throw new Error('Esta operación solo es válida para Pedidos Manuales.');
     }
+
+    // Parchar mensajes a sinNotificar: false
+    mensajesSinNotificarRefs.forEach(ref => {
+      transaction.update(ref, { sinNotificar: false });
+    });
 
     const productos = [...solicitud.productos];
 

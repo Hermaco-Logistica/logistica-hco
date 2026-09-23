@@ -411,7 +411,7 @@ function App() {
                     } 
                   />
                   {rutasAnalisis}
-                  <Route path="/compras/revision-pedido/:id" element={<RevisionPedidoManual />} />
+                  <Route path="/compras/revision-pedido/:id" element={<RevisionPedidoManual role={role} />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} role={role} />} />
                   <Route path="/vendedor/pedido-manual/:id" element={<DetallePedidoManual canGenerarPedido={false} role={role} />} />
                   <Route path="*" element={<Navigate to="/compras" replace />} />
@@ -455,7 +455,7 @@ function App() {
                   <Route path="/vendedor/pedido-manual/:id" element={<DetallePedidoManual canGenerarPedido soloPropiasParaPedido role={role} />} />
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
-                  <Route path="/compras/revision-pedido/:id" element={<RevisionPedidoManual />} />
+                  <Route path="/compras/revision-pedido/:id" element={<RevisionPedidoManual role={role} />} />
                   <Route path="/gestion-oc" element={<GestionOC readOnly />} />
                   {rutasAnalisis}
                   <Route path="*" element={<Navigate to="/vendedor" replace />} />

@@ -12,12 +12,14 @@ import { OfertaDiff } from '../../components/pedidos/negociacion/OfertaDiff';
 import { FormularioOferta } from '../../components/pedidos/negociacion/FormularioOferta';
 import { ResumenTurnos } from '../../components/pedidos/negociacion/ResumenTurnos';
 import { BarraNotificar } from '../../components/pedidos/negociacion/BarraNotificar';
+import { getRoleColors } from '../../utils/roleColors';
 
-export const RevisionPedidoManual = () => {
+export const RevisionPedidoManual = ({ role = 'comprador' }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [comentariosComprador, setComentariosComprador] = useState('');
   const [hiloAbierto, setHiloAbierto] = useState(null);
+  const colors = getRoleColors(role);
   const [editandoGeneral, setEditandoGeneral] = useState(false);
   const [filtroTurno, setFiltroTurno] = useState(null);
   const isFirstLoad = useRef(true);
@@ -44,7 +46,7 @@ export const RevisionPedidoManual = () => {
     clearBorrador
   } = useNegociacionItems(id, currentUser);
 
-  const { conteos, noLeidos } = useMensajesResumen(id, itemsServer);
+  const { conteos, noLeidos } = useMensajesResumen(id, itemsServer, currentUser?.rol);
 
   useEffect(() => {
     if (isFirstLoad.current && solicitudBase && !loading) {
@@ -106,7 +108,7 @@ export const RevisionPedidoManual = () => {
   const allClosed = itemsServer.length > 0 && itemsServer.every(p => p.negociacion?.resultado != null && !p.negociacion?.sinNotificar);
 
   return (
-    <div className="max-w-400 mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-36 fade-in">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-36 fade-in">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3 w-full">
           <button 
@@ -120,7 +122,7 @@ export const RevisionPedidoManual = () => {
               {solicitudBase.cliente}
             </h1>
             <div className="flex items-center gap-2 mt-2">
-              <span className="text-purple-600 font-bold text-[10px] sm:text-xs uppercase tracking-widest bg-purple-100 px-2.5 py-1 rounded-md">
+              <span className={`font-bold text-[10px] sm:text-xs uppercase tracking-widest px-2.5 py-1 rounded-md ${colors.text} ${colors.bg}`}>
                 {solicitudBase.correlativo}
               </span>
             </div>
@@ -147,7 +149,7 @@ export const RevisionPedidoManual = () => {
               {solicitudBase.linkOC && (
                 <div>
                   <span className="text-[10px] font-bold text-slate-400 uppercase block mb-1">Orden de Compra:</span>
-                  <a href={solicitudBase.linkOC} target="_blank" rel="noreferrer" className="text-sm font-bold text-purple-600 hover:text-purple-700 hover:underline break-all">
+                  <a href={solicitudBase.linkOC} target="_blank" rel="noreferrer" className={`text-sm font-bold hover:underline break-all ${colors.text} ${colors.hoverText}`}>
                     {solicitudBase.linkOC}
                   </a>
                 </div>
@@ -363,8 +365,13 @@ export const RevisionPedidoManual = () => {
                                   </button>
                                   <button 
                                     onClick={() => {
-                                      const m = window.prompt("Motivo del rechazo (opcional):");
-                                      if(m !== null) actions.denegar(idx, versionEsperada, m);
+                                      const m = window.prompt("Motivo de la denegación (obligatorio):");
+                                      if (m === null) return;
+                                      if (!m.trim()) {
+                                        alert("Debes ingresar un motivo para denegar el ítem.");
+                                        return;
+                                      }
+                                      actions.denegar(idx, versionEsperada, m.trim());
                                     }} 
                                     className="px-2 py-2 bg-slate-100 text-slate-500 hover:bg-rose-100 hover:text-rose-700 rounded-lg font-black text-[10px] uppercase transition-colors"
                                     title="Denegar"
@@ -435,3 +442,4 @@ export const RevisionPedidoManual = () => {
     </div>
   );
 };
+

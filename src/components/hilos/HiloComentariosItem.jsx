@@ -51,7 +51,7 @@ export const HiloComentariosItem = ({
     aceptarPropuesta,
     reenviarACompras,
     marcarMensajesComoLeidos
-  } = useHiloItem(solicitudId, itemId, productoActual);
+  } = useHiloItem(solicitudId, itemId, productoActual, currentUser?.rol);
 
   const [texto, setTexto] = useState('');
   const [procesando, setProcesando] = useState(false);

@@ -116,7 +116,7 @@ export const DetallePedidoMobileCard = ({
                 <ArrowLeftRight size={14} /> Ajustar
               </button>
               <button 
-                onClick={() => { const m = window.prompt("Motivo del rechazo:"); if (m !== null) actions.rechazar(idx, versionEsperada, m); }} 
+                onClick={() => { const m = window.prompt("Motivo del rechazo (obligatorio):"); if (m === null) return; if (!m.trim()) { alert("Debes ingresar un motivo para rechazar la oferta."); return; } actions.rechazar(idx, versionEsperada, m.trim()); }} 
                 className="w-10 flex items-center justify-center px-0 py-2.5 bg-slate-100 text-slate-400 hover:bg-rose-100 hover:text-rose-700 rounded-xl transition-colors"
               >
                 <X size={14} />

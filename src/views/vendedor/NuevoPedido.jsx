@@ -573,9 +573,10 @@ export const NuevoPedido = () => {
             <button 
               type="button"
               onClick={addFila}
-              className="bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-900/20"
+              className="hidden xl:flex bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-900/20 items-center gap-1.5"
             >
-              + Añadir Item
+              <PlusCircle size={14} />
+              Añadir Ítem
             </button>
           </div>
           
@@ -612,6 +613,16 @@ export const NuevoPedido = () => {
                 errorMarca={errorMarca[idx]}
               />
             ))}
+            <div className="col-span-1 lg:col-span-2">
+              <button
+                type="button"
+                onClick={addFila}
+                className="w-full py-3.5 px-4 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-[0.99] shadow-xs"
+              >
+                <PlusCircle size={16} />
+                Añadir Ítem
+              </button>
+            </div>
           </div>
 
           {/* Vista Escritorio (>= xl): Tabla tradicional */}

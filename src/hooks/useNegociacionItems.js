@@ -27,11 +27,30 @@ export const useNegociacionItems = (solicitudId, actor) => {
         const data = docSnap.data();
         setSolicitud(data);
         
-        const serverProds = (data.productos || []).map((p, idx) => ({
-          ...p,
-          _idx: idx,
-          negociacion: derivarNegociacion(p)
-        }));
+        const serverProds = (data.productos || []).map((p, idx) => {
+          const neg = derivarNegociacion(p);
+          // Si hay un cambio sin notificar realizado por la OTRA parte, mostramos a este usuario el estado previo
+          if (neg.sinNotificar && neg.ultimoCambio && neg.ultimoCambio.rol !== actor.rol && neg.ultimoCambio.estadoPrevio) {
+            const previo = neg.ultimoCambio.estadoPrevio;
+            return {
+              ...p,
+              _idx: idx,
+              negociacion: previo.negociacion,
+              estadoItem: previo.estadoItem,
+              fob: previo.fob,
+              fechaCompromiso: previo.fechaCompromiso,
+              modalidad: previo.modalidad,
+              fobAnterior: previo.fobAnterior,
+              tiempoEntregaAnterior: previo.tiempoEntregaAnterior,
+              modalidadAnterior: previo.modalidadAnterior
+            };
+          }
+          return {
+            ...p,
+            _idx: idx,
+            negociacion: neg
+          };
+        });
         
         setItemsServer(prevItems => {
           // Detectar si un cambio remoto pisó un borrador local

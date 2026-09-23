@@ -22,8 +22,8 @@ export const BarraNotificar = ({
   return (
     <>
       {showSheet && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden animate-in slide-in-from-bottom-4 shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 shadow-2xl">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Confirmar Notificación</h3>
@@ -63,7 +63,7 @@ export const BarraNotificar = ({
         </div>
       )}
 
-      <div className={`fixed bottom-0 left-0 md:left-64 right-0 p-4 border-t shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40 transition-all ${
+      <div className={`fixed bottom-[calc(3.75rem+max(0.5rem,env(safe-area-inset-bottom,0.5rem)))] md:bottom-0 left-0 md:left-72 right-0 p-3 sm:p-4 border-t shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-50 transition-all ${
         notificacionPendienteEmail ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'
       }`}>
         <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">

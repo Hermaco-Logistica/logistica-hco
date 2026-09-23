@@ -103,7 +103,7 @@ export const sintetizarMensajesLegados = (productoActual, itemId, mensajesDB = [
   return mensajes;
 };
 
-export const useHiloItem = (solicitudId, itemId, productoActual) => {
+export const useHiloItem = (solicitudId, itemId, productoActual, currentUserRol) => {
   const [mensajesDB, setMensajesDB] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -126,13 +126,20 @@ export const useHiloItem = (solicitudId, itemId, productoActual) => {
             _localTime: docData.createdAt ? undefined : Date.now()
           };
         })
-        .filter(m => m.itemId === itemId);
+        .filter(m => m.itemId === itemId)
+        .filter(m => {
+          // Ocultar mensajes no notificados creados por la otra parte
+          if (m.sinNotificar && m.autor?.rol && currentUserRol && m.autor.rol !== currentUserRol) {
+            return false;
+          }
+          return true;
+        });
       setMensajesDB(data);
       setLoading(false);
     });
 
     return () => unsub();
-  }, [solicitudId, itemId]);
+  }, [solicitudId, itemId, currentUserRol]);
 
   const mensajes = sintetizarMensajesLegados(productoActual, itemId, mensajesDB);
 
