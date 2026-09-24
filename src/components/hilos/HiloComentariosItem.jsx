@@ -41,7 +41,8 @@ export const HiloComentariosItem = ({
   todosLosProductos,
   onClose,
   onPrecioAceptado,
-  accionesHabilitadas = true
+  accionesHabilitadas = true,
+  soloLectura = false
 }) => {
   const { 
     mensajes, 
@@ -408,7 +409,11 @@ export const HiloComentariosItem = ({
         </div>
 
         {/* Compositor de mensajes estilo Messenger */}
-        {!isBloqueadoGlobal ? (
+        {soloLectura ? (
+          <div className="p-3.5 bg-blue-50 border-t border-blue-200 text-center text-xs font-bold text-blue-700 uppercase tracking-wider shrink-0 flex items-center justify-center gap-2">
+            Modo solo lectura
+          </div>
+        ) : !isBloqueadoGlobal ? (
           <div className="p-3 bg-white border-t border-slate-200/80 shrink-0">
             <textarea
               ref={textareaRef}

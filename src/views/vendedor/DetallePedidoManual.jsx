@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { 
   ChevronLeft, CheckCircle2, MessageSquare, ArrowLeftRight, Check, X,
-  ChevronDown, Link as LinkIcon, Save
+  ChevronDown, Link as LinkIcon, Save, AlertCircle
 } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -54,10 +54,25 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
 
   const { conteos, noLeidos } = useMensajesResumen(id, itemsServer, currentUser.rol);
 
-  const puedeResponder = Boolean(
-    solicitudBase &&
-    (role === 'administrador' || role === 'gerente' || solicitudBase.vendedorId === currentUser.uid || (!solicitudBase.vendedorId && currentUser.uid))
+  const email = auth.currentUser?.email || '';
+  const esDuenio = solicitudBase && (
+    (solicitudBase.vendedorId && solicitudBase.vendedorId === auth.currentUser?.uid) ||
+    (solicitudBase.vendedorEmail && email && solicitudBase.vendedorEmail.toLowerCase() === email.toLowerCase())
   );
+
+  const puedeVerCualquierSolicitud = role === 'gerente' || role === 'administrador' || role === 'comprador' ||
+    Boolean(email.toLowerCase().match(/admin|gerente|compras/));
+
+  const puedeResponder = Boolean(esDuenio);
+
+  useEffect(() => {
+    if (!loading && solicitudBase) {
+      if (!puedeVerCualquierSolicitud && !esDuenio) {
+        alert('Acceso Denegado: Este pedido pertenece a otro vendedor.');
+        navigate('/vendedor');
+      }
+    }
+  }, [loading, solicitudBase, puedeVerCualquierSolicitud, esDuenio, navigate]);
 
   useEffect(() => {
     if (isFirstLoad.current && solicitudBase && !loading) {
@@ -145,6 +160,23 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
         )}
       </div>
 
+      {!puedeResponder && (
+        <div className="mb-4 md:mb-6 bg-blue-50/80 border border-blue-200/80 text-blue-900 rounded-xl md:rounded-2xl p-3 md:p-4 flex flex-row items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={16} className="text-blue-500 shrink-0" />
+            <span className="hidden md:inline">
+              <strong>Modo de solo lectura:</strong> Este pedido pertenece a <u>{solicitudBase.vendedorNombre || solicitudBase.vendedorEmail || 'otro vendedor'}</u>. Puedes revisarlo, pero solo su creador puede interactuar.
+            </span>
+            <span className="md:hidden font-bold uppercase tracking-tight">
+              Modo Solo Lectura
+            </span>
+          </div>
+          <span className="text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-md bg-blue-100 text-blue-800 uppercase tracking-widest shrink-0 font-mono">
+            Auditando
+          </span>
+        </div>
+      )}
+
       <div className="mb-6 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300">
         <button 
           type="button" 
@@ -167,10 +199,11 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 italic">Enlace a Orden de Compra</label>
                   <input
                     type="text"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 text-sm outline-none focus:border-emerald-500 transition-all font-bold text-slate-700"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 text-sm outline-none focus:border-emerald-500 transition-all font-bold text-slate-700 disabled:opacity-60"
                     placeholder="https://..."
                     value={linkOC}
                     onChange={(e) => setLinkOC(e.target.value)}
+                    disabled={!puedeResponder}
                   />
                 </div>
                 <div>
@@ -178,22 +211,25 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block italic">Notas para Compras</label>
                   </div>
                   <textarea
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 text-sm outline-none focus:border-emerald-500 transition-all font-bold text-slate-700 min-h-20"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 text-sm outline-none focus:border-emerald-500 transition-all font-bold text-slate-700 min-h-20 disabled:opacity-60"
                     placeholder="Comentarios sobre el pedido..."
                     value={comentariosVendedor}
                     onChange={(e) => setComentariosVendedor(e.target.value)}
+                    disabled={!puedeResponder}
                   />
                 </div>
               </div>
-              <div className="flex justify-end mt-4">
-                <button 
-                  onClick={handleGuardarDocumentacion}
-                  disabled={editandoDocs}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl font-black text-[10px] uppercase transition-colors shadow-sm disabled:opacity-50"
-                >
-                  <Save size={14} /> Guardar Documentación
-                </button>
-              </div>
+              {puedeResponder && (
+                <div className="flex justify-end mt-4">
+                  <button 
+                    onClick={handleGuardarDocumentacion}
+                    disabled={editandoDocs}
+                    className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl font-black text-[10px] uppercase transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    <Save size={14} /> Guardar Documentación
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -435,6 +471,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                             todosLosProductos={[]}
                             onClose={() => setHiloAbierto(null)}
                             accionesHabilitadas={false}
+                            soloLectura={!puedeResponder}
                           />
                         </td>
                       </tr>

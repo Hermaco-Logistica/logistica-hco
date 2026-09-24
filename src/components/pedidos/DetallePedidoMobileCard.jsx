@@ -159,6 +159,7 @@ export const DetallePedidoMobileCard = ({
             todosLosProductos={[]}
             onClose={() => setHiloAbierto(null)}
             accionesHabilitadas={false}
+            soloLectura={!puedeResponder}
           />
         </div>
       )}
