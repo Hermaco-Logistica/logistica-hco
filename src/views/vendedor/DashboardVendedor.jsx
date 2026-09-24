@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/Badge';
 import { 
   Calendar as CalendarIcon, Trash2, AlertTriangle, Filter, 
-  ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Hash, Package 
+  ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Hash, Package
 } from 'lucide-react';
 import { MobileBadge } from '../../components/mobile';
 import { usePersistedState } from '../../hooks/usePersistedState';
@@ -265,12 +265,20 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Estado de RFQs enviadas</p>
         </div>
         {canCreate && (
-          <button 
-            onClick={() => navigate('/vendedor/nueva')}
-            className="w-full sm:w-auto justify-center bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-2xl text-xs sm:text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 flex items-center gap-2 cursor-pointer active:scale-95"
-          >
-            + Nueva RFQ
-          </button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <button 
+              onClick={() => navigate('/vendedor/nueva')}
+              className="flex-1 sm:flex-none justify-center bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-2xl text-xs sm:text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 flex items-center gap-2 cursor-pointer active:scale-95"
+            >
+              + Nueva RFQ
+            </button>
+            <button 
+              onClick={() => navigate('/vendedor/nuevo-pedido')}
+              className="flex-1 sm:flex-none justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl text-xs sm:text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-100 flex items-center gap-2 cursor-pointer active:scale-95"
+            >
+              + Pedido Manual
+            </button>
+          </div>
         )}
       </div>
 
@@ -485,7 +493,10 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           </div>
         ) : (
           paginatedSolicitudes.map((s) => {
-            const itemsConPrecio = s.productos?.filter(p => Number(p.fob) > 0) || [];
+            const esPedidoManual = s.tipo === 'Pedido Manual';
+            const itemsConPrecio = esPedidoManual 
+              ? s.productos?.filter(p => Number(p.precio) > 0) || []
+              : s.productos?.filter(p => Number(p.fob) > 0) || [];
             const esPedidoConfirmado = s.estado === 'Pedido' || s.estado === 'Pedido Parcial';
             
             const totalA = itemsConPrecio.reduce((acc, p) => 
@@ -494,13 +505,17 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
             const totalM = itemsConPrecio.reduce((acc, p) => 
               acc + (p.fob * (p.factorM || s.factorM || 1.08) * (p.fvm || 1.25) * p.cant), 0);
 
+            const totalManual = esPedidoManual 
+              ? itemsConPrecio.reduce((acc, p) => acc + (Number(p.precio || 0) * Number(p.cantidad || p.cant || 0)), 0)
+              : 0;
+
             const ocRefs = [...new Set((s.productos || []).filter(p => p.numOC).map(p => p.numOC))];
             const ocRefText = ocRefs.length > 0 ? ocRefs.join(', ') : '';
 
             return (
               <div
                 key={s.id}
-                onClick={() => navigate(`/vendedor/detalle/${s.id}`)}
+                onClick={() => navigate(s.tipo === 'Pedido Manual' ? `/vendedor/pedido-manual/${s.id}` : `/vendedor/detalle/${s.id}`)}
                 className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer relative active:scale-[0.98] touch-manipulation"
               >
                 {/* Header: Correlativo + Alertas (Izq) y Estado (Der) */}
@@ -548,7 +563,13 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                 </div>
 
                 {/* Resumen minimalista */}
-                {totalA > 0 ? (
+                {esPedidoManual ? (
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="flex items-center gap-1.5 bg-yellow-50/50 px-2 py-1 rounded-md border border-yellow-100/50">
+                      <span className="font-mono font-black text-[11px] text-yellow-900">Total: ${totalManual.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+                ) : totalA > 0 ? (
                   <div className="flex items-center gap-4 mb-4">
                     <div className="flex items-center gap-1.5 bg-emerald-50/50 px-2 py-1 rounded-md border border-emerald-100/50">
                       <Plane size={13} className="text-emerald-500" />
@@ -567,17 +588,21 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
 
                 {/* Footer: Fechas y Flecha */}
                 <div className="flex items-end justify-between pt-3 border-t border-slate-50">
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-1.5 mt-2">
                     <span className="text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1.5">
-                      <CalendarIcon size={10} /> {formatFechaHora(s.fechaS)}
+                      <Clock size={10} /> Solicitado: {formatFechaHora(s.fechaS || s.fechaCreacion)}
                     </span>
-                    {s.fechaCotizacion?.toDate ? (
+                    {s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en ? (
+                      <span className="text-[9px] font-bold text-emerald-600 uppercase flex items-center gap-1.5">
+                        <Clock size={10} /> Resp: {formatFechaHora(s.ultimaNotificacion.en)}
+                      </span>
+                    ) : s.fechaCotizacion?.toDate ? (
                       <span className="text-[9px] font-bold text-emerald-600 uppercase flex items-center gap-1.5">
                         <Clock size={10} /> Resp: {formatFechaHora(s.fechaCotizacion)}
                       </span>
                     ) : (
                       <span className="text-[9px] font-bold text-slate-300 italic flex items-center gap-1.5">
-                        <Clock size={10} /> En proceso
+                        <Clock size={10} /> En espera
                       </span>
                     )}
                   </div>
@@ -615,7 +640,10 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           </thead>
           <tbody className="divide-y divide-slate-100">
             {paginatedSolicitudes.map((s) => {
-              const itemsConPrecio = s.productos?.filter(p => Number(p.fob) > 0) || [];
+              const esPedidoManual = s.tipo === 'Pedido Manual';
+              const itemsConPrecio = esPedidoManual
+                ? s.productos?.filter(p => Number(p.precio) > 0) || []
+                : s.productos?.filter(p => Number(p.fob) > 0) || [];
               const esPedidoConfirmado = s.estado === 'Pedido' || s.estado === 'Pedido Parcial';
               
               const totalA = itemsConPrecio.reduce((acc, p) => 
@@ -623,6 +651,10 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               
               const totalM = itemsConPrecio.reduce((acc, p) => 
                 acc + (p.fob * (p.factorM || s.factorM || 1.08) * (p.fvm || 1.25) * p.cant), 0);
+
+              const totalManual = esPedidoManual 
+                ? itemsConPrecio.reduce((acc, p) => acc + (Number(p.precio || 0) * Number(p.cantidad || p.cant || 0)), 0)
+                : 0;
 
               const ocRefs = [...new Set((s.productos || []).filter(p => p.numOC).map(p => p.numOC))];
               const ocRefText = ocRefs.length > 0 ? ocRefs.join(', ') : '-';
@@ -663,19 +695,27 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   </td>
                   <td className="p-4 text-[11px]">
                     <div className="flex flex-col gap-1">
-                      <span className="text-slate-500 font-bold uppercase text-[9px]">📥 Solicitud: <b className="text-slate-700 font-black">{formatFechaHora(s.fechaS)}</b></span>
+                      <span className="text-slate-500 font-bold uppercase text-[9px]">📥 Solicitud: <b className="text-slate-700 font-black">{formatFechaHora(s.fechaS || s.fechaCreacion)}</b></span>
                       <span className="text-emerald-600 font-black italic text-[9px] uppercase">
-                        📤 {s.estado.includes('Parcial') ? 'Avance Recibido: ' : 'Respondida: '}
-                        {s.fechaCotizacion?.toDate ? formatFechaHora(s.fechaCotizacion) : 'En proceso'}
+                        📤 {s.tipo === 'Pedido Manual' ? 'Resp: ' : (s.estado.includes('Parcial') ? 'Avance Recibido: ' : 'Respondida: ')}
+                        {s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en ? (
+                          formatFechaHora(s.ultimaNotificacion.en)
+                        ) : s.fechaCotizacion?.toDate ? (
+                          formatFechaHora(s.fechaCotizacion)
+                        ) : (
+                          'En espera'
+                        )}
                       </span>
                     </div>
                   </td>
                   <td className="p-4">
                     <div className="flex flex-col items-center gap-1">
-                      {totalA > 0 ? (
+                      {esPedidoManual ? (
+                        <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">Total: ${totalManual.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      ) : totalA > 0 ? (
                         <>
-                          <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">A: ${totalA.toFixed(2)}</span>
-                          <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">M: ${totalM.toFixed(2)}</span>
+                          <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">A: ${totalA.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">M: ${totalM.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </>
                       ) : (
                         <span className="text-[10px] font-black text-slate-300 uppercase italic tracking-widest">En costeo...</span>
@@ -690,7 +730,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   </td>
                   <td className="p-4 text-center">
                     <button 
-                      onClick={() => navigate(`/vendedor/detalle/${s.id}`)}
+                      onClick={() => navigate(s.tipo === 'Pedido Manual' ? `/vendedor/pedido-manual/${s.id}` : `/vendedor/detalle/${s.id}`)}
                       className="bg-white border-2 border-slate-100 hover:border-slate-900 text-slate-900 px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm"
                     >
                       Ver Detalle

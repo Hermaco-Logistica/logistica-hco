@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc, getDocFromServer, query, where } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { 
   CheckSquare, Square, Link as LinkIcon, 
@@ -14,6 +14,7 @@ import {
   guardarProveedorSiNoExiste,
   normalizarNombreProveedor,
 } from '../../services/proveedoresService';
+import { itemPedidoConfirmado } from '../../utils/itemHelpers';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { usePersistedState } from '../../hooks/usePersistedState';
 import { generarPlantillaOCAsignada } from '../../utils/emailTemplates';
@@ -118,7 +119,7 @@ export const DashboardPedidos = ({ role }) => {
         const data = d.data();
         if (data.productos && (data.estado === 'Pedido' || data.estado === 'Pedido Parcial' || data.estado === 'Comprado')) {
           data.productos.forEach((p, idx) => {
-            if (p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado') {
+            if (itemPedidoConfirmado(p)) {
               tempItems.push({
                 ...p,
                 idRFQ: d.id,
@@ -507,11 +508,26 @@ export const DashboardPedidos = ({ role }) => {
         });
       }
 
-      for (const item of itemsAProcesar) {
-        const rfqRef = doc(db, "solicitudes", item.idRFQ);
-        const rfqSnap = await getDoc(rfqRef);
-        if (rfqSnap.exists()) {
-          const productosActualizados = [...rfqSnap.data().productos];
+      // Agrupar por idRFQ para evitar race condition:
+      // si dos ítems del mismo RFQ se procesan en serie, el segundo getDoc
+      // puede devolver datos cacheados sin el cambio del primero y sobrescribirlo.
+      const porRFQ = itemsAProcesar.reduce((acc, item) => {
+        if (!acc[item.idRFQ]) acc[item.idRFQ] = [];
+        acc[item.idRFQ].push(item);
+        return acc;
+      }, {});
+
+      for (const [rfqId, items] of Object.entries(porRFQ)) {
+        const rfqRef = doc(db, "solicitudes", rfqId);
+        // Forzar lectura desde el servidor (no caché) para evitar sobreescritura con datos viejos
+        const rfqSnap = await getDocFromServer(rfqRef);
+        if (!rfqSnap.exists()) {
+          console.warn(`[DashboardPedidos] Solicitud ${rfqId} no existe en servidor`);
+          continue;
+        }
+        const productosActualizados = [...rfqSnap.data().productos];
+        // Aplicar todos los cambios de este RFQ en un solo array antes de escribir
+        for (const item of items) {
           productosActualizados[item.indexOriginal] = {
             ...productosActualizados[item.indexOriginal],
             estadoItem: 'Comprado',
@@ -519,8 +535,9 @@ export const DashboardPedidos = ({ role }) => {
             fobReal: Number(item.fobReal),
             fechaOC: new Date()
           };
-          await updateDoc(rfqRef, { productos: productosActualizados });
         }
+        await updateDoc(rfqRef, { productos: productosActualizados });
+        console.log(`[DashboardPedidos] Solicitud ${rfqId} actualizada correctamente`);
       }
 
       // ── Correos por vendedor ──────────────────────────────────────────────
@@ -994,7 +1011,7 @@ export const DashboardPedidos = ({ role }) => {
             <div className="space-y-4 border-l border-slate-800 pl-12">
               <p className="text-blue-400 font-black text-[10px] uppercase">Agregar a Existente</p>
               <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto scrollbar-hide">
-                {ordenesExistentes.map(oc => (
+                {ordenesExistentes.filter(oc => !['Aduana', 'Recibido', 'Entregado'].includes(oc.estado)).map(oc => (
                   <button key={oc.id} onClick={() => procesarAsignacion(oc)} className="w-full bg-slate-800 hover:bg-blue-600 text-white p-3.5 rounded-xl text-left text-[10px] font-black uppercase flex justify-between cursor-pointer transition-colors">
                     <span>{oc.numeroOC} — {oc.proveedor}</span>
                     <ChevronDown size={14} />
@@ -1031,7 +1048,7 @@ export const DashboardPedidos = ({ role }) => {
                 }}
                 className={`bg-white rounded-2xl p-4 border transition-all shadow-sm active:scale-[0.98] touch-manipulation relative ${
                   isSelected
-                    ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/20'
+                    ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/40'
                     : 'border-slate-100 hover:shadow-md hover:border-slate-200'
                 }`}
               >
@@ -1042,14 +1059,17 @@ export const DashboardPedidos = ({ role }) => {
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); toggleSeleccion(uId); }}
-                        className={`w-6 h-6 rounded flex items-center justify-center transition-all shrink-0 cursor-pointer ${
+                        className={`w-6 h-6 rounded flex items-center justify-center transition-all shrink-0 cursor-pointer relative ${
                           isSelected
-                            ? 'bg-emerald-500 text-white shadow-sm'
+                            ? 'bg-blue-500 text-white shadow-sm'
                             : 'bg-slate-100 text-slate-400 hover:text-slate-600'
                         }`}
                         aria-label="Seleccionar ítem para orden de compra"
                       >
-                        {isSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+                        {isSelected && (
+                          <span className="absolute inset-0 rounded border-2 border-blue-400 animate-expand-wave pointer-events-none" />
+                        )}
+                        {isSelected ? <CheckSquare size={14} className="relative z-10 animate-pop-in" /> : <Square size={14} className="relative z-10" />}
                       </button>
                     )}
                     <span className="font-mono font-bold text-[11px] text-slate-400 tracking-wider">
@@ -1172,8 +1192,15 @@ export const DashboardPedidos = ({ role }) => {
                 <tr key={uId} className="hover:bg-slate-50/50 transition-colors">
                   <td className="p-6 text-center">
                     {role === 'comprador' && !item.numOC ? (
-                      <button onClick={() => toggleSeleccion(uId)} className={seleccionados.includes(uId) ? 'text-emerald-500' : 'text-slate-200'}>
-                        {seleccionados.includes(uId) ? <CheckSquare size={22} fill="currentColor" /> : <Square size={22} />}
+                      <button onClick={() => toggleSeleccion(uId)} className={`relative flex items-center justify-center mx-auto transition-colors ${seleccionados.includes(uId) ? 'text-blue-500' : 'text-slate-200 hover:text-slate-300'}`}>
+                        {seleccionados.includes(uId) && (
+                          <span className="absolute inset-0 rounded border-2 border-blue-500 animate-expand-wave pointer-events-none" />
+                        )}
+                        {seleccionados.includes(uId) ? (
+                          <CheckSquare size={22} fill="currentColor" className="relative z-10 animate-pop-in" />
+                        ) : (
+                          <Square size={22} className="relative z-10" />
+                        )}
                       </button>
                     ) : <ClipboardCheck size={20} className="text-slate-200 mx-auto" />}
                   </td>
@@ -1380,13 +1407,13 @@ export const DashboardPedidos = ({ role }) => {
               <div className="space-y-4 pt-6 border-t border-slate-800">
                 <p className="text-blue-400 font-black text-[10px] uppercase">Agregar a OC Existente</p>
                 <div className="grid grid-cols-1 gap-2 pb-4">
-                  {ordenesExistentes.map(oc => (
+                  {ordenesExistentes.filter(oc => !['Aduana', 'Recibido', 'Entregado'].includes(oc.estado)).map(oc => (
                     <button key={oc.id} onClick={() => procesarAsignacion(oc)} className="w-full bg-slate-800 hover:bg-blue-600 text-white p-4 rounded-xl text-left text-[10px] font-black uppercase flex justify-between items-center cursor-pointer transition-colors group">
                       <span className="truncate pr-2">{oc.numeroOC} — {oc.proveedor}</span>
                       <ChevronRight size={14} className="shrink-0 text-slate-500 group-hover:text-white" />
                     </button>
                   ))}
-                  {ordenesExistentes.length === 0 && (
+                  {ordenesExistentes.filter(oc => !['Aduana', 'Recibido', 'Entregado'].includes(oc.estado)).length === 0 && (
                     <p className="text-slate-500 text-[10px] font-bold text-center py-4">No hay OC generadas activas</p>
                   )}
                 </div>
