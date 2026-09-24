@@ -277,6 +277,12 @@ export const Calculadora = ({ onGuardar }) => {
 
   const ejecutarGuardado = async () => {
     if (guardando || esSolicitudCerrada) return;
+
+    if (Number(flete || 0) <= 0 || Number(aduana || 0) <= 0) {
+      alert("Debe ingresar el flete y el valor en aduana (otros gastos) para poder guardar.");
+      return;
+    }
+
     setGuardando(true);
     
     // Procesamos todos los ítems para no perder los que no estaban seleccionados

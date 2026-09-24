@@ -29,6 +29,7 @@ import { DetalleVendedorHistorial } from './views/analisis/DetalleVendedorHistor
 import { DetalleProductosAnalisis } from './views/analisis/DetalleProductosAnalisis';
 import { DetalleProductoHistorial } from './views/analisis/DetalleProductoHistorial';
 import { ToastProvider } from './components/ui/Toast';
+import { GlobalAlertModal } from './components/ui/GlobalAlertModal';
 import { DetalleClienteHistorial } from './views/analisis/DetalleClienteHistorial';
 import { DetalleLogisticaAnalisis } from './views/analisis/DetalleLogisticaAnalisis';
 
@@ -344,6 +345,7 @@ function App() {
 
   return (
     <ToastProvider>
+      <GlobalAlertModal />
       <Router>
       {!user ? (
         <Routes>
