@@ -16,11 +16,13 @@ import { OfertaDiff } from '../../components/pedidos/negociacion/OfertaDiff';
 import { FormularioOferta } from '../../components/pedidos/negociacion/FormularioOferta';
 import { ResumenTurnos } from '../../components/pedidos/negociacion/ResumenTurnos';
 import { BarraNotificar } from '../../components/pedidos/negociacion/BarraNotificar';
+import { getRoleColors } from '../../utils/roleColors';
 
-export const DetallePedidoManual = ({ role }) => {
+export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [hiloAbierto, setHiloAbierto] = useState(null);
+  const colors = getRoleColors(role);
   const [filtroTurno, setFiltroTurno] = useState(null);
   const [linkOC, setLinkOC] = useState('');
   const [comentariosVendedor, setComentariosVendedor] = useState('');
@@ -50,7 +52,7 @@ export const DetallePedidoManual = ({ role }) => {
     clearBorrador
   } = useNegociacionItems(id, currentUser);
 
-  const { conteos, noLeidos } = useMensajesResumen(id, itemsServer);
+  const { conteos, noLeidos } = useMensajesResumen(id, itemsServer, currentUser.rol);
 
   const puedeResponder = Boolean(
     solicitudBase &&
@@ -117,10 +119,10 @@ export const DetallePedidoManual = ({ role }) => {
     return true;
   });
 
-  const allClosed = itemsServer.length > 0 && itemsServer.every(p => p.negociacion?.resultado != null && !p.negociacion?.sinNotificar);
+  const allClosed = itemsServer.length > 0 && itemsServer.every(p => (p.negociacion?.resultado && p.negociacion.resultado !== 'pendiente') && !p.negociacion?.sinNotificar);
 
   return (
-    <div className="max-w-400 mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-36 fade-in">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-36 fade-in">
       <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6">
         <button onClick={() => navigate(-1)} className="shrink-0 p-2 hover:bg-white rounded-full transition-colors shadow-sm bg-white">
           <ChevronLeft size={24} className="text-slate-600" />
@@ -130,7 +132,7 @@ export const DetallePedidoManual = ({ role }) => {
             {solicitudBase.cliente}
           </h1>
           <div className="flex items-center gap-2 mt-2">
-            <span className="text-purple-600 font-bold text-[10px] sm:text-xs uppercase tracking-widest bg-purple-100 px-2.5 py-1 rounded-md">
+            <span className={`font-bold text-[10px] sm:text-xs uppercase tracking-widest px-2.5 py-1 rounded-md ${colors.text} ${colors.bg}`}>
               {solicitudBase.correlativo}
             </span>
           </div>

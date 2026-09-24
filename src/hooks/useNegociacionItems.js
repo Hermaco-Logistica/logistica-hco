@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useToast } from '../components/ui/Toast';
@@ -14,6 +14,10 @@ export const useNegociacionItems = (solicitudId, actor) => {
   const [itemsServer, setItemsServer] = useState([]);
   const [loading, setLoading] = useState(true);
   const [borradores, setBorradores] = useState({});
+  const borradoresRef = useRef(borradores);
+  useEffect(() => {
+    borradoresRef.current = borradores;
+  }, [borradores]);
   const [isProcessing, setIsProcessing] = useState(false);
   
   const { addToast } = useToast();
@@ -57,8 +61,8 @@ export const useNegociacionItems = (solicitudId, actor) => {
           if (prevItems.length > 0) {
             serverProds.forEach((sp, idx) => {
               const pp = prevItems[idx];
-              if (pp && sp.negociacion.version !== pp.negociacion.version) {
-                if (borradores[idx]) {
+              if (pp && sp.negociacion.version !== pp.negociacion.version && sp.negociacion.ultimoCambio?.uid !== actor.uid) {
+                if (borradoresRef.current[idx]) {
                   addToast({
                     type: 'warning',
                     title: 'Cambio remoto',
@@ -85,7 +89,7 @@ export const useNegociacionItems = (solicitudId, actor) => {
     });
 
     return () => unsubscribe();
-  }, [solicitudId, addToast, borradores]);
+  }, [solicitudId, addToast]);
 
   const unnotifiedCount = useMemo(() => {
     return itemsServer.filter(p => 
@@ -157,7 +161,12 @@ export const useNegociacionItems = (solicitudId, actor) => {
 
   const handleContraofertar = (idx, versionEsperada, oferta) => {
     const ofertaNumber = { ...oferta, precio: Number(oferta.precio) };
-    return handleAction(contraofertarItem, { solicitudId, idx, versionEsperada, actor, oferta: ofertaNumber }, 'Contraoferta registrada localmente');
+    handleAction(contraofertarItem, { solicitudId, idx, versionEsperada, actor, oferta: ofertaNumber }, 'Contraoferta registrada localmente');
+    setBorradores(b => {
+      const next = { ...b };
+      delete next[idx];
+      return next;
+    });
   };
 
   const handleDenegar = (idx, versionEsperada, motivo) => {

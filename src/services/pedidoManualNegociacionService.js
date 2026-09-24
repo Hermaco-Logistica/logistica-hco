@@ -84,7 +84,7 @@ export function calcularEstadoGlobal(productos) {
   if (todosResueltos && algunAcordado) return 'Pedido';
   if (!todosResueltos && algunAcordado) return 'Pedido Parcial';
   if (!algunAcordado && turnoVendedor) return 'Cotizado Parcial';
-  return 'Enviado a Compras';
+  return 'Pendiente';
 }
 
 export function calcularResumenNegociacion(productos) {
@@ -166,15 +166,6 @@ async function ejecutarMutacion({ solicitudId, idx, versionEsperada, actor, acci
       delete estadoPrevioLimpio.negociacion.ultimoCambio;
     }
 
-    mutacion.negociacion.ultimoCambio = {
-      rol: actor.rol,
-      uid: actor.uid,
-      nombre: actor.nombre,
-      accion: accionNombre,
-      en: Timestamp.now(),
-      estadoPrevio: estadoPrevioLimpio
-    };
-    
     let nuevoMensajeId = null;
     let mensajeRef = null;
 
@@ -182,24 +173,33 @@ async function ejecutarMutacion({ solicitudId, idx, versionEsperada, actor, acci
       mensajeRef = doc(collection(db, `solicitudes/${solicitudId}/mensajes`));
       nuevoMensajeId = mensajeRef.id;
       mutacion.negociacion.ofertaVigente.mensajeId = nuevoMensajeId;
+    } else {
+      mensajeRef = doc(collection(db, `solicitudes/${solicitudId}/mensajes`));
+      nuevoMensajeId = mensajeRef.id;
     }
+
+    mutacion.negociacion.ultimoCambio = {
+      rol: actor.rol,
+      uid: actor.uid,
+      nombre: actor.nombre,
+      accion: accionNombre,
+      en: Timestamp.now(),
+      estadoPrevio: estadoPrevioLimpio,
+      mensajeEventoId: nuevoMensajeId
+    };
 
     const itemActualizado = { ...itemActual, ...mutacion.itemUpdate, negociacion: mutacion.negociacion };
     productos[idx] = itemActualizado;
 
-    const estadoGlobal = calcularEstadoGlobal(productos);
-    const resumen = calcularResumenNegociacion(productos);
-
     transaction.update(docRef, {
-      productos,
-      estado: estadoGlobal,
-      resumenNegociacion: resumen
+      productos
     });
     
     if (accionNombre === 'ajustar' || accionNombre === 'contraofertar') {
       if (prevMensajeId) {
         transaction.update(doc(db, `solicitudes/${solicitudId}/mensajes`, prevMensajeId), {
-          estadoPropuesta: 'contraofertada'
+          unnotifiedEstadoPropuesta: 'contraofertada',
+          unnotifiedActorRol: actor.rol
         });
       }
       const propuestaInfo = {
@@ -220,14 +220,15 @@ async function ejecutarMutacion({ solicitudId, idx, versionEsperada, actor, acci
     } else {
       if ((accionNombre === 'aprobar' || accionNombre === 'aceptar') && prevMensajeId) {
         transaction.update(doc(db, `solicitudes/${solicitudId}/mensajes`, prevMensajeId), {
-          estadoPropuesta: 'aceptada'
+          unnotifiedEstadoPropuesta: 'aceptada',
+          unnotifiedActorRol: actor.rol
         });
       } else if ((accionNombre === 'rechazar' || accionNombre === 'denegar') && prevMensajeId) {
         transaction.update(doc(db, `solicitudes/${solicitudId}/mensajes`, prevMensajeId), {
-          estadoPropuesta: 'rechazada'
+          unnotifiedEstadoPropuesta: 'rechazada',
+          unnotifiedActorRol: actor.rol
         });
       }
-      mensajeRef = doc(collection(db, `solicitudes/${solicitudId}/mensajes`));
       const eventoInfo = {
         itemId: idx,
         tipo: 'evento',
@@ -419,44 +420,43 @@ export const deshacerUltimoCambio = ({ solicitudId, idx, versionEsperada, actor 
       tiempoEntregaAnterior: previo.tiempoEntregaAnterior,
       modalidadAnterior: previo.modalidadAnterior
     };
+    
+    // Firestore no soporta 'undefined', así que lo eliminamos
+    Object.keys(itemRestaurado).forEach(key => {
+      if (itemRestaurado[key] === undefined) {
+        delete itemRestaurado[key];
+      }
+    });
+
     productos[idx] = itemRestaurado;
 
-    const estadoGlobal = calcularEstadoGlobal(productos);
-    const resumen = calcularResumenNegociacion(productos);
-
     transaction.update(docRef, {
-      productos,
-      estado: estadoGlobal,
-      resumenNegociacion: resumen
+      productos
     });
 
-    const mensajeRef = doc(collection(db, `solicitudes/${solicitudId}/mensajes`));
-    transaction.set(mensajeRef, {
-      itemId: idx,
-      tipo: 'evento',
-      accion: 'deshacer',
-      autor: actor,
-      createdAt: Timestamp.now()
-    });
+    const mensajeEventoId = negActual.ultimoCambio.mensajeEventoId;
+    if (mensajeEventoId) {
+      transaction.delete(doc(db, `solicitudes/${solicitudId}/mensajes`, mensajeEventoId));
+    }
     
     const currMensajeId = negActual.ofertaVigente?.mensajeId;
     const prevMensajeId = previo.negociacion?.ofertaVigente?.mensajeId;
 
     if (negActual.ultimoCambio.accion === 'ajustar' || negActual.ultimoCambio.accion === 'contraofertar') {
-      if (currMensajeId) {
-        transaction.update(doc(db, `solicitudes/${solicitudId}/mensajes`, currMensajeId), {
-          estadoPropuesta: 'retirada'
-        });
+      if (currMensajeId && currMensajeId !== mensajeEventoId) {
+        transaction.delete(doc(db, `solicitudes/${solicitudId}/mensajes`, currMensajeId));
       }
       if (prevMensajeId) {
         transaction.update(doc(db, `solicitudes/${solicitudId}/mensajes`, prevMensajeId), {
-          estadoPropuesta: 'vigente'
+          unnotifiedEstadoPropuesta: null,
+          unnotifiedActorRol: null
         });
       }
-    } else if (negActual.ultimoCambio.accion === 'aprobar' || negActual.ultimoCambio.accion === 'aceptar') {
-       if (currMensajeId) {
-         transaction.update(doc(db, `solicitudes/${solicitudId}/mensajes`, currMensajeId), {
-           estadoPropuesta: 'vigente'
+    } else {
+       if (prevMensajeId) {
+         transaction.update(doc(db, `solicitudes/${solicitudId}/mensajes`, prevMensajeId), {
+           unnotifiedEstadoPropuesta: null,
+           unnotifiedActorRol: null
          });
        }
     }
@@ -472,10 +472,14 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
   // 1. Obtener mensajes sin notificar creados por este actor
   const mensajesSnap = await getDocs(collection(db, `solicitudes/${solicitudId}/mensajes`));
   const mensajesSinNotificarRefs = [];
+  const mensajesAActualizarEstadoRefs = [];
   mensajesSnap.docs.forEach(mDoc => {
     const mData = mDoc.data();
     if (mData.sinNotificar && mData.autor?.rol === actor.rol) {
       mensajesSinNotificarRefs.push(mDoc.ref);
+    }
+    if (mData.unnotifiedEstadoPropuesta && mData.unnotifiedActorRol === actor.rol) {
+      mensajesAActualizarEstadoRefs.push({ ref: mDoc.ref, estado: mData.unnotifiedEstadoPropuesta });
     }
   });
 
@@ -490,6 +494,9 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
     // Parchar mensajes a sinNotificar: false
     mensajesSinNotificarRefs.forEach(ref => {
       transaction.update(ref, { sinNotificar: false });
+    });
+    mensajesAActualizarEstadoRefs.forEach(({ ref, estado }) => {
+      transaction.update(ref, { estadoPropuesta: estado, unnotifiedEstadoPropuesta: null, unnotifiedActorRol: null });
     });
 
     const productos = [...solicitud.productos];

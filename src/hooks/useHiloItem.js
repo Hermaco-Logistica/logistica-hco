@@ -120,9 +120,11 @@ export const useHiloItem = (solicitudId, itemId, productoActual, currentUserRol)
       const data = snap.docs
         .map(d => {
           const docData = d.data();
+          const estadoFinal = (docData.unnotifiedEstadoPropuesta && docData.unnotifiedActorRol === currentUserRol) ? docData.unnotifiedEstadoPropuesta : docData.estadoPropuesta;
           return {
             id: d.id,
             ...docData,
+            estadoPropuesta: estadoFinal,
             _localTime: docData.createdAt ? undefined : Date.now()
           };
         })
@@ -224,7 +226,7 @@ export const useHiloItem = (solicitudId, itemId, productoActual, currentUserRol)
       p.estadoItem === 'Denegado' || p.estadoItem === 'Cancelado' || p.estadoItem === 'Rechazado'
     );
 
-    let nuevoEstado = 'Enviado a Compras';
+    let nuevoEstado = 'Pendiente';
     if (todosDenegados) {
       nuevoEstado = 'Denegado';
     } else if (algunDevueltoOCotizado) {
@@ -275,7 +277,7 @@ export const useHiloItem = (solicitudId, itemId, productoActual, currentUserRol)
     };
     
     const algunPendiente = productosActualizados.some(p => p.estadoItem === 'Pendiente');
-    let nuevoEstado = algunPendiente ? 'Enviado a Compras' : undefined; // Simplified
+    let nuevoEstado = algunPendiente ? 'Pendiente' : undefined; // Simplified
 
     const updateData = { productos: productosActualizados };
     if (nuevoEstado) updateData.estado = nuevoEstado;

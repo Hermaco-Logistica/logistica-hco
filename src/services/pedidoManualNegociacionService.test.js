@@ -92,7 +92,7 @@ describe('pedidoManualNegociacionService - Pruebas', () => {
   });
 
   it('9. calcularEstadoGlobal: Inicial (Compras)', () => {
-    expect(calcularEstadoGlobal([{ estadoItem: 'Pendiente' }])).toBe('Enviado a Compras');
+    expect(calcularEstadoGlobal([{ estadoItem: 'Pendiente' }])).toBe('Pendiente');
   });
 
   it('10. calcularResumenNegociacion cuenta correctamente', () => {

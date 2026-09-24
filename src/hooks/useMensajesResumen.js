@@ -35,7 +35,8 @@ export const useMensajesResumen = (solicitudId, productos, currentUserRol) => {
           }
         }
         
-        if (data.tipo === 'propuesta' && data.estadoPropuesta === 'pendiente') {
+        const estadoFinal = (data.unnotifiedEstadoPropuesta && data.unnotifiedActorRol === currentUserRol) ? data.unnotifiedEstadoPropuesta : data.estadoPropuesta;
+        if (data.tipo === 'propuesta' && estadoFinal === 'pendiente') {
           pendingProps[itemId] = true;
         }
       });

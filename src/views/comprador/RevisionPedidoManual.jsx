@@ -105,7 +105,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
     return true;
   });
 
-  const allClosed = itemsServer.length > 0 && itemsServer.every(p => p.negociacion?.resultado != null && !p.negociacion?.sinNotificar);
+  const allClosed = itemsServer.length > 0 && itemsServer.every(p => (p.negociacion?.resultado && p.negociacion.resultado !== 'pendiente') && !p.negociacion?.sinNotificar);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-36 fade-in">

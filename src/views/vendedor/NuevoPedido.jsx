@@ -365,7 +365,7 @@ export const NuevoPedido = () => {
       }
 
       // Generar ID de forma atómica y segura mediante transacciones
-      const counterRef = doc(db, 'metadata', 'rfq_counter');
+      const counterRef = doc(db, 'metadata', 'pedido_counter');
       const nuevaSolicitudRef = doc(collection(db, 'solicitudes'));
 
       const savedData = await runTransaction(db, async (transaction) => {
@@ -385,7 +385,7 @@ export const NuevoPedido = () => {
           vendedorId: auth.currentUser.uid,
           vendedorEmail: auth.currentUser.email,
           vendedorNombre: auth.currentUser.displayName || auth.currentUser.email.split('@')[0],
-          estado: 'Enviado a Compras',
+          estado: 'Pendiente',
           tipo: 'Pedido Manual',
           fechaS: serverTimestamp(),
           productos: productos.map(p => ({
