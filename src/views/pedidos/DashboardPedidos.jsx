@@ -58,6 +58,7 @@ export const DashboardPedidos = ({ role }) => {
   const [mostrarCalendarioConfirmado, setMostrarCalendarioConfirmado] = useState(false);
   const [mesActualConfirmado, setMesActualConfirmado] = useState(new Date());
   const refCalendarioConfirmado = useRef(null);
+  const procesandoRef = useRef(false);
 
   // Cerrar popover al hacer clic fuera
   useEffect(() => {
@@ -478,6 +479,7 @@ export const DashboardPedidos = ({ role }) => {
   };
 
   const procesarAsignacion = async (ocExistente = null) => {
+    if (procesandoRef.current) return;
     const itemsAProcesar = itemsPedidos.filter(item => 
       seleccionados.includes(`${item.idRFQ}-${item.indexOriginal}`)
     );
@@ -488,6 +490,7 @@ export const DashboardPedidos = ({ role }) => {
     if (!numOC || !provOC) return alert("Faltan datos de la OC");
 
     try {
+      procesandoRef.current = true;
       await guardarProveedorSiNoExiste(provOC, auth.currentUser);
       const itemsFormateados = itemsAProcesar.map(i => ({
         descripcion: i.descripcion || i.desc,
@@ -580,7 +583,11 @@ export const DashboardPedidos = ({ role }) => {
       alert(`Éxito: Items vinculados a la OC ${numOC}`);
       setSeleccionados([]);
       setShowAsignador(false);
-    } catch (error) { console.error(error); }
+    } catch (error) { 
+      console.error(error); 
+    } finally {
+      procesandoRef.current = false;
+    }
   };
 
   // Helpers para obtener proveedores y estados lógicos únicos disponibles

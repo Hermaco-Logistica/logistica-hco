@@ -43,6 +43,7 @@ export const NuevaRFQ = () => {
   const debounceRef = useRef(null);
   const marcasDebounceRef = useRef([]);
   const productosDebounceRef = useRef([]);
+  const isSubmittingRef = useRef(false);
 
   useEffect(() => {
     const termino = cliente.trim();
@@ -347,7 +348,13 @@ export const NuevaRFQ = () => {
 
   const guardarRFQ = async (e) => {
     e.preventDefault();
-    if (!cliente || productos.some(p => !p.desc)) return alert("Llena los campos obligatorios");
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
+    if (!cliente || productos.some(p => !p.desc)) {
+      isSubmittingRef.current = false;
+      return alert("Llena los campos obligatorios");
+    }
 
     setLoading(true);
     try {
@@ -396,7 +403,6 @@ export const NuevaRFQ = () => {
         };
 
         transaction.set(counterRef, { lastNum: nextNum }, { merge: true });
-        transaction.set(counterRef, { lastNum: nextNum }, { merge: true });
         transaction.set(nuevaSolicitudRef, dataParaGuardar);
         return { ...dataParaGuardar, id: nuevaSolicitudRef.id };
       });
@@ -442,6 +448,7 @@ export const NuevaRFQ = () => {
     } catch (error) {
       console.error("Error al procesar RFQ:", error);
       alert("Error crítico al procesar la solicitud");
+      isSubmittingRef.current = false;
     } finally {
       setLoading(false);
     }

@@ -44,6 +44,7 @@ export const NuevoPedido = () => {
   const debounceRef = useRef(null);
   const marcasDebounceRef = useRef([]);
   const productosDebounceRef = useRef([]);
+  const isSubmittingRef = useRef(false);
 
   // Ir al inicio al entrar a la vista
   useEffect(() => { (document.querySelector('main') || window).scrollTo({ top: 0, behavior: 'instant' }); }, []);
@@ -351,7 +352,13 @@ export const NuevoPedido = () => {
 
   const guardarRFQ = async (e) => {
     e.preventDefault();
-    if (!cliente || productos.some(p => !p.desc)) return alert("Llena los campos obligatorios");
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+
+    if (!cliente || productos.some(p => !p.desc)) {
+      isSubmittingRef.current = false;
+      return alert("Llena los campos obligatorios");
+    }
 
     setLoading(true);
     try {
@@ -451,6 +458,7 @@ export const NuevoPedido = () => {
     } catch (error) {
       console.error("Error al procesar RFQ:", error);
       alert("Error crítico al procesar la solicitud");
+      isSubmittingRef.current = false;
     } finally {
       setLoading(false);
     }

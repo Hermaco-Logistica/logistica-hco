@@ -25,7 +25,7 @@ export const ConsolidarCompras = () => {
   const [errorProveedor, setErrorProveedor] = useState('');
   const [mostrarSugerenciasProveedor, setMostrarSugerenciasProveedor] = useState(false);
   const debounceProveedorRef = useRef(null);
-
+  const procesandoRef = useRef(false);
   useEffect(() => {
     const q = query(collection(db, "solicitudes"));
     const unsubscribe = onSnapshot(q, (snap) => {
@@ -157,9 +157,11 @@ export const ConsolidarCompras = () => {
   };
 
   const handleCrearOrdenCompra = async () => {
+    if (procesandoRef.current) return;
     if (!datosOC.numeroOC || !datosOC.proveedor) return alert("Faltan datos de la OC");
     if (seleccionados.length === 0) return alert("No hay ítems seleccionados");
 
+    procesandoRef.current = true;
     try {
       await guardarProveedorSiNoExiste(datosOC.proveedor, auth.currentUser);
       await addDoc(collection(db, "ordenesCompra"), {
@@ -190,7 +192,11 @@ export const ConsolidarCompras = () => {
       alert("Orden de Compra Generada");
       setSeleccionados([]);
       setDatosOC({ numeroOC: '', proveedor: '', notas: '' });
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+      console.error(e); 
+    } finally {
+      procesandoRef.current = false;
+    }
   };
 
   if (loading) return <div className="h-screen flex items-center justify-center font-bold text-slate-400 animate-pulse uppercase tracking-[0.3em]">Cargando Consolidación...</div>;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, collection, addDoc, serverTimestamp, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
@@ -20,6 +20,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   const [enviandoPedido, setEnviandoPedido] = useState(false);
   const [mensajePedido, setMensajePedido] = useState('');
   const [verPreview, setVerPreview] = useState(false);
+  const enviandoPedidoRef = useRef(false);
 
   const [seleccionados, setSeleccionados] = useState({});
   const [contraOfertas, setContraOfertas] = useState({});
@@ -385,6 +386,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
       console.error(error);
       alert("Error al procesar pedido.");
     } finally {
+      enviandoPedidoRef.current = false;
       setEnviandoPedido(false);
       setMensajePedido('');
     }
