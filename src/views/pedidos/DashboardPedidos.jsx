@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc, getDocFromServer, query, where } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { 
@@ -19,6 +19,20 @@ import { normalizarBusqueda } from '../../utils/normalizers';
 import { usePersistedState } from '../../hooks/usePersistedState';
 import { generarPlantillaOCAsignada } from '../../utils/emailTemplates';
 import { interpretarEstadoLogistico } from '../../utils/interpretarEstadoLogistico';
+
+function parseCorrelativo(numeroOC, anio) {
+  const match = String(numeroOC).match(new RegExp(`^0*(\\d+)-${anio}$`));
+  return match ? parseInt(match[1], 10) : null;
+}
+
+function sugerirSiguienteCorrelativo(ordenesCompra, anio = new Date().getFullYear(), padding = 4) {
+  const usados = new Set(
+    ordenesCompra.map((oc) => parseCorrelativo(oc.numeroOC, anio)).filter((n) => n !== null)
+  );
+  let siguiente = 1;
+  while (usados.has(siguiente)) siguiente++;
+  return `${String(siguiente).padStart(padding, "0")}-${anio}`;
+}
 
 export const DashboardPedidos = ({ role }) => {
   const puedeVerNumeroGuia = role === 'comprador' || role === 'administrador';
@@ -43,6 +57,16 @@ export const DashboardPedidos = ({ role }) => {
     rfqLabel: '',
   });
   const [trackingNotice, setTrackingNotice] = useState('');
+
+  const correlativoSugerido = useMemo(() => {
+    return sugerirSiguienteCorrelativo(ordenesExistentes);
+  }, [ordenesExistentes]);
+
+  useEffect(() => {
+    if (showAsignador && !nuevaOC.numero) {
+      setNuevaOC(prev => ({...prev, numero: correlativoSugerido}));
+    }
+  }, [showAsignador, correlativoSugerido, nuevaOC.numero]);
 
   // Estados para filtros (persistidos en localStorage)
   const [searchItemRef, setSearchItemRef] = usePersistedState('dp_searchItemRef', '');
@@ -121,6 +145,27 @@ export const DashboardPedidos = ({ role }) => {
         if (data.productos && (data.estado === 'Pedido' || data.estado === 'Pedido Parcial' || data.estado === 'Comprado')) {
           data.productos.forEach((p, idx) => {
             if (itemPedidoConfirmado(p)) {
+              const esPedidoManual = data.tipo === 'Pedido Manual';
+
+              // Para pedidos manuales: si fechaCompromiso no es DD/MM, intentar
+              // convertir tiempoEntrega (texto con días) a fecha hábil estimada
+              let fechaCompromiso = p.fechaCompromiso || null;
+              if (!fechaCompromiso || !String(fechaCompromiso).includes('/')) {
+                const texto = p.tiempoEntrega || '';
+                const diasNum = parseInt(texto);
+                if (!isNaN(diasNum) && diasNum > 0) {
+                  let fecha = new Date();
+                  let restantes = diasNum;
+                  while (restantes > 0) {
+                    fecha.setDate(fecha.getDate() + 1);
+                    if (fecha.getDay() !== 0 && fecha.getDay() !== 6) restantes--;
+                  }
+                  fechaCompromiso = fecha.toLocaleDateString('es-SV', {
+                    day: '2-digit', month: '2-digit', timeZone: 'America/El_Salvador'
+                  });
+                }
+              }
+
               tempItems.push({
                 ...p,
                 idRFQ: d.id,
@@ -130,8 +175,10 @@ export const DashboardPedidos = ({ role }) => {
                 fechaPedido: data.fechaPedido || null,
                 fechaReferencia: data.fechaPedido || data.fechaCreacion || data.fechaCotizacion || null,
                 fobReal: p.fobReal || p.fob || 0,
-                fechaCompromiso: p.fechaCompromiso, 
-                diasPrometidos: p.diasPrometidos,
+                precio: esPedidoManual ? (p.precio || p.fob || 0) : (p.precio || 0),
+                cantidad: p.cantidad || p.cant || 0,
+                fechaCompromiso,
+                diasPrometidos: p.diasPrometidos || p.tiempoEntrega || '',
                 vendedorEmail: data.vendedorEmail || '',
                 vendedorNombre: data.vendedorNombre || '',
               });
@@ -488,6 +535,18 @@ export const DashboardPedidos = ({ role }) => {
     const numOC = ocExistente ? ocExistente.numeroOC : nuevaOC.numero;
     const provOC = ocExistente ? ocExistente.proveedor : nuevaOC.proveedor;
     if (!numOC || !provOC) return alert("Faltan datos de la OC");
+
+    if (!ocExistente) {
+      const existe = ordenesExistentes.find(o => String(o.numeroOC).toLowerCase() === String(numOC).toLowerCase());
+      if (existe) {
+        const sugerencia = sugerirSiguienteCorrelativo(ordenesExistentes);
+        const confirmar = window.confirm(`El correlativo ${numOC} ya existe.\n\nSugerencia disponible: ${sugerencia}\n\n¿Deseas continuar guardando con el número duplicado de todos modos?`);
+        if (!confirmar) {
+           setNuevaOC(prev => ({...prev, numero: sugerencia}));
+           return;
+        }
+      }
+    }
 
     try {
       procesandoRef.current = true;
@@ -957,7 +1016,7 @@ export const DashboardPedidos = ({ role }) => {
             <div className="space-y-4">
               <p className="text-emerald-400 font-black text-[10px] uppercase">Nueva OC</p>
               <div className="flex gap-3">
-                <input type="text" placeholder="N° OC" className="flex-1 bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" onChange={(e) => setNuevaOC({...nuevaOC, numero: e.target.value.toUpperCase()})} />
+                <input type="text" placeholder="N° OC" className="flex-1 bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" value={nuevaOC.numero} onFocus={(e) => e.target.select()} onChange={(e) => setNuevaOC({...nuevaOC, numero: e.target.value.toUpperCase()})} />
                 <div className="relative flex-1">
                   <input
                     type="text"
@@ -1359,7 +1418,7 @@ export const DashboardPedidos = ({ role }) => {
               <div className="space-y-4">
                 <p className="text-emerald-400 font-black text-[10px] uppercase">Nueva OC</p>
                 <div className="flex flex-col gap-3">
-                  <input type="text" placeholder="N° OC" className="bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" onChange={(e) => setNuevaOC({...nuevaOC, numero: e.target.value.toUpperCase()})} />
+                  <input type="text" placeholder="N° OC" className="bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" value={nuevaOC.numero} onFocus={(e) => e.target.select()} onChange={(e) => setNuevaOC({...nuevaOC, numero: e.target.value.toUpperCase()})} />
                   <div className="relative">
                     <input
                       type="text"
