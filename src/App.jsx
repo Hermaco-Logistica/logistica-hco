@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { auth, db, provider } from './firebase'; 
 import { onAuthStateChanged, signOut, signInWithPopup } from 'firebase/auth';
-import { collection, query, onSnapshot, where, limit, doc, updateDoc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, where, limit, doc, updateDoc, getDoc, setDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { emailConfig } from './config/emailConfig';
 import { Menu, Lightbulb } from 'lucide-react';
 import { BottomTabBar } from './components/mobile';
@@ -174,104 +174,96 @@ function App() {
       if (!rfqId) throw new Error("ID de RFQ no válido");
       
       const rfqDocRef = doc(db, "solicitudes", rfqId);
-      const rfqSnap = await getDoc(rfqDocRef);
+      
       let correlativo = "N/A";
       let cliente = "N/A"; void cliente;
       let vendedorNombre = "Vendedor";
       let vendedorEmail = "";
-      let rfqData = {};
-      if (rfqSnap.exists()) {
-        rfqData = rfqSnap.data();
-        correlativo = rfqData.correlativo || "N/A";
-        cliente = rfqData.cliente || "N/A";
-        vendedorNombre = rfqData.vendedorNombre || "Vendedor";
-        vendedorEmail = rfqData.vendedorEmail || "";
-      }
-
-      // Una cotización finalizada es un documento cerrado: no debe guardarse
-      // otra vez ni generar un correo duplicado desde una pantalla o URL abierta.
-      if (rfqData.estado === 'Cotizado' || rfqData.estado === 'Pedido') {
-        throw new Error("Esta solicitud ya está cotizada y no admite una nueva cotización.");
-      }
-
-      // Preservar datos de ítems previamente pedidos por el vendedor
-      const productosGuardadosEnBD = rfqData.productos || [];
-      const productosProcesados = items.map((newItem, idx) => {
-        const itemExistenteBD = productosGuardadosEnBD[idx] || {};
-        const esPedidoPrevio = itemExistenteBD.estadoItem === 'Pedido' || itemExistenteBD.estadoItem === 'Comprado' || (!!itemExistenteBD.modalidad && Number(itemExistenteBD.precioUnitario || 0) > 0);
-
-        if (esPedidoPrevio) {
-          // Mantener intactos todos los datos de la confirmación previa del vendedor
-          return {
-            ...newItem,
-            ...itemExistenteBD,
-            fob: Number(newItem.fob) > 0 ? newItem.fob : itemExistenteBD.fob
-          };
-        }
-        const tieneFob = Number(newItem.fob || 0) > 0;
-        return {
-          ...newItem,
-          fechaCotizacion: itemExistenteBD.fechaCotizacion || (tieneFob ? new Date() : null)
-        };
-      });
-
-      // LÓGICA DE ESTADO GLOBAL DE LA SOLICITUD
-      const hayPedidos = productosProcesados.some(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
-      const todosPedidos = productosProcesados.length > 0 && productosProcesados.every(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
-      const hayItemsSinCotizar = productosProcesados.some(p => !p.fob || Number(p.fob) <= 0);
-
-      const tieneItemsCotizados = productosProcesados.some(p => Number(p.fob || 0) > 0);
-
       let estadoFinal = 'Cotizado';
-      if (todosPedidos) {
-        estadoFinal = 'Pedido';
-      } else if (hayPedidos) {
-        estadoFinal = 'Pedido Parcial';
-      } else if (!tieneItemsCotizados) {
-        estadoFinal = 'Pendiente';
-      } else if (hayItemsSinCotizar) {
-        estadoFinal = 'Cotizado Parcial';
-      } else {
-        estadoFinal = 'Cotizado';
+      let tieneItemsCotizados = false;
+
+      try {
+        await runTransaction(db, async (transaction) => {
+          const rfqSnap = await transaction.get(rfqDocRef);
+          let rfqData = {};
+          if (rfqSnap.exists()) {
+            rfqData = rfqSnap.data();
+            correlativo = rfqData.correlativo || "N/A";
+            cliente = rfqData.cliente || "N/A";
+            vendedorNombre = rfqData.vendedorNombre || "Vendedor";
+            vendedorEmail = rfqData.vendedorEmail || "";
+          }
+
+          if (rfqData.estado === 'Cotizado' || rfqData.estado === 'Pedido') {
+            throw new Error("Esta solicitud ya est� cotizada y no admite una nueva cotizaci�n.");
+          }
+
+          const productosGuardadosEnBD = rfqData.productos || [];
+          const productosProcesados = items.map((newItem, idx) => {
+            const itemExistenteBD = productosGuardadosEnBD[idx] || {};
+            const esPedidoPrevio = itemExistenteBD.estadoItem === 'Pedido' || itemExistenteBD.estadoItem === 'Comprado' || (!!itemExistenteBD.modalidad && Number(itemExistenteBD.precioUnitario || 0) > 0);
+
+            if (esPedidoPrevio) {
+              return {
+                ...newItem,
+                ...itemExistenteBD,
+                fob: Number(newItem.fob) > 0 ? newItem.fob : itemExistenteBD.fob
+              };
+            }
+            const tieneFob = Number(newItem.fob || 0) > 0;
+            return {
+              ...newItem,
+              fechaCotizacion: itemExistenteBD.fechaCotizacion || (tieneFob ? new Date() : null)
+            };
+          });
+
+          const hayPedidos = productosProcesados.some(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
+          const todosPedidos = productosProcesados.length > 0 && productosProcesados.every(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
+          const hayItemsSinCotizar = productosProcesados.some(p => !p.fob || Number(p.fob) <= 0);
+
+          tieneItemsCotizados = productosProcesados.some(p => Number(p.fob || 0) > 0);
+
+          if (todosPedidos) estadoFinal = 'Pedido';
+          else if (hayPedidos) estadoFinal = 'Pedido Parcial';
+          else if (!tieneItemsCotizados) estadoFinal = 'Pendiente';
+          else if (hayItemsSinCotizar) estadoFinal = 'Cotizado Parcial';
+          else estadoFinal = 'Cotizado';
+          
+          const updatePayload = {
+            productos: productosProcesados, 
+            factorA: fa, factorM: fm, fleteAereo: fl, aduanaAerea: ad,
+            fleteAereoPicard: fletePicard, aduanaAereaPicard: aduanaPicard,
+            tramiteAduanal: ta, scan: sc, adimex: ax, manejos: mj,
+            seguro: sg, entregaLocal: el, otrosGastos: og,
+            estado: estadoFinal, 
+            fechaCotizacion: new Date()
+          };
+
+          if (rfqData.linkOC) updatePayload.linkOC = rfqData.linkOC;
+          if (rfqData.notasPedido) updatePayload.notasPedido = rfqData.notasPedido;
+
+          const camposComparables = [
+            'productos', 'factorA', 'factorM', 'fleteAereo', 'aduanaAerea', 'fleteAereoPicard', 'aduanaAereaPicard',
+            'tramiteAduanal', 'scan', 'adimex', 'manejos', 'seguro',
+            'entregaLocal', 'otrosGastos', 'estado'
+          ];
+          const sinCambios = camposComparables.every((campo) =>
+            sonIgualesParaCotizacion(rfqData[campo], updatePayload[campo])
+          );
+
+          if (sinCambios) {
+            throw new Error("__SIN_CAMBIOS__");
+          }
+
+          transaction.update(rfqDocRef, updatePayload);
+        });
+      } catch (txError) {
+        if (txError.message === "__SIN_CAMBIOS__") {
+          alert("No se detectaron cambios. La cotizaci�n ya estaba guardada y no se envi� ning�n correo.");
+          return true;
+        }
+        throw txError;
       }
-      
-      const updatePayload = {
-        productos: productosProcesados, 
-        factorA: fa, 
-        factorM: fm, 
-        fleteAereo: fl, 
-        aduanaAerea: ad,
-        fleteAereoPicard: fletePicard,
-        aduanaAereaPicard: aduanaPicard,
-        tramiteAduanal: ta,
-        scan: sc,
-        adimex: ax,
-        manejos: mj,
-        seguro: sg,
-        entregaLocal: el,
-        otrosGastos: og,
-        estado: estadoFinal, 
-        fechaCotizacion: new Date()
-      };
-
-      if (rfqData.linkOC) updatePayload.linkOC = rfqData.linkOC;
-      if (rfqData.notasPedido) updatePayload.notasPedido = rfqData.notasPedido;
-
-      const camposComparables = [
-        'productos', 'factorA', 'factorM', 'fleteAereo', 'aduanaAerea', 'fleteAereoPicard', 'aduanaAereaPicard',
-        'tramiteAduanal', 'scan', 'adimex', 'manejos', 'seguro',
-        'entregaLocal', 'otrosGastos', 'estado'
-      ];
-      const sinCambios = camposComparables.every((campo) =>
-        sonIgualesParaCotizacion(rfqData[campo], updatePayload[campo])
-      );
-
-      if (sinCambios) {
-        alert("No se detectaron cambios. La cotización ya estaba guardada y no se envió ningún correo.");
-        return true;
-      }
-
-      await updateDoc(rfqDocRef, updatePayload);
       
       // Enviar correo automático con PDF adjunto SOLO si hay ítems cotizados con precio
       const mailConfig = emailConfig.cotizacionFinalizada;
@@ -291,8 +283,9 @@ function App() {
           <p>Adjunto encontrará su cotización.</p>
           <p>Saludos cordiales.</p>
         `;
-        
-        const mailRes = await fetch('/.netlify/functions/send-quotation', {
+        // Fire-and-forget: no esperamos respuesta. La función corre en background
+        // (hasta 15 min) sin riesgo de timeout ni bloquear al usuario.
+        fetch('/.netlify/functions/send-quotation-background', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -304,12 +297,7 @@ function App() {
             filename: `cotizacion_${correlativo}.pdf`,
             bodyHtml
           })
-        });
-
-        if (!mailRes.ok) {
-          const errData = await mailRes.json().catch(() => ({}));
-          throw new Error(errData.detail || errData.message || "Error al enviar el correo");
-        }
+        }).catch(err => console.error('[send-quotation] fire-and-forget error:', err));
       }
 
       const esParcial = estadoFinal === 'Cotizado Parcial' || estadoFinal === 'Pedido Parcial';
