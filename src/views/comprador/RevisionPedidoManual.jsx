@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
-import { Loader2, ArrowLeft, Check, X, ArrowLeftRight, MessageSquare, Save } from 'lucide-react';
+import { Loader2, ArrowLeft, Check, X, ArrowLeftRight, MessageSquare, Save, Ban } from 'lucide-react';
 import { HiloComentariosItem } from '../../components/hilos/HiloComentariosItem';
 import { RevisionPedidoMobileCard } from '../../components/pedidos/RevisionPedidoMobileCard';
 import { useMensajesResumen } from '../../hooks/useMensajesResumen';
@@ -47,6 +47,54 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
   } = useNegociacionItems(id, currentUser);
 
   const { conteos, noLeidos } = useMensajesResumen(id, itemsServer, currentUser?.rol);
+  const [modalAnulacion, setModalAnulacion] = useState({ open: false, index: null, motivo: '', enviando: false });
+
+  const handleAnularItem = async () => {
+    if (!modalAnulacion.motivo.trim()) return alert("El motivo es obligatorio");
+    setModalAnulacion(prev => ({ ...prev, enviando: true }));
+    try {
+      const docRef = doc(db, 'solicitudes', id);
+      const updatedProductos = [...solicitudBase.productos];
+      const idx = modalAnulacion.index;
+      
+      updatedProductos[idx] = {
+        ...updatedProductos[idx],
+        estadoItem: 'Anulado',
+        motivoAnulacion: modalAnulacion.motivo.trim(),
+        fechaAnulacion: new Date(),
+        anuladoPor: auth.currentUser.email || 'comprador'
+      };
+
+      const activos = updatedProductos.filter(p => p.estadoItem !== 'Anulado');
+      let nuevoEstado = solicitudBase.estado; 
+      
+      if (activos.length === 0) {
+        nuevoEstado = 'Anulado';
+      } else {
+        const todosAprobados = activos.every(p => p.estadoItem === 'Pedido');
+        const todosDenegados = activos.every(p => p.estadoItem === 'Denegado' || p.estadoItem === 'Rechazado' || p.estadoItem === 'Cancelado');
+        const algunDevuelto = activos.some(p => p.estadoItem === 'Cotizado');
+        const todosCotizados = activos.every(p => p.estadoItem === 'Cotizado');
+        
+        if (todosAprobados) nuevoEstado = 'Pedido';
+        else if (todosDenegados) nuevoEstado = 'Denegado';
+        else if (todosCotizados) nuevoEstado = 'Cotizado';
+        else if (algunDevuelto) nuevoEstado = 'Cotizado Parcial';
+      }
+
+      await updateDoc(docRef, {
+        productos: updatedProductos,
+        estado: nuevoEstado
+      });
+
+      alert('Ítem anulado correctamente');
+      setModalAnulacion({ open: false, index: null, motivo: '', enviando: false });
+    } catch (error) {
+      console.error(error);
+      alert('Error al anular ítem');
+      setModalAnulacion(prev => ({ ...prev, enviando: false }));
+    }
+  };
 
   useEffect(() => {
     if (isFirstLoad.current && solicitudBase && !loading) {
@@ -109,6 +157,36 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-36 fade-in">
+      {/* Modal Anulación */}
+      {modalAnulacion.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+            <h3 className="text-lg font-black text-slate-800 mb-2">Anular Ítem</h3>
+            <p className="text-sm text-slate-500 mb-4">Ingresa el motivo de la anulación. Esta acción es irreversible.</p>
+            <textarea
+              className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all resize-none text-sm font-medium h-24 mb-4"
+              placeholder="Motivo (obligatorio)..."
+              value={modalAnulacion.motivo}
+              onChange={e => setModalAnulacion(prev => ({...prev, motivo: e.target.value}))}
+            />
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setModalAnulacion({open: false, index: null, motivo: '', enviando: false})}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleAnularItem}
+                disabled={modalAnulacion.enviando || !modalAnulacion.motivo.trim()}
+                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
+              >
+                {modalAnulacion.enviando ? 'Anulando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3 w-full">
           <button 
@@ -215,6 +293,9 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
               noLeidos={noLeidos}
               hiloAbierto={hiloAbierto}
               setHiloAbierto={setHiloAbierto}
+              onAnular={() => setModalAnulacion({ open: true, index: idx, motivo: '', enviando: false })}
+              estaAnulado={item.estadoItem === 'Anulado'}
+              role={role}
             />
           ))}
           {filteredItems.length === 0 && (
@@ -257,10 +338,11 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
 
                 const msgCount = conteos[idx] || 0;
                 const unreadCount = noLeidos[idx] || 0;
+                const estaAnulado = p.estadoItem === 'Anulado';
 
                 return (
                   <React.Fragment key={idx}>
-                    <tr className={`transition-colors ${isPending ? 'bg-white' : 'hover:bg-slate-50'}`}>
+                    <tr className={`transition-colors ${isPending ? 'bg-white' : 'hover:bg-slate-50'} ${estaAnulado ? 'opacity-60 bg-slate-50/50' : ''}`}>
                       <td className="p-4 align-top">
                         <div className="font-bold text-sm uppercase text-slate-700 leading-tight pr-4">{p.descripcion}</div>
                         <div className="text-[10px] font-bold text-slate-400 uppercase mt-1">Marca: {p.marca}</div>
@@ -335,7 +417,24 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                       
                       <td className="p-4 align-top">
                         <div className="flex flex-col items-end gap-3">
-                          <EstadoItemChip estado={p.estadoItem} pendingRole={neg.turno} />
+                          <div className="flex items-center gap-2">
+                            <EstadoItemChip estado={p.estadoItem} pendingRole={neg.turno} />
+                            {role === 'comprador' && ['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !estaAnulado && unnotifiedCount === 0 && (
+                              <button
+                                type="button"
+                                title="Anular"
+                                onClick={() => setModalAnulacion({ open: true, index: idx, motivo: '', enviando: false })}
+                                className="text-rose-400 hover:text-rose-600 p-1 hover:bg-rose-50 rounded-full transition-all"
+                              >
+                                <Ban size={16} />
+                              </button>
+                            )}
+                            {estaAnulado && p.motivoAnulacion && (
+                              <span className="text-[9px] text-slate-400 italic max-w-[120px] truncate" title={p.motivoAnulacion}>
+                                {p.motivoAnulacion}
+                              </span>
+                            )}
+                          </div>
                           
                           {isPending ? (
                             <div className="flex flex-wrap justify-end gap-1.5 w-full mt-2">

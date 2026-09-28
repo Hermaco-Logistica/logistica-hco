@@ -64,6 +64,10 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
     Boolean(email.toLowerCase().match(/admin|gerente|compras/));
 
   const puedeResponder = Boolean(esDuenio);
+  const esAnulado = solicitudBase?.estado === 'Anulado';
+  const motivoAnulacion = solicitudBase?.motivoAnulacion
+    || solicitudBase?.productos?.find(p => p.motivoAnulacion)?.motivoAnulacion
+    || '';
 
   useEffect(() => {
     if (!loading && solicitudBase) {
@@ -160,7 +164,20 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
         )}
       </div>
 
-      {!puedeResponder && (
+      {/* Banner anulación */}
+      {esAnulado && (
+        <div className="mb-5 border border-slate-300 border-l-4 border-l-slate-800 rounded-r-xl px-5 py-4 bg-white">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Pedido anulado · solo lectura</p>
+          {motivoAnulacion ? (
+            <p className="text-sm font-bold text-slate-800 leading-snug">{motivoAnulacion}</p>
+          ) : (
+            <p className="text-xs text-slate-400 italic">Sin motivo registrado.</p>
+          )}
+        </div>
+      )}
+
+      {/* Banner solo lectura — solo si no es dueño y no está anulado */}
+      {!puedeResponder && !esAnulado && !esDuenio && (
         <div className="mb-4 md:mb-6 bg-blue-50/80 border border-blue-200/80 text-blue-900 rounded-xl md:rounded-2xl p-3 md:p-4 flex flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
             <AlertCircle size={16} className="text-blue-500 shrink-0" />
@@ -383,6 +400,11 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                       <td className="p-4 align-top">
                         <div className="flex flex-col items-end gap-3">
                           <EstadoItemChip estado={p.estadoItem} pendingRole={neg.turno} />
+                          {p.estadoItem === 'Anulado' && p.motivoAnulacion && (
+                            <span className="text-[9px] text-slate-400 italic mt-1 block text-right max-w-[160px]" title={p.motivoAnulacion}>
+                              {p.motivoAnulacion.length > 40 ? p.motivoAnulacion.slice(0, 40) + '\u2026' : p.motivoAnulacion}
+                            </span>
+                          )}
                           
                           {isMyTurn && puedeResponder ? (
                             <div className="flex flex-wrap justify-end gap-1.5 w-full mt-2">
