@@ -18,7 +18,11 @@ import { NuevaRFQ } from './views/vendedor/NuevaRFQ';
 import { NuevoPedido } from './views/vendedor/NuevoPedido';
 import { NuevaSolicitudGateway } from './views/vendedor/NuevaSolicitudGateway';
 import { RevisionPedidoManual } from './views/comprador/RevisionPedidoManual';
-import { RetaceosView } from './views/pedidos/RetaceosView';
+import { ENABLE_RETACEOS } from './config/featureFlags';
+// RetaceosView se carga solo si el flag está activo (evita error de build cuando el archivo no existe)
+const RetaceosView = ENABLE_RETACEOS
+  ? React.lazy(() => import('./views/pedidos/RetaceosView'))
+  : () => null;
 import { DetalleRFQVendedor } from './views/vendedor/DetalleRFQVendedor';
 import { DetallePedidoManual } from './views/vendedor/DetallePedidoManual';
 import { DashboardPedidos } from './views/pedidos/DashboardPedidos';
@@ -403,7 +407,7 @@ function App() {
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly={false} />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   <Route path="/gestion-oc" element={<GestionOC readOnly={false} />} />
-                  <Route path="/compras/retaceos" element={<RetaceosView role={role} />} />
+                  {ENABLE_RETACEOS && <Route path="/compras/retaceos" element={<RetaceosView role={role} />} />}
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} role={role} />} />
                   <Route 
                     path="/calculadora/:id" 
@@ -461,7 +465,7 @@ function App() {
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   <Route path="/compras/revision-pedido/:id" element={<RevisionPedidoManual role={role} />} />
                   <Route path="/gestion-oc" element={<GestionOC readOnly />} />
-                  <Route path="/compras/retaceos" element={<RetaceosView role={role} />} />
+                  {ENABLE_RETACEOS && <Route path="/compras/retaceos" element={<RetaceosView role={role} />} />}
                   {rutasAnalisis}
                   <Route path="*" element={<Navigate to="/vendedor" replace />} />
                 </>

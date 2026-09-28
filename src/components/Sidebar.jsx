@@ -11,10 +11,12 @@ import {
   Lightbulb,
   PanelLeftClose,
   BarChart3,
-  X
+  X,
+  Truck
 } from 'lucide-react';
 import { FindexSettingsModal } from './FindexSettingsModal';
 import { usePersistedState } from '../hooks/usePersistedState';
+import { ENABLE_RETACEOS } from '../config/featureFlags';
 
 export const Sidebar = ({ 
   role, 
@@ -92,6 +94,12 @@ export const Sidebar = ({
       icon: <PackageCheck size={18} />,
       path: '/pedidos',
       show: true 
+    },
+    {
+      label: 'Retaceos',
+      icon: <Truck size={18} />,
+      path: '/compras/retaceos',
+      show: ENABLE_RETACEOS && (role === 'comprador' || role === 'administrador')
     },
     {
       label: 'Gestión de OC',
