@@ -105,10 +105,31 @@ export default function CotizacionDocumento({ cotizacionData }) {
   };
 
   const esPedidoManual = cotizacionData.tipo === 'Pedido Manual';
+  const todoAnulado = cotizacionData.estado === 'Anulado' ||
+    (productos.length > 0 && productos.every(p => p.estadoItem === 'Anulado'));
 
   return (
     <div className="w-full overflow-x-auto">
-      <div className="cotizacion-documento min-w-[650px] sm:min-w-0" style={pageStyle}>
+      <div className="cotizacion-documento min-w-[650px] sm:min-w-0" style={{ ...pageStyle, position: 'relative' }}>
+        {todoAnulado && (
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%) rotate(-30deg)',
+            fontSize: '72px',
+            fontWeight: 900,
+            color: 'rgba(220,38,38,0.12)',
+            letterSpacing: '0.1em',
+            pointerEvents: 'none',
+            userSelect: 'none',
+            whiteSpace: 'nowrap',
+            zIndex: 10,
+            fontFamily: 'Arial, sans-serif'
+          }}>
+            ANULADO
+          </div>
+        )}
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '18px' }}>
         <tbody>
           <tr>
@@ -188,20 +209,30 @@ export default function CotizacionDocumento({ cotizacionData }) {
               const precioU = Number(item?.precio || 0);
               const cant = Number(item?.cantidad || item?.cant || 0);
               const tLine = cant * precioU;
+              const itemAnulado = item?.estadoItem === 'Anulado';
               return (
-                <tr key={index}>
+                <tr key={index} style={itemAnulado ? { opacity: 0.5 } : {}}>
                   <td style={{ ...cellStyle, backgroundColor: '#c9dbef', textAlign: 'center', fontWeight: 'normal', color: '#344b61' }}>{getDescripcionItem(item)}</td>
                   <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.cantidad || item?.cant || ''}</td>
-                  <td style={{ ...cellStyle, textAlign: 'right' }}>{precioU > 0 ? formatMoneda(precioU) : ''}</td>
-                  <td style={{ ...cellStyle, textAlign: 'center', textTransform: 'uppercase' }}>{item?.marca || ''}</td>
-                  <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.modalidad || item?.tipoEnvio || ''}</td>
-                  <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.tiempoEntrega || item?.diasPrometidos || ''}</td>
-                  <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 'bold' }}>{tLine > 0 ? formatMoneda(tLine) : ''}</td>
+                  {itemAnulado ? (
+                    <td colSpan={5} style={{ ...cellStyle, textAlign: 'center', color: '#9ca3af', fontStyle: 'italic', fontSize: '10px' }}>
+                      Anulado{item.motivoAnulacion ? ` — ${item.motivoAnulacion}` : ''}
+                    </td>
+                  ) : (
+                    <>
+                      <td style={{ ...cellStyle, textAlign: 'right' }}>{precioU > 0 ? formatMoneda(precioU) : ''}</td>
+                      <td style={{ ...cellStyle, textAlign: 'center', textTransform: 'uppercase' }}>{item?.marca || ''}</td>
+                      <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.modalidad || item?.tipoEnvio || ''}</td>
+                      <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.tiempoEntrega || item?.diasPrometidos || ''}</td>
+                      <td style={{ ...cellStyle, textAlign: 'right', fontWeight: 'bold' }}>{tLine > 0 ? formatMoneda(tLine) : ''}</td>
+                    </>
+                  )}
                 </tr>
               );
             }
 
             const esEnConsulta = item?.enConsulta || item?.estadoItem === 'En consulta';
+            const itemAnulado = item?.estadoItem === 'Anulado';
             const fobVal = Number(item?.fob || 0);
             const precioA = fobVal * (item?.factorA || factorA) * (item?.fva || 1.30);
             const precioM = fobVal * (item?.factorM || factorM) * (item?.fvm || 1.25);
@@ -209,24 +240,32 @@ export default function CotizacionDocumento({ cotizacionData }) {
             const tMaritimo = Number(item?.cant || 0) * precioM;
 
             return (
-              <tr key={index}>
+              <tr key={index} style={itemAnulado ? { opacity: 0.5 } : {}}>
                 <td style={{ ...cellStyle, backgroundColor: '#c9dbef', textAlign: 'center', fontWeight: 'normal', color: '#344b61' }}>{getDescripcionItem(item)}</td>
                 <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.cant ?? ''}</td>
-                <td style={{ ...cellStyle, textAlign: 'right', fontSize: esEnConsulta ? '9px' : '10px', fontStyle: esEnConsulta ? 'italic' : 'normal' }}>
-                  {esEnConsulta ? 'En consulta' : (precioA > 0 ? formatMoneda(precioA) : '')}
-                </td>
-                <td style={{ ...cellStyle, textAlign: 'right', fontSize: esEnConsulta ? '9px' : '10px', fontStyle: esEnConsulta ? 'italic' : 'normal' }}>
-                  {esEnConsulta ? 'En consulta' : (precioM > 0 ? formatMoneda(precioM) : '')}
-                </td>
-                <td style={{ ...cellStyle, textAlign: 'center', textTransform: 'uppercase' }}>{item?.marca || ''}</td>
-                <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.entregaA || ''}</td>
-                <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.entregaM || ''}</td>
-                <td style={{ ...cellStyle, textAlign: 'right', fontSize: esEnConsulta ? '9px' : '10px', fontStyle: esEnConsulta ? 'italic' : 'normal' }}>
-                  {esEnConsulta ? 'En consulta' : (tAereo > 0 ? formatMoneda(tAereo) : '')}
-                </td>
-                <td style={{ ...cellStyle, textAlign: 'right', fontSize: esEnConsulta ? '9px' : '10px', fontStyle: esEnConsulta ? 'italic' : 'normal' }}>
-                  {esEnConsulta ? 'En consulta' : (tMaritimo > 0 ? formatMoneda(tMaritimo) : '')}
-                </td>
+                {itemAnulado ? (
+                  <td colSpan={7} style={{ ...cellStyle, textAlign: 'center', color: '#9ca3af', fontStyle: 'italic', fontSize: '10px' }}>
+                    Anulado{item.motivoAnulacion ? ` — ${item.motivoAnulacion}` : ''}
+                  </td>
+                ) : (
+                  <>
+                    <td style={{ ...cellStyle, textAlign: 'right', fontSize: esEnConsulta ? '9px' : '10px', fontStyle: esEnConsulta ? 'italic' : 'normal' }}>
+                      {esEnConsulta ? 'En consulta' : (precioA > 0 ? formatMoneda(precioA) : '')}
+                    </td>
+                    <td style={{ ...cellStyle, textAlign: 'right', fontSize: esEnConsulta ? '9px' : '10px', fontStyle: esEnConsulta ? 'italic' : 'normal' }}>
+                      {esEnConsulta ? 'En consulta' : (precioM > 0 ? formatMoneda(precioM) : '')}
+                    </td>
+                    <td style={{ ...cellStyle, textAlign: 'center', textTransform: 'uppercase' }}>{item?.marca || ''}</td>
+                    <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.entregaA || ''}</td>
+                    <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.entregaM || ''}</td>
+                    <td style={{ ...cellStyle, textAlign: 'right', fontSize: esEnConsulta ? '9px' : '10px', fontStyle: esEnConsulta ? 'italic' : 'normal' }}>
+                      {esEnConsulta ? 'En consulta' : (tAereo > 0 ? formatMoneda(tAereo) : '')}
+                    </td>
+                    <td style={{ ...cellStyle, textAlign: 'right', fontSize: esEnConsulta ? '9px' : '10px', fontStyle: esEnConsulta ? 'italic' : 'normal' }}>
+                      {esEnConsulta ? 'En consulta' : (tMaritimo > 0 ? formatMoneda(tMaritimo) : '')}
+                    </td>
+                  </>
+                )}
               </tr>
             );
           })}

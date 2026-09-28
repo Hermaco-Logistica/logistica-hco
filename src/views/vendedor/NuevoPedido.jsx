@@ -350,15 +350,13 @@ export const NuevoPedido = () => {
     }
   };
 
+  const submittedRef = useRef(false);
+
   const guardarRFQ = async (e) => {
     e.preventDefault();
-    if (isSubmittingRef.current) return;
-    isSubmittingRef.current = true;
-
-    if (!cliente || productos.some(p => !p.desc)) {
-      isSubmittingRef.current = false;
-      return alert("Llena los campos obligatorios");
-    }
+    if (!cliente || productos.some(p => !p.desc)) return alert("Llena los campos obligatorios");
+    if (submittedRef.current) return; // evitar doble-envío
+    submittedRef.current = true;
 
     setLoading(true);
     try {
@@ -452,11 +450,13 @@ export const NuevoPedido = () => {
       const { updateDoc } = await import('firebase/firestore');
       await updateDoc(doc(db, 'solicitudes', savedData.id), { emailEnviado: emailExitoso });
 
-      alert(emailExitoso ? "Solicitud Creada" : "Solicitud Creada (Advertencia: Correo no enviado)");
-      navigate('/vendedor');
+      // navigate se ejecuta SOLO cuando el usuario presiona OK en el modal
+      const msg = emailExitoso ? "Solicitud Creada" : "Solicitud Creada (Advertencia: Correo no enviado)";
+      window.alert(msg, () => navigate('/vendedor'));
       
     } catch (error) {
       console.error("Error al procesar RFQ:", error);
+      submittedRef.current = false; // permitir reintentar si hubo error
       alert("Error crítico al procesar la solicitud");
       isSubmittingRef.current = false;
     } finally {

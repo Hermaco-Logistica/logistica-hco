@@ -12,6 +12,8 @@ export const EstadoItemChip = ({ estado, pendingRole }) => {
     badgeColor = 'bg-sky-50 text-sky-700 border-sky-200';
   } else if (estado === 'Denegado' || estado === 'Cancelado' || estado === 'Rechazado') {
     badgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
+  } else if (estado === 'Anulado') {
+    badgeColor = 'bg-slate-100 text-slate-500 border-slate-300';
   }
 
   const isPending = !!pendingRole;

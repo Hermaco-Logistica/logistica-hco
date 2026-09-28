@@ -4,7 +4,7 @@ import { doc, collection, addDoc, serverTimestamp, updateDoc, onSnapshot } from 
 import { db, auth } from '../../firebase';
 import { 
   ChevronLeft, ChevronDown, Clock, Tag, CheckCircle2, ShoppingCart, Link as LinkIcon, 
-  AlertCircle, Printer, X, Paperclip, FileText, Trash2,
+  AlertCircle, Printer, X, Paperclip, FileText, Trash2, Ban,
   Plane, Ship, MessageSquare, Calendar, CheckSquare, Square, Package
 } from 'lucide-react';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
@@ -32,6 +32,54 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   const [archivosAdjuntos, setArchivosAdjuntos] = useState([]);
   const [documentacionOpen, setDocumentacionOpen] = useState(false);
   const [modalidadesOpen, setModalidadesOpen] = useState(false);
+  const [modalAnulacion, setModalAnulacion] = useState({ open: false, index: null, motivo: '', enviando: false });
+
+  const handleAnularItem = async () => {
+    if (!modalAnulacion.motivo.trim()) return alert("El motivo es obligatorio");
+    setModalAnulacion(prev => ({ ...prev, enviando: true }));
+    try {
+      const docRef = doc(db, 'solicitudes', id);
+      const updatedProductos = [...rfq.productos];
+      const idx = modalAnulacion.index;
+      
+      updatedProductos[idx] = {
+        ...updatedProductos[idx],
+        estadoItem: 'Anulado',
+        motivoAnulacion: modalAnulacion.motivo.trim(),
+        fechaAnulacion: new Date(),
+        anuladoPor: auth.currentUser.email || 'comprador'
+      };
+
+      const activos = updatedProductos.filter(p => p.estadoItem !== 'Anulado');
+      let nuevoEstado = rfq.estado; 
+      
+      if (activos.length === 0) {
+        nuevoEstado = 'Anulado';
+      } else {
+        const todosAprobados = activos.every(p => p.estadoItem === 'Pedido');
+        const todosDenegados = activos.every(p => p.estadoItem === 'Denegado' || p.estadoItem === 'Rechazado' || p.estadoItem === 'Cancelado');
+        const algunDevuelto = activos.some(p => p.estadoItem === 'Cotizado');
+        const todosCotizados = activos.every(p => p.estadoItem === 'Cotizado');
+        
+        if (todosAprobados) nuevoEstado = 'Pedido';
+        else if (todosDenegados) nuevoEstado = 'Denegado';
+        else if (todosCotizados) nuevoEstado = 'Cotizado';
+        else if (algunDevuelto) nuevoEstado = 'Cotizado Parcial';
+      }
+
+      await updateDoc(docRef, {
+        productos: updatedProductos,
+        estado: nuevoEstado
+      });
+
+      alert('Ítem anulado correctamente');
+      setModalAnulacion({ open: false, index: null, motivo: '', enviando: false });
+    } catch (error) {
+      console.error(error);
+      alert('Error al anular ítem');
+      setModalAnulacion(prev => ({ ...prev, enviando: false }));
+    }
+  };
 
   useEffect(() => {
     document.querySelector('main')?.scrollTo(0, 0);
@@ -94,6 +142,10 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   const esItemDenegado = (p) => p && (p.estadoItem === 'Denegado' || p.estadoItem === 'Cancelado' || p.estadoItem === 'Rechazado');
 
   const hayItemsPendientesDePedir = rfq?.productos?.some(p => Number(p.fob || 0) > 0 && !esItemYaPedido(p) && !esItemDenegado(p));
+  const esAnulado = rfq?.estado === 'Anulado';
+  const motivoAnulacion = rfq?.motivoAnulacion
+    || rfq?.productos?.find(p => p.motivoAnulacion)?.motivoAnulacion
+    || '';
   const pedidoYaCreado = (rfq?.estado === 'Pedido' || rfq?.estado === 'Comprado') || (rfq?.estado === 'Pedido Parcial' && !hayItemsPendientesDePedir);
   const esPropietarioDeRFQ = (rfq?.vendedorId && rfq.vendedorId === auth.currentUser?.uid) ||
     (rfq?.vendedorEmail && auth.currentUser?.email && rfq.vendedorEmail.toLowerCase() === auth.currentUser.email.toLowerCase());
@@ -417,6 +469,37 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
 
   return (
     <div className="max-w-7xl mx-auto animate-in fade-in duration-500 pb-52 md:pb-20">
+      {/* Modal Anulación */}
+      {modalAnulacion.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+            <h3 className="text-lg font-black text-slate-800 mb-2">Anular Ítem</h3>
+            <p className="text-sm text-slate-500 mb-4">Ingresa el motivo de la anulación. Esta acción es irreversible.</p>
+            <textarea
+              className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all resize-none text-sm font-medium h-24 mb-4"
+              placeholder="Motivo (obligatorio)..."
+              value={modalAnulacion.motivo}
+              onChange={e => setModalAnulacion(prev => ({...prev, motivo: e.target.value}))}
+            />
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setModalAnulacion({open: false, index: null, motivo: '', enviando: false})}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleAnularItem}
+                disabled={modalAnulacion.enviando || !modalAnulacion.motivo.trim()}
+                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
+              >
+                {modalAnulacion.enviando ? 'Anulando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-row items-center justify-between gap-4 mb-4 md:mb-8">
         <div className="flex items-center gap-2 md:gap-4">
           <button onClick={handleVolver} className="p-1.5 md:p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600 shrink-0">
@@ -505,7 +588,20 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         ) : null}
       </div>
 
-      {!puedeConfirmarPedido && !pedidoYaCreado && (
+      {/* Banner anulación */}
+      {esAnulado && (
+        <div className="mb-5 border border-slate-300 border-l-4 border-l-slate-800 rounded-r-xl px-5 py-4 bg-white">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Solicitud anulada · solo lectura</p>
+          {motivoAnulacion ? (
+            <p className="text-sm font-bold text-slate-800 leading-snug">{motivoAnulacion}</p>
+          ) : (
+            <p className="text-xs text-slate-400 italic">Sin motivo registrado.</p>
+          )}
+        </div>
+      )}
+
+      {/* Banner solo lectura — solo si no es dueño y no está anulado */}
+      {!puedeConfirmarPedido && !pedidoYaCreado && !esAnulado && !esPropietarioDeRFQ && (
         <div className="mb-4 md:mb-6 bg-blue-50/80 border border-blue-200/80 text-blue-900 rounded-xl md:rounded-2xl p-3 md:p-4 flex flex-row items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
             <AlertCircle size={16} className="text-blue-500 shrink-0" />
@@ -531,6 +627,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
           const ventaA = fobVal * (p.factorA || rfq.factorA || 1) * (p.fva || 1.30);
           const ventaM = fobVal * (p.factorM || rfq.factorM || 1.08) * (p.fvm || 1.25);
           const isSelected = Boolean(seleccionados[idx]);
+          const estaAnulado = p.estadoItem === 'Anulado';
 
           return (
             <div
@@ -541,7 +638,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                   : yaFuePedido
                   ? 'border-emerald-200 shadow-sm'
                   : 'border-slate-100 hover:shadow-md hover:border-slate-200'
-              } ${!estaCotizado ? 'opacity-70' : ''}`}
+              } ${(!estaCotizado || estaAnulado) ? 'opacity-70' : ''}`}
             >
               {/* Header: Checkbox (Izq) y Status (Der) */}
               <div className="flex items-start justify-between mb-1.5">
@@ -594,6 +691,21 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                         <span>Pendiente</span>
                       </span>
                     )
+                  )}
+                  {estaAnulado && p.motivoAnulacion && (
+                    <span className="inline-flex text-[9px] text-slate-400 italic px-2 py-0.5 mt-0.5 truncate max-w-full" title={p.motivoAnulacion}>
+                      {p.motivoAnulacion.length > 35 ? p.motivoAnulacion.slice(0, 35) + '…' : p.motivoAnulacion}
+                    </span>
+                  )}
+                  {role === 'comprador' && ['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !estaAnulado && (
+                    <button
+                      type="button"
+                      title="Anular"
+                      onClick={() => setModalAnulacion({ open: true, index: idx, motivo: '', enviando: false })}
+                      className="ml-2 text-rose-400 hover:text-rose-600 p-1 hover:bg-rose-50 rounded-full transition-all inline-flex items-center align-middle"
+                    >
+                      <Ban size={16} />
+                    </button>
                   )}
                 </div>
               </div>
@@ -699,6 +811,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                 <th className="p-5 text-center bg-blue-800">Venta Marítimo</th>
                 <th className="p-5 text-center">Elegir Modalidad</th>
                 <th className="p-5">Tiempos y Entrega</th>
+                {role === 'comprador' && <th className="p-5 text-center w-24">Acciones</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
@@ -709,9 +822,10 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                 const fueDenegado = esItemDenegado(p);
                 const ventaA = fobVal * (p.factorA || rfq.factorA || 1) * (p.fva || 1.30);
                 const ventaM = fobVal * (p.factorM || rfq.factorM || 1.08) * (p.fvm || 1.25);
+                const estaAnulado = p.estadoItem === 'Anulado';
 
                 return (
-                  <tr key={idx} className={`${seleccionados[idx] ? 'bg-slate-50' : (yaFuePedido ? 'bg-emerald-50/20' : fueDenegado ? 'bg-rose-50/20' : 'bg-white')} hover:bg-slate-50/50 transition-colors ${(!estaCotizado || fueDenegado) ? 'opacity-60 bg-slate-50/30' : ''}`}>
+                  <tr key={idx} className={`${seleccionados[idx] ? 'bg-slate-50' : (yaFuePedido ? 'bg-emerald-50/20' : fueDenegado ? 'bg-rose-50/20' : 'bg-white')} hover:bg-slate-50/50 transition-colors ${(!estaCotizado || fueDenegado || estaAnulado) ? 'opacity-60 bg-slate-50/30' : ''}`}>
                     <td className="p-5 text-center">
                       {yaFuePedido ? (
                         <div className="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-sm" title="Ítem ya pedido previamente">
@@ -746,7 +860,12 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                     <td className="p-5">
                       <div className="font-black text-slate-800 uppercase leading-tight">{p.descripcion || p.desc}</div>
                       <div className="flex items-center gap-1 mt-1 text-blue-600 font-bold italic text-[10px]"><Tag size={10} /> {p.marca || 'N/A'}</div>
-                      {yaFuePedido ? (
+                      {estaAnulado ? (
+                        <span className="inline-flex items-center gap-1.5 text-[8px] px-2 py-0.5 rounded-full font-black uppercase mt-2 tracking-widest bg-rose-50 text-rose-700 border border-rose-200/60">
+                          <X size={10} className="text-rose-500" />
+                          <span>Anulado</span>
+                        </span>
+                      ) : yaFuePedido ? (
                         <span className={`inline-flex items-center gap-1.5 text-[8px] px-2 py-0.5 rounded-full font-black uppercase mt-2 tracking-widest ${(!p.modalidad || p.modalidad === 'Aéreo') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-blue-50 text-blue-700 border border-blue-200/60'}`}>
                           <CheckCircle2 size={10} className={(!p.modalidad || p.modalidad === 'Aéreo') ? 'text-emerald-500' : 'text-blue-500'} />
                           <span>Confirmado</span>
@@ -865,6 +984,25 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                         )
                       ) : '—'}
                     </td>
+                    {role === 'comprador' && (
+                      <td className="p-5 text-center">
+                        {['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !estaAnulado && (
+                          <button
+                            type="button"
+                            title="Anular"
+                            onClick={() => setModalAnulacion({ open: true, index: idx, motivo: '', enviando: false })}
+                            className="text-rose-400 hover:text-rose-600 p-2 hover:bg-rose-50 rounded-full transition-all mx-auto block"
+                          >
+                            <Ban size={16} />
+                          </button>
+                        )}
+                        {estaAnulado && p.motivoAnulacion && (
+                          <span className="text-[9px] text-slate-400 italic block text-center max-w-[100px]" title={p.motivoAnulacion}>
+                            {p.motivoAnulacion.length > 30 ? p.motivoAnulacion.slice(0, 30) + '\u2026' : p.motivoAnulacion}
+                          </span>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 );
               })}

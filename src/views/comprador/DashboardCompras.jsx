@@ -2,8 +2,10 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Printer, X, Calendar as CalendarIcon, Trash2, Filter, 
-  ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Package 
+  ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Package, Ban 
 } from 'lucide-react';
+import { db } from '../../firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import { Badge } from '../../components/Badge';
 import { MobileBadge } from '../../components/mobile';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
@@ -21,6 +23,34 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const [filterVendedor, setFilterVendedor] = usePersistedState('dc_filterVendedor', '');
   const [searchTerm, setSearchTerm] = usePersistedState('dc_searchTerm', '');
   const [mostrarFiltrosMobile, setMostrarFiltrosMobile] = useState(false);
+  
+  const [modalAnulacionGlobal, setModalAnulacionGlobal] = useState({ open: false, rfqId: null, rfqData: null, motivo: '', enviando: false });
+
+  const handleAnularSolicitudGlobal = async () => {
+    if (!modalAnulacionGlobal.motivo.trim()) return alert("El motivo es obligatorio");
+    setModalAnulacionGlobal(prev => ({ ...prev, enviando: true }));
+    try {
+      const docRef = doc(db, 'solicitudes', modalAnulacionGlobal.rfqId);
+      const updatedProductos = modalAnulacionGlobal.rfqData.productos?.map(p => ({
+        ...p,
+        estadoItem: p.estadoItem === 'Anulado' ? 'Anulado' : 'Anulado',
+        motivoAnulacion: p.estadoItem === 'Anulado' ? p.motivoAnulacion : modalAnulacionGlobal.motivo.trim(),
+        fechaAnulacion: p.estadoItem === 'Anulado' ? p.fechaAnulacion : new Date(),
+        anuladoPor: p.estadoItem === 'Anulado' ? p.anuladoPor : 'comprador'
+      })) || [];
+
+      await updateDoc(docRef, {
+        estado: 'Anulado',
+        productos: updatedProductos
+      });
+      alert('Solicitud anulada correctamente');
+      setModalAnulacionGlobal({ open: false, rfqId: null, rfqData: null, motivo: '', enviando: false });
+    } catch (error) {
+      console.error(error);
+      alert('Error al anular solicitud');
+      setModalAnulacionGlobal(prev => ({ ...prev, enviando: false }));
+    }
+  };
 
   // Estados de Rango de Fecha Personalizado
   const [fechaInicio, setFechaInicio] = useState(null); // Date object
@@ -77,7 +107,8 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const obtenerEstadoAccion = (solicitud) => {
     const estado = solicitud.estado;
     const tienePendientes = tieneItemsPendientesPorCotizar(solicitud);
-    
+
+    if (estado === 'Anulado') return 'Ver Anulada';
     if (estado === 'Pedido') {
       return tienePendientes ? 'Cotizar Restante' : 'Ver Cotización';
     }
@@ -91,7 +122,10 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const obtenerColorAccion = (solicitud) => {
     const estado = solicitud.estado;
     const tienePendientes = tieneItemsPendientesPorCotizar(solicitud);
-    
+
+    if (estado === 'Anulado') {
+      return 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200 cursor-default';
+    }
     if ((estado === 'Pedido' || estado === 'Cotizado Parcial') && tienePendientes) {
       return 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700';
     }
@@ -277,6 +311,36 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
   return (
     <div className="animate-in fade-in duration-500">
+      {/* Modal Anulación Global */}
+      {modalAnulacionGlobal.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+            <h3 className="text-lg font-black text-slate-800 mb-2">Anular Solicitud</h3>
+            <p className="text-sm text-slate-500 mb-4">Ingresa el motivo de la anulación para la solicitud <b>{modalAnulacionGlobal.rfqData?.correlativo}</b>. Esta acción anulará todos sus ítems de forma irreversible.</p>
+            <textarea
+              className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all resize-none text-sm font-medium h-24 mb-4"
+              placeholder="Motivo (obligatorio)..."
+              value={modalAnulacionGlobal.motivo}
+              onChange={e => setModalAnulacionGlobal(prev => ({...prev, motivo: e.target.value}))}
+            />
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setModalAnulacionGlobal({open: false, rfqId: null, rfqData: null, motivo: '', enviando: false})}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleAnularSolicitudGlobal}
+                disabled={modalAnulacionGlobal.enviando || !modalAnulacionGlobal.motivo.trim()}
+                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
+              >
+                {modalAnulacionGlobal.enviando ? 'Anulando...' : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tighter italic">Panel de Compras</h1>
@@ -672,6 +736,16 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                         {readOnly ? 'En proceso' : 'Cotizar'}
                       </button>
                     )}
+                    {!readOnly && s.estado !== 'Pedido' && s.estado !== 'Pedido Parcial' && s.estado !== 'Anulado' && (
+                      <button
+                        type="button"
+                        onClick={() => setModalAnulacionGlobal({ open: true, rfqId: s.id, rfqData: s, motivo: '', enviando: false })}
+                        className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors ml-1"
+                        title="Anular Solicitud Completa"
+                      >
+                        <Ban size={16} />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -832,6 +906,16 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                           }`}
                         >
                           {readOnly ? 'En proceso' : obtenerEstadoAccion(s)}
+                        </button>
+                      )}
+                      {!readOnly && s.estado !== 'Pedido' && s.estado !== 'Pedido Parcial' && s.estado !== 'Anulado' && (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setModalAnulacionGlobal({ open: true, rfqId: s.id, rfqData: s, motivo: '', enviando: false }); }}
+                          className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors ml-1"
+                          title="Anular Solicitud Completa"
+                        >
+                          <Ban size={16} />
                         </button>
                       )}
                     </div>

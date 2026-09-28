@@ -15,8 +15,14 @@ export const Calculadora = ({ onGuardar }) => {
   const isReadOnlyMode = searchParams.get('readOnly') === 'true' || searchParams.get('mode') === 'view';
   const [rfq, setRfq] = useState(null);
   const [loading, setLoading] = useState(true);
-  const esSolicitudCerrada = rfq?.estado === 'Cotizado' || rfq?.estado === 'Pedido';
+  const esAnulado = rfq?.estado === 'Anulado';
+  const esSolicitudCerrada = rfq?.estado === 'Cotizado' || rfq?.estado === 'Pedido' || esAnulado;
   const esSoloLectura = isReadOnlyMode || esSolicitudCerrada;
+
+  // Motivo de anulación: puede estar en el doc raíz o en el primer producto anulado
+  const motivoAnulacion = rfq?.motivoAnulacion
+    || rfq?.productos?.find(p => p.motivoAnulacion)?.motivoAnulacion
+    || '';
 
   const [items, setItems] = useState([]);
   const [flete, setFlete] = useState(0);
@@ -347,6 +353,19 @@ export const Calculadora = ({ onGuardar }) => {
 
   return (
     <div className="max-w-[99%] mx-auto animate-in fade-in duration-500 pb-52 md:pb-28">
+
+      {/* ── Banner de Anulación ── */}
+      {esAnulado && (
+        <div className="mb-5 border border-slate-300 border-l-4 border-l-slate-800 rounded-r-xl px-5 py-4 bg-white">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Solicitud anulada · solo lectura</p>
+          {motivoAnulacion ? (
+            <p className="text-sm font-bold text-slate-800 leading-snug">{motivoAnulacion}</p>
+          ) : (
+            <p className="text-xs text-slate-400 italic">Sin motivo registrado.</p>
+          )}
+        </div>
+      )}
+
       {/* Panel de Control de Costos (Separado en móvil, unificado en desktop) */}
       <div className="mb-4 md:mb-6 flex flex-col gap-4 md:gap-5 xl:flex-row xl:items-center xl:gap-8 md:bg-white md:p-5 md:rounded-2xl md:shadow-sm md:border md:border-slate-200">
         <div className="flex-1 min-w-0 px-1 md:px-0">
@@ -1525,9 +1544,9 @@ export const Calculadora = ({ onGuardar }) => {
           {esSoloLectura ? (
             <button 
               onClick={() => navigate('/compras')} 
-              className="bg-slate-900 hover:bg-emerald-600 text-white px-6 sm:px-10 py-2.5 sm:py-3 rounded-xl font-black transition-all text-xs uppercase tracking-wider shadow-lg shrink-0"
+              className="bg-slate-900 hover:bg-slate-700 text-white px-6 sm:px-10 py-2.5 sm:py-3 rounded-xl font-black transition-all text-xs uppercase tracking-wider shadow-lg shrink-0"
             >
-              Volver
+              {rfq?.tipo === 'Pedido Manual' ? 'Ver Pedido' : 'Ver RFQ'}
             </button>
           ) : (
             <div className="flex items-center gap-2 shrink-0">
