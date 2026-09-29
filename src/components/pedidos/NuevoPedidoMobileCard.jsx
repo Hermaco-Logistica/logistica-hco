@@ -3,6 +3,7 @@ import { X, Loader2, PlusCircle } from 'lucide-react';
 
 export const NuevoPedidoMobileCard = ({
   idx, p, productosLen, removeFila, updateProducto,
+  intentoGuardar, errores,
   // Producto Autocomplete
   sugerenciasProducto, buscandoProducto, mostrarSugerenciasProducto, indiceSugerenciaProducto,
   setMostrarSugerenciasProducto, setIndiceSugerenciaProducto,
@@ -44,7 +45,7 @@ export const NuevoPedidoMobileCard = ({
           <input 
             type="text" 
             required
-            className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 uppercase text-base focus:border-emerald-500 transition-all shadow-xs"
+            className={`w-full p-3 rounded-xl outline-none font-bold uppercase text-base transition-all shadow-xs ${intentoGuardar && errores?.desc ? 'border border-rose-500 bg-rose-50 text-rose-700 placeholder-rose-300' : 'bg-white border border-slate-200 text-slate-700 focus:border-emerald-500'}`}
             placeholder="SKU o nombre del ítem..."
             value={p.desc}
             onFocus={() => {
@@ -196,7 +197,7 @@ export const NuevoPedidoMobileCard = ({
           <input 
             type="number" 
             min="1"
-            className="w-full p-3 bg-white border border-slate-200 rounded-xl text-center font-black text-slate-700 text-base outline-none focus:border-emerald-500 transition-all shadow-xs"
+            className={`w-full p-3 rounded-xl text-center font-black text-base outline-none transition-all shadow-xs ${intentoGuardar && errores?.cant ? 'border border-rose-500 bg-rose-50 text-rose-700' : 'bg-white border border-slate-200 text-slate-700 focus:border-emerald-500'}`}
             value={p.cant}
             onChange={(e) => updateProducto(idx, 'cant', parseInt(e.target.value) || 1)}
           />
@@ -213,9 +214,13 @@ export const NuevoPedidoMobileCard = ({
             <input 
               type="number" 
               min="0" step="0.01"
-              className="w-full p-3 pl-7 bg-white border border-slate-200 rounded-xl font-black text-emerald-700 text-base outline-none focus:border-emerald-500 transition-all shadow-xs"
+              className={`w-full p-3 pl-7 rounded-xl font-black text-base outline-none transition-all shadow-xs ${intentoGuardar && errores?.precio ? 'border border-rose-500 bg-rose-50 text-rose-700 placeholder-rose-300' : 'bg-white border border-slate-200 text-emerald-700 focus:border-emerald-500'}`}
               value={p.precio || ''}
-              onChange={(e) => updateProducto(idx, 'precio', parseFloat(e.target.value) || '')}
+              onChange={(e) => {
+                let val = parseFloat(e.target.value);
+                if (val < 0) val = Math.abs(val);
+                updateProducto(idx, 'precio', isNaN(val) ? '' : val);
+              }}
               placeholder="0.00"
             />
           </div>
@@ -225,11 +230,14 @@ export const NuevoPedidoMobileCard = ({
             Tiempo Entrega
           </label>
           <input 
-            type="text"
-            className="w-full p-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-700 text-base outline-none focus:border-emerald-500 transition-all shadow-xs"
+            type="number" min="0" step="1"
+            className={`w-full p-3 rounded-xl font-bold text-base outline-none transition-all shadow-xs ${intentoGuardar && errores?.tiempoEntrega ? 'border border-rose-500 bg-rose-50 text-rose-700 placeholder-rose-300' : 'bg-white border border-slate-200 text-slate-700 focus:border-emerald-500'}`}
             value={p.tiempoEntrega || ''}
-            onChange={(e) => updateProducto(idx, 'tiempoEntrega', e.target.value)}
-            placeholder="Ej: 10 días"
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, '');
+              updateProducto(idx, 'tiempoEntrega', val);
+            }}
+            placeholder="Ej: 10"
           />
         </div>
       </div>

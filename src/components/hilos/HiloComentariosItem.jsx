@@ -410,8 +410,8 @@ export const HiloComentariosItem = ({
 
         {/* Compositor de mensajes estilo Messenger */}
         {soloLectura ? (
-          <div className="p-3.5 bg-blue-50 border-t border-blue-200 text-center text-xs font-bold text-blue-700 uppercase tracking-wider shrink-0 flex items-center justify-center gap-2">
-            Modo solo lectura
+          <div className="py-4 bg-slate-50/50 border-t border-slate-100 text-center text-[11px] italic text-slate-400 shrink-0">
+            Comentarios desactivados (solo lectura)
           </div>
         ) : !isBloqueadoGlobal ? (
           <div className="p-3 bg-white border-t border-slate-200/80 shrink-0">

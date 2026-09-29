@@ -493,7 +493,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                             todosLosProductos={[]}
                             onClose={() => setHiloAbierto(null)}
                             accionesHabilitadas={false}
-                            soloLectura={!puedeResponder}
+                            soloLectura={!puedeResponder || p.estadoItem === 'Anulado'}
                           />
                         </td>
                       </tr>

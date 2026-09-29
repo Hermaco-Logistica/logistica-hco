@@ -517,6 +517,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                             todosLosProductos={[]}
                             onClose={() => setHiloAbierto(null)}
                             accionesHabilitadas={false}
+                            soloLectura={estaAnulado}
                           />
                         </td>
                       </tr>
