@@ -267,14 +267,14 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
         {canCreate && (
           <div className="flex gap-2 w-full sm:w-auto">
             <button 
-              onClick={() => navigate('/vendedor/nueva')}
-              className="flex-1 sm:flex-none justify-center bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-2xl text-xs sm:text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 flex items-center gap-2 cursor-pointer active:scale-95"
+              onClick={() => navigate('/vendedor/nueva-rfq')}
+              className="flex-1 sm:flex-none justify-center bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 sm:px-5 rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all shadow-sm flex items-center gap-2 cursor-pointer active:scale-95"
             >
               + Nueva RFQ
             </button>
             <button 
               onClick={() => navigate('/vendedor/nuevo-pedido')}
-              className="flex-1 sm:flex-none justify-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-2xl text-xs sm:text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-100 flex items-center gap-2 cursor-pointer active:scale-95"
+              className="flex-1 sm:flex-none justify-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 sm:px-5 rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all shadow-sm flex items-center gap-2 cursor-pointer active:scale-95"
             >
               + Pedido Manual
             </button>

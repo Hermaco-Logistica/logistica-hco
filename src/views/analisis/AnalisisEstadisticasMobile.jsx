@@ -9,7 +9,8 @@ import {
   Users,
   Truck,
   ArrowUpRight,
-  ChevronRight
+  ChevronRight,
+  Ban
 } from 'lucide-react';
 
 /* ============================================================================
@@ -254,7 +255,7 @@ function MobileHeroCard({ metricas, formatearDinero, onVerPedidos }) {
 
         <div className="grid grid-cols-2 gap-2.5 mt-3">
           <div className="bg-slate-50/70 border border-slate-200/60 rounded-2xl p-3">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total RFQs</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Solicitudes</p>
             <p className="text-lg font-black text-slate-900 font-mono mt-0.5">{Math.round(animatedTotal)}</p>
             <p className="text-[10px] text-slate-400 font-medium mt-0.5">
               <span className="text-rose-600 font-bold">{Math.round(animatedPendientes)}</span> pendientes
@@ -328,6 +329,22 @@ function MobileFlujoCard({ theme, metricas, onVerTodas, onVerEstado }) {
       completas: metricas.pedidosCompletos,
       parciales: metricas.pedidosParciales,
       subdetail: `${metricas.pedidosCompletos} confirmados · ${metricas.pedidosParciales} parciales`
+    },
+    {
+      tipo: 'anuladas',
+      label: 'Anuladas',
+      count: metricas.anuladas,
+      icon: Ban,
+      iconBg: 'bg-rose-50 text-rose-500 border-rose-200/80',
+      barGradient: 'from-rose-400 to-rose-600',
+      subGradient: 'from-rose-300 to-rose-500',
+      textColor: 'text-rose-600',
+      desc: 'Solicitudes canceladas o anuladas',
+      completas: metricas.anuladas,
+      parciales: metricas.anuladasParcial,
+      subdetail: metricas.anuladasParcial > 0
+        ? `${metricas.anuladas} completas · ${metricas.anuladasParcial} con ítems anulados`
+        : null
     }
   ];
 
@@ -337,7 +354,7 @@ function MobileFlujoCard({ theme, metricas, onVerTodas, onVerEstado }) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-sm font-bold text-slate-900 tracking-tight">Flujo de Solicitudes</h2>
-            <p className="text-[11px] text-slate-400 font-medium">Ciclo de vida de RFQs</p>
+            <p className="text-[11px] text-slate-400 font-medium">RFQs y Pedidos Manuales</p>
           </div>
           <button type="button" onClick={onVerTodas} className="text-[11px] font-bold text-slate-500 flex items-center gap-0.5 shrink-0">
             Todas ({metricas.total}) <ArrowUpRight size={12} />

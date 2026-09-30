@@ -11,10 +11,12 @@ import CotizacionDocumento from '../../components/CotizacionDocumento';
 import { generarPlantillaNuevoPedido } from '../../utils/emailTemplates';
 import { emailConfig } from '../../config/emailConfig';
 import { StickyActionBar } from '../../components/mobile';
+import { getRoleColors } from '../../utils/roleColors';
 
 export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPedido = false, role }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const colors = getRoleColors(role);
   const [rfq, setRfq] = useState(null);
   const [loading, setLoading] = useState(true);
   const [enviandoPedido, setEnviandoPedido] = useState(false);
@@ -549,7 +551,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
               {itemsCotizadosCount} de {totalProductosCount} cotizados
             </span>
           </div>
-          <p className="text-xs font-bold text-blue-700 uppercase mt-0.5">
+          <p className={`text-xs font-bold uppercase mt-0.5 line-clamp-2 break-words ${colors.text}`}>
             {rfq?.cliente || 'Sin cliente'}
           </p>
           {rfq?.validez && (
@@ -670,8 +672,13 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                   )}
                 </div>
 
-                <div className="shrink-0">
-                  {yaFuePedido ? (
+                <div className="shrink-0 flex flex-col items-end">
+                  {estaAnulado ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-rose-500">
+                      <X size={12} strokeWidth={3} />
+                      <span>Anulado</span>
+                    </span>
+                  ) : yaFuePedido ? (
                     <span className={`inline-flex items-center gap-1.5 text-[9px] px-2.5 py-1 rounded-full font-black uppercase tracking-widest border ${(!p.modalidad || p.modalidad === 'Aéreo') ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' : 'bg-blue-50 text-blue-700 border-blue-200/60'}`}>
                       <CheckCircle2 size={12} className={(!p.modalidad || p.modalidad === 'Aéreo') ? 'text-emerald-500' : 'text-blue-500'} />
                       <span>Confirmado</span>
@@ -861,8 +868,8 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                       <div className="font-black text-slate-800 uppercase leading-tight">{p.descripcion || p.desc}</div>
                       <div className="flex items-center gap-1 mt-1 text-blue-600 font-bold italic text-[10px]"><Tag size={10} /> {p.marca || 'N/A'}</div>
                       {estaAnulado ? (
-                        <span className="inline-flex items-center gap-1.5 text-[8px] px-2 py-0.5 rounded-full font-black uppercase mt-2 tracking-widest bg-rose-50 text-rose-700 border border-rose-200/60">
-                          <X size={10} className="text-rose-500" />
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase mt-2 tracking-widest text-rose-500">
+                          <X size={12} strokeWidth={3} />
                           <span>Anulado</span>
                         </span>
                       ) : yaFuePedido ? (

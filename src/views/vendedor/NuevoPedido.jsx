@@ -38,6 +38,15 @@ export const NuevoPedido = () => {
   const [buscandoProducto, setBuscandoProducto] = useState([false]);
   const [mostrarSugerenciasProducto, setMostrarSugerenciasProducto] = useState([false]);
   const [loading, setLoading] = useState(false);
+  const [intentoGuardar, setIntentoGuardar] = useState(false);
+
+  const erroresValidacion = productos.map(p => ({
+    desc: !p.desc || p.desc.trim() === '',
+    cant: !p.cant || Number(p.cant) <= 0,
+    precio: p.precio === '' || p.precio === undefined || Number(p.precio) < 0,
+    tiempoEntrega: !p.tiempoEntrega || !/^\d+$/.test(String(p.tiempoEntrega).trim())
+  }));
+
   const [validez, setValidez] = useState('10 días hábiles');
   const [comentariosVendedor, setComentariosVendedor] = useState('');
   const [modalNuevoProd, setModalNuevoProd] = useState({ isOpen: false, idx: null, sku: '', producto: '', marca: '', saving: false });
@@ -354,7 +363,11 @@ export const NuevoPedido = () => {
 
   const guardarRFQ = async (e) => {
     e.preventDefault();
-    if (!cliente || productos.some(p => !p.desc)) return alert("Llena los campos obligatorios");
+    setIntentoGuardar(true);
+    const hayErrores = !cliente || erroresValidacion.some(e => Object.values(e).some(Boolean));
+    if (hayErrores) {
+      return;
+    }
     if (submittedRef.current) return; // evitar doble-envío
     submittedRef.current = true;
 
@@ -489,7 +502,7 @@ export const NuevoPedido = () => {
             <input 
               type="text" 
               required
-              className="w-full text-xl sm:text-2xl font-black outline-none border-b-4 border-slate-100 focus:border-emerald-500 transition-all pb-2 uppercase text-slate-700"
+              className={`w-full text-xl sm:text-2xl font-black outline-none border-b-4 transition-all pb-2 uppercase text-slate-700 ${intentoGuardar && !cliente ? 'border-rose-500 placeholder-rose-300 bg-rose-50' : 'border-slate-100 focus:border-emerald-500'}`}
               placeholder="EJ: KIMBERLY CLARK"
               value={cliente}
               onKeyDown={manejarTeclasCliente}
@@ -595,6 +608,8 @@ export const NuevoPedido = () => {
                 key={idx}
                 idx={idx}
                 p={p}
+                intentoGuardar={intentoGuardar}
+                errores={erroresValidacion[idx]}
                 productosLen={productos.length}
                 removeFila={removeFila}
                 updateProducto={updateProducto}
@@ -655,7 +670,7 @@ export const NuevoPedido = () => {
                         <input 
                           type="text" 
                           required
-                          className="w-full p-3 bg-transparent outline-none font-bold text-slate-700 uppercase text-sm"
+                          className={`w-full p-3 bg-transparent outline-none font-bold uppercase text-sm transition-all rounded-md ${intentoGuardar && erroresValidacion[idx].desc ? 'border border-rose-500 bg-rose-50 text-rose-700 placeholder-rose-300' : 'text-slate-700'}`}
                           placeholder="SKU o nombre del ítem..."
                           value={p.desc}
                           onFocus={() => {
@@ -802,7 +817,7 @@ export const NuevoPedido = () => {
                       <input 
                         type="number" 
                         min="1"
-                        className="w-full p-3 bg-slate-100 rounded-xl text-center font-black text-slate-600 outline-none focus:bg-emerald-50 focus:text-emerald-600 transition-all"
+                        className={`w-full p-3 rounded-xl text-center font-black outline-none transition-all ${intentoGuardar && erroresValidacion[idx].cant ? 'border border-rose-500 bg-rose-50 text-rose-700' : 'bg-slate-100 text-slate-600 focus:bg-emerald-50 focus:text-emerald-600'}`}
                         value={p.cant}
                         onChange={(e) => updateProducto(idx, 'cant', parseInt(e.target.value) || 1)}
                       />
@@ -813,20 +828,27 @@ export const NuevoPedido = () => {
                         <input 
                           type="number" 
                           min="0" step="0.01"
-                          className="w-full p-3 pl-7 bg-slate-100 rounded-xl font-black text-emerald-700 outline-none focus:bg-emerald-50 focus:text-emerald-600 transition-all"
-                          value={p.precio || ''}
-                          onChange={(e) => updateProducto(idx, 'precio', parseFloat(e.target.value) || '')}
+                          className={`w-full p-3 pl-7 rounded-xl font-black outline-none transition-all ${intentoGuardar && erroresValidacion[idx].precio ? 'border border-rose-500 bg-rose-50 text-rose-700 placeholder-rose-300' : 'bg-slate-100 text-emerald-700 focus:bg-emerald-50 focus:text-emerald-600'}`}
+                          value={p.precio !== undefined ? p.precio : ''}
+                          onChange={(e) => {
+                            let val = parseFloat(e.target.value);
+                            if (val < 0) val = Math.abs(val);
+                            updateProducto(idx, 'precio', isNaN(val) ? '' : val);
+                          }}
                           placeholder="0.00"
                         />
                       </div>
                     </td>
                     <td className="p-2">
                       <input 
-                        type="text" 
-                        className="w-full p-3 bg-slate-100 rounded-xl font-bold text-slate-700 outline-none focus:bg-emerald-50 focus:text-emerald-600 transition-all"
+                        type="number" min="0" step="1"
+                        className={`w-full p-3 rounded-xl font-bold outline-none transition-all ${intentoGuardar && erroresValidacion[idx].tiempoEntrega ? 'border border-rose-500 bg-rose-50 text-rose-700 placeholder-rose-300' : 'bg-slate-100 text-slate-700 focus:bg-emerald-50 focus:text-emerald-600'}`}
                         value={p.tiempoEntrega || ''}
-                        onChange={(e) => updateProducto(idx, 'tiempoEntrega', e.target.value)}
-                        placeholder="Ej: 10 días"
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          updateProducto(idx, 'tiempoEntrega', val);
+                        }}
+                        placeholder="Ej: 10"
                       />
                     </td>
                     <td className="p-2">

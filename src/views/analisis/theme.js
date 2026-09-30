@@ -394,6 +394,7 @@ export const formatearTiempoCierre = (diasNum) => {
  */
 export const evaluarEstadoGanada = (itemOEstado) => {
   let estado = '';
+  let tieneItemsAnulados = false;
 
   if (typeof itemOEstado === 'string') {
     estado = itemOEstado;
@@ -428,13 +429,26 @@ export const evaluarEstadoGanada = (itemOEstado) => {
     } else {
       // Es una solicitud / RFQ completa
       estado = itemOEstado.estado || '';
+      // Detectar si tiene ítems anulados individualmente (afecta el resultado)
+      if (Array.isArray(itemOEstado.productos)) {
+        tieneItemsAnulados = itemOEstado.productos.some(p => p.estadoItem === 'Anulado');
+      }
     }
   }
 
   const est = (estado || '').trim();
 
-  // 1. Ganada completa (100% Pedido o Comprado)
+  // 1. Pedido / Comprado — verificar si hay ítems anulados para determinar si es total o parcial
   if (est === 'Pedido' || est === 'Comprado') {
+    if (tieneItemsAnulados) {
+      return {
+        esGanada: false,
+        esParcial: true,
+        label: 'Ganado Parcial',
+        badgeClase: 'bg-sky-50 text-sky-700 border-sky-200/80',
+        textClase: 'text-sky-700'
+      };
+    }
     return {
       esGanada: true,
       esParcial: false,
@@ -444,12 +458,12 @@ export const evaluarEstadoGanada = (itemOEstado) => {
     };
   }
 
-  // 2. Pedido Parcial (RFQ con compra parcial a nivel de solicitud)
+  // 2. Pedido Parcial → siempre Ganado Parcial (independiente de ítems anulados)
   if (est === 'Pedido Parcial') {
     return {
       esGanada: false,
       esParcial: true,
-      label: 'Pedido Parcial',
+      label: 'Ganado Parcial',
       badgeClase: 'bg-sky-50 text-sky-700 border-sky-200/80',
       textClase: 'text-sky-700'
     };
@@ -477,7 +491,18 @@ export const evaluarEstadoGanada = (itemOEstado) => {
     };
   }
 
-  // 5. Pendiente
+  // 5. Anulado completo
+  if (est === 'Anulado') {
+    return {
+      esGanada: false,
+      esParcial: false,
+      label: 'Anulada',
+      badgeClase: 'bg-rose-50 text-rose-600 border-rose-200/80',
+      textClase: 'text-rose-600'
+    };
+  }
+
+  // 6. Pendiente (default)
   return {
     esGanada: false,
     esParcial: false,

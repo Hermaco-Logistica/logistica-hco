@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, onSnapshot, doc, updateDoc, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, orderBy, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {
   Truck, Globe, ChevronRight, ArrowLeft, Calendar, Hash,
@@ -15,6 +15,9 @@ import { interpretarEstadoLogistico } from '../../utils/interpretarEstadoLogisti
 export const GestionOC = ({ readOnly = false }) => {
   const [ordenes, setOrdenes] = useState([]);
   const [ocSeleccionada, setOcSeleccionada] = useState(null);
+  const [_retaceos, setRetaceos] = useState([]);
+  const [showRetaceoModal, setShowRetaceoModal] = useState(false);
+  const [nuevoRetaceo, setNuevoRetaceo] = useState(() => ({ correlativo: '', guia: '', fechaStr: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10) }));
   const [trackingInput, setTrackingInput] = useState('');
 
   useEffect(() => {
@@ -40,6 +43,27 @@ export const GestionOC = ({ readOnly = false }) => {
   const refCalendario = useRef(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 640) setItemsPerPage(5);
+      else if (width < 1024) setItemsPerPage(10);
+      else setItemsPerPage(15);
+    };
+
+    handleResize(); // Init
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchOCNum, filterProveedor, filterEstadoLogistica, fechaInicio, fechaFin]);
+
   const activeFiltersCount = [
     Boolean(filterProveedor),
     Boolean(filterEstadoLogistica),
@@ -58,6 +82,7 @@ export const GestionOC = ({ readOnly = false }) => {
   }, []);
 
   useEffect(() => {
+    const unsubRetaceos = onSnapshot(collection(db, 'retaceos'), snap => setRetaceos(snap.docs.map(d => ({id: d.id, ...d.data()}))), err => { console.warn('Retaceos err:', err); setRetaceos([]); });
     const q = query(collection(db, "ordenesCompra"), orderBy("fechaCreacion", "desc"));
     const unsubscribe = onSnapshot(q, (snap) => {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -77,7 +102,7 @@ export const GestionOC = ({ readOnly = false }) => {
         return { ...prev, ...actualizada };
       });
     });
-    return () => unsubscribe();
+    return () => { unsubscribe(); unsubRetaceos(); };
   }, []);
 
   useEffect(() => {
@@ -113,6 +138,26 @@ export const GestionOC = ({ readOnly = false }) => {
       await updateDoc(ocRef, { tracking: valor });
     } catch (error) {
       console.error("Error al guardar tracking:", error);
+    }
+  };
+
+  
+  const handleCrearRetaceo = async () => {
+    if (readOnly) return;
+    try {
+      const [y, m, d] = nuevoRetaceo.fechaStr.split('-');
+      await addDoc(collection(db, 'retaceos'), {
+        ocId: ocSeleccionada.id,
+        correlativoRetaceo: nuevoRetaceo.correlativo,
+        guia: nuevoRetaceo.guia,
+        fechaRecibido: new Date(y, m - 1, d)
+      });
+      setShowRetaceoModal(false);
+      setNuevoRetaceo({ correlativo: '', guia: '', fechaStr: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10) });
+      alert('Retaceo registrado exitosamente');
+    } catch (e) {
+      console.error(e);
+      alert('Error registrando retaceo');
     }
   };
 
@@ -252,6 +297,11 @@ export const GestionOC = ({ readOnly = false }) => {
     return true;
   });
 
+  // Paginación
+  const totalPages = Math.max(1, Math.ceil(filteredOrdenes.length / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedOrdenes = filteredOrdenes.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
+
   // ─── VISTA DE DETALLE ────────────────────────────────────────────────────────
   if (ocSeleccionada) {
     const totalOrden = calcularTotalOC(ocSeleccionada.items);
@@ -318,7 +368,7 @@ export const GestionOC = ({ readOnly = false }) => {
           <div className="md:hidden bg-slate-900 p-4 text-white space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <span className="inline-block text-[10px] font-bold text-slate-400 bg-slate-800 border border-slate-700/80 px-2 py-0.5 rounded-md uppercase mb-1 truncate max-w-[200px]">
+                <span className="inline-block text-[10px] font-bold text-slate-400 bg-slate-800 border border-slate-700/80 px-2 py-0.5 rounded-md uppercase mb-1 truncate max-w-50">
                   {ocSeleccionada.proveedor}
                 </span>
                 <h2 className="text-xl font-black text-white italic uppercase tracking-tight truncate">
@@ -362,6 +412,28 @@ export const GestionOC = ({ readOnly = false }) => {
           </div>
 
           <div className="p-3.5 sm:p-6 md:p-10">
+
+          {showRetaceoModal && (
+            <div className="p-6 bg-blue-50 border-y border-blue-100 flex flex-col sm:flex-row gap-4 items-end">
+               <div className="flex-1 w-full">
+                 <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Correlativo Aduana</label>
+                 <input type="text" value={nuevoRetaceo.correlativo} onChange={e => setNuevoRetaceo({...nuevoRetaceo, correlativo: e.target.value.toUpperCase()})} className="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold uppercase outline-none focus:border-blue-500" placeholder="Libre..." />
+               </div>
+               <div className="flex-1 w-full">
+                 <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Guía / BL</label>
+                 <input type="text" value={nuevoRetaceo.guia} onChange={e => setNuevoRetaceo({...nuevoRetaceo, guia: e.target.value.toUpperCase()})} className="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold uppercase outline-none focus:border-blue-500" placeholder="Opcional..." />
+               </div>
+               <div className="flex-1 w-full">
+                 <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Fecha Recibido</label>
+                 <input type="date" value={nuevoRetaceo.fechaStr} onChange={e => setNuevoRetaceo({...nuevoRetaceo, fechaStr: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold uppercase outline-none focus:border-blue-500" />
+               </div>
+               <div className="flex gap-2 w-full sm:w-auto mt-4 sm:mt-0">
+                 <button onClick={() => setShowRetaceoModal(false)} className="px-4 py-3 bg-slate-200 text-slate-600 hover:bg-slate-300 rounded-xl font-black text-xs uppercase flex-1">Cancelar</button>
+                 <button onClick={handleCrearRetaceo} className="px-4 py-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl font-black text-xs uppercase shadow-md flex-1">Guardar</button>
+               </div>
+            </div>
+          )}
+
             {/* Resumen Móvil (< md): Tarjetas de Total y Partidas */}
             <div className="md:hidden grid grid-cols-2 gap-2.5 mb-3.5">
               <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
@@ -458,7 +530,7 @@ export const GestionOC = ({ readOnly = false }) => {
                             {cant} {cant === 1 ? 'unidad' : 'unidades'}
                           </span>
                           {item.marca && (
-                            <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-lg uppercase truncate max-w-[150px]">
+                            <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-lg uppercase truncate max-w-37.5">
                               {item.marca}
                             </span>
                           )}
@@ -474,7 +546,7 @@ export const GestionOC = ({ readOnly = false }) => {
                       {/* Fila 2: Descripción en caja independiente */}
                       <div className="bg-slate-50/70 p-3 rounded-xl border border-slate-100">
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-0.5">Descripción</span>
-                        <p className="text-xs sm:text-sm font-black text-slate-800 uppercase leading-snug break-words">
+                        <p className="text-xs sm:text-sm font-black text-slate-800 uppercase leading-snug wrap-break-word">
                           {item.descripcion || item.desc || 'Sin descripción'}
                         </p>
                       </div>
@@ -745,12 +817,12 @@ export const GestionOC = ({ readOnly = false }) => {
 
       {/* Vista Móvil (< md): Tarjetas Detalladas y Espaciosas con toda la información de escritorio */}
       <div className="md:hidden space-y-3.5">
-        {filteredOrdenes.length === 0 ? (
+        {paginatedOrdenes.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center text-slate-400 border border-slate-200 font-bold text-xs">
             No se encontraron órdenes con los filtros aplicados.
           </div>
         ) : (
-          filteredOrdenes.map(oc => {
+          paginatedOrdenes.map(oc => {
             const total = calcularTotalOC(oc.items);
             const totalItems = oc.items?.length || 0;
             const totalUds = oc.items?.reduce((acc, it) => acc + Number(it.cantidad || 0), 0) || 0;
@@ -870,7 +942,7 @@ export const GestionOC = ({ readOnly = false }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredOrdenes.map(oc => (
+              {paginatedOrdenes.map(oc => (
                 <tr
                   key={oc.id}
                   onClick={() => setOcSeleccionada(oc)}
@@ -923,6 +995,34 @@ export const GestionOC = ({ readOnly = false }) => {
           </table>
         </div>
       </div>
+
+      {/* Controles de Paginación */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-6 p-4 sm:px-6 bg-slate-900 rounded-2xl sm:rounded-3xl text-white select-none">
+          <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+            <button
+              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+              disabled={safeCurrentPage === 1}
+              className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer"
+            >
+              Anterior
+            </button>
+            <span className="sm:hidden text-[11px] font-bold text-slate-300">
+              {safeCurrentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+              disabled={safeCurrentPage === totalPages}
+              className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer"
+            >
+              Siguiente
+            </button>
+          </div>
+          <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-widest text-slate-300">
+            Página {safeCurrentPage} de {totalPages} ({filteredOrdenes.length} órdenes)
+          </span>
+        </div>
+      )}
     </div>
   );
 };

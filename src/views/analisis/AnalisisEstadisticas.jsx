@@ -19,7 +19,8 @@ import {
   AlertCircle,
   Download,
   Info,
-  X
+  X,
+  Ban
 } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
@@ -211,6 +212,8 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     let cotizadasParcial = 0;
     let pedidos = 0;
     let pedidosParcial = 0;
+    let anuladas = 0;
+    let anuladasParcial = 0; // solicitudes con al menos un ítem anulado pero que no están totalmente anuladas
     let montoCotizadoTotal = 0;
     let montoPedidoTotal = 0;
     let totalDiasRespuesta = 0;
@@ -225,9 +228,18 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       else if (estado === 'Cotizado Parcial') cotizadasParcial++;
       else if (estado === 'Pedido') pedidos++;
       else if (estado === 'Pedido Parcial') pedidosParcial++;
+      else if (estado === 'Anulado') anuladas++;
+
+      // Detectar solicitudes con ítems anulados individualmente (parcialmente anuladas)
+      if (estado !== 'Anulado' && Array.isArray(s.productos)) {
+        const tieneItemAnulado = s.productos.some(p => p.estadoItem === 'Anulado');
+        if (tieneItemAnulado) anuladasParcial++;
+      }
 
       if (Array.isArray(s.productos)) {
         s.productos.forEach((p) => {
+          if (p.estadoItem === 'Anulado') return; // Ignorar ítems anulados en los montos
+
           const cant = Number(p.cant || 1);
           const fob = Number(p.fob || 0);
           let unitario = Number(p.precioUnitario || p.precio || 0);
@@ -297,6 +309,8 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     return {
       total,
       pendientes,
+      anuladas,
+      anuladasParcial,
       cotizadas: cotizadas + cotizadasParcial,
       cotizadasCompletas: cotizadas,
       cotizadasParciales: cotizadasParcial,
@@ -318,7 +332,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       if (!Array.isArray(s.productos)) return;
       s.productos.forEach((p) => {
         const desc = (p.desc || p.descripcion || '').trim().toUpperCase();
-        if (!desc) return;
+        if (!desc || p.estadoItem === 'Anulado') return; // Ignorar anulados
         const key = desc;
         const cant = Number(p.cant || 1);
         const marca = (p.marca || '').trim();
@@ -912,7 +926,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 Flujo de Estado de Solicitudes
               </h2>
               <p className="text-xs text-slate-400 font-medium">
-                Ciclo de vida de RFQs (clic en cualquier barra para ver el detalle)
+                Ciclo de vida de RFQs y Pedidos Manuales (clic en cualquier barra para ver el detalle)
               </p>
             </div>
             <button
@@ -966,6 +980,22 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 completas: metricas.pedidosCompletos,
                 parciales: metricas.pedidosParciales,
                 subdetail: `${metricas.pedidosCompletos} confirmados · ${metricas.pedidosParciales} parciales`
+              },
+              {
+                tipo: 'anuladas',
+                label: 'Anuladas',
+                count: metricas.anuladas,
+                icon: Ban,
+                iconBg: 'bg-rose-50 text-rose-500 border-rose-200/80',
+                barGradient: 'from-rose-400 to-rose-600',
+                subGradient: 'from-rose-300 to-rose-500',
+                textColor: 'text-rose-600',
+                desc: 'Solicitudes canceladas o anuladas en el período',
+                completas: metricas.anuladas,
+                parciales: metricas.anuladasParcial,
+                subdetail: metricas.anuladasParcial > 0
+                  ? `${metricas.anuladas} completas · ${metricas.anuladasParcial} con ítems anulados`
+                  : null
               }
             ].map((item) => {
               const porcentaje = metricas.total > 0 
