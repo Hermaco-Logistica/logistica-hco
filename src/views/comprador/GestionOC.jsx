@@ -43,6 +43,27 @@ export const GestionOC = ({ readOnly = false }) => {
   const refCalendario = useRef(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 640) setItemsPerPage(5);
+      else if (width < 1024) setItemsPerPage(10);
+      else setItemsPerPage(15);
+    };
+
+    handleResize(); // Init
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchOCNum, filterProveedor, filterEstadoLogistica, fechaInicio, fechaFin]);
+
   const activeFiltersCount = [
     Boolean(filterProveedor),
     Boolean(filterEstadoLogistica),
@@ -275,6 +296,11 @@ export const GestionOC = ({ readOnly = false }) => {
 
     return true;
   });
+
+  // Paginación
+  const totalPages = Math.max(1, Math.ceil(filteredOrdenes.length / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedOrdenes = filteredOrdenes.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
 
   // ─── VISTA DE DETALLE ────────────────────────────────────────────────────────
   if (ocSeleccionada) {
@@ -791,12 +817,12 @@ export const GestionOC = ({ readOnly = false }) => {
 
       {/* Vista Móvil (< md): Tarjetas Detalladas y Espaciosas con toda la información de escritorio */}
       <div className="md:hidden space-y-3.5">
-        {filteredOrdenes.length === 0 ? (
+        {paginatedOrdenes.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center text-slate-400 border border-slate-200 font-bold text-xs">
             No se encontraron órdenes con los filtros aplicados.
           </div>
         ) : (
-          filteredOrdenes.map(oc => {
+          paginatedOrdenes.map(oc => {
             const total = calcularTotalOC(oc.items);
             const totalItems = oc.items?.length || 0;
             const totalUds = oc.items?.reduce((acc, it) => acc + Number(it.cantidad || 0), 0) || 0;
@@ -916,7 +942,7 @@ export const GestionOC = ({ readOnly = false }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredOrdenes.map(oc => (
+              {paginatedOrdenes.map(oc => (
                 <tr
                   key={oc.id}
                   onClick={() => setOcSeleccionada(oc)}
@@ -969,6 +995,34 @@ export const GestionOC = ({ readOnly = false }) => {
           </table>
         </div>
       </div>
+
+      {/* Controles de Paginación */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-6 p-4 sm:px-6 bg-slate-900 rounded-2xl sm:rounded-3xl text-white select-none">
+          <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+            <button
+              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
+              disabled={safeCurrentPage === 1}
+              className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer"
+            >
+              Anterior
+            </button>
+            <span className="sm:hidden text-[11px] font-bold text-slate-300">
+              {safeCurrentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
+              disabled={safeCurrentPage === totalPages}
+              className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer"
+            >
+              Siguiente
+            </button>
+          </div>
+          <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-widest text-slate-300">
+            Página {safeCurrentPage} de {totalPages} ({filteredOrdenes.length} órdenes)
+          </span>
+        </div>
+      )}
     </div>
   );
 };
