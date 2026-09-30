@@ -48,11 +48,12 @@ export const DetallePedidoMobileCard = ({
     <div className={`bg-white p-4 ${estaAnulado ? 'opacity-60 grayscale-[0.5]' : ''}`}>
       <div className="flex justify-between items-start mb-4 gap-3">
         <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-sm text-slate-800 uppercase truncate">{p.descripcion}</h4>
+          <h4 className="font-bold text-sm text-slate-800 uppercase line-clamp-2 break-words leading-snug">{p.descripcion}</h4>
           <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Marca: {p.marca}</p>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <EstadoItemChip estado={p.estadoItem} pendingRole={neg.turno} />
+          {/* Ocultar indicador de turno si el ítem está anulado */}
+          <EstadoItemChip estado={p.estadoItem} pendingRole={estaAnulado ? null : neg.turno} />
           {estaAnulado && p.motivoAnulacion && (
             <span className="text-[9px] text-slate-400 italic text-right max-w-[120px] leading-tight" title={p.motivoAnulacion}>
               {p.motivoAnulacion.length > 30 ? p.motivoAnulacion.slice(0, 30) + '…' : p.motivoAnulacion}
@@ -82,8 +83,9 @@ export const DetallePedidoMobileCard = ({
         </div>
       </div>
 
-      {hasCounterOffer && (
-        <div className="mb-4">
+      {/* Historial de ajuste — visible aunque esté anulado, pero atenuado */}
+      {(neg.ofertaVigente && neg.ofertaAnterior) && (
+        <div className={`mt-3 mb-5 ${estaAnulado ? 'opacity-50 pointer-events-none' : ''}`}>
           <OfertaDiff 
             actual={neg.ofertaVigente} 
             anterior={neg.ofertaAnterior} 
@@ -92,7 +94,7 @@ export const DetallePedidoMobileCard = ({
         </div>
       )}
 
-      {showAdjustForm ? (
+      {showAdjustForm && !estaAnulado ? (
         <div className="mb-4">
           <FormularioOferta 
             ofertaDraft={currentBorrador}
@@ -109,7 +111,7 @@ export const DetallePedidoMobileCard = ({
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {isMyTurn && puedeResponder && (
+          {isMyTurn && puedeResponder && !estaAnulado && (
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => actions.aceptar(idx, versionEsperada)} 

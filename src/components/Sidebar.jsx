@@ -154,9 +154,13 @@ export const Sidebar = ({
           <div className="mb-6 px-1 mt-1 shrink-0">
             <div className="flex items-center justify-between gap-2 h-11">
               <div className="flex items-center gap-2 min-w-0">
-                <h1 className="text-white font-black text-2xl italic tracking-tighter uppercase leading-none truncate select-none">
+                <Link 
+                  to="/" 
+                  className="text-white font-black text-2xl italic tracking-tighter uppercase leading-none truncate select-none hover:opacity-85 active:scale-95 transition-all cursor-pointer"
+                  title="Ir al inicio"
+                >
                   Logistica<span className={`${currentTheme.accentText} underline decoration-2 underline-offset-4`}>HCO</span>
-                </h1>
+                </Link>
                 <button
                   type="button"
                   onClick={() => { if (!isFindexActive) setIsFindexSettingsOpen(true); }}
@@ -303,9 +307,14 @@ export const Sidebar = ({
           {/* Header del drawer con botón de cierre */}
           <div className="flex items-center justify-between mb-6 pb-3 border-b border-white/10">
             <div className="flex items-center gap-2">
-              <h1 className="text-white font-black text-xl italic tracking-tighter uppercase leading-none truncate select-none">
+              <Link 
+                to="/" 
+                onClick={onCloseMobile}
+                className="text-white font-black text-xl italic tracking-tighter uppercase leading-none truncate select-none hover:opacity-85 active:scale-95 transition-all cursor-pointer"
+                title="Ir al inicio"
+              >
                 Logistica<span className={`${currentTheme.accentText} underline decoration-2 underline-offset-4`}>HCO</span>
-              </h1>
+              </Link>
               <button
                 type="button"
                 onClick={() => { if (!isFindexActive) { setIsFindexSettingsOpen(true); onCloseMobile(); } }}

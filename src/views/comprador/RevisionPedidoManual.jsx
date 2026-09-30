@@ -187,32 +187,47 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
           </div>
         </div>
       )}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3 w-full">
-          <button 
-            onClick={() => navigate('/compras')} 
-            className="shrink-0 p-2 hover:bg-slate-100 rounded-full transition-colors bg-white shadow-sm"
-          >
-            <ArrowLeft size={22} className="text-slate-600" />
+      {/* Encabezado Superior */}
+      <div className="flex flex-row items-center justify-between gap-4 mb-4 md:mb-8">
+        <div className="flex items-center gap-2 md:gap-4">
+          <button onClick={() => navigate('/compras')} className="p-1.5 md:p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600 shrink-0">
+            <ArrowLeft size={24} className="hidden md:block" />
+            <ArrowLeft size={20} className="md:hidden" />
           </button>
-          <div className="min-w-0 flex-1">
-            <h1 className="text-xl sm:text-3xl font-black text-slate-800 uppercase italic leading-none tracking-tight truncate">
-              {solicitudBase.cliente}
+          <div>
+            <h1 className="text-xl md:text-3xl font-black text-slate-800 italic uppercase tracking-tighter leading-none md:leading-normal">
+              <span className="hidden md:inline">Revisión de Pedido</span>
+              <span className="md:hidden">Revisión Pedido</span>
             </h1>
-            <div className="flex items-center gap-2 mt-2">
-              <span className={`font-bold text-[10px] sm:text-xs uppercase tracking-widest px-2.5 py-1 rounded-md ${colors.text} ${colors.bg}`}>
-                {solicitudBase.correlativo}
-              </span>
-            </div>
+            <p className="text-slate-500 font-bold text-[10px] md:text-xs uppercase tracking-widest hidden md:block">
+              Ref: {solicitudBase.correlativo} — Cliente: {solicitudBase.cliente}
+            </p>
           </div>
         </div>
-        
-        {allClosed && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-full shadow-md whitespace-nowrap self-start md:self-auto">
-            <Check size={16} className="text-emerald-400" />
-            <span className="text-xs font-bold uppercase tracking-widest">Pedido Finalizado</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {allClosed && (
+            <div className="bg-slate-800 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[10px] font-black uppercase flex items-center gap-1.5 shadow-md">
+              <Check size={14} className="text-emerald-400" />
+              <span className="hidden md:inline">Pedido Finalizado</span>
+              <span className="md:hidden">Finalizado</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Resumen Móvil (< md): Correlativo, estado e info del cliente */}
+      <div className="md:hidden bg-white rounded-2xl p-4 border border-slate-200/90 shadow-sm mb-4 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-mono font-black text-base text-slate-900 tracking-tight">
+            {solicitudBase.correlativo || '---'}
+          </span>
+          <span className="text-[10px] font-black uppercase text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-md">
+            {cerrados.length} de {itemsServer.length} cerrados
+          </span>
+        </div>
+        <p className={`text-xs font-bold uppercase leading-snug line-clamp-2 break-words ${colors.text}`}>
+          {solicitudBase.cliente || 'Sin cliente'}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

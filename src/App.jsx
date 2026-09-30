@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { auth, db, provider } from './firebase'; 
 import { onAuthStateChanged, signOut, signInWithPopup } from 'firebase/auth';
 import { collection, query, onSnapshot, where, limit, doc, updateDoc, getDoc, setDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
@@ -350,9 +350,13 @@ function App() {
           {/* TOP BAR MÓVIL (visible solo en < md) */}
           <header className="sticky top-0 z-30 flex md:hidden items-center justify-between bg-slate-900 px-4 py-3 text-white border-b border-white/10 shadow-md shrink-0 select-none">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="font-black text-xl italic tracking-tighter uppercase leading-none truncate">
+              <Link 
+                to="/" 
+                className="font-black text-xl italic tracking-tighter uppercase leading-none truncate hover:opacity-80 active:scale-95 transition-all cursor-pointer"
+                title="Ir al inicio"
+              >
                 Logistica<span className="text-emerald-400 underline decoration-2 underline-offset-4">HCO</span>
-              </span>
+              </Link>
               <button
                 type="button"
                 onClick={() => { if (!isFindexActive) setIsFindexSettingsOpen(true); }}

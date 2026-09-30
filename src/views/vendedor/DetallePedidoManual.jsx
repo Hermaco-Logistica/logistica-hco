@@ -142,26 +142,47 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-36 fade-in">
-      <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mb-6">
-        <button onClick={() => navigate(-1)} className="shrink-0 p-2 hover:bg-white rounded-full transition-colors shadow-sm bg-white">
-          <ChevronLeft size={24} className="text-slate-600" />
-        </button>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-3xl font-black text-slate-800 uppercase italic leading-none tracking-tight truncate">
-            {solicitudBase.cliente}
-          </h1>
-          <div className="flex items-center gap-2 mt-2">
-            <span className={`font-bold text-[10px] sm:text-xs uppercase tracking-widest px-2.5 py-1 rounded-md ${colors.text} ${colors.bg}`}>
-              {solicitudBase.correlativo}
-            </span>
+      {/* Encabezado Superior */}
+      <div className="flex flex-row items-center justify-between gap-4 mb-4 md:mb-8">
+        <div className="flex items-center gap-2 md:gap-4">
+          <button onClick={() => navigate(-1)} className="p-1.5 md:p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600 shrink-0">
+            <ChevronLeft size={24} className="hidden md:block" />
+            <ChevronLeft size={20} className="md:hidden" />
+          </button>
+          <div>
+            <h1 className="text-xl md:text-3xl font-black text-slate-800 italic uppercase tracking-tighter leading-none md:leading-normal">
+              <span className="hidden md:inline">Detalle de Pedido</span>
+              <span className="md:hidden">Pedido Manual</span>
+            </h1>
+            <p className="text-slate-500 font-bold text-[10px] md:text-xs uppercase tracking-widest hidden md:block">
+              Ref: {solicitudBase.correlativo} — Cliente: {solicitudBase.cliente}
+            </p>
           </div>
         </div>
-        {allClosed && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white rounded-full shadow-md whitespace-nowrap self-start md:self-auto">
-            <CheckCircle2 size={18} className="text-emerald-400" />
-            <span className="text-xs font-bold uppercase tracking-widest">Pedido Finalizado</span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {allClosed && (
+            <div className="bg-slate-800 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[10px] font-black uppercase flex items-center gap-1.5 shadow-md">
+              <CheckCircle2 size={14} className="text-emerald-400" />
+              <span className="hidden md:inline">Pedido Finalizado</span>
+              <span className="md:hidden">Finalizado</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Resumen Móvil (< md): Correlativo, estado e info del cliente */}
+      <div className="md:hidden bg-white rounded-2xl p-4 border border-slate-200/90 shadow-sm mb-4 space-y-2">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-mono font-black text-base text-slate-900 tracking-tight">
+            {solicitudBase.correlativo || '---'}
+          </span>
+          <span className="text-[10px] font-black uppercase text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-md">
+            {cerrados.length} de {itemsServer.length} cerrados
+          </span>
+        </div>
+        <p className={`text-xs font-bold uppercase leading-snug line-clamp-2 break-words ${colors.text}`}>
+          {solicitudBase.cliente || 'Sin cliente'}
+        </p>
       </div>
 
       {/* Banner anulación */}
@@ -399,14 +420,14 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                       
                       <td className="p-4 align-top">
                         <div className="flex flex-col items-end gap-3">
-                          <EstadoItemChip estado={p.estadoItem} pendingRole={neg.turno} />
+                          <EstadoItemChip estado={p.estadoItem} pendingRole={p.estadoItem === 'Anulado' ? null : neg.turno} />
                           {p.estadoItem === 'Anulado' && p.motivoAnulacion && (
                             <span className="text-[9px] text-slate-400 italic mt-1 block text-right max-w-[160px]" title={p.motivoAnulacion}>
                               {p.motivoAnulacion.length > 40 ? p.motivoAnulacion.slice(0, 40) + '\u2026' : p.motivoAnulacion}
                             </span>
                           )}
                           
-                          {isMyTurn && puedeResponder ? (
+                          {isMyTurn && puedeResponder && p.estadoItem !== 'Anulado' ? (
                             <div className="flex flex-wrap justify-end gap-1.5 w-full mt-2">
                               {!draft ? (
                                 <>
@@ -474,9 +495,9 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                       </td>
                     </tr>
 
-                    {hasCounterOffer && (
-                      <tr className="bg-amber-50/20">
-                        <td colSpan={4} className="px-4 pb-4 border-l-4 border-amber-400">
+                    {(neg.ofertaVigente && neg.ofertaAnterior) && (
+                      <tr className={p.estadoItem === 'Anulado' ? 'opacity-50 bg-slate-50/40' : 'bg-slate-50/40'}>
+                        <td colSpan={4} className="px-5 pt-3 pb-5">
                           <OfertaDiff actual={neg.ofertaVigente} anterior={neg.ofertaAnterior} label="Ajuste de Compras" />
                         </td>
                       </tr>

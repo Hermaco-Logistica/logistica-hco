@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Search, Package, ExternalLink, Calendar, User, Building, Link as LinkIcon, CheckCircle2, Download, X } from 'lucide-react';
+import { ArrowLeft, Search, Package, ExternalLink, Calendar, User, Building, Link as LinkIcon, CheckCircle2, Download, X, Ban } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { Badge } from '../../components/Badge';
 import { normalizarBusqueda } from '../../utils/normalizers';
@@ -122,6 +122,13 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
       if (tabActual === 'parciales') {
         return est === 'Pedido Parcial';
       }
+      if (tabActual === 'anuladas') {
+        return est === 'Anulado';
+      }
+      if (tabActual === 'anuladas-parcial') {
+        // Solicitudes donde al menos un ítem está anulado pero la solicitud en sí no es totalmente Anulada
+        return est !== 'Anulado' && Array.isArray(s.productos) && s.productos.some(p => p.estadoItem === 'Anulado');
+      }
       return true;
     });
   }, [solicitudes, tabActual, vendedorFilter, clienteFilter]);
@@ -167,8 +174,10 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
     { id: 'todas', label: 'Todas' },
     { id: 'pendiente', label: 'Pendientes de Cotizar', dot: theme.flujoEstados?.pendiente?.dot },
     { id: 'cotizadas', label: 'Cotizadas', dot: theme.flujoEstados?.cotizadas?.dot },
-    { id: 'pedidos', label: 'Pedidos Ganados', dot: theme.flujoEstados?.pedidos?.dot },
-    { id: 'parciales', label: 'Pedidos Parciales', dot: 'bg-sky-500' }
+    { id: 'pedidos', label: 'Pedidos', dot: theme.flujoEstados?.pedidos?.dot },
+    { id: 'parciales', label: 'Pedidos Parciales', dot: 'bg-sky-500' },
+    { id: 'anuladas', label: 'Anuladas', dot: 'bg-rose-500' },
+    { id: 'anuladas-parcial', label: 'Con ítems anulados', dot: 'bg-rose-300' }
   ];
 
   // Bloqueo estricto para rol vendedor
@@ -196,10 +205,10 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Detalle de Solicitudes (RFQs)
+              Detalle de Solicitudes
             </h1>
             <p className="text-slate-400 text-xs font-medium mt-0.5">
-              Explorador del flujo de estados y seguimiento comercial
+              Explorador del flujo de estados — RFQs y Pedidos Manuales
             </p>
           </div>
         </div>
@@ -282,9 +291,11 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                 pendiente: 'SOLICITUDES PENDIENTES',
                 cotizadas: 'SOLICITUDES COTIZADAS',
                 pedidos: 'PEDIDOS GANADOS',
-                parciales: 'PEDIDOS PARCIALES'
+                parciales: 'PEDIDOS PARCIALES',
+                anuladas: 'SOLICITUDES ANULADAS',
+                'anuladas-parcial': 'SOLICITUDES CON ÍTEMS ANULADOS'
               };
-              const tituloTab = tabTitulos[tabActual] || 'SOLICITUDES (RFQS)';
+              const tituloTab = tabTitulos[tabActual] || 'SOLICITUDES';
               const filtrosActivos = [`Pestaña: ${tituloTab}`];
               if (vendedorFilter) filtrosActivos.push(`Vendedor: ${vendedorFilter}`);
               if (clienteFilter && clienteFilter.trim()) filtrosActivos.push(`Cliente: "${clienteFilter.trim()}"`);
@@ -345,6 +356,12 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                           {res.esGanada && <CheckCircle2 size={10} className="shrink-0" />}
                           {res.label}
                         </span>
+                        {s.estado !== 'Anulado' && s.productos?.some(p => p.estadoItem === 'Anulado') && (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-500">
+                            <Ban size={9} className="shrink-0" />
+                            ítems anulados
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -529,15 +546,23 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                             <Badge estado={s.estado || 'Pendiente'} roleTheme={theme} />
                           </td>
                           <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
-                            {(() => {
-                              const res = evaluarEstadoGanada(s);
-                              return (
-                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${res.badgeClase}`}>
-                                  {res.esGanada && <CheckCircle2 size={11} className="shrink-0" />}
-                                  <span>{res.label}</span>
+                            <div className="flex flex-col items-center gap-1">
+                              {(() => {
+                                const res = evaluarEstadoGanada(s);
+                                return (
+                                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${res.badgeClase}`}>
+                                    {res.esGanada && <CheckCircle2 size={11} className="shrink-0" />}
+                                    <span>{res.label}</span>
+                                  </span>
+                                );
+                              })()}
+                              {s.estado !== 'Anulado' && s.productos?.some(p => p.estadoItem === 'Anulado') && (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-rose-500">
+                                  <Ban size={9} className="shrink-0" />
+                                  ítems anulados
                                 </span>
-                              );
-                            })()}
+                              )}
+                            </div>
                           </td>
                           <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
                             <button
