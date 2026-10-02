@@ -4,7 +4,7 @@ import { auth, db } from '../../firebase';
 import { 
   CheckSquare, Square, Link as LinkIcon, 
   ChevronDown, ChevronUp, ChevronRight, Package, DollarSign, Hash, ClipboardCheck, 
-  Activity, Calendar, Truck, Trash2, Filter, Clock
+  Activity, Calendar, Clock, Truck, Trash2, Filter
 } from 'lucide-react';
 import { MobileListCard, MobileBadge } from '../../components/mobile';
 import { TrackingModal } from '../../components/TrackingModal';
@@ -1195,6 +1195,11 @@ export const DashboardPedidos = ({ role }) => {
                     {item.numOC && (
                       <span className="text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1.5">
                         <Hash size={10} /> OC: <span className="font-mono">{item.numOC}</span>
+                      </span>
+                    )}
+                    {item.fechaCompromiso && (
+                      <span className="text-[9px] font-bold text-slate-500 uppercase flex items-center gap-1.5">
+                        <Clock size={10} className="text-slate-400" /> Prometido: <span className="font-mono text-slate-700">{item.fechaCompromiso}</span>
                       </span>
                     )}
                   </div>
