@@ -107,6 +107,13 @@ export default function CotizacionDocumento({ cotizacionData }) {
   const esPedidoManual = cotizacionData.tipo === 'Pedido Manual';
   const todoAnulado = cotizacionData.estado === 'Anulado' ||
     (productos.length > 0 && productos.every(p => p.estadoItem === 'Anulado'));
+  const motivosAnulacion = [...new Set(
+    productos
+      .filter(item => item?.estadoItem === 'Anulado' && item?.motivoAnulacion)
+      .map(item => item.motivoAnulacion.toString().trim())
+      .filter(Boolean)
+  )];
+  const hayAnulacion = todoAnulado || productos.some(item => item?.estadoItem === 'Anulado');
 
   return (
     <div className="w-full overflow-x-auto">
@@ -115,16 +122,17 @@ export default function CotizacionDocumento({ cotizacionData }) {
           <div style={{
             position: 'absolute',
             top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%) rotate(-30deg)',
-            fontSize: '72px',
+            left: '5%',
+            width: '90%',
+            transform: 'translateY(-50%) rotate(-30deg)',
+            fontSize: '86px',
             fontWeight: 900,
             color: 'rgba(220,38,38,0.12)',
             letterSpacing: '0.1em',
             pointerEvents: 'none',
             userSelect: 'none',
             whiteSpace: 'nowrap',
-            zIndex: 10,
+            zIndex: 99,
             fontFamily: 'Arial, sans-serif'
           }}>
             ANULADO
@@ -216,7 +224,7 @@ export default function CotizacionDocumento({ cotizacionData }) {
                   <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.cantidad || item?.cant || ''}</td>
                   {itemAnulado ? (
                     <td colSpan={5} style={{ ...cellStyle, textAlign: 'center', color: '#9ca3af', fontStyle: 'italic', fontSize: '10px' }}>
-                      Anulado{item.motivoAnulacion ? ` — ${item.motivoAnulacion}` : ''}
+                      Anulado
                     </td>
                   ) : (
                     <>
@@ -245,7 +253,7 @@ export default function CotizacionDocumento({ cotizacionData }) {
                 <td style={{ ...cellStyle, textAlign: 'center' }}>{item?.cant ?? ''}</td>
                 {itemAnulado ? (
                   <td colSpan={7} style={{ ...cellStyle, textAlign: 'center', color: '#9ca3af', fontStyle: 'italic', fontSize: '10px' }}>
-                    Anulado{item.motivoAnulacion ? ` — ${item.motivoAnulacion}` : ''}
+                    Anulado
                   </td>
                 ) : (
                   <>
@@ -333,6 +341,22 @@ export default function CotizacionDocumento({ cotizacionData }) {
           </tr>
         </tbody>
       </table>
+
+      {hayAnulacion && (
+        <div style={{
+          marginTop: '14px',
+          paddingTop: '8px',
+          borderTop: '1px solid #d1d5db',
+          fontSize: '11px',
+          lineHeight: '1.55',
+          color: '#222222'
+        }}>
+          <div style={{ fontWeight: 'bold', marginBottom: '3px' }}>Motivo de anulación:</div>
+          {motivosAnulacion.map((motivo, index) => (
+            <div key={index}>{motivo}</div>
+          ))}
+        </div>
+      )}
     </div>
   </div>
   );

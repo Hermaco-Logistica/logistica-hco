@@ -13,6 +13,9 @@ import { FormularioOferta } from '../../components/pedidos/negociacion/Formulari
 import { ResumenTurnos } from '../../components/pedidos/negociacion/ResumenTurnos';
 import { BarraNotificar } from '../../components/pedidos/negociacion/BarraNotificar';
 import { getRoleColors } from '../../utils/roleColors';
+import { generarPlantillaAnulacion } from '../../utils/emailTemplates';
+import { pdf } from '@react-pdf/renderer';
+import CotizacionPDF from '../../components/CotizacionPDF';
 
 export const RevisionPedidoManual = ({ role = 'comprador' }) => {
   const { id } = useParams();
@@ -86,6 +89,58 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
         productos: updatedProductos,
         estado: nuevoEstado
       });
+
+      // --- Enviar correo de anulación al vendedor ---
+      if (solicitudBase.vendedorEmail) {
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : [solicitudBase.vendedorEmail];
+        const ccEmails = isLocal 
+          ? ["rvides@hermaco.net"] 
+          : [auth.currentUser.email, "logisticahco@hermaco.net"].filter(e => e && !["oventura@hermaco.net", "dhernandez@hermaco.net"].includes(e.toLowerCase()));
+        
+        const senderFrom = isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : `${auth.currentUser.displayName || auth.currentUser.email?.split('@')[0]} <${auth.currentUser.email}>`;
+        
+        const bodyHtml = generarPlantillaAnulacion(solicitudBase, modalAnulacion.motivo.trim(), auth.currentUser.email, activos.length > 0, updatedProductos[idx]);
+        
+        let pdfBase64 = null;
+        try {
+          const pdfDoc = <CotizacionPDF cotizacionData={{ ...solicitudBase, estado: nuevoEstado, productos: updatedProductos }} />;
+          const asPdf = pdf();
+          asPdf.updateContainer(pdfDoc);
+          const blob = await asPdf.toBlob();
+          const reader = new FileReader();
+          pdfBase64 = await new Promise((resolve, reject) => {
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+          });
+        } catch (err) {
+          console.error("Error generando PDF para anulación:", err);
+        }
+
+        try {
+          const payload = {
+            from: senderFrom,
+            replyTo: auth.currentUser.email,
+            to: destinatarioTo,
+            cc: ccEmails,
+            subject: `${activos.length > 0 ? 'Anulación Parcial' : 'Anulación'}: ${solicitudBase.correlativo} - ${solicitudBase.cliente}`,
+            bodyHtml
+          };
+          
+          if (pdfBase64) {
+            payload.attachments = [{ content: pdfBase64, nombre: `Anulacion_${solicitudBase.correlativo}.pdf` }];
+          }
+
+          await fetch('/.netlify/functions/send-email-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } catch (e) {
+          console.error("Error enviando correo de anulación:", e);
+        }
+      }
 
       alert('Ítem anulado correctamente');
       setModalAnulacion({ open: false, index: null, motivo: '', enviando: false });

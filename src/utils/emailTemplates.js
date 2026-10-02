@@ -245,3 +245,57 @@ export const generarPlantillaOCAsignada = ({ numOC, itemsVendedor }) => {
       </div>
     </div>`;
 };
+
+export const generarPlantillaAnulacion = (rfqData, motivo, anuladoPorEmail, esParcial, itemAnulado = null) => {
+  const isPedidoManual = rfqData.tipo === 'Pedido Manual';
+  
+  const tipoDoc = isPedidoManual ? 'PEDIDO MANUAL' : 'SOLICITUD DE COMPRA (RFQ)';
+  const headerText = esParcial ? `ANULACIÓN PARCIAL DE ${tipoDoc}` : `ANULACIÓN DE ${tipoDoc}`;
+  
+  // Render specific item if partial, else render all items
+  const productosRender = esParcial && itemAnulado 
+    ? [itemAnulado]
+    : rfqData.productos;
+
+  return `
+    <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+      <div style="background-color: #f43f5e; padding: 20px; text-align: center;">
+        <h2 style="color: #ffffff; margin: 0; font-size: 20px;">${headerText}</h2>
+      </div>
+      <div style="padding: 20px;">
+        <p style="margin: 5px 0;"><strong>Correlativo:</strong> <span style="color: #f43f5e; font-weight: bold;">${rfqData.correlativo}</span></p>
+        <p style="margin: 5px 0;"><strong>Cliente:</strong> ${rfqData.cliente}</p>
+        <p style="margin: 5px 0;"><strong>Anulado por:</strong> ${anuladoPorEmail}</p>
+        
+        <div style="margin-top: 25px; border: 1px solid #e11d48; border-radius: 6px; overflow: hidden;">
+          <div style="background-color: #e11d48; padding: 10px 15px;">
+            <p style="margin: 0; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #ffffff; letter-spacing: 1px;">Motivo de la Anulación</p>
+          </div>
+          <div style="padding: 16px; background-color: #ffffff;">
+            <p style="margin: 0; font-size: 13px; line-height: 1.6; color: #334155; white-space: pre-wrap;">${motivo.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')}</p>
+          </div>
+        </div>
+
+        <h3 style="margin-top: 25px; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; color: #64748b;">${esParcial ? 'ÍTEM ANULADO' : 'ÍTEMS ANULADOS'}</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background-color: #f8fafc; border-bottom: 2px solid #cbd5e1; text-align: left;">
+              <th style="padding: 12px; font-size: 12px; text-transform: uppercase;">Producto</th>
+              <th style="padding: 12px; font-size: 12px; text-transform: uppercase;">Marca</th>
+              <th style="padding: 12px; font-size: 12px; text-transform: uppercase; text-align: center;">Cant.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${productosRender.map(p => `
+              <tr style="border-bottom: 1px solid #e2e8f0; background-color: #fef1f2;">
+                <td style="padding: 12px; font-size: 13px; color: #9f1239; text-decoration: line-through;">${String(p.descripcion || p.desc || '').toUpperCase()}</td>
+                <td style="padding: 12px; font-size: 13px;">${p.marca || '-'}</td>
+                <td style="padding: 12px; font-size: 13px; text-align: center; font-weight: bold;">${p.cant}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+};

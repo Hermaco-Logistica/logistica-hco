@@ -152,19 +152,28 @@ const styles = StyleSheet.create({
   totalLabel: {
     color: '#4a3b00',
   },
+  motivoAnulacion: {
+    marginTop: 12,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#d1d5db',
+  },
+  motivoAnulacionLabel: {
+    fontWeight: 'bold',
+    marginBottom: 3,
+  },
   watermark: {
     position: 'absolute',
-    top: '40%',
-    left: '10%',
-    right: '10%',
+    top: '50%',
+    left: '5%',
+    width: '90%',
     textAlign: 'center',
-    fontSize: 90,
+    fontSize: 86,
     fontWeight: 'bold',
     color: '#dc2626',
-    opacity: 0.10,
+    opacity: 0.12,
     transform: 'rotate(-30deg)',
-    zIndex: 10,
-    letterSpacing: 8,
+    letterSpacing: 4,
   }
 });
 
@@ -231,13 +240,17 @@ export default function CotizacionPDF({ cotizacionData }) {
     { length: Math.max(productos.length, FILAS_VISTAS) },
     (_, index) => productos[index] || null
   );
+  const motivosAnulacion = [...new Set(
+    productos
+      .filter(item => item?.estadoItem === 'Anulado' && item?.motivoAnulacion)
+      .map(item => item.motivoAnulacion.toString().trim())
+      .filter(Boolean)
+  )];
+  const hayAnulacion = todoAnulado || productos.some(item => item?.estadoItem === 'Anulado');
 
   return (
     <Document>
       <Page size="LETTER" style={styles.page}>
-        {todoAnulado && (
-          <Text style={styles.watermark}>ANULADO</Text>
-        )}
         <View style={styles.headerTable}>
           <View style={styles.headerCol1}>
             <Text style={styles.empresaTitle}>Centro Industrial Hermaco, S.A. DE C.V.</Text>
@@ -306,31 +319,25 @@ export default function CotizacionPDF({ cotizacionData }) {
 
             return (
               <View key={index} style={[styles.tableRow, itemAnulado ? { opacity: 0.5 } : {}]}>
-                <Text style={[styles.tdDesc, { width: '11%', fontSize: 8 }]}>{getDescripcionItem(item)}</Text>
+                <Text style={[styles.tdDesc, { width: '11%', fontSize: 8 }]}>
+                  {getDescripcionItem(item)}
+                </Text>
                 <Text style={[styles.td, { width: '7%' }]}>{item?.cant ?? ''}</Text>
-                {itemAnulado ? (
-                  <Text style={[styles.td, { width: '82%', fontSize: 7, fontStyle: 'italic', color: '#9ca3af', textAlign: 'center' }]}>
-                    {'Anulado' + (item.motivoAnulacion ? ` — ${item.motivoAnulacion}` : '')}
-                  </Text>
-                ) : (
-                  <>
-                    <Text style={[styles.tdRight, { width: '11%', fontSize: esEnConsulta ? 7 : 8 }]}>
-                      {esEnConsulta ? 'En consulta' : (precioA > 0 ? formatMoneda(precioA) : '')}
-                    </Text>
-                    <Text style={[styles.tdRight, { width: '11%', fontSize: esEnConsulta ? 7 : 8 }]}>
-                      {esEnConsulta ? 'En consulta' : (precioM > 0 ? formatMoneda(precioM) : '')}
-                    </Text>
-                    <Text style={[styles.td, { width: '9%' }]}>{item?.marca || ''}</Text>
-                    <Text style={[styles.td, { width: '14%' }]}>{item?.entregaA || ''}</Text>
-                    <Text style={[styles.td, { width: '14%' }]}>{item?.entregaM || ''}</Text>
-                    <Text style={[styles.tdRight, { width: '11%', fontSize: esEnConsulta ? 7 : 8 }]}>
-                      {esEnConsulta ? 'En consulta' : (tAereo > 0 ? formatMoneda(tAereo) : '')}
-                    </Text>
-                    <Text style={[styles.tdRight, { width: '12%', fontSize: esEnConsulta ? 7 : 8 }]}>
-                      {esEnConsulta ? 'En consulta' : (tMaritimo > 0 ? formatMoneda(tMaritimo) : '')}
-                    </Text>
-                  </>
-                )}
+                <Text style={[styles.tdRight, { width: '11%', fontSize: esEnConsulta ? 7 : 8 }]}>
+                  {esEnConsulta ? 'En consulta' : (precioA > 0 ? formatMoneda(precioA) : '')}
+                </Text>
+                <Text style={[styles.tdRight, { width: '11%', fontSize: esEnConsulta ? 7 : 8 }]}>
+                  {esEnConsulta ? 'En consulta' : (precioM > 0 ? formatMoneda(precioM) : '')}
+                </Text>
+                <Text style={[styles.td, { width: '9%' }]}>{item?.marca || ''}</Text>
+                <Text style={[styles.td, { width: '14%' }]}>{item?.entregaA || ''}</Text>
+                <Text style={[styles.td, { width: '14%' }]}>{item?.entregaM || ''}</Text>
+                <Text style={[styles.tdRight, { width: '11%', fontSize: esEnConsulta ? 7 : 8 }]}>
+                  {esEnConsulta ? 'En consulta' : (tAereo > 0 ? formatMoneda(tAereo) : '')}
+                </Text>
+                <Text style={[styles.tdRight, { width: '12%', fontSize: esEnConsulta ? 7 : 8 }]}>
+                  {esEnConsulta ? 'En consulta' : (tMaritimo > 0 ? formatMoneda(tMaritimo) : '')}
+                </Text>
               </View>
             );
           })}
@@ -368,6 +375,19 @@ export default function CotizacionPDF({ cotizacionData }) {
             </View>
           </View>
         </View>
+
+        {hayAnulacion && (
+          <View style={styles.motivoAnulacion}>
+            <Text style={styles.motivoAnulacionLabel}>Motivo de anulación:</Text>
+            {motivosAnulacion.map((motivo, index) => (
+              <Text key={index} style={{ color: '#222222' }}>{motivo}</Text>
+            ))}
+          </View>
+        )}
+
+        {todoAnulado && (
+          <Text fixed style={styles.watermark}>ANULADO</Text>
+        )}
 
       </Page>
     </Document>

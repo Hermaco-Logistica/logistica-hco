@@ -4,13 +4,16 @@ import {
   Printer, X, Calendar as CalendarIcon, Trash2, Filter, 
   ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Package, Ban 
 } from 'lucide-react';
-import { db } from '../../firebase';
+import { db, auth } from '../../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Badge } from '../../components/Badge';
 import { MobileBadge } from '../../components/mobile';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
 import { usePersistedState } from '../../hooks/usePersistedState';
 import { normalizarBusqueda } from '../../utils/normalizers';
+import { generarPlantillaAnulacion } from '../../utils/emailTemplates';
+import { pdf } from '@react-pdf/renderer';
+import CotizacionPDF from '../../components/CotizacionPDF';
 
 export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const navigate = useNavigate();
@@ -43,6 +46,59 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
         estado: 'Anulado',
         productos: updatedProductos
       });
+
+      // --- Enviar correo de anulación al vendedor ---
+      const rfqData = modalAnulacionGlobal.rfqData;
+      if (rfqData.vendedorEmail) {
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : [rfqData.vendedorEmail];
+        const ccEmails = isLocal 
+          ? ["rvides@hermaco.net"] 
+          : [auth.currentUser.email, "logisticahco@hermaco.net"].filter(e => e && !["oventura@hermaco.net", "dhernandez@hermaco.net"].includes(e.toLowerCase()));
+        
+        const senderFrom = isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : `${auth.currentUser.displayName || auth.currentUser.email?.split('@')[0]} <${auth.currentUser.email}>`;
+        
+        const bodyHtml = generarPlantillaAnulacion(rfqData, modalAnulacionGlobal.motivo.trim(), auth.currentUser.email, false);
+        
+        let pdfBase64 = null;
+        try {
+          const pdfDoc = <CotizacionPDF cotizacionData={{ ...rfqData, estado: 'Anulado', productos: updatedProductos }} />;
+          const asPdf = pdf();
+          asPdf.updateContainer(pdfDoc);
+          const blob = await asPdf.toBlob();
+          const reader = new FileReader();
+          pdfBase64 = await new Promise((resolve, reject) => {
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+          });
+        } catch (err) {
+          console.error("Error generando PDF para anulación:", err);
+        }
+
+        try {
+          const payload = {
+            from: senderFrom,
+            replyTo: auth.currentUser.email,
+            to: destinatarioTo,
+            cc: ccEmails,
+            subject: `Anulación: ${rfqData.correlativo} - ${rfqData.cliente}`,
+            bodyHtml
+          };
+          if (pdfBase64) {
+            payload.attachments = [{ content: pdfBase64, nombre: `Anulacion_${rfqData.correlativo}.pdf` }];
+          }
+
+          await fetch('/.netlify/functions/send-email-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        } catch (e) {
+          console.error("Error enviando correo de anulación:", e);
+        }
+      }
+
       alert('Solicitud anulada correctamente');
       setModalAnulacionGlobal({ open: false, rfqId: null, rfqData: null, motivo: '', enviando: false });
     } catch (error) {
@@ -721,20 +777,31 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                         )}
                       </>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!readOnly) navigate(`/calculadora/${s.id}`);
-                        }}
-                        disabled={readOnly}
-                        className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all ${
-                          readOnly
-                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200 shadow-xs'
-                            : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm'
-                        }`}
-                      >
-                        {readOnly ? 'En proceso' : 'Cotizar'}
-                      </button>
+                      <>
+                        {s.estado === 'Anulado' && (
+                          <button
+                            type="button"
+                            onClick={() => abrirVistaCotizacion(s)}
+                            className="px-3.5 py-2 rounded-xl text-[10px] font-black bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200 uppercase transition-all shadow-xs mr-2"
+                          >
+                            PDF
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!readOnly) navigate(`/calculadora/${s.id}`);
+                          }}
+                          disabled={readOnly}
+                          className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border ${
+                            readOnly
+                              ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200'
+                              : obtenerColorAccion(s)
+                          }`}
+                        >
+                          {readOnly ? 'En proceso' : obtenerEstadoAccion(s)}
+                        </button>
+                      </>
                     )}
                     {!readOnly && s.estado !== 'Pedido' && s.estado !== 'Pedido Parcial' && s.estado !== 'Anulado' && (
                       <button
@@ -892,21 +959,33 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                           )}
                         </>
                       ) : (
-                        <button 
-                          onClick={() => {
-                            if (!readOnly) {
-                              navigate(`/calculadora/${s.id}`);
-                            }
-                          }}
-                          disabled={readOnly}
-                          className={`px-5 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border uppercase ${
-                            readOnly
-                              ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
-                              : obtenerColorAccion(s)
-                          }`}
-                        >
-                          {readOnly ? 'En proceso' : obtenerEstadoAccion(s)}
-                        </button>
+                        <>
+                          {s.estado === 'Anulado' && (
+                            <button
+                              type="button"
+                              onClick={() => abrirVistaCotizacion(s)}
+                              title="Ver / Imprimir PDF de Anulación"
+                              className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition-all uppercase mr-2"
+                            >
+                              PDF
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => {
+                              if (!readOnly) {
+                                navigate(`/calculadora/${s.id}`);
+                              }
+                            }}
+                            disabled={readOnly}
+                            className={`px-5 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border uppercase ${
+                              readOnly
+                                ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
+                                : obtenerColorAccion(s)
+                            }`}
+                          >
+                            {readOnly ? 'En proceso' : obtenerEstadoAccion(s)}
+                          </button>
+                        </>
                       )}
                       {!readOnly && s.estado !== 'Pedido' && s.estado !== 'Pedido Parcial' && s.estado !== 'Anulado' && (
                         <button
