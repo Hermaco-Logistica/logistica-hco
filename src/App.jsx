@@ -217,13 +217,15 @@ function App() {
             };
           });
 
-          const hayPedidos = productosProcesados.some(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
-          const todosPedidos = productosProcesados.length > 0 && productosProcesados.every(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
-          const hayItemsSinCotizar = productosProcesados.some(p => !p.fob || Number(p.fob) <= 0);
+          const productosActivos = productosProcesados.filter(p => p.estadoItem !== 'Anulado');
+          const hayPedidos = productosActivos.some(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
+          const todosPedidos = productosActivos.length > 0 && productosActivos.every(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
+          const hayItemsSinCotizar = productosActivos.some(p => !p.fob || Number(p.fob) <= 0);
 
-          tieneItemsCotizados = productosProcesados.some(p => Number(p.fob || 0) > 0);
+          tieneItemsCotizados = productosActivos.some(p => Number(p.fob || 0) > 0);
 
-          if (todosPedidos) estadoFinal = 'Pedido';
+          if (productosActivos.length === 0 && productosProcesados.length > 0) estadoFinal = 'Anulado';
+          else if (todosPedidos) estadoFinal = 'Pedido';
           else if (hayPedidos) estadoFinal = 'Pedido Parcial';
           else if (!tieneItemsCotizados) estadoFinal = 'Pendiente';
           else if (hayItemsSinCotizar) estadoFinal = 'Cotizado Parcial';
@@ -259,7 +261,7 @@ function App() {
         });
       } catch (txError) {
         if (txError.message === "__SIN_CAMBIOS__") {
-          alert("No se detectaron cambios. La cotizaci�n ya estaba guardada y no se envi� ning�n correo.");
+          alert("No se detectaron cambios. La cotización ya estaba guardada y no se envió ningún correo.");
           return true;
         }
         throw txError;

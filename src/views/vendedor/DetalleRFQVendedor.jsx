@@ -35,6 +35,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   const [documentacionOpen, setDocumentacionOpen] = useState(false);
   const [modalidadesOpen, setModalidadesOpen] = useState(false);
   const [modalAnulacion, setModalAnulacion] = useState({ open: false, index: null, motivo: '', enviando: false });
+  const [motivoAnulacionVisible, setMotivoAnulacionVisible] = useState(null);
   const [editandoCant, setEditandoCant] = useState({ index: null, value: '' });
 
   const handleGuardarCant = async (idx) => {
@@ -518,6 +519,38 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         </div>
       )}
 
+      {motivoAnulacionVisible !== null && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 px-4">
+          <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800">Motivo de anulación</h3>
+              <button
+                type="button"
+                onClick={() => setMotivoAnulacionVisible(null)}
+                aria-label="Cerrar motivo de anulación"
+                className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="border-l-4 border-rose-500 px-5 py-5">
+              <p className="text-sm leading-relaxed text-slate-700">
+                {motivoAnulacionVisible || 'Sin motivo registrado.'}
+              </p>
+            </div>
+            <div className="flex justify-end border-t border-slate-100 px-5 py-3">
+              <button
+                type="button"
+                onClick={() => setMotivoAnulacionVisible(null)}
+                className="rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-row items-center justify-between gap-4 mb-4 md:mb-8">
         <div className="flex items-center gap-2 md:gap-4">
           <button onClick={handleVolver} className="p-1.5 md:p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600 shrink-0">
@@ -716,9 +749,13 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                     )
                   )}
                   {estaAnulado && p.motivoAnulacion && (
-                    <span className="inline-flex text-[9px] text-slate-400 italic px-2 py-0.5 mt-0.5 truncate max-w-full" title={p.motivoAnulacion}>
-                      {p.motivoAnulacion.length > 35 ? p.motivoAnulacion.slice(0, 35) + '…' : p.motivoAnulacion}
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setMotivoAnulacionVisible(p.motivoAnulacion)}
+                      className="mt-0.5 inline-flex text-[9px] font-bold text-slate-500 underline transition-colors hover:text-slate-800"
+                    >
+                      Ver motivo
+                    </button>
                   )}
                   {role === 'comprador' && ['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !estaAnulado && (
                     <button
@@ -1077,9 +1114,13 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                           </button>
                         )}
                         {estaAnulado && p.motivoAnulacion && (
-                          <span className="text-[9px] text-slate-400 italic block text-center max-w-[100px]" title={p.motivoAnulacion}>
-                            {p.motivoAnulacion.length > 30 ? p.motivoAnulacion.slice(0, 30) + '\u2026' : p.motivoAnulacion}
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setMotivoAnulacionVisible(p.motivoAnulacion)}
+                            className="text-[9px] font-bold text-slate-500 underline transition-colors hover:text-slate-800"
+                          >
+                            Ver motivo
+                          </button>
                         )}
                       </td>
                     )}

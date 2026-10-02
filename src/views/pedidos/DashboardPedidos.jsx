@@ -34,6 +34,30 @@ function sugerirSiguienteCorrelativo(ordenesCompra, anio = new Date().getFullYea
   return `${String(siguiente).padStart(padding, "0")}-${anio}`;
 }
 
+function letraSufijo(indice) {
+  let resultado = '';
+  let valor = indice;
+  do {
+    resultado = String.fromCharCode(65 + (valor % 26)) + resultado;
+    valor = Math.floor(valor / 26) - 1;
+  } while (valor >= 0);
+  return resultado;
+}
+
+function sugerirCorrelativoDuplicado(numeroOC, ordenesCompra) {
+  let indice = 0;
+  let candidato = `${numeroOC}${letraSufijo(indice)}`;
+  const existe = (valor) => ordenesCompra.some(
+    (oc) => String(oc.numeroOC).toLowerCase() === valor.toLowerCase()
+  );
+
+  while (existe(candidato)) {
+    indice += 1;
+    candidato = `${numeroOC}${letraSufijo(indice)}`;
+  }
+  return candidato;
+}
+
 export const DashboardPedidos = ({ role }) => {
   const puedeVerNumeroGuia = role === 'comprador' || role === 'administrador';
   const [itemsPedidos, setItemsPedidos] = useState([]);
@@ -48,6 +72,7 @@ export const DashboardPedidos = ({ role }) => {
   const [errorProveedor, setErrorProveedor] = useState('');
   const [mostrarSugerenciasProveedor, setMostrarSugerenciasProveedor] = useState(false);
   const debounceProveedorRef = useRef(null);
+  const correlativoAutomaticoRef = useRef('');
   const [trackingModal, setTrackingModal] = useState({
     open: false,
     loading: false,
@@ -57,16 +82,28 @@ export const DashboardPedidos = ({ role }) => {
     rfqLabel: '',
   });
   const [trackingNotice, setTrackingNotice] = useState('');
+  const [modalDuplicado, setModalDuplicado] = useState({ open: false, original: '', reemplazo: '' });
 
   const correlativoSugerido = useMemo(() => {
     return sugerirSiguienteCorrelativo(ordenesExistentes);
   }, [ordenesExistentes]);
 
   useEffect(() => {
-    if (showAsignador && !nuevaOC.numero) {
-      setNuevaOC(prev => ({...prev, numero: correlativoSugerido}));
+    if (!showAsignador) return;
+    const conservaSugerencia = !nuevaOC.numero || nuevaOC.numero === correlativoAutomaticoRef.current;
+    if (conservaSugerencia) {
+      correlativoAutomaticoRef.current = correlativoSugerido;
+      setNuevaOC(prev => ({ ...prev, numero: correlativoSugerido }));
     }
   }, [showAsignador, correlativoSugerido, nuevaOC.numero]);
+
+  const handleNumeroOCChange = (value) => {
+    const numero = value.toUpperCase();
+    setNuevaOC(prev => ({ ...prev, numero }));
+    if (numero !== correlativoAutomaticoRef.current) {
+      correlativoAutomaticoRef.current = '';
+    }
+  };
 
   // Estados para filtros (persistidos en localStorage)
   const [searchItemRef, setSearchItemRef] = usePersistedState('dp_searchItemRef', '');
@@ -541,26 +578,26 @@ export const DashboardPedidos = ({ role }) => {
     };
   };
 
-  const procesarAsignacion = async (ocExistente = null) => {
+  const procesarAsignacion = async (ocExistente = null, numeroForzado = null) => {
     if (procesandoRef.current) return;
     const itemsAProcesar = itemsPedidos.filter(item => 
       seleccionados.includes(`${item.idRFQ}-${item.indexOriginal}`)
     );
 
     if (itemsAProcesar.length === 0) return alert("Selecciona ítems");
-    const numOC = ocExistente ? ocExistente.numeroOC : nuevaOC.numero;
+    const numOC = ocExistente ? ocExistente.numeroOC : (numeroForzado || nuevaOC.numero);
     const provOC = ocExistente ? ocExistente.proveedor : nuevaOC.proveedor;
     if (!numOC || !provOC) return alert("Faltan datos de la OC");
 
     if (!ocExistente) {
       const existe = ordenesExistentes.find(o => String(o.numeroOC).toLowerCase() === String(numOC).toLowerCase());
       if (existe) {
-        const sugerencia = sugerirSiguienteCorrelativo(ordenesExistentes);
-        const confirmar = window.confirm(`El correlativo ${numOC} ya existe.\n\nSugerencia disponible: ${sugerencia}\n\n¿Deseas continuar guardando con el número duplicado de todos modos?`);
-        if (!confirmar) {
-           setNuevaOC(prev => ({...prev, numero: sugerencia}));
-           return;
-        }
+        setModalDuplicado({
+          open: true,
+          original: numOC,
+          reemplazo: sugerirCorrelativoDuplicado(numOC, ordenesExistentes),
+        });
+        return;
       }
     }
 
@@ -658,11 +695,24 @@ export const DashboardPedidos = ({ role }) => {
       alert(`Éxito: Items vinculados a la OC ${numOC}`);
       setSeleccionados([]);
       setShowAsignador(false);
+      correlativoAutomaticoRef.current = '';
     } catch (error) { 
       console.error(error); 
     } finally {
       procesandoRef.current = false;
     }
+  };
+
+  const cancelarDuplicado = () => {
+    setModalDuplicado({ open: false, original: '', reemplazo: '' });
+    correlativoAutomaticoRef.current = correlativoSugerido;
+    setNuevaOC(prev => ({ ...prev, numero: correlativoSugerido }));
+  };
+
+  const aceptarDuplicado = async () => {
+    const numeroDuplicado = modalDuplicado.reemplazo;
+    setModalDuplicado({ open: false, original: '', reemplazo: '' });
+    await procesarAsignacion(null, numeroDuplicado);
   };
 
   // Helpers para obtener proveedores y estados lógicos únicos disponibles
@@ -780,6 +830,46 @@ export const DashboardPedidos = ({ role }) => {
 
   return (
     <div className="w-full animate-in fade-in duration-500 pb-10">
+      {modalDuplicado.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="mb-5 flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
+                <Hash size={20} />
+              </div>
+              <div>
+                <h3 className="text-base font-black uppercase tracking-wide text-slate-800">Correlativo existente</h3>
+                <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                  El correlativo <strong className="text-slate-700">{modalDuplicado.original}</strong> ya existe.
+                </p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+              Para crear una nueva OC se usará:
+              <strong className="ml-1 font-mono text-slate-900">{modalDuplicado.reemplazo}</strong>
+            </div>
+            <p className="mt-4 text-xs leading-relaxed text-slate-500">
+              Esto evita crear dos órdenes con el mismo correlativo. ¿Deseas continuar con este nuevo número?
+            </p>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={cancelarDuplicado}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={aceptarDuplicado}
+                className="rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-black uppercase tracking-wide text-white shadow-sm transition-colors hover:bg-slate-700"
+              >
+                Crear {modalDuplicado.reemplazo}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6">
         <div>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-800 italic uppercase tracking-tighter">
@@ -1032,7 +1122,7 @@ export const DashboardPedidos = ({ role }) => {
             <div className="space-y-4">
               <p className="text-emerald-400 font-black text-[10px] uppercase">Nueva OC</p>
               <div className="flex gap-3">
-                <input type="text" placeholder="N° OC" className="flex-1 bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" value={nuevaOC.numero} onFocus={(e) => e.target.select()} onChange={(e) => setNuevaOC({...nuevaOC, numero: e.target.value.toUpperCase()})} />
+                <input type="text" placeholder="N° OC" className="flex-1 bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" value={nuevaOC.numero} onFocus={(e) => e.target.select()} onChange={(e) => handleNumeroOCChange(e.target.value)} />
                 <div className="relative flex-1">
                   <input
                     type="text"
@@ -1439,7 +1529,7 @@ export const DashboardPedidos = ({ role }) => {
               <div className="space-y-4">
                 <p className="text-emerald-400 font-black text-[10px] uppercase">Nueva OC</p>
                 <div className="flex flex-col gap-3">
-                  <input type="text" placeholder="N° OC" className="bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" value={nuevaOC.numero} onFocus={(e) => e.target.select()} onChange={(e) => setNuevaOC({...nuevaOC, numero: e.target.value.toUpperCase()})} />
+                  <input type="text" placeholder="N° OC" className="bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" value={nuevaOC.numero} onFocus={(e) => e.target.select()} onChange={(e) => handleNumeroOCChange(e.target.value)} />
                   <div className="relative">
                     <input
                       type="text"

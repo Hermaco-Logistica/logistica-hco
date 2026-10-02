@@ -5,7 +5,7 @@ import { db } from '../../firebase';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
 import { pdf } from '@react-pdf/renderer';
 import CotizacionPDF from '../../components/CotizacionPDF';
-import { HelpCircle, Info, ChevronDown, ChevronUp, Tag, Plane, Ship, Receipt, Calculator, Sliders, X, Check } from 'lucide-react';
+import { HelpCircle, Info, ChevronDown, ChevronUp, Tag, Plane, Ship, Receipt, Calculator, Sliders, X, Check, Ban } from 'lucide-react';
 import { useDHLCalculator } from '../../hooks/useDHLCalculator';
 import { AlertCircle } from 'lucide-react';
 
@@ -72,6 +72,9 @@ export const Calculadora = ({ onGuardar }) => {
   const [items, setItems] = useState([]);
   const [itemsCambiados, setItemsCambiados] = useState({});
   const [modalItemsCambiados, setModalItemsCambiados] = useState(false);
+  const [modalAnulacion, setModalAnulacion] = useState({ open: false, index: null, motivo: '' });
+  const [motivoAnulacionVisible, setMotivoAnulacionVisible] = useState(null);
+  const [anulacionMobileExpandida, setAnulacionMobileExpandida] = useState(null);
   const [flete, setFlete] = useState(0);
   
   // Nuevos Gastos
@@ -95,6 +98,17 @@ export const Calculadora = ({ onGuardar }) => {
     document.querySelector('main')?.scrollTo(0, 0);
     window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    if (anulacionMobileExpandida === null) return;
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('[data-anulacion-mobile]')) {
+        setAnulacionMobileExpandida(null);
+      }
+    };
+    document.addEventListener('pointerdown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
+  }, [anulacionMobileExpandida]);
 
   // Estados del cotizador DHL Belgium / QS USA
   const [dhlWeight, setDhlWeight] = useState('');
@@ -270,7 +284,7 @@ export const Calculadora = ({ onGuardar }) => {
   }, [id, navigate]);
 
   // La cotización es parcial si todavía queda algún ítem con FOB 0 en el array total
-  const tienePendientesGlobales = items.some(p => Number(p.fob) <= 0);
+  const tienePendientesGlobales = items.some(p => p.estadoItem !== 'Anulado' && Number(p.fob) <= 0);
   const esAvanceParcial = rfq?.estado === 'Cotizado Parcial' || rfq?.estado === 'Pedido Parcial';
 
   const factoresAereosFijados = useMemo(() => {
@@ -294,7 +308,7 @@ export const Calculadora = ({ onGuardar }) => {
   );
 
   const factorA = useMemo(() => {
-    const seleccionados = items.filter(p => p.selected);
+    const seleccionados = items.filter(p => p.selected && p.estadoItem !== 'Anulado');
     const totalFobPartida = seleccionados.reduce((acc, p) => acc + (Number(p.fob || 0) * p.cant), 0);
     if (totalFobPartida > 0) {
       return (totalFobPartida + Number(flete) + aduana) / totalFobPartida;
@@ -307,6 +321,27 @@ export const Calculadora = ({ onGuardar }) => {
     const nuevos = [...items];
     nuevos[idx][campo] = valor;
     setItems(nuevos);
+  };
+
+  const confirmarAnulacion = () => {
+    const motivo = modalAnulacion.motivo.trim();
+    if (!motivo) {
+      alert('El motivo es obligatorio');
+      return;
+    }
+
+    setItems(prev => prev.map((item, idx) => {
+      if (idx !== modalAnulacion.index) return item;
+      return {
+        ...item,
+        estadoItem: 'Anulado',
+        motivoAnulacion: motivo,
+        fechaAnulacion: new Date(),
+        anuladoPor: 'comprador'
+      };
+    }));
+    setAnulacionMobileExpandida(null);
+    setModalAnulacion({ open: false, index: null, motivo: '' });
   };
 
   const handleNumericInput = (setValue) => (e) => {
@@ -337,7 +372,12 @@ export const Calculadora = ({ onGuardar }) => {
   const ejecutarGuardado = async () => {
     if (guardando || esSolicitudCerrada) return;
 
-    if (Number(flete || 0) <= 0 || Number(aduana || 0) <= 0) {
+    const tieneAlMenosUnItemCotizado = items.some(p => {
+      if (p.estadoItem === 'Anulado' || p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado') return false;
+      return p.estadoItem === 'Cotizado' || Number(p.fob || 0) > 0;
+    });
+
+    if (tieneAlMenosUnItemCotizado && (Number(flete || 0) <= 0 || Number(aduana || 0) <= 0)) {
       alert("Debe ingresar el flete y el valor en aduana (otros gastos) para poder guardar.");
       return;
     }
@@ -374,6 +414,8 @@ export const Calculadora = ({ onGuardar }) => {
     
     // Procesamos todos los ítems para no perder los que no estaban seleccionados
     const itemsFinales = items.map(p => {
+      if (p.estadoItem === 'Anulado') return p;
+
       const esPedidoPrevio = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado';
       const tieneFob = Number(p.fob || 0) > 0;
       const esEnConsulta = !tieneFob && !!p.enConsulta;
@@ -429,6 +471,71 @@ export const Calculadora = ({ onGuardar }) => {
 
   return (
     <div className="max-w-[99%] mx-auto animate-in fade-in duration-500 pb-52 md:pb-28">
+
+      {modalAnulacion.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4">
+          <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md">
+            <h3 className="text-lg font-black text-slate-800 mb-2">Anular ítem</h3>
+            <p className="text-sm text-slate-500 mb-4">Ingresa el motivo de la anulación. Esta acción es irreversible.</p>
+            <textarea
+              value={modalAnulacion.motivo}
+              onChange={(e) => setModalAnulacion(prev => ({ ...prev, motivo: e.target.value }))}
+              placeholder="Motivo (obligatorio)..."
+              className="w-full h-24 mb-4 p-3 bg-slate-50 border border-slate-200 rounded-xl resize-none text-sm font-medium outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10"
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setModalAnulacion({ open: false, index: null, motivo: '' })}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmarAnulacion}
+                disabled={!modalAnulacion.motivo.trim()}
+                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {motivoAnulacionVisible !== null && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 px-4">
+          <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800">Motivo de anulación</h3>
+              <button
+                type="button"
+                onClick={() => setMotivoAnulacionVisible(null)}
+                aria-label="Cerrar motivo de anulación"
+                className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="border-l-4 border-rose-500 px-5 py-5">
+              <p className="text-sm leading-relaxed text-slate-700">
+                {motivoAnulacionVisible || 'Sin motivo registrado.'}
+              </p>
+            </div>
+            <div className="flex justify-end border-t border-slate-100 px-5 py-3">
+              <button
+                type="button"
+                onClick={() => setMotivoAnulacionVisible(null)}
+                className="rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Banner de Anulación ── */}
       {esAnulado && (
@@ -977,7 +1084,7 @@ export const Calculadora = ({ onGuardar }) => {
           const esSKF = p.marca?.toUpperCase() === 'SKF';
           const fobPicard = Number(p.fobPicard || 0);
           const totalFobPicard = items.reduce((acc, item) => {
-            const esPicardComparable = item.selected && item.marca?.toUpperCase() === 'SKF';
+            const esPicardComparable = item.selected && item.estadoItem !== 'Anulado' && item.marca?.toUpperCase() === 'SKF';
             return esPicardComparable ? acc + (Number(item.fobPicard || 0) * Number(item.cant || 0)) : acc;
           }, 0);
           const factorPicard = totalFobPicard > 0
@@ -988,13 +1095,14 @@ export const Calculadora = ({ onGuardar }) => {
 
           const picardEsMejor = esSKF && fobPicard > 0 && fvPicard > Number(p.fva);
           const esPedidoPrevio = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || (!!p.modalidad && Number(p.precioUnitario || 0) > 0);
-          const isRowDisabled = esSoloLectura || esPedidoPrevio;
+          const esAnuladoItem = p.estadoItem === 'Anulado';
+          const isRowDisabled = esSoloLectura || esPedidoPrevio || esAnuladoItem;
           const isActive = activeItemIndex === idx;
 
           return (
             <div
               key={idx}
-              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${isActive ? 'bg-white border-emerald-400 shadow-md ring-2 ring-emerald-500/10' : isSelected ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-50 border-slate-200/80 opacity-70'} ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}
+              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${esAnuladoItem ? 'bg-slate-100 border-slate-300 opacity-60' : isActive ? 'bg-white border-emerald-400 shadow-md ring-2 ring-emerald-500/10' : isSelected ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-50 border-slate-200/80 opacity-70'} ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}
             >
               {/* Encabezado del Producto: Producto Principal (SKU) */}
               <div className="p-4 bg-white flex flex-col gap-3">
@@ -1013,11 +1121,46 @@ export const Calculadora = ({ onGuardar }) => {
                     />
                   </label>
                   
-                  {esPedidoPrevio && (
+                  {esAnuladoItem ? (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wide border bg-rose-50 text-rose-700 border-rose-200">
+                        <Ban size={10} /> Anulado
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMotivoAnulacionVisible(p.motivoAnulacion || '')}
+                        className="text-[9px] font-bold text-slate-500 underline"
+                      >
+                        Ver motivo
+                      </button>
+                    </div>
+                  ) : esPedidoPrevio && (
                     <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wide border bg-emerald-50 text-emerald-700 border-emerald-200/60">
                       <Check size={10} className="text-emerald-500" />
                       <span>Pedido</span>
                     </span>
+                  )}
+                  {!esAnuladoItem && !esPedidoPrevio && !esSoloLectura && (
+                    <div
+                      data-anulacion-mobile
+                      className={`flex items-center gap-1 overflow-hidden transition-all duration-200 ease-out ${anulacionMobileExpandida === idx ? 'w-[136px]' : 'w-8'}`}
+                    >
+                      <button
+                        type="button"
+                        title="Anular item"
+                        onClick={() => setAnulacionMobileExpandida(prev => prev === idx ? null : idx)}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-white text-rose-600 shadow-sm transition-all hover:bg-slate-50 hover:text-rose-700"
+                      >
+                        <Ban size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModalAnulacion({ open: true, index: idx, motivo: '' })}
+                        className={`h-8 whitespace-nowrap rounded-md border border-slate-200 bg-white px-2 text-[9px] font-black uppercase text-rose-700 shadow-sm transition-all duration-200 hover:bg-slate-50 hover:text-rose-800 ${anulacionMobileExpandida === idx ? 'translate-x-0 opacity-100' : 'pointer-events-none -translate-x-2 opacity-0'}`}
+                      >
+                        ¿Quieres anular?
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -1055,6 +1198,11 @@ export const Calculadora = ({ onGuardar }) => {
                       </span>
                     </div>
                   </div>
+                  {esAnuladoItem && p.motivoAnulacion && (
+                    <p className="mt-2 text-[10px] font-medium italic text-slate-500 line-clamp-2" title={p.motivoAnulacion}>
+                      Motivo: {p.motivoAnulacion}
+                    </p>
+                  )}
                 </div>
 
                 {/* Input FOB Unitario destacado y espacioso */}
@@ -1345,6 +1493,7 @@ export const Calculadora = ({ onGuardar }) => {
                 <th className="p-3 w-16 text-center bg-blue-900/60">% Renta</th>
                 <th className="p-3 w-32">Entrega (A/M)</th>
                 <th className="p-3 w-32">Notas</th>
+                <th className="p-3 w-12 text-center">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-[11px]">
@@ -1365,7 +1514,7 @@ export const Calculadora = ({ onGuardar }) => {
                 const esSKF = p.marca?.toUpperCase() === 'SKF';
                 const fobPicard = Number(p.fobPicard || 0);
                 const totalFobPicard = items.reduce((acc, item) => {
-                  const esPicardComparable = item.selected && item.marca?.toUpperCase() === 'SKF';
+                  const esPicardComparable = item.selected && item.estadoItem !== 'Anulado' && item.marca?.toUpperCase() === 'SKF';
                   return esPicardComparable ? acc + (Number(item.fobPicard || 0) * Number(item.cant || 0)) : acc;
                 }, 0);
                 const factorPicard = totalFobPicard > 0
@@ -1377,10 +1526,11 @@ export const Calculadora = ({ onGuardar }) => {
                 const picardEsMejor = esSKF && fobPicard > 0 && fvPicard > Number(p.fva);
                 const skfEsMejor = esSKF && fobPicard > 0 && Number(p.fva) >= fvPicard;
                 const esPedidoPrevio = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || (!!p.modalidad && Number(p.precioUnitario || 0) > 0);
-                const isRowDisabled = esSoloLectura || esPedidoPrevio;
+                const esAnuladoItem = p.estadoItem === 'Anulado';
+                const isRowDisabled = esSoloLectura || esPedidoPrevio || esAnuladoItem;
 
                 return (
-                  <tr key={idx} className={`${isSelected ? (esPedidoPrevio ? 'bg-emerald-50/20' : 'bg-white') : 'bg-slate-50 opacity-60'} hover:bg-slate-50/50 transition-all ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}>
+                  <tr key={idx} className={`${esAnuladoItem ? 'bg-slate-100 opacity-60' : isSelected ? (esPedidoPrevio ? 'bg-emerald-50/20' : 'bg-white') : 'bg-slate-50 opacity-60'} hover:bg-slate-50/50 transition-all ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}>
                     <td className="p-2 text-center">
                       <input type="checkbox" checked={isSelected} 
                              disabled={isRowDisabled}
@@ -1396,7 +1546,18 @@ export const Calculadora = ({ onGuardar }) => {
                              disabled={isRowDisabled}
                              value={p.marca} onChange={(e) => updateItem(idx, 'marca', e.target.value)} placeholder="Indicar marca..."
                              onFocus={(e) => e.target.select()} />
-                      {esPedidoPrevio ? (
+                      {esAnuladoItem ? (
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest bg-rose-50 text-rose-700 border border-rose-200">
+                            <Ban size={11} /> Anulado
+                          </span>
+                          {p.motivoAnulacion && (
+                            <span className="text-[9px] text-slate-500 italic truncate max-w-48" title={p.motivoAnulacion}>
+                              {p.motivoAnulacion}
+                            </span>
+                          )}
+                        </div>
+                      ) : esPedidoPrevio ? (
                         <div className="mt-1">
                           <span className={`inline-flex items-center gap-1.5 text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest ${(!p.modalidad || p.modalidad === 'Aéreo') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-blue-50 text-blue-700 border border-blue-200/60'}`}>
                             <Check size={12} className={(!p.modalidad || p.modalidad === 'Aéreo') ? 'text-emerald-500' : 'text-blue-500'} />
@@ -1570,6 +1731,19 @@ export const Calculadora = ({ onGuardar }) => {
                       <textarea disabled={isRowDisabled} className="w-full text-[9px] border rounded p-1 h-10 outline-none bg-transparent disabled:bg-slate-100 disabled:opacity-70" 
                                 value={p.notas} onChange={(e) => updateItem(idx, 'notas', e.target.value)} placeholder="Notas..."></textarea>
                     </td>
+                    <td className="p-2 text-center align-middle">
+                      {!esAnuladoItem && !esPedidoPrevio && !esSoloLectura && (
+                        <button
+                          type="button"
+                          title="Anular item"
+                          aria-label="Anular item"
+                          onClick={() => setModalAnulacion({ open: true, index: idx, motivo: '' })}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-200 bg-white text-rose-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-rose-700"
+                        >
+                          <Ban size={15} />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -1594,7 +1768,7 @@ export const Calculadora = ({ onGuardar }) => {
         <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-6">
           {(() => {
             const totals = items.reduce((acc, p) => {
-              if (!p.selected) return acc;
+              if (!p.selected || p.estadoItem === 'Anulado') return acc;
               const currentFob = Number(p.fob || 0);
               const fA = p.factorA || factorA;
               const landedA = currentFob * fA;
