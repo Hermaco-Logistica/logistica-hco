@@ -619,7 +619,10 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             const tienePendientes = tieneItemsPendientesPorCotizar(s);
             const totalA = formatearTotal(s, 'A');
             const totalM = formatearTotal(s, 'M');
-            const fechaResp = s.fechaCotizacion || s.fechaRespuesta;
+            let fechaResp = s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en ? s.ultimaNotificacion.en : (s.fechaCotizacion || s.fechaRespuesta);
+            if (s.estado === 'Anulado') {
+              fechaResp = s.productos?.find(p => p.fechaAnulacion)?.fechaAnulacion || fechaResp;
+            }
             const esPedidoManualTerminado = s.tipo === 'Pedido Manual' && s.productos && s.productos.length > 0 && s.productos.every(p => ['Pedido', 'Comprado', 'Denegado', 'Cancelado', 'Rechazado'].includes(p.estadoItem));
 
             return (
@@ -841,11 +844,14 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
               const totalA = formatearTotal(s, 'A');
               const totalM = formatearTotal(s, 'M');
 
-              const fechaResp = s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en 
-                ? s.ultimaNotificacion.en 
-                : (s.fechaCotizacion || s.fechaRespuesta);
-              
-              const esPedidoManualTerminado = s.tipo === 'Pedido Manual' && s.productos && s.productos.length > 0 && s.productos.every(p => ['Pedido', 'Comprado', 'Denegado', 'Cancelado', 'Rechazado'].includes(p.estadoItem));
+              let fechaResp = s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en 
+                  ? s.ultimaNotificacion.en 
+                  : (s.fechaCotizacion || s.fechaRespuesta);
+                if (s.estado === 'Anulado') {
+                  fechaResp = s.productos?.find(p => p.fechaAnulacion)?.fechaAnulacion || fechaResp;
+                }
+                
+                const esPedidoManualTerminado = s.tipo === 'Pedido Manual' && s.productos && s.productos.length > 0 && s.productos.every(p => ['Pedido', 'Comprado', 'Denegado', 'Cancelado', 'Rechazado'].includes(p.estadoItem));
 
               return (
                 <tr key={s.id} className="hover:bg-slate-50 transition-colors">

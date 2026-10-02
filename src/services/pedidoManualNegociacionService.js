@@ -1,6 +1,7 @@
 import { db } from '../firebase';
 import { runTransaction, doc, collection, serverTimestamp, Timestamp, updateDoc, getDoc, getDocs } from 'firebase/firestore';
 import { construirCorreoActualizacion } from '../utils/emailNegociacion';
+import { calcularFechaEstimada } from '../utils/itemHelpers';
 
 export class ConflictoVersionError extends Error {
   constructor(message) {
@@ -291,7 +292,7 @@ export const ajustarItem = ({ solicitudId, idx, versionEsperada, actor, oferta, 
         itemUpdate: {
           estadoItem: 'Cotizado',
           fob: oferta.precio,
-          fechaCompromiso: oferta.tiempoEntrega,
+          fechaCompromiso: calcularFechaEstimada(oferta.tiempoEntrega),
           modalidad: oferta.modalidad,
           fobAnterior: neg.ofertaAnterior.precio,
           tiempoEntregaAnterior: neg.ofertaAnterior.tiempoEntrega,
@@ -354,7 +355,7 @@ export const contraofertarItem = ({ solicitudId, idx, versionEsperada, actor, of
         itemUpdate: {
           estadoItem: 'Pendiente',
           fob: oferta.precio,
-          fechaCompromiso: oferta.tiempoEntrega,
+          fechaCompromiso: calcularFechaEstimada(oferta.tiempoEntrega),
           modalidad: oferta.modalidad,
           fobAnterior: neg.ofertaAnterior.precio,
           tiempoEntregaAnterior: neg.ofertaAnterior.tiempoEntrega,
@@ -527,7 +528,7 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
           subtotal: Number(p.fob || 0) * p.cant,
           modalidad: p.modalidad || 'Aéreo',
           diasPrometidos: parseInt(p.fechaCompromiso) || 0,
-          fechaCompromiso: p.fechaCompromiso || 'Pendiente',
+          fechaCompromiso: calcularFechaEstimada(p.fechaCompromiso),
           estadoItem: 'Pedido',
           fechaConfirmacion: Timestamp.now(), 
           fob: p.fob

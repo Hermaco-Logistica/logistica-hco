@@ -592,19 +592,19 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                     <span className="text-[9px] font-bold text-slate-400 uppercase flex items-center gap-1.5">
                       <Clock size={10} /> Solicitado: {formatFechaHora(s.fechaS || s.fechaCreacion)}
                     </span>
-                    {s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en ? (
-                      <span className="text-[9px] font-bold text-emerald-600 uppercase flex items-center gap-1.5">
-                        <Clock size={10} /> Resp: {formatFechaHora(s.ultimaNotificacion.en)}
-                      </span>
-                    ) : s.fechaCotizacion?.toDate ? (
-                      <span className="text-[9px] font-bold text-emerald-600 uppercase flex items-center gap-1.5">
-                        <Clock size={10} /> Resp: {formatFechaHora(s.fechaCotizacion)}
-                      </span>
-                    ) : (
-                      <span className="text-[9px] font-bold text-slate-300 italic flex items-center gap-1.5">
-                        <Clock size={10} /> En espera
-                      </span>
-                    )}
+                    {(() => {
+                        let fResp = s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en ? s.ultimaNotificacion.en : (s.fechaCotizacion || s.fechaRespuesta);
+                        if (s.estado === 'Anulado') fResp = s.productos?.find(p => p.fechaAnulacion)?.fechaAnulacion || fResp;
+                        return fResp?.toDate || fResp ? (
+                          <span className="text-[9px] font-bold text-emerald-600 uppercase flex items-center gap-1.5">
+                            <Clock size={10} /> Resp: {formatFechaHora(fResp)}
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-bold text-slate-300 italic flex items-center gap-1.5">
+                            <Clock size={10} /> En espera
+                          </span>
+                        );
+                      })()}
                   </div>
                   
                   <div className="flex items-center gap-2">
@@ -698,13 +698,11 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                       <span className="text-slate-500 font-bold uppercase text-[9px]">📥 Solicitud: <b className="text-slate-700 font-black">{formatFechaHora(s.fechaS || s.fechaCreacion)}</b></span>
                       <span className="text-emerald-600 font-black italic text-[9px] uppercase">
                         📤 {s.tipo === 'Pedido Manual' ? 'Resp: ' : (s.estado.includes('Parcial') ? 'Avance Recibido: ' : 'Respondida: ')}
-                        {s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en ? (
-                          formatFechaHora(s.ultimaNotificacion.en)
-                        ) : s.fechaCotizacion?.toDate ? (
-                          formatFechaHora(s.fechaCotizacion)
-                        ) : (
-                          'En espera'
-                        )}
+                        {(() => {
+                            let fResp = s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en ? s.ultimaNotificacion.en : (s.fechaCotizacion || s.fechaRespuesta);
+                            if (s.estado === 'Anulado') fResp = s.productos?.find(p => p.fechaAnulacion)?.fechaAnulacion || fResp;
+                            return fResp?.toDate || fResp ? formatFechaHora(fResp) : 'En espera';
+                          })()}
                       </span>
                     </div>
                   </td>

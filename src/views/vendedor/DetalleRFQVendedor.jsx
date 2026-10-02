@@ -4,7 +4,7 @@ import { doc, collection, addDoc, serverTimestamp, updateDoc, onSnapshot } from 
 import { db, auth } from '../../firebase';
 import { 
   ChevronLeft, ChevronDown, Clock, Tag, CheckCircle2, ShoppingCart, Link as LinkIcon, 
-  AlertCircle, Printer, X, Paperclip, FileText, Trash2, Ban,
+  Pencil, AlertCircle, Printer, X, Paperclip, Minus, Plus, FileText, Trash2, Ban,
   Plane, Ship, MessageSquare, Calendar, CheckSquare, Square, Package
 } from 'lucide-react';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
@@ -35,6 +35,22 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   const [documentacionOpen, setDocumentacionOpen] = useState(false);
   const [modalidadesOpen, setModalidadesOpen] = useState(false);
   const [modalAnulacion, setModalAnulacion] = useState({ open: false, index: null, motivo: '', enviando: false });
+  const [editandoCant, setEditandoCant] = useState({ index: null, value: '' });
+
+  const handleGuardarCant = async (idx) => {
+    try {
+      const nuevaCant = Number(editandoCant.value);
+      if (!nuevaCant || nuevaCant <= 0) return alert('Cantidad inválida');
+      const docRef = doc(db, 'solicitudes', id);
+      const updatedProductos = [...rfq.productos];
+      updatedProductos[idx] = { ...updatedProductos[idx], cant: nuevaCant };
+      await updateDoc(docRef, { productos: updatedProductos });
+      setEditandoCant({ index: null, value: '' });
+    } catch (error) {
+      console.error(error);
+      alert('Error al actualizar cantidad');
+    }
+  };
 
   const handleAnularItem = async () => {
     if (!modalAnulacion.motivo.trim()) return alert("El motivo es obligatorio");
@@ -215,7 +231,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
       fecha.setDate(fecha.getDate() + 1);
       if (fecha.getDay() !== 0 && fecha.getDay() !== 6) diasRestantes--;
     }
-    return fecha.toLocaleDateString('es-SV', { day: '2-digit', month: '2-digit', timeZone: 'America/El_Salvador' });
+    return fecha.toLocaleDateString('es-SV', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'America/El_Salvador' });
   };
 
   useEffect(() => {
@@ -722,18 +738,52 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                 <h4 className="font-black text-sm text-slate-800 uppercase leading-snug line-clamp-2">
                   {p.descripcion || p.desc}
                 </h4>
-                <div className="flex items-center gap-1.5 mt-1.5 text-[10px]">
-                  <span className="font-mono font-black text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
-                    x{p.cant}
-                  </span>
-                  {p.marca && (
-                    <>
-                      <span className="text-slate-300">·</span>
+                <div className="flex items-center justify-between mt-1.5 text-[10px]">
+                  <div className="flex items-center min-w-0 pr-2">
+                    {p.marca && (
                       <span className="font-bold text-blue-700 uppercase truncate italic flex items-center gap-1">
-                        <Tag size={10} /> {p.marca}
+                        <Tag size={10} className="shrink-0" /> <span className="truncate">{p.marca}</span>
                       </span>
-                    </>
-                  )}
+                    )}
+                  </div>
+                  <div className="shrink-0">
+                    {rfq?.estado === 'Pendiente' && editandoCant.index === idx ? (
+                      <div className="flex items-center gap-1 bg-slate-100 border border-slate-200 rounded-xl p-1 shadow-inner">
+                        <button onClick={(e) => { e.stopPropagation(); setEditandoCant(prev => ({ ...prev, value: Math.max(1, Number(prev.value) - 1) })); }} className="flex items-center justify-center w-8 h-8 bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 rounded-lg shadow-sm transition-all active:scale-95"><Minus size={16}/></button>
+                        
+                        <input 
+                          type="number" 
+                          className="w-12 h-8 text-xs text-center font-black text-slate-800 outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                          value={editandoCant.value}
+                          onChange={(e) => setEditandoCant({ ...editandoCant, value: e.target.value })}
+                          autoFocus
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        
+                        <button onClick={(e) => { e.stopPropagation(); setEditandoCant(prev => ({ ...prev, value: Number(prev.value) + 1 })); }} className="flex items-center justify-center w-8 h-8 bg-white text-slate-500 border border-slate-200 hover:bg-slate-50 rounded-lg shadow-sm transition-all active:scale-95"><Plus size={16}/></button>
+
+                        <div className="w-px h-6 bg-slate-200 mx-0.5"></div>
+                        
+                        <button onClick={(e) => { e.stopPropagation(); handleGuardarCant(idx); }} className="flex items-center justify-center w-8 h-8 bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg shadow-sm transition-all active:scale-95"><CheckSquare size={16}/></button>
+                        <button onClick={(e) => { e.stopPropagation(); setEditandoCant({ index: null, value: '' }); }} className="flex items-center justify-center w-8 h-8 bg-white text-rose-500 border border-slate-200 hover:bg-rose-50 rounded-lg shadow-sm transition-all active:scale-95"><X size={18}/></button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-black text-slate-800 text-xs bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/60 shadow-xs flex items-center justify-center">
+                          x{p.cant}
+                        </span>
+                        {rfq?.estado === 'Pendiente' && (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setEditandoCant({ index: idx, value: p.cant }); }} 
+                            className="flex items-center justify-center w-8 h-8 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 rounded-full shadow-sm transition-all active:scale-95"
+                            title="Editar cantidad"
+                          >
+                            <Pencil size={14} />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -899,7 +949,30 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                         )
                       )}
                     </td>
-                    <td className="p-5 text-center font-black text-slate-400 text-lg">{p.cant}</td>
+                    <td className="p-5 text-center font-black text-slate-400 text-lg">
+                      {rfq?.estado === 'Pendiente' && editandoCant.index === idx ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <input 
+                            type="number" 
+                            className="w-16 px-2 py-1 border rounded text-sm font-bold text-slate-700 outline-none" 
+                            value={editandoCant.value}
+                            onChange={(e) => setEditandoCant({ ...editandoCant, value: e.target.value })}
+                            autoFocus
+                          />
+                          <button onClick={() => handleGuardarCant(idx)} className="text-emerald-600 hover:text-emerald-700"><CheckSquare size={18}/></button>
+                          <button onClick={() => setEditandoCant({ index: null, value: '' })} className="text-rose-600 hover:text-rose-700"><X size={18}/></button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-2">
+                          {p.cant}
+                          {rfq?.estado === 'Pendiente' && (
+                            <button title="Editar la cantidad" onClick={(e) => { e.stopPropagation(); setEditandoCant({ index: idx, value: p.cant }); }} className="text-slate-300 hover:text-blue-500 transition-colors">
+                              <Pencil size={14} />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
                     {rfq?.tipo === 'Pedido Manual' ? (
                       <td className="p-5 text-center bg-emerald-50/30">
                         {estaCotizado ? (
@@ -1284,3 +1357,5 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     </div>
   );
 };
+
+

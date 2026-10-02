@@ -151,7 +151,7 @@ export const DashboardPedidos = ({ role }) => {
               // convertir tiempoEntrega (texto con días) a fecha hábil estimada
               let fechaCompromiso = p.fechaCompromiso || null;
               if (!fechaCompromiso || !String(fechaCompromiso).includes('/')) {
-                const texto = p.tiempoEntrega || '';
+                const texto = p.tiempoEntrega || p.fechaCompromiso || '';
                 const diasNum = parseInt(texto);
                 if (!isNaN(diasNum) && diasNum > 0) {
                   let fecha = new Date();
@@ -161,8 +161,24 @@ export const DashboardPedidos = ({ role }) => {
                     if (fecha.getDay() !== 0 && fecha.getDay() !== 6) restantes--;
                   }
                   fechaCompromiso = fecha.toLocaleDateString('es-SV', {
-                    day: '2-digit', month: '2-digit', timeZone: 'America/El_Salvador'
+                    day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'America/El_Salvador'
                   });
+                }
+              }
+
+              // Convertir "DD/MM" o "DD/MM/YYYY" a "DD/MM/YY"
+              if (fechaCompromiso && String(fechaCompromiso).includes('/')) {
+                const partes = String(fechaCompromiso).split('/');
+                if (partes.length === 2) {
+                  // Todo lo que sea DD/MM en la base de datos es del 2026 según regla de negocio
+                  const yearShort = "26";
+                  fechaCompromiso = `${partes[0].padStart(2, '0')}/${partes[1].padStart(2, '0')}/${yearShort}`;
+                } else if (partes.length === 3) {
+                  if (partes[2].length === 4) {
+                    fechaCompromiso = `${partes[0].padStart(2, '0')}/${partes[1].padStart(2, '0')}/${partes[2].slice(-2)}`;
+                  } else {
+                    fechaCompromiso = `${partes[0].padStart(2, '0')}/${partes[1].padStart(2, '0')}/${partes[2]}`;
+                  }
                 }
               }
 
@@ -425,10 +441,10 @@ export const DashboardPedidos = ({ role }) => {
       let dia, mes, anio;
 
       if (partes.length === 2) {
-        // Soporte para formato DD/MM (asume año actual)
+        // Soporte para formato DD/MM (asume explícitamente 2026 según regla de negocio)
         dia = parseInt(partes[0], 10);
         mes = parseInt(partes[1], 10);
-        anio = hoy.getFullYear();
+        anio = 2026;
       } else if (partes.length === 3) {
         // Soporte para formato DD/MM/YYYY
         dia = parseInt(partes[0], 10);

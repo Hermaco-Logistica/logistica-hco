@@ -1,12 +1,57 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocFromServer } from 'firebase/firestore';
 import { db } from '../../firebase';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
 import { pdf } from '@react-pdf/renderer';
 import CotizacionPDF from '../../components/CotizacionPDF';
 import { HelpCircle, Info, ChevronDown, ChevronUp, Tag, Plane, Ship, Receipt, Calculator, Sliders, X, Check } from 'lucide-react';
 import { useDHLCalculator } from '../../hooks/useDHLCalculator';
+import { AlertCircle } from 'lucide-react';
+
+const injectStyles = () => {
+  if (typeof document !== 'undefined' && !document.getElementById('anim-cant-styles')) {
+    const style = document.createElement('style');
+    style.id = 'anim-cant-styles';
+    style.innerHTML = `
+      @keyframes flashBlue {
+        0%, 100% { color: inherit; }
+        25%, 75% { color: #3b82f6; }
+      }
+      .anim-cant-text { animation: flashBlue 1.5s ease-in-out 2; }
+      @keyframes flashRedRow {
+        0%, 100% { background-color: inherit; border-color: inherit; box-shadow: none; }
+        50% { background-color: rgba(254, 226, 226, 0.5); border-color: #ef4444; box-shadow: inset 0 0 0 2px #ef4444; }
+      }
+      .anim-cant-row { animation: flashRedRow 1.5s ease-in-out 2 !important; }
+    `;
+    document.head.appendChild(style);
+  }
+};
+injectStyles();
+
+const AnimatedCant = ({ oldCant, newCant }) => {
+  const [display, setDisplay] = React.useState(oldCant);
+  React.useEffect(() => {
+    let start = oldCant;
+    const end = newCant;
+    const duration = 1500;
+    const steps = 30;
+    const stepTime = duration / steps;
+    let currentStep = 0;
+    const timer = setInterval(() => {
+      currentStep++;
+      const progress = currentStep / steps;
+      setDisplay(Math.round(start + (end - start) * progress));
+      if (currentStep >= steps) {
+        clearInterval(timer);
+        setDisplay(end);
+      }
+    }, stepTime);
+    return () => clearInterval(timer);
+  }, [oldCant, newCant]);
+  return <>{display}</>;
+};
 
 export const Calculadora = ({ onGuardar }) => {
   const { id } = useParams();
@@ -25,6 +70,8 @@ export const Calculadora = ({ onGuardar }) => {
     || '';
 
   const [items, setItems] = useState([]);
+  const [itemsCambiados, setItemsCambiados] = useState({});
+  const [modalItemsCambiados, setModalItemsCambiados] = useState(false);
   const [flete, setFlete] = useState(0);
   
   // Nuevos Gastos
@@ -165,7 +212,8 @@ export const Calculadora = ({ onGuardar }) => {
     const fetchRFQ = async () => {
       try {
         const docRef = doc(db, "solicitudes", id);
-        const docSnap = await getDoc(docRef);
+        // Force fetch from server to avoid stale cache
+          const docSnap = await getDocFromServer(docRef).catch(async () => await getDoc(docRef));
 
         if (docSnap.exists()) {
           const data = docSnap.data();
@@ -295,6 +343,34 @@ export const Calculadora = ({ onGuardar }) => {
     }
 
     setGuardando(true);
+      
+      try {
+        const docRef = doc(db, 'solicitudes', id);
+        // Force fetch from server to avoid stale cache
+          const docSnap = await getDocFromServer(docRef).catch(async () => await getDoc(docRef));
+        if (docSnap.exists()) {
+          const remoteData = docSnap.data();
+          const remoteProductos = remoteData.productos || [];
+          let cantChanged = false;
+          const changedMap = {};
+          
+          remoteProductos.forEach((rp, idx) => {
+            if (items[idx] && Number(rp.cant || 0) !== Number(items[idx].cant || 0)) {
+                console.log('Cambio detectado:', { idx, remoteCant: rp.cant, localCant: items[idx].cant });
+              cantChanged = true;
+              changedMap[idx] = { oldCant: items[idx].cant, newCant: rp.cant, animating: true, underlined: false };
+            }
+          });
+
+          if (cantChanged) {
+            setModalItemsCambiados(changedMap);
+            setGuardando(false);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Error validando cantidades:", error);
+      }
     
     // Procesamos todos los ítems para no perder los que no estaban seleccionados
     const itemsFinales = items.map(p => {
@@ -918,13 +994,7 @@ export const Calculadora = ({ onGuardar }) => {
           return (
             <div
               key={idx}
-              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
-                isActive
-                  ? 'bg-white border-emerald-400 shadow-md ring-2 ring-emerald-500/10'
-                  : isSelected
-                    ? 'bg-white border-slate-200 shadow-xs'
-                    : 'bg-slate-50 border-slate-200/80 opacity-70'
-              }`}
+              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${isActive ? 'bg-white border-emerald-400 shadow-md ring-2 ring-emerald-500/10' : isSelected ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-50 border-slate-200/80 opacity-70'} ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}
             >
               {/* Encabezado del Producto: Producto Principal (SKU) */}
               <div className="p-4 bg-white flex flex-col gap-3">
@@ -956,26 +1026,34 @@ export const Calculadora = ({ onGuardar }) => {
                   <h4 className="font-black text-sm text-slate-800 uppercase leading-snug break-words line-clamp-2">
                     {p.desc || p.descripcion || 'Sin descripción'}
                   </h4>
-                  <div className="flex items-center gap-1.5 mt-1.5 text-[10px] flex-wrap">
-                    <span className="font-mono font-black text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">
-                      x{p.cant}
-                    </span>
-                    {p.marca && (
-                      <>
-                        <span className="text-slate-300">·</span>
-                        <span className="font-bold text-blue-700 uppercase truncate italic">
-                          {p.marca}
+                  <div className="flex items-center justify-between mt-2 gap-2">
+                    <div className="flex items-center gap-1.5 text-[10px] flex-wrap min-w-0 pr-2">
+                      {p.marca ? (
+                        <span className="font-bold text-blue-700 uppercase truncate italic flex items-center gap-1">
+                          <Tag size={10} className="shrink-0" /> <span className="truncate">{p.marca}</span>
                         </span>
-                      </>
-                    )}
-                    {Number(p.factorA) > 0 && (
-                      <>
-                        <span className="text-slate-300">·</span>
-                        <span className="font-mono font-black text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded uppercase truncate" title="Factor Aéreo fijado en cotización previa">
-                          FA {Number(p.factorA).toFixed(2)} fijado
-                        </span>
-                      </>
-                    )}
+                      ) : (
+                        <span className="text-slate-400 italic">Sin marca</span>
+                      )}
+                      {Number(p.factorA) > 0 && (
+                        <>
+                          <span className="text-slate-300">·</span>
+                          <span className="font-mono font-black text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded uppercase truncate shrink-0">
+                            FA {Number(p.factorA).toFixed(2)}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    
+                    <div className="shrink-0">
+                      <span className="font-mono font-black text-slate-800 text-xs bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/60 shadow-xs flex items-center justify-center">
+                        x{itemsCambiados[idx] ? (
+                          <span className={`${itemsCambiados[idx].animating ? 'anim-cant-text' : ''} ${itemsCambiados[idx].underlined ? 'underline underline-offset-2 decoration-2 decoration-blue-500' : ''}`}>
+                            {itemsCambiados[idx].animating ? <AnimatedCant oldCant={itemsCambiados[idx].oldCant} newCant={itemsCambiados[idx].newCant} /> : p.cant}
+                          </span>
+                        ) : p.cant}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -1302,7 +1380,7 @@ export const Calculadora = ({ onGuardar }) => {
                 const isRowDisabled = esSoloLectura || esPedidoPrevio;
 
                 return (
-                  <tr key={idx} className={`${isSelected ? (esPedidoPrevio ? 'bg-emerald-50/20' : 'bg-white') : 'bg-slate-50 opacity-60'} hover:bg-slate-50/50 transition-all`}>
+                  <tr key={idx} className={`${isSelected ? (esPedidoPrevio ? 'bg-emerald-50/20' : 'bg-white') : 'bg-slate-50 opacity-60'} hover:bg-slate-50/50 transition-all ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}>
                     <td className="p-2 text-center">
                       <input type="checkbox" checked={isSelected} 
                              disabled={isRowDisabled}
@@ -1366,7 +1444,13 @@ export const Calculadora = ({ onGuardar }) => {
                         </span>
                       )}
                     </td>
-                    <td className="p-2 text-center font-bold">{p.cant}</td>
+                    <td className="p-2 text-center font-bold">
+                      {itemsCambiados[idx] ? (
+                        <span className={`${itemsCambiados[idx].animating ? 'anim-cant-text' : ''} ${itemsCambiados[idx].underlined ? 'underline underline-offset-4 decoration-2 decoration-blue-500' : ''}`}>
+                          {itemsCambiados[idx].animating ? <AnimatedCant oldCant={itemsCambiados[idx].oldCant} newCant={itemsCambiados[idx].newCant} /> : p.cant}
+                        </span>
+                      ) : p.cant}
+                    </td>
                     {mostrarPicard ? (
                       <>
                         {/* FOB SKF */}
@@ -1808,6 +1892,39 @@ export const Calculadora = ({ onGuardar }) => {
         </div>
       )}
       
+    
+      {modalItemsCambiados && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4">
+          <div className="bg-white p-6 rounded-3xl shadow-2xl max-w-sm text-center">
+            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4 rotate-12">
+              <AlertCircle size={32} />
+            </div>
+            <h3 className="text-xl font-black text-slate-800 mb-2">Cantidades Modificadas</h3>
+            <p className="text-sm text-slate-500 font-medium mb-6">
+              El vendedor cambió la cantidad de items pendientes. Revisa las celdas marcadas antes de continuar.
+            </p>
+            <button 
+              onClick={() => {
+                const changedMap = modalItemsCambiados;
+                setModalItemsCambiados(false);
+                setItemsCambiados(changedMap);
+                setItems(prev => prev.map((p, idx) => changedMap[idx] ? { ...p, cant: changedMap[idx].newCant } : p));
+                setTimeout(() => {
+                  setItemsCambiados(prev => {
+                    const next = { ...prev };
+                    Object.keys(next).forEach(k => { next[k] = { ...next[k], animating: false, underlined: true }; });
+                    return next;
+                  });
+                }, 3000);
+              }}
+              className="w-full bg-slate-900 text-white font-black px-6 py-3 rounded-xl hover:bg-slate-800 transition-colors"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

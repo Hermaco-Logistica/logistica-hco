@@ -60,9 +60,17 @@ export const GestionOC = ({ readOnly = false }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
+  const [prevFilters, setPrevFilters] = useState([searchOCNum, filterProveedor, filterEstadoLogistica, fechaInicio, fechaFin]);
+  if (
+    prevFilters[0] !== searchOCNum ||
+    prevFilters[1] !== filterProveedor ||
+    prevFilters[2] !== filterEstadoLogistica ||
+    prevFilters[3] !== fechaInicio ||
+    prevFilters[4] !== fechaFin
+  ) {
     setCurrentPage(1);
-  }, [searchOCNum, filterProveedor, filterEstadoLogistica, fechaInicio, fechaFin]);
+    setPrevFilters([searchOCNum, filterProveedor, filterEstadoLogistica, fechaInicio, fechaFin]);
+  }
 
   const activeFiltersCount = [
     Boolean(filterProveedor),

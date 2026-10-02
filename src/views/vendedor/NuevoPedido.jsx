@@ -18,6 +18,7 @@ import { generarPlantillaNuevaRFQ } from '../../utils/emailTemplates';
 import { emailConfig } from '../../config/emailConfig';
 import { StickyActionBar } from '../../components/mobile';
 import { NuevoPedidoMobileCard } from '../../components/pedidos/NuevoPedidoMobileCard';
+import { calcularFechaEstimada } from '../../utils/itemHelpers';
 
 export const NuevoPedido = () => {
   const navigate = useNavigate();
@@ -412,7 +413,7 @@ export const NuevoPedido = () => {
             descripcion: p.desc, 
             disponible: false,
             fob: p.precio || 0,
-            fechaCompromiso: p.tiempoEntrega || '',
+            fechaCompromiso: calcularFechaEstimada(p.tiempoEntrega),
             modalidad: p.modalidad || 'Aéreo',
             fva: 1,
             fvm: 1,
