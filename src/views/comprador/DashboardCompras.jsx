@@ -14,6 +14,7 @@ import { normalizarBusqueda } from '../../utils/normalizers';
 import { generarPlantillaAnulacion } from '../../utils/emailTemplates';
 import { pdf } from '@react-pdf/renderer';
 import CotizacionPDF from '../../components/CotizacionPDF';
+import { clasificarSolicitud, etiquetaResultadoSolicitud, RESULTADOS_SOLICITUD } from '../../utils/clasificarSolicitud';
 
 export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const navigate = useNavigate();
@@ -23,6 +24,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   // Estados de filtros (persistidos en localStorage)
   const [ setFilterAccion] = usePersistedState('dc_filterAccion', '');
   const [filterEstado, setFilterEstado] = usePersistedState('dc_filterEstado', '');
+  const [filterResultado, setFilterResultado] = usePersistedState('dc_filterResultado', '');
   const [filterVendedor, setFilterVendedor] = usePersistedState('dc_filterVendedor', '');
   const [searchTerm, setSearchTerm] = usePersistedState('dc_searchTerm', '');
   const [mostrarFiltrosMobile, setMostrarFiltrosMobile] = useState(false);
@@ -41,9 +43,12 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
         fechaAnulacion: p.estadoItem === 'Anulado' ? p.fechaAnulacion : new Date(),
         anuladoPor: p.estadoItem === 'Anulado' ? p.anuladoPor : 'comprador'
       })) || [];
+      const clasificacion = clasificarSolicitud(updatedProductos, 'Anulado');
 
       await updateDoc(docRef, {
-        estado: 'Anulado',
+        estado: clasificacion.estado,
+        resultado: clasificacion.resultado,
+        conteoItems: clasificacion.conteoItems,
         productos: updatedProductos
       });
 
@@ -154,6 +159,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
   const abrirVistaCotizacion = (solicitud) => setSolicitudVista(solicitud);
   const cerrarVistaCotizacion = () => setSolicitudVista(null);
+  const obtenerResultadoSolicitud = (solicitud) => etiquetaResultadoSolicitud(
+    solicitud.resultado || clasificarSolicitud(solicitud.productos, solicitud.estado).resultado
+  );
 
   // Un ítem en consulta todavía no tiene FOB; debe poder retomarse desde
   // "Cotizar Restante" aunque ya exista una cotización parcial guardada.
@@ -217,10 +225,12 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   // Obtener listas únicas de vendedores y estados para los filtros selectores
   const vendedoresDisponibles = Array.from(new Set(solicitudes.map(s => s.vendedorNombre).filter(Boolean)));
   const estadosDisponibles = Array.from(new Set(solicitudes.map(s => s.estado).filter(Boolean)));
+  const resultadosDisponibles = Object.values(RESULTADOS_SOLICITUD);
 
   // Aplicar filtros
   const filteredSolicitudes = solicitudes.filter((s) => {
     if (filterEstado && s.estado !== filterEstado) return false;
+    if (filterResultado && (s.resultado || clasificarSolicitud(s.productos, s.estado).resultado) !== filterResultado) return false;
     if (filterVendedor && s.vendedorNombre !== filterVendedor) return false;
     
     if (s.fechaS) {
@@ -361,6 +371,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
   const filtrosActivosCount = [
     filterEstado,
+    filterResultado,
     filterVendedor,
     (fechaInicio || fechaFin)
   ].filter(Boolean).length;
@@ -434,6 +445,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
               onClick={() => {
                 setSearchTerm('');
                 setFilterEstado('');
+                setFilterResultado('');
                 setFilterVendedor('');
                 setFechaInicio(null);
                 setFechaFin(null);
@@ -449,6 +461,13 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
         {mostrarFiltrosMobile && (
           <div className="pt-3 border-t border-slate-100 space-y-2.5 animate-in fade-in duration-200">
+            <div>
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Resultado</label>
+              <select value={filterResultado} onChange={(e) => { setFilterResultado(e.target.value); setCurrentPage(1); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 cursor-pointer">
+                <option value="">TODOS LOS RESULTADOS</option>
+                {resultadosDisponibles.map(resultado => <option key={resultado} value={resultado}>{etiquetaResultadoSolicitud(resultado).toUpperCase()}</option>)}
+              </select>
+            </div>
             <div>
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Estado</label>
               <select 
@@ -493,7 +512,14 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       </div>
 
       {/* CONTROLES DE FILTROS DESKTOP (visible en >= md) */}
-      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+        <div>
+          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Resultado</label>
+          <select value={filterResultado} onChange={(e) => { setFilterResultado(e.target.value); setCurrentPage(1); }} className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer">
+            <option value="">TODOS LOS RESULTADOS</option>
+            {resultadosDisponibles.map(resultado => <option key={resultado} value={resultado}>{etiquetaResultadoSolicitud(resultado).toUpperCase()}</option>)}
+          </select>
+        </div>
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (Ref / Cliente)</label>
           <input 
@@ -594,6 +620,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
               setSearchTerm('');
               setFilterAccion('');
               setFilterEstado('');
+              setFilterResultado('');
               setFilterVendedor('');
               setFechaInicio(null);
               setFechaFin(null);
@@ -617,6 +644,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
           paginatedSolicitudes.map((s) => {
             const itemsConPrecio = calcularItemsCotizados(s);
             const tienePendientes = tieneItemsPendientesPorCotizar(s);
+            const resultado = obtenerResultadoSolicitud(s);
             const totalA = formatearTotal(s, 'A');
             const totalM = formatearTotal(s, 'M');
             let fechaResp = s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en ? s.ultimaNotificacion.en : (s.fechaCotizacion || s.fechaRespuesta);
@@ -648,7 +676,12 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                       {s.correlativo || '---'}
                     </span>
                   </div>
-                  <MobileBadge estado={s.estado} size="xs" className="shadow-xs" />
+                  <div className="flex flex-col items-end gap-1">
+                    <MobileBadge estado={s.estado} size="xs" className="shadow-xs" />
+                    {resultado !== 'En proceso' && (
+                      <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Body: Cliente y Vendedor */}
@@ -841,6 +874,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             {paginatedSolicitudes.map((s) => {
               const itemsConPrecio = calcularItemsCotizados(s);
               const tienePendientesPorCotizar = tieneItemsPendientesPorCotizar(s);
+              const resultado = obtenerResultadoSolicitud(s);
               const totalA = formatearTotal(s, 'A');
               const totalM = formatearTotal(s, 'M');
 
@@ -891,7 +925,12 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                     </div>
                   </td>
                   <td className="p-4 text-center">
-                    <Badge estado={s.estado} />
+                    <div className="flex flex-col items-center gap-1">
+                      <Badge estado={s.estado} />
+                      {resultado !== 'En proceso' && (
+                        <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                      )}
+                    </div>
                   </td>
                   <td className="p-4 text-center">
                     <div className="flex items-center justify-center gap-2">

@@ -16,6 +16,7 @@ import { getRoleColors } from '../../utils/roleColors';
 import { generarPlantillaAnulacion } from '../../utils/emailTemplates';
 import { pdf } from '@react-pdf/renderer';
 import CotizacionPDF from '../../components/CotizacionPDF';
+import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
 
 export const RevisionPedidoManual = ({ role = 'comprador' }) => {
   const { id } = useParams();
@@ -68,26 +69,14 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
         anuladoPor: auth.currentUser.email || 'comprador'
       };
 
-      const activos = updatedProductos.filter(p => p.estadoItem !== 'Anulado');
-      let nuevoEstado = solicitudBase.estado; 
-      
-      if (activos.length === 0) {
-        nuevoEstado = 'Anulado';
-      } else {
-        const todosAprobados = activos.every(p => p.estadoItem === 'Pedido');
-        const todosDenegados = activos.every(p => p.estadoItem === 'Denegado' || p.estadoItem === 'Rechazado' || p.estadoItem === 'Cancelado');
-        const algunDevuelto = activos.some(p => p.estadoItem === 'Cotizado');
-        const todosCotizados = activos.every(p => p.estadoItem === 'Cotizado');
-        
-        if (todosAprobados) nuevoEstado = 'Pedido';
-        else if (todosDenegados) nuevoEstado = 'Denegado';
-        else if (todosCotizados) nuevoEstado = 'Cotizado';
-        else if (algunDevuelto) nuevoEstado = 'Cotizado Parcial';
-      }
+      const clasificacion = clasificarSolicitud(updatedProductos, solicitudBase.estado);
+      const nuevoEstado = clasificacion.estado;
 
       await updateDoc(docRef, {
         productos: updatedProductos,
-        estado: nuevoEstado
+        estado: nuevoEstado,
+        resultado: clasificacion.resultado,
+        conteoItems: clasificacion.conteoItems
       });
 
       // --- Enviar correo de anulación al vendedor ---
@@ -100,7 +89,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
         
         const senderFrom = isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : `${auth.currentUser.displayName || auth.currentUser.email?.split('@')[0]} <${auth.currentUser.email}>`;
         
-        const bodyHtml = generarPlantillaAnulacion(solicitudBase, modalAnulacion.motivo.trim(), auth.currentUser.email, activos.length > 0, updatedProductos[idx]);
+        const bodyHtml = generarPlantillaAnulacion(solicitudBase, modalAnulacion.motivo.trim(), auth.currentUser.email, clasificacion.conteoItems.activos > 0, updatedProductos[idx]);
         
         let pdfBase64 = null;
         try {
@@ -124,7 +113,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
             replyTo: auth.currentUser.email,
             to: destinatarioTo,
             cc: ccEmails,
-            subject: `${activos.length > 0 ? 'Anulación Parcial' : 'Anulación'}: ${solicitudBase.correlativo} - ${solicitudBase.cliente}`,
+            subject: `${clasificacion.conteoItems.activos > 0 ? 'Anulación Parcial' : 'Anulación'}: ${solicitudBase.correlativo} - ${solicitudBase.cliente}`,
             bodyHtml
           };
           
@@ -392,18 +381,19 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
               )}
               {filteredItems.map(({ item: p, idx }) => {
                 const neg = p.negociacion || {};
+                const tiempoEntrega = neg.ofertaVigente?.tiempoEntrega || p.tiempoEntrega || p.diasPrometidos || '';
                 const versionEsperada = neg.version || 0;
                 const isPending = neg.turno === 'compras';
                 const hasCounterOffer = neg.ofertaVigente && neg.ofertaAnterior && isPending;
                 
                 const draft = borradores[idx] || {
                   precio: p.fob || 0,
-                  tiempoEntrega: p.fechaCompromiso || '',
+                  tiempoEntrega,
                   modalidad: p.modalidad || 'Aéreo'
                 };
                 
                 const isUnchanged = Number(draft.precio) === Number(p.fob || 0) &&
-                                    String(draft.tiempoEntrega) === String(p.fechaCompromiso || '') &&
+                                    String(draft.tiempoEntrega) === String(tiempoEntrega) &&
                                     draft.modalidad === (p.modalidad || 'Aéreo');
 
                 const msgCount = conteos[idx] || 0;
@@ -442,17 +432,17 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                             )}
                           </div>
                           <div>
-                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Entrega</span>
+                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Días de entrega</span>
                             {isPending ? (
                               <input 
                                 type="text" 
                                 value={draft.tiempoEntrega || ''} 
                                 onChange={(e) => updateBorrador(idx, { ...draft, tiempoEntrega: e.target.value })} 
-                                placeholder="Ej: 5 días" 
+                                placeholder="Ej: 5" 
                                 className="w-full max-w-[160px] p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-purple-500 font-bold text-slate-700 text-sm" 
                               />
                             ) : (
-                              <span className="font-bold text-slate-700 text-sm">{p.fechaCompromiso || 'No definido'}</span>
+                              <span className="font-bold text-slate-700 text-sm">{tiempoEntrega || 'No definido'}</span>
                             )}
                           </div>
                           <div>

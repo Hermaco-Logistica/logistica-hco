@@ -16,6 +16,9 @@ export default function CotizacionDocumento({ cotizacionData }) {
     factorM = 1.08,
   } = cotizacionData;
 
+  const productosAnulados = productos.filter(item => item?.estadoItem === 'Anulado');
+  const productosVisibles = productos.filter(item => item?.estadoItem !== 'Anulado');
+
   // Formatear fecha
   let fechaFormateada = '';
   if (fechaS?.toDate) {
@@ -29,19 +32,19 @@ export default function CotizacionDocumento({ cotizacionData }) {
   }
 
   // Lógica de cálculos dinámicos basados en factorA y factorM
-  const subtotalAereo = productos.reduce((acc, item) => {
+  const subtotalAereo = productosVisibles.reduce((acc, item) => {
     const fobVal = Number(item.fob || 0);
     const ventaA = fobVal * (item.factorA || factorA) * (item.fva || 1.30);
     return acc + (Number(item.cant || 0) * ventaA);
   }, 0);
 
-  const subtotalMaritimo = productos.reduce((acc, item) => {
+  const subtotalMaritimo = productosVisibles.reduce((acc, item) => {
     const fobVal = Number(item.fob || 0);
     const ventaM = fobVal * (item.factorM || factorM) * (item.fvm || 1.25);
     return acc + (Number(item.cant || 0) * ventaM);
   }, 0);
 
-  const subtotalManual = productos.reduce((acc, item) => {
+  const subtotalManual = productosVisibles.reduce((acc, item) => {
     const pU = Number(item.precio || 0);
     const cant = Number(item.cantidad || item.cant || 0);
     return acc + (cant * pU);
@@ -108,12 +111,12 @@ export default function CotizacionDocumento({ cotizacionData }) {
   const todoAnulado = cotizacionData.estado === 'Anulado' ||
     (productos.length > 0 && productos.every(p => p.estadoItem === 'Anulado'));
   const motivosAnulacion = [...new Set(
-    productos
-      .filter(item => item?.estadoItem === 'Anulado' && item?.motivoAnulacion)
+    productosAnulados
+      .filter(item => item?.motivoAnulacion)
       .map(item => item.motivoAnulacion.toString().trim())
       .filter(Boolean)
   )];
-  const hayAnulacion = todoAnulado || productos.some(item => item?.estadoItem === 'Anulado');
+  const hayAnulacion = todoAnulado || productosAnulados.length > 0;
 
   return (
     <div className="w-full overflow-x-auto">

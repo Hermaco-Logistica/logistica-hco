@@ -28,7 +28,7 @@ export function derivarNegociacion(item) {
   const precio = Number(item.fob || 0);
   const ofertaInicial = {
     precio,
-    tiempoEntrega: item.fechaCompromiso || item.tiempoEntrega || '',
+    tiempoEntrega: item.tiempoEntrega || item.diasPrometidos || item.fechaCompromiso || '',
     modalidad: item.modalidad || 'Aéreo',
     autorRol: 'vendedor',
     creadaEn: Timestamp.now(),
@@ -292,6 +292,8 @@ export const ajustarItem = ({ solicitudId, idx, versionEsperada, actor, oferta, 
         itemUpdate: {
           estadoItem: 'Cotizado',
           fob: oferta.precio,
+          tiempoEntrega: Number.parseInt(oferta.tiempoEntrega, 10),
+          diasPrometidos: Number.parseInt(oferta.tiempoEntrega, 10),
           fechaCompromiso: calcularFechaEstimada(oferta.tiempoEntrega),
           modalidad: oferta.modalidad,
           fobAnterior: neg.ofertaAnterior.precio,
@@ -355,6 +357,8 @@ export const contraofertarItem = ({ solicitudId, idx, versionEsperada, actor, of
         itemUpdate: {
           estadoItem: 'Pendiente',
           fob: oferta.precio,
+          tiempoEntrega: Number.parseInt(oferta.tiempoEntrega, 10),
+          diasPrometidos: Number.parseInt(oferta.tiempoEntrega, 10),
           fechaCompromiso: calcularFechaEstimada(oferta.tiempoEntrega),
           modalidad: oferta.modalidad,
           fobAnterior: neg.ofertaAnterior.precio,

@@ -72,11 +72,15 @@ const formatFechaHoraEmail = (value) => {
 
 export const generarPlantillaNuevoPedido = (orderData) => {
   const esParcial = orderData.esPedidoParcial;
-  const tipoTexto = esParcial ? 'PEDIDO PARCIAL CONFIRMADO' : 'PEDIDO COMPLETO CONFIRMADO';
+  const itemsAnulados = orderData.productos.filter(p => p.estadoItem === 'Anulado');
+  const tieneAnulaciones = itemsAnulados.length > 0;
+  const tipoTexto = tieneAnulaciones
+    ? (esParcial ? 'PEDIDO PARCIAL · CON ANULACIONES' : 'PEDIDO COMPLETO CONFIRMADO · CON ANULACIONES')
+    : (esParcial ? 'PEDIDO PARCIAL CONFIRMADO' : 'PEDIDO COMPLETO CONFIRMADO');
   const badgeBg = esParcial ? '#3b82f6' : '#10b981';
   const badgeBorder = esParcial ? '#1d4ed8' : '#047857';
   
-  const itemsPedidos = orderData.productos.filter(p => p.estadoItem === 'Pedido');
+  const itemsPedidos = orderData.productos.filter(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
   const cantidadTotal = itemsPedidos.reduce((acc, p) => acc + (Number(p.cantidad) || 0), 0);
   const totalMonto = itemsPedidos.reduce((acc, p) => acc + (Number(p.subtotal) || 0), 0);
 
@@ -112,7 +116,7 @@ export const generarPlantillaNuevoPedido = (orderData) => {
             <td style="width: 50%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; vertical-align: top;">
               <span style="font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px;">Cobertura del Pedido</span>
               <span style="font-size: 13px; font-weight: 900; color: ${badgeBg}; display: block;">
-                ${itemsPedidos.length} de ${orderData.productos.length} Ítems (${cantidadTotal} pzs)
+                ${itemsPedidos.length} de ${orderData.productos.length - itemsAnulados.length} Ítems activos (${cantidadTotal} pzs)${tieneAnulaciones ? ` · ${itemsAnulados.length} anulado${itemsAnulados.length === 1 ? '' : 's'}` : ''}
               </span>
             </td>
             <td style="width: 50%; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; vertical-align: top;">
@@ -154,16 +158,21 @@ export const generarPlantillaNuevoPedido = (orderData) => {
           </thead>
           <tbody>
             ${orderData.productos.map((p, idx) => {
-              const fuePedido = p.estadoItem === 'Pedido';
+              const estaAnulado = p.estadoItem === 'Anulado';
+              const fuePedido = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado';
               const fechaConfirmStr = fuePedido ? formatFechaHoraEmail(p.fechaConfirmacion) : '';
 
               return `
-              <tr style="background-color: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'}; border-bottom: 1px solid #e2e8f0;">
+              <tr style="background-color: ${estaAnulado ? '#fff1f2' : (idx % 2 === 0 ? '#ffffff' : '#f8fafc')}; border-bottom: 1px solid #e2e8f0;">
                 <td style="padding: 10px 12px; font-size: 11px;">
                   <strong style="color: #0f172a; display: block; font-weight: 800;">${String(p.descripcion || p.desc || '').toUpperCase()}</strong>
                   <span style="font-size: 10px; color: #64748b;">Marca: ${p.marca || 'N/A'}</span>
                   ${p.diasPrometidos ? `<span style="font-size: 9px; color: #475569; display: block; margin-top: 2px;">T. Entrega: ${p.diasPrometidos} d.h.</span>` : ''}
-                  ${fuePedido ? `
+                  ${estaAnulado ? `
+                    <div style="margin-top: 4px; font-size: 9px; font-weight: 900; color: #be123c; padding: 2px 0; display: inline-block; text-transform: uppercase;">
+                      Anulado${p.motivoAnulacion ? `: ${String(p.motivoAnulacion).replace(/</g, '&lt;').replace(/>/g, '&gt;')}` : ''}
+                    </div>
+                  ` : fuePedido ? `
                     <div style="margin-top: 4px; font-size: 9px; font-weight: 700; color: #475569; padding: 2px 0; display: inline-block;">
                       ✓ Confirmado: ${fechaConfirmStr}
                     </div>
@@ -179,17 +188,17 @@ export const generarPlantillaNuevoPedido = (orderData) => {
                 </td>
                 <td style="padding: 10px 8px; font-size: 11px; text-align: center; font-weight: 700; color: #334155;">${p.cantidad || p.cant}</td>
                 <td style="padding: 12px 8px; text-align: center;">
-                  ${fuePedido ? `
+                  ${estaAnulado ? '<span style="font-size: 10px; color: #be123c; font-weight: 800;">Anulado</span>' : fuePedido ? `
                     <span style="display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 9px; font-weight: 900; text-transform: uppercase; background-color: ${p.modalidad === 'Aéreo' ? '#eff6ff' : '#f0fdf4'}; color: ${p.modalidad === 'Aéreo' ? '#1d4ed8' : '#047857'}; border: 1px solid ${p.modalidad === 'Aéreo' ? '#bfdbfe' : '#a7f3d0'};">
                       ${p.modalidad}
                     </span>
                   ` : '<span style="font-size: 10px; color: #94a3b8; font-style: italic;">—</span>'}
                 </td>
                 <td style="padding: 10px 12px; font-size: 11px; text-align: right; color: #334155; font-weight: 600;">
-                  ${fuePedido ? `$${Number(p.precioUnitario || p.precio || 0).toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '<span style="color: #94a3b8;">—</span>'}
+                  ${estaAnulado ? '<span style="color: #be123c; font-weight: 800;">—</span>' : fuePedido ? `$${Number(p.precioUnitario || p.precio || 0).toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '<span style="color: #94a3b8;">—</span>'}
                 </td>
                 <td style="padding: 10px 12px; font-size: 11px; text-align: right; font-weight: 700; color: ${fuePedido ? '#0f172a' : '#94a3b8'};">
-                  ${fuePedido ? `$${Number(p.subtotal || ((p.precioUnitario || p.precio || 0) * (p.cantidad || p.cant)) || 0).toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+                  ${estaAnulado ? '<span style="color: #be123c; font-weight: 900;">ANULADO</span>' : fuePedido ? `$${Number(p.subtotal || ((p.precioUnitario || p.precio || 0) * (p.cantidad || p.cant)) || 0).toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
                 </td>
               </tr>
               `;

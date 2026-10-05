@@ -36,6 +36,7 @@ import {
 } from '../../utils/dateValidation';
 
 import { useSessionState } from '../../hooks/usePersistedState';
+import { clasificarSolicitud, etiquetaResultadoSolicitud, RESULTADOS_SOLICITUD } from '../../utils/clasificarSolicitud';
 
 export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();
@@ -56,6 +57,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
   const [anioHistorico, setAnioHistorico] = useState(() => filtroPeriodoInicial.anioHistorico || getAnioActualElSalvador());
   const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [clienteSearch, setClienteSearch] = useSessionState('analisis_cliente_search', '');
+  const [resultadoFilter, setResultadoFilter] = useSessionState('analisis_resultado_filter', '');
   const [ordenarProductosPor, setOrdenarProductosPor] = useSessionState('analisis_top_prod_orden', 'veces'); // 'veces' (default) | 'unidades'
   const [pageVendedores, setPageVendedores] = useState(1);
   const itemsPerPageVendedores = 5;
@@ -200,9 +202,14 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         if (!normalizarBusqueda(s.cliente || '').includes(term)) return false;
       }
 
+      if (resultadoFilter) {
+        const resultado = s.resultado || clasificarSolicitud(s.productos, s.estado).resultado;
+        if (resultado !== resultadoFilter) return false;
+      }
+
       return true;
     });
-  }, [solicitudes, periodo, fechaInicio, fechaFin, anioHistorico, vendedorFilter, clienteSearch, validacionRango, anioActualSV, rangoEsteMesSV]);
+  }, [solicitudes, periodo, fechaInicio, fechaFin, anioHistorico, vendedorFilter, clienteSearch, resultadoFilter, validacionRango, anioActualSV, rangoEsteMesSV]);
 
   // Métricas consolidadas sobre solicitudesFiltradas (reactivas a período, vendedor y cliente)
   const metricas = useMemo(() => {
@@ -212,6 +219,8 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     let cotizadasParcial = 0;
     let pedidos = 0;
     let pedidosParcial = 0;
+    let pedidosConAnulaciones = 0;
+    let cotizadasConAnulaciones = 0;
     let anuladas = 0;
     let anuladasParcial = 0; // solicitudes con al menos un ítem anulado pero que no están totalmente anuladas
     let montoCotizadoTotal = 0;
@@ -222,13 +231,22 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     let pedidosConTiempoCierre = 0;
 
     solicitudesFiltradas.forEach((s) => {
-      const estado = s.estado || 'Pendiente';
+      const clasificacion = clasificarSolicitud(s.productos, s.estado);
+      const estado = clasificacion.estado;
+      const resultado = s.resultado || clasificacion.resultado;
       if (estado === 'Pendiente') pendientes++;
       else if (estado === 'Cotizado') cotizadas++;
       else if (estado === 'Cotizado Parcial') cotizadasParcial++;
-      else if (estado === 'Pedido') pedidos++;
+      else if (estado === 'Pedido') {
+        pedidos++;
+        if (resultado === RESULTADOS_SOLICITUD.CERRADO_CON_ANULACIONES) pedidosConAnulaciones++;
+      }
       else if (estado === 'Pedido Parcial') pedidosParcial++;
       else if (estado === 'Anulado') anuladas++;
+
+      if ((estado === 'Cotizado' || estado === 'Cotizado Parcial') && clasificacion.tieneAnulaciones) {
+        cotizadasConAnulaciones++;
+      }
 
       // Detectar solicitudes con ítems anulados individualmente (parcialmente anuladas)
       if (estado !== 'Anulado' && Array.isArray(s.productos)) {
@@ -315,8 +333,10 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       cotizadasCompletas: cotizadas,
       cotizadasParciales: cotizadasParcial,
       pedidos,
-      pedidosCompletos: pedidos,
+      pedidosCompletos: pedidos - pedidosConAnulaciones,
       pedidosParciales: pedidosParcial,
+      pedidosConAnulaciones,
+      cotizadasConAnulaciones,
       tasaConversion,
       montoCotizadoTotal,
       montoPedidoTotal,
@@ -586,6 +606,19 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
           </div>
         )}
 
+        <div className="w-full sm:w-60">
+          <select
+            value={resultadoFilter}
+            onChange={(e) => { setResultadoFilter(e.target.value); setPageVendedores(1); }}
+            className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 sm:py-1.5 text-base sm:text-xs font-medium text-slate-700 outline-none focus:border-slate-400 cursor-pointer"
+          >
+            <option value="">Todos los resultados</option>
+            {Object.values(RESULTADOS_SOLICITUD).map((resultado) => (
+              <option key={resultado} value={resultado}>{etiquetaResultadoSolicitud(resultado)}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="w-full sm:flex-1 relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -597,12 +630,13 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
           />
         </div>
 
-        {(vendedorFilter || clienteSearch || (periodo === 'custom' && (fechaInicio || fechaFin))) && (
+        {(vendedorFilter || clienteSearch || resultadoFilter || (periodo === 'custom' && (fechaInicio || fechaFin))) && (
           <button
             type="button"
             onClick={() => { 
               setVendedorFilter(''); 
               setClienteSearch(''); 
+              setResultadoFilter('');
               setFechaInicio(''); 
               setFechaFin(''); 
               setPageVendedores(1);
@@ -647,6 +681,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
             const filtrosActivos = [periodoDesc];
             if (vendedorFilter) filtrosActivos.push(`Vendedor: ${vendedorFilter}`);
             if (clienteSearch && clienteSearch.trim()) filtrosActivos.push(`Cliente: "${clienteSearch.trim()}"`);
+            if (resultadoFilter) filtrosActivos.push(`Resultado: ${etiquetaResultadoSolicitud(resultadoFilter)}`);
             const labelCompleto = filtrosActivos.join(' | ');
 
             const fileSlug = periodo === 'custom'
@@ -969,7 +1004,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
               },
               { 
                 tipo: 'pedidos',
-                label: 'Pedidos Confirmados / Parciales', 
+                label: 'Pedidos Confirmados / Cerrados',
                 count: metricas.pedidos, 
                 icon: CheckCircle2,
                 iconBg: theme.flujoEstados?.pedidos?.iconBg || 'bg-emerald-50 text-emerald-600 border-emerald-200/80',
@@ -978,8 +1013,8 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 textColor: theme.flujoEstados?.pedidos?.textColor || 'text-emerald-700',
                 desc: 'Aprobadas para adquisición y entrega logística',
                 completas: metricas.pedidosCompletos,
-                parciales: metricas.pedidosParciales,
-                subdetail: `${metricas.pedidosCompletos} confirmados · ${metricas.pedidosParciales} parciales`
+                parciales: metricas.pedidosParciales + metricas.pedidosConAnulaciones,
+                subdetail: `${metricas.pedidosCompletos} completos · ${metricas.pedidosConAnulaciones} con anulaciones · ${metricas.pedidosParciales} parciales`
               },
               {
                 tipo: 'anuladas',

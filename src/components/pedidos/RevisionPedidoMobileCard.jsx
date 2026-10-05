@@ -30,6 +30,7 @@ export const RevisionPedidoMobileCard = ({
 
   const p = itemServer;
   const neg = p.negociacion || {};
+  const tiempoEntrega = neg.ofertaVigente?.tiempoEntrega || p.tiempoEntrega || p.diasPrometidos || '';
   const versionEsperada = neg.version || 0;
   
   const msgCount = conteos[idx] || 0;
@@ -39,11 +40,9 @@ export const RevisionPedidoMobileCard = ({
   
   let currentBorrador = borrador || {
     precio: p.fob || 0,
-    tiempoEntrega: p.fechaCompromiso || '',
+    tiempoEntrega,
     modalidad: p.modalidad || 'Aéreo'
   };
-
-  const hasCounterOffer = neg.ofertaVigente && neg.ofertaAnterior && isPending;
 
   return (
     <div className={`bg-white p-4 ${estaAnulado ? 'opacity-60 grayscale-[0.5]' : ''}`}>
@@ -85,8 +84,8 @@ export const RevisionPedidoMobileCard = ({
             <span className="font-bold">${Number(p.fob || 0).toFixed(2)}</span>
           </div>
           <div className="flex-1 flex flex-col">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Entrega</span>
-            <span className="font-bold">{p.fechaCompromiso || 'N/A'}</span>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Días de entrega</span>
+            <span className="font-bold">{tiempoEntrega || 'N/A'}</span>
           </div>
           <div className="flex-1 flex flex-col">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Vía</span>
@@ -110,7 +109,7 @@ export const RevisionPedidoMobileCard = ({
         <div className="mb-4">
           <FormularioOferta 
             ofertaDraft={currentBorrador}
-            originalOferta={{ precio: p.fob, tiempoEntrega: p.fechaCompromiso, modalidad: p.modalidad || 'Aéreo' }}
+            originalOferta={{ precio: p.fob, tiempoEntrega, modalidad: p.modalidad || 'Aéreo' }}
             onChange={(draft) => updateBorrador(idx, draft)}
             onCancel={() => { clearBorrador(idx); setShowAdjustForm(false); }}
             onSubmit={() => { actions.ajustar(idx, versionEsperada, currentBorrador); setShowAdjustForm(false); }}

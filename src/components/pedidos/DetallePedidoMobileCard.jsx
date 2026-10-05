@@ -29,18 +29,18 @@ export const DetallePedidoMobileCard = ({
   const p = itemServer;
   const estaAnulado = p.estadoItem === 'Anulado';
   const neg = p.negociacion || {};
+  const tiempoEntrega = neg.ofertaVigente?.tiempoEntrega || p.tiempoEntrega || p.diasPrometidos || '';
   const versionEsperada = neg.version || 0;
   
   const msgCount = conteos[idx] || 0;
   const unreadCount = noLeidos[idx] || 0;
 
   const isMyTurn = neg.turno === 'vendedor';
-  const hasCounterOffer = neg.ofertaVigente && neg.ofertaAnterior && isMyTurn;
   const currentFob = neg.ofertaVigente?.precio || p.fob || 0;
   
   let currentBorrador = borrador || {
     precio: neg.ofertaVigente?.precio || p.fob || 0,
-    tiempoEntrega: neg.ofertaVigente?.tiempoEntrega || p.fechaCompromiso || '',
+    tiempoEntrega,
     modalidad: neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo'
   };
 
@@ -73,8 +73,8 @@ export const DetallePedidoMobileCard = ({
             <span className="font-bold">${Number(p.fob || 0).toFixed(2)}</span>
           </div>
           <div className="flex-1 flex flex-col">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Entrega</span>
-            <span className="font-bold">{p.fechaCompromiso || 'N/A'}</span>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Días de entrega</span>
+            <span className="font-bold">{tiempoEntrega || 'N/A'}</span>
           </div>
           <div className="flex-1 flex flex-col">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Vía</span>
@@ -100,7 +100,7 @@ export const DetallePedidoMobileCard = ({
             ofertaDraft={currentBorrador}
             originalOferta={{ 
               precio: neg.ofertaVigente?.precio || p.fob, 
-              tiempoEntrega: neg.ofertaVigente?.tiempoEntrega || p.fechaCompromiso, 
+              tiempoEntrega,
               modalidad: neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo' 
             }}
             onChange={(draft) => updateBorrador(idx, draft)}

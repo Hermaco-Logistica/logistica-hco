@@ -329,9 +329,9 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
               )}
               {filteredItems.map(({ item: p, idx }) => {
                 const neg = p.negociacion || {};
+                const tiempoEntrega = neg.ofertaVigente?.tiempoEntrega || p.tiempoEntrega || p.diasPrometidos || '';
                 const versionEsperada = neg.version || 0;
                 const isMyTurn = neg.turno === 'vendedor';
-                const hasCounterOffer = neg.ofertaVigente && neg.ofertaAnterior && isMyTurn;
                 const currentFob = neg.ofertaVigente?.precio || p.fob || 0;
                 
                 const draft = borradores[idx];
@@ -340,7 +340,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
 
                 const isUnchanged = draft && 
                   Number(draft.precio) === Number(neg.ofertaVigente?.precio || p.fob) &&
-                  String(draft.tiempoEntrega) === String(neg.ofertaVigente?.tiempoEntrega || p.fechaCompromiso) &&
+                  String(draft.tiempoEntrega) === String(tiempoEntrega) &&
                   String(draft.modalidad) === String(neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo');
 
                 return (
@@ -375,7 +375,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                             )}
                           </div>
                           <div>
-                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Entrega</span>
+                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Días de entrega</span>
                             {draft ? (
                               <input 
                                 type="text" 
@@ -385,7 +385,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                                 className="w-full max-w-[160px] p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500 font-bold text-slate-700 text-sm" 
                               />
                             ) : (
-                              <span className="font-bold text-slate-700 text-sm">{p.fechaCompromiso || 'No definido'}</span>
+                              <span className="font-bold text-slate-700 text-sm">{tiempoEntrega || 'No definido'}</span>
                             )}
                           </div>
                           <div>
@@ -441,7 +441,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                                     onClick={() => {
                                       updateBorrador(idx, {
                                         precio: currentFob,
-                                        tiempoEntrega: neg.ofertaVigente?.tiempoEntrega || p.fechaCompromiso || '',
+                                        tiempoEntrega,
                                         modalidad: neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo'
                                       });
                                     }} 

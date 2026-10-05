@@ -12,6 +12,7 @@ import { generarPlantillaNuevoPedido } from '../../utils/emailTemplates';
 import { emailConfig } from '../../config/emailConfig';
 import { StickyActionBar } from '../../components/mobile';
 import { getRoleColors } from '../../utils/roleColors';
+import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
 
 export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPedido = false, role }) => {
   const { id } = useParams();
@@ -69,26 +70,14 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         anuladoPor: auth.currentUser.email || 'comprador'
       };
 
-      const activos = updatedProductos.filter(p => p.estadoItem !== 'Anulado');
-      let nuevoEstado = rfq.estado; 
-      
-      if (activos.length === 0) {
-        nuevoEstado = 'Anulado';
-      } else {
-        const todosAprobados = activos.every(p => p.estadoItem === 'Pedido');
-        const todosDenegados = activos.every(p => p.estadoItem === 'Denegado' || p.estadoItem === 'Rechazado' || p.estadoItem === 'Cancelado');
-        const algunDevuelto = activos.some(p => p.estadoItem === 'Cotizado');
-        const todosCotizados = activos.every(p => p.estadoItem === 'Cotizado');
-        
-        if (todosAprobados) nuevoEstado = 'Pedido';
-        else if (todosDenegados) nuevoEstado = 'Denegado';
-        else if (todosCotizados) nuevoEstado = 'Cotizado';
-        else if (algunDevuelto) nuevoEstado = 'Cotizado Parcial';
-      }
+      const clasificacion = clasificarSolicitud(updatedProductos, rfq.estado);
+      const nuevoEstado = clasificacion.estado;
 
       await updateDoc(docRef, {
         productos: updatedProductos,
-        estado: nuevoEstado
+        estado: nuevoEstado,
+        resultado: clasificacion.resultado,
+        conteoItems: clasificacion.conteoItems
       });
 
       alert('Ítem anulado correctamente');
@@ -120,19 +109,14 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         estadoItem: 'Pendiente' // Regresa a compras
       };
 
-      // Recalcular estado global
-      const todosAprobados = updatedProductos.every(p => p.estadoItem === 'Pedido');
-      const todosDenegados = updatedProductos.every(p => p.estadoItem === 'Denegado' || p.estadoItem === 'Rechazado' || p.estadoItem === 'Cancelado');
-      const algunDevuelto = updatedProductos.some(p => p.estadoItem === 'Cotizado');
-      
-      let nuevoEstado = 'Enviado a Compras';
-      if (todosAprobados) nuevoEstado = 'Pedido';
-      else if (todosDenegados) nuevoEstado = 'Denegado';
-      else if (algunDevuelto) nuevoEstado = 'Cotizado Parcial';
+      const clasificacion = clasificarSolicitud(updatedProductos, rfq.estado);
+      const nuevoEstado = clasificacion.estado;
 
       await updateDoc(docRef, {
         productos: updatedProductos,
-        estado: nuevoEstado
+        estado: nuevoEstado,
+        resultado: clasificacion.resultado,
+        conteoItems: clasificacion.conteoItems
       });
 
       alert('Contraoferta enviada a Compras');
@@ -374,12 +358,14 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         estadoGeneral: 'Procesando'
       });
 
-      const todosLosItemsPedidos = productosActualizadosParaRFQ.every(p => esItemYaPedido(p));
-      const estadoNuevoSolicitud = todosLosItemsPedidos ? 'Pedido' : 'Pedido Parcial';
+      const clasificacion = clasificarSolicitud(productosActualizadosParaRFQ, rfq.estado);
+      const estadoNuevoSolicitud = clasificacion.estado;
 
       setMensajePedido('Actualizando solicitud...');
       await updateDoc(doc(db, "solicitudes", id), {
         estado: estadoNuevoSolicitud,
+        resultado: clasificacion.resultado,
+        conteoItems: clasificacion.conteoItems,
         productos: productosActualizadosParaRFQ,
         linkOC: valorLinkOC,
         notasPedido: valorNotasPedido,

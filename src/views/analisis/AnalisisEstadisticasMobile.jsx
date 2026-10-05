@@ -327,8 +327,8 @@ function MobileFlujoCard({ theme, metricas, onVerTodas, onVerEstado }) {
       textColor: theme.flujoEstados?.pedidos?.textColor || 'text-emerald-700',
       desc: 'Aprobadas para adquisición y entrega logística',
       completas: metricas.pedidosCompletos,
-      parciales: metricas.pedidosParciales,
-      subdetail: `${metricas.pedidosCompletos} confirmados · ${metricas.pedidosParciales} parciales`
+      parciales: metricas.pedidosParciales + metricas.pedidosConAnulaciones,
+      subdetail: `${metricas.pedidosCompletos} completos · ${metricas.pedidosConAnulaciones} con anulaciones · ${metricas.pedidosParciales} parciales`
     },
     {
       tipo: 'anuladas',

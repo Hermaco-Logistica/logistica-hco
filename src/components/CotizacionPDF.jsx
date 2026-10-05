@@ -204,6 +204,8 @@ export default function CotizacionPDF({ cotizacionData }) {
 
   const todoAnulado = estado === 'Anulado' ||
     (productos.length > 0 && productos.every(p => p.estadoItem === 'Anulado'));
+  const productosAnulados = productos.filter(item => item?.estadoItem === 'Anulado');
+  const productosVisibles = productos.filter(item => item?.estadoItem !== 'Anulado');
 
   // Formatear fecha
   let fechaFormateada = '';
@@ -217,14 +219,14 @@ export default function CotizacionPDF({ cotizacionData }) {
     fechaFormateada = new Date().toLocaleDateString('es-SV');
   }
 
-  const subtotalAereo = productos.reduce((acc, item) => {
+  const subtotalAereo = productosVisibles.reduce((acc, item) => {
     const fobVal = Number(item.fob || 0);
     const itemFactorA = item.factorA || factorA;
     const ventaA = fobVal * itemFactorA * (item.fva || 1.30);
     return acc + (Number(item.cant || 0) * ventaA);
   }, 0);
 
-  const subtotalMaritimo = productos.reduce((acc, item) => {
+  const subtotalMaritimo = productosVisibles.reduce((acc, item) => {
     const fobVal = Number(item.fob || 0);
     const itemFactorM = item.factorM || factorM;
     const ventaM = fobVal * itemFactorM * (item.fvm || 1.25);
@@ -241,12 +243,12 @@ export default function CotizacionPDF({ cotizacionData }) {
     (_, index) => productos[index] || null
   );
   const motivosAnulacion = [...new Set(
-    productos
-      .filter(item => item?.estadoItem === 'Anulado' && item?.motivoAnulacion)
+    productosAnulados
+      .filter(item => item?.motivoAnulacion)
       .map(item => item.motivoAnulacion.toString().trim())
       .filter(Boolean)
   )];
-  const hayAnulacion = todoAnulado || productos.some(item => item?.estadoItem === 'Anulado');
+  const hayAnulacion = todoAnulado || productosAnulados.length > 0;
 
   return (
     <Document>
@@ -324,19 +326,19 @@ export default function CotizacionPDF({ cotizacionData }) {
                 </Text>
                 <Text style={[styles.td, { width: '7%' }]}>{item?.cant ?? ''}</Text>
                 <Text style={[styles.tdRight, { width: '11%', fontSize: esEnConsulta ? 7 : 8 }]}>
-                  {esEnConsulta ? 'En consulta' : (precioA > 0 ? formatMoneda(precioA) : '')}
+                  {itemAnulado ? 'Anulado' : (esEnConsulta ? 'En consulta' : (precioA > 0 ? formatMoneda(precioA) : ''))}
                 </Text>
                 <Text style={[styles.tdRight, { width: '11%', fontSize: esEnConsulta ? 7 : 8 }]}>
-                  {esEnConsulta ? 'En consulta' : (precioM > 0 ? formatMoneda(precioM) : '')}
+                  {itemAnulado ? 'Anulado' : (esEnConsulta ? 'En consulta' : (precioM > 0 ? formatMoneda(precioM) : ''))}
                 </Text>
-                <Text style={[styles.td, { width: '9%' }]}>{item?.marca || ''}</Text>
-                <Text style={[styles.td, { width: '14%' }]}>{item?.entregaA || ''}</Text>
-                <Text style={[styles.td, { width: '14%' }]}>{item?.entregaM || ''}</Text>
+                <Text style={[styles.td, { width: '9%' }]}>{itemAnulado ? '' : (item?.marca || '')}</Text>
+                <Text style={[styles.td, { width: '14%' }]}>{itemAnulado ? '' : (item?.entregaA || '')}</Text>
+                <Text style={[styles.td, { width: '14%' }]}>{itemAnulado ? '' : (item?.entregaM || '')}</Text>
                 <Text style={[styles.tdRight, { width: '11%', fontSize: esEnConsulta ? 7 : 8 }]}>
-                  {esEnConsulta ? 'En consulta' : (tAereo > 0 ? formatMoneda(tAereo) : '')}
+                  {itemAnulado ? 'Anulado' : (esEnConsulta ? 'En consulta' : (tAereo > 0 ? formatMoneda(tAereo) : ''))}
                 </Text>
                 <Text style={[styles.tdRight, { width: '12%', fontSize: esEnConsulta ? 7 : 8 }]}>
-                  {esEnConsulta ? 'En consulta' : (tMaritimo > 0 ? formatMoneda(tMaritimo) : '')}
+                  {itemAnulado ? 'Anulado' : (esEnConsulta ? 'En consulta' : (tMaritimo > 0 ? formatMoneda(tMaritimo) : ''))}
                 </Text>
               </View>
             );

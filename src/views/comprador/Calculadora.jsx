@@ -436,7 +436,7 @@ export const Calculadora = ({ onGuardar }) => {
     try {
       const doc = <CotizacionPDF cotizacionData={{
         ...rfq,
-        productos: itemsFinales.filter(p => p.estadoItem === 'Cotizado' || p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || Number(p.fob) > 0 || p.enConsulta || p.estadoItem === 'En consulta'),
+        productos: itemsFinales.filter(p => p.estadoItem === 'Cotizado' || p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || p.estadoItem === 'Anulado' || Number(p.fob) > 0 || p.enConsulta || p.estadoItem === 'En consulta'),
         factorA,
         factorM
       }} />;

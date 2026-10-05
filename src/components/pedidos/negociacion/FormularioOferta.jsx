@@ -25,13 +25,15 @@ export const FormularioOferta = ({ ofertaDraft, originalOferta, onChange, onCanc
           />
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tiempo de entrega</label>
+          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Días de entrega</label>
           <input
-            type="text"
+            type="number"
+            min="1"
+            step="1"
             className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
             value={ofertaDraft.tiempoEntrega}
             onChange={(e) => onChange({ ...ofertaDraft, tiempoEntrega: e.target.value })}
-            placeholder="Ej: 5 días"
+            placeholder="Ej: 5"
             disabled={disabled}
             onKeyDown={(e) => e.key === 'Enter' && !isUnchanged && onSubmit()}
           />

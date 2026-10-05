@@ -37,6 +37,7 @@ import { ToastProvider } from './components/ui/Toast';
 import { GlobalAlertModal } from './components/ui/GlobalAlertModal';
 import { DetalleClienteHistorial } from './views/analisis/DetalleClienteHistorial';
 import { DetalleLogisticaAnalisis } from './views/analisis/DetalleLogisticaAnalisis';
+import { clasificarSolicitud } from './utils/clasificarSolicitud';
 
 let NegociacionPreview = null;
 if (import.meta.env.DEV) {
@@ -217,19 +218,9 @@ function App() {
             };
           });
 
-          const productosActivos = productosProcesados.filter(p => p.estadoItem !== 'Anulado');
-          const hayPedidos = productosActivos.some(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
-          const todosPedidos = productosActivos.length > 0 && productosActivos.every(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
-          const hayItemsSinCotizar = productosActivos.some(p => !p.fob || Number(p.fob) <= 0);
-
-          tieneItemsCotizados = productosActivos.some(p => Number(p.fob || 0) > 0);
-
-          if (productosActivos.length === 0 && productosProcesados.length > 0) estadoFinal = 'Anulado';
-          else if (todosPedidos) estadoFinal = 'Pedido';
-          else if (hayPedidos) estadoFinal = 'Pedido Parcial';
-          else if (!tieneItemsCotizados) estadoFinal = 'Pendiente';
-          else if (hayItemsSinCotizar) estadoFinal = 'Cotizado Parcial';
-          else estadoFinal = 'Cotizado';
+          const clasificacion = clasificarSolicitud(productosProcesados, rfqData.estado);
+          estadoFinal = clasificacion.estado;
+          tieneItemsCotizados = clasificacion.conteoItems.cotizados > 0 || clasificacion.conteoItems.pedidos > 0;
           
           const updatePayload = {
             productos: productosProcesados, 
@@ -238,6 +229,8 @@ function App() {
             tramiteAduanal: ta, scan: sc, adimex: ax, manejos: mj,
             seguro: sg, entregaLocal: el, otrosGastos: og,
             estado: estadoFinal, 
+            resultado: clasificacion.resultado,
+            conteoItems: clasificacion.conteoItems,
             fechaCotizacion: new Date()
           };
 
