@@ -654,7 +654,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
 
       {/* VISTA DESKTOP: TABLA CLÁSICA (hidden en < md, visible en >= md) */}
       <div className="hidden md:block bg-white rounded-3xl shadow-xl border border-slate-200 overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[700px]">
+        <table className="w-full text-left border-collapse min-w-175">
           <thead>
             <tr className="bg-slate-900 text-white text-[10px] uppercase font-black tracking-widest">
               <th className="p-4">Referencia / Cliente</th>

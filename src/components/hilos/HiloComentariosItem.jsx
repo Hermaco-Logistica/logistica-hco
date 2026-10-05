@@ -229,12 +229,12 @@ export const HiloComentariosItem = ({
     <>
       {/* Backdrop para escritorio */}
       <div 
-        className="fixed inset-0 z-[90] bg-slate-900/50 backdrop-blur-xs animate-in fade-in hidden md:block" 
+        className="fixed inset-0 z-90 bg-slate-900/50 backdrop-blur-xs animate-in fade-in hidden md:block" 
         onClick={onClose} 
       />
       
       <div 
-        className="fixed inset-0 z-[100] bg-white flex flex-col animate-in slide-in-from-bottom-4 md:zoom-in-95 fade-in duration-200 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[92%] md:max-w-xl md:h-[650px] md:max-h-[88vh] md:rounded-3xl md:shadow-2xl md:border md:border-slate-200/80 overflow-hidden"
+        className="fixed inset-0 z-100 bg-white flex flex-col animate-in slide-in-from-bottom-4 md:zoom-in-95 fade-in duration-200 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[92%] md:max-w-xl md:h-162.5 md:max-h-[88vh] md:rounded-3xl md:shadow-2xl md:border md:border-slate-200/80 overflow-hidden"
         style={offsetY > 0 || isDragging ? {
           transform: `translateY(${offsetY}px)`,
           transition: isDragging ? 'none' : 'transform 0.3s ease-out'
@@ -424,7 +424,7 @@ export const HiloComentariosItem = ({
               }}
               onKeyDown={handleKeyDown}
               placeholder="Escribe un mensaje..."
-              className="w-full bg-[#f0f2f5] focus:bg-white border border-transparent focus:border-blue-500 rounded-2xl p-3 text-sm text-slate-800 outline-none resize-none max-h-[120px] transition-all min-h-[44px] mb-2 shadow-xs"
+              className="w-full bg-[#f0f2f5] focus:bg-white border border-transparent focus:border-blue-500 rounded-2xl p-3 text-sm text-slate-800 outline-none resize-none max-h-30 transition-all min-h-11 mb-2 shadow-xs"
               rows={2}
             />
             

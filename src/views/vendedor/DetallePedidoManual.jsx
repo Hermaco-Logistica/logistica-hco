@@ -180,7 +180,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
             {cerrados.length} de {itemsServer.length} cerrados
           </span>
         </div>
-        <p className={`text-xs font-bold uppercase leading-snug line-clamp-2 break-words ${colors.text}`}>
+        <p className={`text-xs font-bold uppercase leading-snug line-clamp-2 wrap-break-word ${colors.text}`}>
           {solicitudBase.cliente || 'Sin cliente'}
         </p>
       </div>
@@ -382,7 +382,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                                 value={draft.tiempoEntrega || ''} 
                                 onChange={(e) => updateBorrador(idx, { ...draft, tiempoEntrega: e.target.value })} 
                                 placeholder="Ej: 5 días" 
-                                className="w-full max-w-[160px] p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500 font-bold text-slate-700 text-sm" 
+                                className="w-full max-w-40 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500 font-bold text-slate-700 text-sm" 
                               />
                             ) : (
                               <span className="font-bold text-slate-700 text-sm">{tiempoEntrega || 'No definido'}</span>
@@ -394,7 +394,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                               <select 
                                 value={draft.modalidad || 'Aéreo'} 
                                 onChange={(e) => updateBorrador(idx, { ...draft, modalidad: e.target.value })} 
-                                className="w-full max-w-[160px] p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500 font-bold text-slate-700 text-sm cursor-pointer"
+                                className="w-full max-w-40 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500 font-bold text-slate-700 text-sm cursor-pointer"
                               >
                                 <option value="Aéreo">Aéreo</option>
                                 <option value="Marítimo">Marítimo</option>
@@ -422,7 +422,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                         <div className="flex flex-col items-end gap-3">
                           <EstadoItemChip estado={p.estadoItem} pendingRole={p.estadoItem === 'Anulado' ? null : neg.turno} />
                           {p.estadoItem === 'Anulado' && p.motivoAnulacion && (
-                            <span className="text-[9px] text-slate-400 italic mt-1 block text-right max-w-[160px]" title={p.motivoAnulacion}>
+                            <span className="text-[9px] text-slate-400 italic mt-1 block text-right max-w-40" title={p.motivoAnulacion}>
                               {p.motivoAnulacion.length > 40 ? p.motivoAnulacion.slice(0, 40) + '\u2026' : p.motivoAnulacion}
                             </span>
                           )}

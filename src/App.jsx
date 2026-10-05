@@ -344,7 +344,7 @@ function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       ) : (
-        <div className={`tf-app-shell ${appThemeClass} flex flex-col md:flex-row h-screen h-dvh overflow-hidden`}>
+        <div className={`tf-app-shell ${appThemeClass} flex flex-col md:flex-row h-dvh overflow-hidden`}>
           {/* TOP BAR MÓVIL (visible solo en < md) */}
           <header className="sticky top-0 z-30 flex md:hidden items-center justify-between bg-slate-900 px-4 py-3 text-white border-b border-white/10 shadow-md shrink-0 select-none">
             <div className="flex items-center gap-2 min-w-0">
@@ -389,7 +389,7 @@ function App() {
             mobileOpen={mobileDrawerOpen}
             onCloseMobile={() => setMobileDrawerOpen(false)}
           />
-          <main ref={setMainEl} className="flex-1 overflow-y-auto p-3.5 sm:p-5 md:p-6 lg:p-8 pb-[calc(110px_+_env(safe-area-inset-bottom,0px))] md:pb-8 w-full min-w-0">
+          <main ref={setMainEl} className="flex-1 overflow-y-auto p-3.5 sm:p-5 md:p-6 lg:p-8 pb-[calc(110px+env(safe-area-inset-bottom,0px))] md:pb-8 w-full min-w-0">
             <Routes>
               {isComprador ? (
                 <>

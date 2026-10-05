@@ -90,12 +90,15 @@ export const DashboardPedidos = ({ role }) => {
 
   useEffect(() => {
     if (!showAsignador) return;
-    const conservaSugerencia = !nuevaOC.numero || nuevaOC.numero === correlativoAutomaticoRef.current;
-    if (conservaSugerencia) {
-      correlativoAutomaticoRef.current = correlativoSugerido;
-      setNuevaOC(prev => ({ ...prev, numero: correlativoSugerido }));
-    }
-  }, [showAsignador, correlativoSugerido, nuevaOC.numero]);
+    setNuevaOC(prev => {
+      const conservaSugerencia = !prev.numero || prev.numero === correlativoAutomaticoRef.current;
+      if (conservaSugerencia && prev.numero !== correlativoSugerido) {
+        correlativoAutomaticoRef.current = correlativoSugerido;
+        return { ...prev, numero: correlativoSugerido };
+      }
+      return prev;
+    });
+  }, [showAsignador, correlativoSugerido]);
 
   const handleNumeroOCChange = (value) => {
     const numero = value.toUpperCase();
@@ -831,7 +834,7 @@ export const DashboardPedidos = ({ role }) => {
   return (
     <div className="w-full animate-in fade-in duration-500 pb-10">
       {modalDuplicado.open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
             <div className="mb-5 flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
@@ -1333,7 +1336,7 @@ export const DashboardPedidos = ({ role }) => {
 
       {/* VISTA DESKTOP: TABLA CLÁSICA (hidden en < md, visible en >= md) */}
       <div className="hidden md:block bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-x-auto">
-        <table className={`w-full border-collapse ${(role === 'comprador' || role === 'administrador') ? 'min-w-[1250px]' : 'min-w-[1000px]'}`}>
+        <table className={`w-full border-collapse ${(role === 'comprador' || role === 'administrador') ? 'min-w-312.5' : 'min-w-250'}`}>
           <thead>
             <tr className="bg-slate-900 text-[9px] text-slate-400 font-black uppercase tracking-[0.15em]">
               <th 
@@ -1426,7 +1429,7 @@ export const DashboardPedidos = ({ role }) => {
                         type="button"
                         onClick={() => openTrackingModal(trackingNumber, rfqLabel, ocDetalle?.id, ocDetalle?.estado, ocDetalle?.fechaUltimoEstado)}
                         title={puedeVerNumeroGuia ? `Guía: ${trackingNumber} • Ver tracking` : 'Ver seguimiento logístico'}
-                        className={`group relative flex items-center justify-between gap-2.5 px-3 py-2 rounded-2xl border transition-all duration-200 w-full max-w-[155px] cursor-pointer hover:-translate-y-0.5 active:translate-y-0 text-left ${ocInfo.activeClass}`}
+                        className={`group relative flex items-center justify-between gap-2.5 px-3 py-2 rounded-2xl border transition-all duration-200 w-full max-w-38.75 cursor-pointer hover:-translate-y-0.5 active:translate-y-0 text-left ${ocInfo.activeClass}`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ocInfo.dotColor} group-hover:scale-125 transition-transform`} />
@@ -1444,7 +1447,7 @@ export const DashboardPedidos = ({ role }) => {
                     ) : (
                       <div
                         title={ocInfo.mod !== 'Sin cambios' ? `Último cambio: ${ocInfo.mod}` : 'Sin tracking'}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-2xl border transition-all w-full max-w-[155px] select-none cursor-default ${ocInfo.disabledClass}`}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-2xl border transition-all w-full max-w-38.75 select-none cursor-default ${ocInfo.disabledClass}`}
                       >
                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ocInfo.dotColor}`} />
                         <div className="min-w-0">

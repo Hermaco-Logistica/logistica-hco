@@ -381,7 +381,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
     <div className="animate-in fade-in duration-500">
       {/* Modal Anulación Global */}
       {modalAnulacionGlobal.open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
             <h3 className="text-lg font-black text-slate-800 mb-2">Anular Solicitud</h3>
             <p className="text-sm text-slate-500 mb-4">Ingresa el motivo de la anulación para la solicitud <b>{modalAnulacionGlobal.rfqData?.correlativo}</b>. Esta acción anulará todos sus ítems de forma irreversible.</p>

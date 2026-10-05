@@ -386,7 +386,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
               onMouseMove={handleDragMove}
               onMouseUp={handleDragEnd}
               onMouseLeave={handleDragEnd}
-              className="overflow-x-auto overflow-y-auto overscroll-contain cursor-grab active:cursor-grabbing select-none h-[52vh] min-h-[380px] max-h-[620px] sm:h-[56vh] lg:h-[60vh]"
+              className="overflow-x-auto overflow-y-auto overscroll-contain cursor-grab active:cursor-grabbing select-none h-[52vh] min-h-95 max-h-155 sm:h-[56vh] lg:h-[60vh]"
               style={{ WebkitOverflowScrolling: 'touch' }}
             >
             <table className="min-w-full w-max text-left text-xs">

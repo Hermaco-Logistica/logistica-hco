@@ -210,7 +210,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-36 fade-in">
       {/* Modal Anulación */}
       {modalAnulacion.open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
             <h3 className="text-lg font-black text-slate-800 mb-2">Anular Ítem</h3>
             <p className="text-sm text-slate-500 mb-4">Ingresa el motivo de la anulación. Esta acción es irreversible.</p>
@@ -241,7 +241,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
 
       {/* Modal Denegar */}
       {modalDenegar.open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
             <h3 className="text-lg font-black text-slate-800 mb-2">Denegar Ítem</h3>
             <p className="text-sm text-slate-500 mb-4">Ingresa el motivo de la denegación para notificar al vendedor.</p>
@@ -308,7 +308,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
             {cerrados.length} de {itemsServer.length} cerrados
           </span>
         </div>
-        <p className={`text-xs font-bold uppercase leading-snug line-clamp-2 break-words ${colors.text}`}>
+        <p className={`text-xs font-bold uppercase leading-snug line-clamp-2 wrap-break-word ${colors.text}`}>
           {solicitudBase.cliente || 'Sin cliente'}
         </p>
       </div>
@@ -457,7 +457,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                           <div>
                             <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Precio</span>
                             {isPending ? (
-                              <div className="relative max-w-[120px]">
+                              <div className="relative max-w-30">
                                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">$</span>
                                 <input 
                                   type="number" 
@@ -479,7 +479,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                                 value={draft.tiempoEntrega || ''} 
                                 onChange={(e) => updateBorrador(idx, { ...draft, tiempoEntrega: e.target.value })} 
                                 placeholder="Ej: 5" 
-                                className="w-full max-w-[160px] p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-purple-500 font-bold text-slate-700 text-sm" 
+                                className="w-full max-w-40 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-purple-500 font-bold text-slate-700 text-sm" 
                               />
                             ) : (
                               <span className="font-bold text-slate-700 text-sm">{tiempoEntrega || 'No definido'}</span>
@@ -491,7 +491,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                               <select 
                                 value={draft.modalidad || 'Aéreo'} 
                                 onChange={(e) => updateBorrador(idx, { ...draft, modalidad: e.target.value })}  
-                                className="w-full max-w-[160px] p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-purple-500 font-bold text-slate-700 text-sm cursor-pointer"
+                                className="w-full max-w-40 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-purple-500 font-bold text-slate-700 text-sm cursor-pointer"
                               >
                                 <option value="Aéreo">Aéreo</option>
                                 <option value="Marítimo">Marítimo</option>
@@ -530,7 +530,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                               </button>
                             )}
                             {estaAnulado && p.motivoAnulacion && (
-                              <span className="text-[9px] text-slate-400 italic max-w-[120px] truncate" title={p.motivoAnulacion}>
+                              <span className="text-[9px] text-slate-400 italic max-w-30 truncate" title={p.motivoAnulacion}>
                                 {p.motivoAnulacion}
                               </span>
                             )}

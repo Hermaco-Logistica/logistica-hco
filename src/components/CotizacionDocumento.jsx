@@ -120,7 +120,7 @@ export default function CotizacionDocumento({ cotizacionData }) {
 
   return (
     <div className="w-full overflow-x-auto">
-      <div className="cotizacion-documento min-w-[650px] sm:min-w-0" style={{ ...pageStyle, position: 'relative' }}>
+      <div className="cotizacion-documento min-w-162.5 sm:min-w-0" style={{ ...pageStyle, position: 'relative' }}>
         {todoAnulado && (
           <div style={{
             position: 'absolute',
