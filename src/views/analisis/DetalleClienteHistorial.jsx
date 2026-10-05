@@ -17,7 +17,8 @@ import {
   CheckCircle2,
   Download,
   X,
-  ChevronDown
+  ChevronDown,
+  Ban
 } from 'lucide-react';
 import { exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { Badge } from '../../components/Badge';
@@ -58,6 +59,12 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
               <span className="text-slate-500 font-mono font-medium text-[10px] uppercase">{m.correlativo}</span>
               {res.esParcial && (
                 <span className="bg-amber-100 text-amber-800 text-[8px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Parcial</span>
+              )}
+              {m.solicitudOriginal?.estado !== 'Anulado' && (m.estado === 'Anulado' || m.solicitudOriginal?.productos?.some(p => p.estadoItem === 'Anulado')) && (
+                <span className="inline-flex items-center gap-1 text-[8px] font-semibold text-rose-500 bg-rose-50 px-1 py-0.5 rounded border border-rose-200">
+                  <Ban size={8} className="shrink-0" />
+                  {m.estado === 'Anulado' ? 'Ítem Anulado' : 'Ítems Anulados'}
+                </span>
               )}
             </div>
             <div className="flex items-center gap-1.5">
@@ -395,7 +402,8 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
             valorNeto: valorNeto,
             totalConIva: totalConIva,
             ocRef: ocRef,
-            estado: estadoItem,
+            estado: s.estado || 'Pendiente',
+            estadoItem: estadoItem,
             fob: Number(p.fob || 0),
             itemOriginal: p,
             solicitudOriginal: s
@@ -420,6 +428,14 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
       }
     };
   }, [solicitudes, targetKey, decodedSearch, mapFechasOC, vendedorFilter]);
+
+  const estadosDisponibles = useMemo(() => {
+    return Array.from(new Set(movimientos.map(m => m.estado).filter(Boolean))).sort();
+  }, [movimientos]);
+
+  const modalidadesDisponibles = useMemo(() => {
+    return Array.from(new Set(movimientos.map(m => m.modalidad).filter(Boolean))).sort();
+  }, [movimientos]);
 
   // Filtrado de la tabla según filtros y búsqueda
   const movimientosFiltrados = useMemo(() => {
@@ -624,7 +640,10 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
               {metricas.tasaConversion}
               <span className="text-[10px] sm:text-xs font-normal text-slate-400">%</span>
             </div>
-            <div className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate">
+            <div
+              className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate cursor-help"
+              title={`${metricas.pedidosCount} ganadas (100% adjudicadas) + ${metricas.parcialesCount} ganadas parciales de ${metricas.totalMovimientos} cotizaciones totales`}
+            >
               {metricas.pedidosCount} gan. {metricas.parcialesCount > 0 && <span className="text-amber-600 font-semibold">(+{metricas.parcialesCount} pc.)</span>} / {metricas.totalMovimientos} cots.
             </div>
           </div>
@@ -670,13 +689,10 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
               onChange={(e) => { setFilterEstado(e.target.value); setCurrentPage(1); }}
               className="w-full sm:w-auto bg-slate-50 border border-slate-200/70 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-slate-300 focus:bg-white cursor-pointer"
             >
-              <option value="">Estados (Todos)</option>
-              <option value="Pendiente">Pendiente</option>
-              <option value="Cotizado">Cotizado</option>
-              <option value="Cotizado Parcial">Cot. Parcial</option>
-              <option value="Pedido">Pedido</option>
-              <option value="Pedido Parcial">Ped. Parcial</option>
-              <option value="Comprado">Comprado</option>
+              <option value="">Estados ({estadosDisponibles.length})</option>
+              {estadosDisponibles.map((est) => (
+                <option key={est} value={est}>{est}</option>
+              ))}
             </select>
 
             {/* Filtro modalidad */}
@@ -685,10 +701,10 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
               onChange={(e) => { setFilterModalidad(e.target.value); setCurrentPage(1); }}
               className="w-full sm:w-auto bg-slate-50 border border-slate-200/70 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-slate-300 focus:bg-white cursor-pointer"
             >
-              <option value="">Modalidad (Todas)</option>
-              <option value="Aéreo">Aéreo</option>
-              <option value="Marítimo">Marítimo</option>
-              <option value="No asignada">No asignada</option>
+              <option value="">Mod. ({modalidadesDisponibles.length})</option>
+              {modalidadesDisponibles.map((mod) => (
+                <option key={mod} value={mod}>{mod}</option>
+              ))}
             </select>
           </div>
 
@@ -947,15 +963,23 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
 
                       {/* Resultado (Ganada / Cotizada / Pendiente) */}
                       <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                        {(() => {
-                          const res = evaluarEstadoGanada(m);
-                          return (
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${res.badgeClase}`}>
-                              {res.esGanada && <CheckCircle2 size={11} className="shrink-0" />}
-                              <span>{res.label}</span>
+                        <div className="flex flex-col items-center gap-1">
+                          {(() => {
+                            const res = evaluarEstadoGanada(m);
+                            return (
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${res.badgeClase}`}>
+                                {res.esGanada && <CheckCircle2 size={11} className="shrink-0" />}
+                                <span>{res.label}</span>
+                              </span>
+                            );
+                          })()}
+                          {m.solicitudOriginal?.estado !== 'Anulado' && (m.estado === 'Anulado' || m.solicitudOriginal?.productos?.some(p => p.estadoItem === 'Anulado')) && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-rose-500">
+                              <Ban size={9} className="shrink-0" />
+                              {m.estado === 'Anulado' ? 'ítem anulado' : 'ítems anulados'}
                             </span>
-                          );
-                        })()}
+                          )}
+                        </div>
                       </td>
 
                       {/* Acción */}

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/Badge';
 import { 
   Calendar as CalendarIcon, Trash2, AlertTriangle, Filter, 
-  ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Hash, Package
+  ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Hash, Package,
+  Inbox, Send
 } from 'lucide-react';
 import { MobileBadge } from '../../components/mobile';
 import { usePersistedState } from '../../hooks/usePersistedState';
@@ -723,9 +724,9 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   </td>
                   <td className="p-4 text-[11px]">
                     <div className="flex flex-col gap-1">
-                      <span className="text-slate-500 font-bold uppercase text-[9px]">📥 Solicitud: <b className="text-slate-700 font-black">{formatFechaHora(s.fechaS || s.fechaCreacion)}</b></span>
-                      <span className="text-emerald-600 font-black italic text-[9px] uppercase">
-                        📤 {s.tipo === 'Pedido Manual' ? 'Resp: ' : (s.estado.includes('Parcial') ? 'Avance Recibido: ' : 'Respondida: ')}
+                      <span className="text-slate-500 font-bold uppercase text-[9px] flex items-center gap-1"><Inbox size={12} className="text-slate-400 shrink-0" /> Solicitud: <b className="text-slate-700 font-black">{formatFechaHora(s.fechaS || s.fechaCreacion)}</b></span>
+                      <span className="text-emerald-600 font-black italic text-[9px] uppercase flex items-center gap-1">
+                        <Send size={12} className="text-emerald-500 shrink-0" /> {s.tipo === 'Pedido Manual' ? 'Resp: ' : (s.estado.includes('Parcial') ? 'Avance Recibido: ' : 'Respondida: ')}
                         {(() => {
                             let fResp = s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en ? s.ultimaNotificacion.en : (s.fechaCotizacion || s.fechaRespuesta);
                             if (s.estado === 'Anulado') fResp = s.productos?.find(p => p.fechaAnulacion)?.fechaAnulacion || fResp;

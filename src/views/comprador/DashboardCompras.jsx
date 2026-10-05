@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Printer, X, Calendar as CalendarIcon, Trash2, Filter, 
-  ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Package, Ban 
+  ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Package, Ban,
+  Inbox, Send
 } from 'lucide-react';
 import { db, auth } from '../../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -901,9 +902,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   </td>
                   <td className="p-4 text-[11px]">
                     <div className="flex flex-col gap-1">
-                      <span className="text-slate-500 font-bold uppercase text-[9px]">📥 Solicitud: <b className="text-slate-700 font-black">{formatFechaHora(s.fechaS || s.fechaCreacion)}</b></span>
-                      <span className="text-emerald-600 font-black italic text-[9px] uppercase">
-                        📤 Resp: {fechaResp ? formatFechaHora(fechaResp) : 'En espera'}
+                      <span className="text-slate-500 font-bold uppercase text-[9px] flex items-center gap-1"><Inbox size={12} className="text-slate-400 shrink-0" /> Solicitud: <b className="text-slate-700 font-black">{formatFechaHora(s.fechaS || s.fechaCreacion)}</b></span>
+                      <span className="text-emerald-600 font-black italic text-[9px] uppercase flex items-center gap-1">
+                        <Send size={12} className="text-emerald-500 shrink-0" /> Resp: {fechaResp ? formatFechaHora(fechaResp) : 'En espera'}
                       </span>
                     </div>
                   </td>

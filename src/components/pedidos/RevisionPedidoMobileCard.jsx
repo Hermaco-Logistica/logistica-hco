@@ -19,6 +19,7 @@ export const RevisionPedidoMobileCard = ({
   hiloAbierto,
   setHiloAbierto,
   onAnular,
+  onDenegar,
   estaAnulado,
   role
 }) => {
@@ -133,8 +134,9 @@ export const RevisionPedidoMobileCard = ({
                 <ArrowLeftRight size={14} /> Ajustar
               </button>
               <button 
-                onClick={() => { const m = window.prompt("Motivo de la denegación (obligatorio):"); if (m === null) return; if (!m.trim()) { alert("Debes ingresar un motivo para denegar el ítem."); return; } actions.denegar(idx, versionEsperada, m.trim()); }} 
+                onClick={() => onDenegar ? onDenegar(idx, versionEsperada) : null} 
                 className="w-10 flex items-center justify-center px-0 py-2.5 bg-slate-100 text-slate-400 hover:bg-rose-100 hover:text-rose-700 rounded-xl transition-colors"
+                title="Denegar"
               >
                 <X size={14} />
               </button>

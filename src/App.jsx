@@ -6,6 +6,7 @@ import { collection, query, onSnapshot, where, limit, doc, updateDoc, getDoc, se
 import { emailConfig } from './config/emailConfig';
 import { Menu, Lightbulb } from 'lucide-react';
 import { BottomTabBar } from './components/mobile';
+import { useHideOnScroll } from './hooks/useHideOnScroll';
 
 // Componentes y Vistas
 import { Sidebar } from './components/Sidebar';
@@ -80,6 +81,8 @@ function App() {
   const [isFindexSettingsOpen, setIsFindexSettingsOpen] = useState(false);
   const [isFindexActive, setIsFindexActive] = useState(true);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [mainEl, setMainEl] = useState(null);
+  const isMainHidden = useHideOnScroll(mainEl);
 
   useEffect(() => {
     import('./services/apiClient').then(({ apiClient }) => {
@@ -386,7 +389,7 @@ function App() {
             mobileOpen={mobileDrawerOpen}
             onCloseMobile={() => setMobileDrawerOpen(false)}
           />
-          <main className="flex-1 overflow-y-auto p-3.5 sm:p-5 md:p-6 lg:p-8 pb-24 md:pb-8 w-full min-w-0">
+          <main ref={setMainEl} className="flex-1 overflow-y-auto p-3.5 sm:p-5 md:p-6 lg:p-8 pb-[calc(110px_+_env(safe-area-inset-bottom,0px))] md:pb-8 w-full min-w-0">
             <Routes>
               {isComprador ? (
                 <>
@@ -470,13 +473,12 @@ function App() {
                 />
               )}
             </Routes>
-            {/* Espaciador explícito para que el BottomTabBar no cubra el contenido (paginación) en scroll */}
-            <div className="h-24 md:hidden shrink-0 w-full"></div>
           </main>
           {/* BARRA DE NAVEGACIÓN INFERIOR FIJA (MÓVIL < md) */}
           <BottomTabBar 
             role={role} 
-            onOpenDrawer={() => setMobileDrawerOpen(true)} 
+            onOpenDrawer={() => setMobileDrawerOpen(true)}
+            hidden={isMainHidden}
           />
         </div>
       )}

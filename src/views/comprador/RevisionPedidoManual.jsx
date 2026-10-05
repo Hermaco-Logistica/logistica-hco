@@ -52,6 +52,13 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
 
   const { conteos, noLeidos } = useMensajesResumen(id, itemsServer, currentUser?.rol);
   const [modalAnulacion, setModalAnulacion] = useState({ open: false, index: null, motivo: '', enviando: false });
+  const [modalDenegar, setModalDenegar] = useState({ open: false, index: null, versionEsperada: null, motivo: '' });
+
+  const handleConfirmarDenegar = () => {
+    if (!modalDenegar.motivo.trim()) return;
+    actions.denegar(modalDenegar.index, modalDenegar.versionEsperada, modalDenegar.motivo.trim());
+    setModalDenegar({ open: false, index: null, versionEsperada: null, motivo: '' });
+  };
 
   const handleAnularItem = async () => {
     if (!modalAnulacion.motivo.trim()) return alert("El motivo es obligatorio");
@@ -231,6 +238,38 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
           </div>
         </div>
       )}
+
+      {/* Modal Denegar */}
+      {modalDenegar.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
+            <h3 className="text-lg font-black text-slate-800 mb-2">Denegar Ítem</h3>
+            <p className="text-sm text-slate-500 mb-4">Ingresa el motivo de la denegación para notificar al vendedor.</p>
+            <textarea
+              className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all resize-none text-sm font-medium h-24 mb-4"
+              placeholder="Motivo de la denegación (obligatorio)..."
+              value={modalDenegar.motivo}
+              onChange={e => setModalDenegar(prev => ({ ...prev, motivo: e.target.value }))}
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setModalDenegar({ open: false, index: null, versionEsperada: null, motivo: '' })}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleConfirmarDenegar}
+                disabled={!modalDenegar.motivo.trim()}
+                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
+              >
+                Confirmar Denegación
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Encabezado Superior */}
       <div className="flex flex-row items-center justify-between gap-4 mb-4 md:mb-8">
         <div className="flex items-center gap-2 md:gap-4">
@@ -353,6 +392,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
               hiloAbierto={hiloAbierto}
               setHiloAbierto={setHiloAbierto}
               onAnular={() => setModalAnulacion({ open: true, index: idx, motivo: '', enviando: false })}
+              onDenegar={(index, versionEsperada) => setModalDenegar({ open: true, index, versionEsperada, motivo: '' })}
               estaAnulado={item.estadoItem === 'Anulado'}
               role={role}
             />
@@ -523,15 +563,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                                     <Check size={14} /> Aprobar
                                   </button>
                                   <button 
-                                    onClick={() => {
-                                      const m = window.prompt("Motivo de la denegación (obligatorio):");
-                                      if (m === null) return;
-                                      if (!m.trim()) {
-                                        alert("Debes ingresar un motivo para denegar el ítem.");
-                                        return;
-                                      }
-                                      actions.denegar(idx, versionEsperada, m.trim());
-                                    }} 
+                                    onClick={() => setModalDenegar({ open: true, index: idx, versionEsperada, motivo: '' })} 
                                     className="px-2 py-2 bg-slate-100 text-slate-500 hover:bg-rose-100 hover:text-rose-700 rounded-lg font-black text-[10px] uppercase transition-colors"
                                     title="Denegar"
                                   >

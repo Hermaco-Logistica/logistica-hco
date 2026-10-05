@@ -404,6 +404,12 @@ export const evaluarEstadoGanada = (itemOEstado) => {
       const p = itemOEstado.itemOriginal || {};
       const estadoItem = (p.estadoItem || itemOEstado.estadoItem || '').trim();
       const estadoSolicitud = (itemOEstado.solicitudOriginal?.estado || itemOEstado.estado || '').trim();
+
+      if (Array.isArray(itemOEstado.solicitudOriginal?.productos)) {
+        tieneItemsAnulados = itemOEstado.solicitudOriginal.productos.some(prod => prod.estadoItem === 'Anulado');
+      } else if (estadoItem === 'Anulado') {
+        tieneItemsAnulados = true;
+      }
       
       // 1. Si el ítem individual explícitamente fue pedido o comprado -> GANADA
       if (estadoItem === 'Pedido' || estadoItem === 'Comprado') {
