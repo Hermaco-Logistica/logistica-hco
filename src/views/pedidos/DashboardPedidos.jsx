@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { collection, onSnapshot, doc, updateDoc, addDoc, serverTimestamp, getDoc, getDocFromServer, query, where } from 'firebase/firestore';
+import React, { useState, useEffect, useRef } from 'react';
+import { collection, onSnapshot, doc, updateDoc, serverTimestamp, getDoc, getDocFromServer, query, where, runTransaction } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { 
   CheckSquare, Square, Link as LinkIcon, 
@@ -23,15 +23,6 @@ import { interpretarEstadoLogistico } from '../../utils/interpretarEstadoLogisti
 function parseCorrelativo(numeroOC, anio) {
   const match = String(numeroOC).match(new RegExp(`^0*(\\d+)-${anio}$`));
   return match ? parseInt(match[1], 10) : null;
-}
-
-function sugerirSiguienteCorrelativo(ordenesCompra, anio = new Date().getFullYear(), padding = 4) {
-  const usados = new Set(
-    ordenesCompra.map((oc) => parseCorrelativo(oc.numeroOC, anio)).filter((n) => n !== null)
-  );
-  let siguiente = 1;
-  while (usados.has(siguiente)) siguiente++;
-  return `${String(siguiente).padStart(padding, "0")}-${anio}`;
 }
 
 function letraSufijo(indice) {
@@ -84,21 +75,37 @@ export const DashboardPedidos = ({ role }) => {
   const [trackingNotice, setTrackingNotice] = useState('');
   const [modalDuplicado, setModalDuplicado] = useState({ open: false, original: '', reemplazo: '' });
 
-  const correlativoSugerido = useMemo(() => {
-    return sugerirSiguienteCorrelativo(ordenesExistentes);
-  }, [ordenesExistentes]);
+  const [correlativoSugerido, setCorrelativoSugerido] = useState('');
 
   useEffect(() => {
     if (!showAsignador) return;
-    setNuevaOC(prev => {
-      const conservaSugerencia = !prev.numero || prev.numero === correlativoAutomaticoRef.current;
-      if (conservaSugerencia && prev.numero !== correlativoSugerido) {
-        correlativoAutomaticoRef.current = correlativoSugerido;
-        return { ...prev, numero: correlativoSugerido };
+    const anio = new Date().getFullYear();
+    const counterRef = doc(db, 'metadata', 'oc_counter');
+    getDoc(counterRef).then((snap) => {
+      if (snap.exists() && snap.data().lastNum) {
+        // Counter ya inicializado → sugerir siguiente
+        const sugerido = `${String(snap.data().lastNum + 1).padStart(4, '0')}-${anio}`;
+        setCorrelativoSugerido(sugerido);
+        setNuevaOC(prev => {
+          const conservaSugerencia = !prev.numero || prev.numero === correlativoAutomaticoRef.current;
+          if (conservaSugerencia) {
+            correlativoAutomaticoRef.current = sugerido;
+            return { ...prev, numero: sugerido };
+          }
+          return prev;
+        });
+      } else {
+        // Counter no existe todavía → dejar vacío, el comprador escribe el primer número
+        setCorrelativoSugerido('');
+        correlativoAutomaticoRef.current = '';
+        setNuevaOC(prev => ({ ...prev, numero: '' }));
       }
-      return prev;
+    }).catch(() => {
+      setCorrelativoSugerido('');
+      correlativoAutomaticoRef.current = '';
     });
-  }, [showAsignador, correlativoSugerido]);
+  }, [showAsignador]);
+
 
   const handleNumeroOCChange = (value) => {
     const numero = value.toUpperCase();
@@ -612,8 +619,23 @@ export const DashboardPedidos = ({ role }) => {
       }));
 
       if (!ocExistente) {
-        await addDoc(collection(db, "ordenesCompra"), {
-          numeroOC: numOC, proveedor: provOC, estado: 'Pedido', fechaCreacion: serverTimestamp(), items: itemsFormateados
+        // Siempre usar transacción para mantener el contador sincronizado
+        const anio = new Date().getFullYear();
+        const counterRef = doc(db, 'metadata', 'oc_counter');
+        const nuevaOCRef = doc(collection(db, 'ordenesCompra'));
+        await runTransaction(db, async (transaction) => {
+          const counterSnap = await transaction.get(counterRef);
+          const numParsed = parseCorrelativo(numOC, anio);
+          let nuevoLastNum;
+          if (counterSnap.exists() && counterSnap.data().lastNum) {
+            nuevoLastNum = Math.max(counterSnap.data().lastNum, numParsed ?? 0);
+          } else {
+            nuevoLastNum = numParsed ?? 1;
+          }
+          transaction.set(nuevaOCRef, {
+            numeroOC: numOC, proveedor: provOC, estado: 'Pedido', fechaCreacion: serverTimestamp(), items: itemsFormateados
+          });
+          transaction.set(counterRef, { lastNum: nuevoLastNum }, { merge: true });
         });
       } else {
         const ocRef = doc(db, "ordenesCompra", ocExistente.id);
@@ -696,7 +718,7 @@ export const DashboardPedidos = ({ role }) => {
       setShowAsignador(false);
       correlativoAutomaticoRef.current = '';
     } catch (error) { 
-      console.error(error); 
+      console.error('[procesarAsignacion] ERROR:', error);
     } finally {
       procesandoRef.current = false;
     }
