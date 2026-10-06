@@ -160,10 +160,11 @@ export const generarPlantillaNuevoPedido = (orderData) => {
             ${orderData.productos.map((p, idx) => {
               const estaAnulado = p.estadoItem === 'Anulado';
               const fuePedido = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado';
+              const yaEnOC = p.estadoItem === 'Comprado' || !!p.numOC;
               const fechaConfirmStr = fuePedido ? formatFechaHoraEmail(p.fechaConfirmacion) : '';
 
               return `
-              <tr style="background-color: ${estaAnulado ? '#fff1f2' : (idx % 2 === 0 ? '#ffffff' : '#f8fafc')}; border-bottom: 1px solid #e2e8f0;">
+              <tr style="background-color: ${estaAnulado ? '#fff1f2' : yaEnOC ? '#f0fdf4' : (idx % 2 === 0 ? '#ffffff' : '#f8fafc')}; border-bottom: 1px solid #e2e8f0;">
                 <td style="padding: 10px 12px; font-size: 11px;">
                   <strong style="color: #0f172a; display: block; font-weight: 800;">${String(p.descripcion || p.desc || '').toUpperCase()}</strong>
                   <span style="font-size: 10px; color: #64748b;">Marca: ${p.marca || 'N/A'}</span>
@@ -171,6 +172,10 @@ export const generarPlantillaNuevoPedido = (orderData) => {
                   ${estaAnulado ? `
                     <div style="margin-top: 4px; font-size: 9px; font-weight: 900; color: #be123c; padding: 2px 0; display: inline-block; text-transform: uppercase;">
                       Anulado${p.motivoAnulacion ? `: ${String(p.motivoAnulacion).replace(/</g, '&lt;').replace(/>/g, '&gt;')}` : ''}
+                    </div>
+                  ` : yaEnOC ? `
+                    <div style="margin-top: 4px; font-size: 9px; font-weight: 900; color: #047857; background-color: #dcfce7; border: 1px solid #bbf7d0; padding: 2px 7px; border-radius: 4px; display: inline-block; text-transform: uppercase; letter-spacing: 0.05em;">
+                      ✓ ${p.estadoItem === 'Comprado' && p.numOC ? `OC: ${p.numOC}` : 'Confirmado Anteriormente'}${fechaConfirmStr ? ` · ${fechaConfirmStr}` : ''}
                     </div>
                   ` : fuePedido ? `
                     <div style="margin-top: 4px; font-size: 9px; font-weight: 700; color: #475569; padding: 2px 0; display: inline-block;">

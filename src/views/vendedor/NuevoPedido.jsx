@@ -373,6 +373,10 @@ export const NuevoPedido = () => {
     submittedRef.current = true;
 
     setLoading(true);
+    // Flag para saber si la transacción de Firestore ya completó.
+    // Si es true y hay un error posterior (ej: updateDoc), NO se resetea submittedRef
+    // para evitar que el usuario cree un pedido duplicado al reintentar.
+    let transaccionCompletada = false;
     try {
       const clienteNormalizado = normalizarNombreCliente(cliente);
       await guardarClienteSiNoExiste(clienteNormalizado, auth.currentUser);
@@ -407,6 +411,10 @@ export const NuevoPedido = () => {
           estado: 'Pendiente',
           tipo: 'Pedido Manual',
           fechaS: serverTimestamp(),
+          // Guardamos false por defecto; se actualiza a true solo si el correo se envía exitosamente.
+          // Esto evita que quede como `undefined` si updateDoc falla, causando que el ícono de
+          // advertencia en el Dashboard aparezca siempre aunque el correo sí llegó.
+          emailEnviado: false,
           productos: productos.map(p => ({
             ...p,
             marca: normalizarNombreMarca(p.marca),
@@ -428,6 +436,9 @@ export const NuevoPedido = () => {
         transaction.set(nuevaSolicitudRef, dataParaGuardar);
         return { ...dataParaGuardar, id: nuevaSolicitudRef.id };
       });
+      // El pedido ya fue creado en Firestore de forma atómica.
+      // A partir de aquí, si hay un error NO se permite reintentar para evitar duplicados.
+      transaccionCompletada = true;
 
       // --- Envío de correo automático ---
       const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -455,7 +466,12 @@ export const NuevoPedido = () => {
             bodyHtml: htmlBody
           })
         });
-        emailExitoso = mailRes.ok;
+        if (mailRes.ok) {
+          emailExitoso = true;
+        } else {
+          const resBody = await mailRes.json().catch(() => ({}));
+          console.warn('[NuevoPedido] Correo no enviado:', mailRes.status, resBody);
+        }
       } catch (e) {
         console.error("Error enviando correo de notificación:", e);
       }
@@ -469,10 +485,66 @@ export const NuevoPedido = () => {
       window.alert(msg, () => navigate('/vendedor'));
       
     } catch (error) {
-      console.error("Error al procesar RFQ:", error);
-      submittedRef.current = false; // permitir reintentar si hubo error
-      alert("Error crítico al procesar la solicitud");
+      // Solo permitir reintentar si el pedido AÚN NO fue creado en Firestore.
+      // Si transaccionCompletada es true, el documento ya existe → no resetear el lock
+      // para evitar que el usuario cree un pedido duplicado al reintentar.
+      if (!transaccionCompletada) {
+        submittedRef.current = false;
+      }
       isSubmittingRef.current = false;
+
+      const errorMsg = error?.message || 'Error desconocido';
+      let etapa = 'desconocida';
+      let mensajeUsuario;
+
+      if (transaccionCompletada) {
+        etapa = 'firestore_update';
+        mensajeUsuario = 'Tu pedido fue creado y ya aparece en tu panel.\nSi el correo de notificación no llegó a Compras, podés reenviarlo desde el botón de advertencia en el Dashboard.';
+      } else if (errorMsg.includes('PERMISSION_DENIED') || errorMsg.includes('permission-denied')) {
+        etapa = 'firebase_transaction';
+        mensajeUsuario = 'No tienes permisos para realizar esta acción. Intentá cerrar sesión y volver a ingresar. Si el problema persiste, contactá al administrador.';
+      } else if (errorMsg.includes('unavailable') || errorMsg.includes('network') || errorMsg.includes('Failed to fetch')) {
+        etapa = 'firebase_transaction';
+        mensajeUsuario = 'No se pudo conectar con el servidor. Verificá tu conexión a internet e intentá de nuevo.';
+      } else if (errorMsg.includes('transaction') || errorMsg.includes('Transaction')) {
+        etapa = 'firebase_transaction';
+        mensajeUsuario = 'Ocurrió un problema al guardar el pedido. Por favor, intentá de nuevo en unos momentos.';
+      } else {
+        etapa = 'desconocida';
+        mensajeUsuario = 'Ocurrió un error inesperado al procesar el pedido. Por favor, intentá de nuevo. Si el problema persiste, contactá al administrador.';
+      }
+
+      console.error(`[NuevoPedido] Error en etapa "${etapa}":`, error);
+
+      if (transaccionCompletada) {
+        alert(mensajeUsuario);
+        navigate('/vendedor');
+      } else {
+        alert(mensajeUsuario);
+      }
+
+      fetch('/.netlify/functions/send-error-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tipo: 'Pedido Manual',
+          correlativo: null,
+          vendedorEmail: auth.currentUser?.email || 'desconocido',
+          vendedorNombre: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'desconocido',
+          cliente: cliente || '—',
+          errorMessage: errorMsg,
+          errorStack: error?.stack || null,
+          etapa,
+          detailLog: {
+            transaccionCompletada,
+            cantidadProductos: productos?.length,
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+          },
+          fechaHora: new Date().toISOString(),
+        }),
+      }).catch((reportErr) => console.error('[NuevoPedido] No se pudo enviar reporte de error:', reportErr));
+
     } finally {
       setLoading(false);
     }

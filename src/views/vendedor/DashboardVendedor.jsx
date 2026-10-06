@@ -15,6 +15,13 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { generarPlantillaNuevaRFQ, generarPlantillaNuevoPedido } from '../../utils/emailTemplates';
 import { emailConfig } from '../../config/emailConfig';
 import { clasificarSolicitud, etiquetaResultadoSolicitud, RESULTADOS_SOLICITUD } from '../../utils/clasificarSolicitud';
+
+// Fecha de corte: documentos creados ANTES de este deploy no pueden garantizar
+// el valor correcto de emailEnviado (pueden ser undefined o false por razones ajenas).
+// Se tratan como "correo ya enviado" para no mostrar el ícono de advertencia.
+// Actualizar esta fecha cada vez que se haga un nuevo deploy que cambie este flujo.
+const FECHA_CORTE_EMAIL = new Date('2026-10-06T00:00:00-06:00');
+
 export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis Solicitudes', role }) => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
@@ -547,7 +554,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                     <span className="font-mono font-bold text-[11px] text-slate-400 tracking-wider">
                       {s.correlativo || '---'}
                     </span>
-                    {s.emailEnviado !== true && (
+                    {s.emailEnviado === false && (s.fechaS?.toDate?.() ?? new Date(0)) >= FECHA_CORTE_EMAIL && (
                       <button
                         type="button"
                         onClick={(e) => { e.stopPropagation(); handleReenviarCorreo(s); }}
@@ -693,7 +700,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       <span className="block font-black text-slate-800 text-lg leading-none">{s.correlativo}</span>
-                      {s.emailEnviado !== true && (
+                      {s.emailEnviado === false && (s.fechaS?.toDate?.() ?? new Date(0)) >= FECHA_CORTE_EMAIL && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleReenviarCorreo(s); }}
                           disabled={reenviandoId === s.id}

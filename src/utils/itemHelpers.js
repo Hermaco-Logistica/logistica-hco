@@ -15,5 +15,5 @@ export const calcularFechaEstimada = (dias) => {
     fecha.setDate(fecha.getDate() + 1);
     if (fecha.getDay() !== 0 && fecha.getDay() !== 6) diasRestantes--;
   }
-  return fecha.toLocaleDateString('es-SV', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'America/El_Salvador' });
+  return fecha.toLocaleDateString('es-SV', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/El_Salvador' });
 };

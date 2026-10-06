@@ -206,19 +206,15 @@ export const DashboardPedidos = ({ role }) => {
                 }
               }
 
-              // Convertir "DD/MM" o "DD/MM/YYYY" a "DD/MM/YY"
+              // Normalizar a DD/MM/YYYY
               if (fechaCompromiso && String(fechaCompromiso).includes('/')) {
                 const partes = String(fechaCompromiso).split('/');
                 if (partes.length === 2) {
-                  // Todo lo que sea DD/MM en la base de datos es del 2026 según regla de negocio
-                  const yearShort = "26";
-                  fechaCompromiso = `${partes[0].padStart(2, '0')}/${partes[1].padStart(2, '0')}/${yearShort}`;
+                  // Legacy DD/MM: siempre 2026
+                  fechaCompromiso = `${partes[0].padStart(2, '0')}/${partes[1].padStart(2, '0')}/2026`;
                 } else if (partes.length === 3) {
-                  if (partes[2].length === 4) {
-                    fechaCompromiso = `${partes[0].padStart(2, '0')}/${partes[1].padStart(2, '0')}/${partes[2].slice(-2)}`;
-                  } else {
-                    fechaCompromiso = `${partes[0].padStart(2, '0')}/${partes[1].padStart(2, '0')}/${partes[2]}`;
-                  }
+                  const anioNorm = partes[2].length === 2 ? `20${partes[2]}` : partes[2];
+                  fechaCompromiso = `${partes[0].padStart(2, '0')}/${partes[1].padStart(2, '0')}/${anioNorm}`;
                 }
               }
 
@@ -481,12 +477,12 @@ export const DashboardPedidos = ({ role }) => {
       let dia, mes, anio;
 
       if (partes.length === 2) {
-        // Soporte para formato DD/MM (asume explícitamente 2026 según regla de negocio)
+        // Datos legacy DD/MM: siempre corresponden a 2026
         dia = parseInt(partes[0], 10);
         mes = parseInt(partes[1], 10);
         anio = 2026;
       } else if (partes.length === 3) {
-        // Soporte para formato DD/MM/YYYY
+        // Soporta DD/MM/YY y DD/MM/YYYY
         dia = parseInt(partes[0], 10);
         mes = parseInt(partes[1], 10);
         anio = parseInt(partes[2], 10);
