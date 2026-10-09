@@ -1,11 +1,19 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Search, Package, ExternalLink, Calendar, User, Building, Link as LinkIcon, CheckCircle2, Download, X, Ban } from 'lucide-react';
+import { ArrowLeft, Search, Package, ExternalLink, Calendar, User, Building, Link as LinkIcon, CheckCircle2, Download, X, Ban, MessageCircleQuestion } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
+import { MotivoAnulacionModal } from '../../components/MotivoAnulacionModal';
 import { Badge } from '../../components/Badge';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, evaluarEstadoGanada } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
+import {
+  getHoyElSalvador,
+  getAnioActualElSalvador,
+  parseInicioDiaElSalvador,
+  parseFinDiaElSalvador,
+  cargarFiltroPeriodoStorage
+} from '../../utils/dateValidation';
 
 export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const { tipoEstado } = useParams();
@@ -35,7 +43,23 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
   const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [clienteFilter, setClienteFilter] = useSessionState('analisis_cliente_search', '');
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsMotivo, setItemsMotivo] = useState([]);
   const itemsPerPage = 10;
+
+  // Filtro de período sincronizado con el dashboard (guardado en sessionStorage)
+  const filtroPeriodo = useMemo(() => cargarFiltroPeriodoStorage(), []);
+  const rangoEsteMes = useMemo(() => {
+    const hoy = getHoyElSalvador();
+    const [yStr, mStr] = hoy.split('-');
+    const y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    const sigY = m === 12 ? y + 1 : y;
+    const sigM = m === 12 ? 1 : m + 1;
+    return {
+      inicio: new Date(`${yStr}-${mStr}-01T00:00:00-06:00`),
+      fin: new Date(`${sigY}-${String(sigM).padStart(2, '0')}-01T00:00:00-06:00`)
+    };
+  }, []);
 
   // Scroll horizontal por arrastre (drag) para la tabla, además del swipe nativo táctil
   const scrollContainerRef = useRef(null);
@@ -100,9 +124,65 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
     return Array.from(ocs);
   };
 
+  const obtenerMotivosAnulacion = (s) => {
+    if (!Array.isArray(s.productos)) return [];
+    return [...new Set(
+      s.productos
+        .filter((p) => p.estadoItem === 'Anulado')
+        .map((p) => p.motivoAnulacion || p.motivoEstadoItem || p.motivoDenegacion || p.motivoRechazo || '')
+        .map((motivo) => motivo.toString().trim())
+        .filter(Boolean)
+    )];
+  };
+
+  const obtenerItemsAnulados = (s) => {
+    if (!Array.isArray(s.productos)) return [];
+    return s.productos
+      .filter((p) => p.estadoItem === 'Anulado')
+      .map((p, index) => ({
+        idMov: `${s.id}-${index}`,
+        correlativo: s.correlativo || 'S/N',
+        producto: (p.desc || p.descripcion || 'Sin descripción').trim(),
+        marca: (p.marca || '').trim(),
+        cliente: s.cliente || 'Consumidor Final',
+        estado: s.estado || 'Anulado',
+        motivoAnulacion: p.motivoAnulacion || p.motivoEstadoItem || p.motivoDenegacion || p.motivoRechazo || ''
+      }));
+  };
+
   // Filtrar según el tab activo y filtros contextuales (vendedor / cliente)
   const solicitudesPorEstado = useMemo(() => {
+    const { periodo, fechaInicio, fechaFin, anioHistorico } = filtroPeriodo;
+    const ahora = new Date();
+    const anioActual = getAnioActualElSalvador();
+
     return solicitudes.filter((s) => {
+      // Filtro por fecha (respeta el período seleccionado en el dashboard)
+      const fecha = parseDate(s.fechaS || s.fechaCreacion);
+      if (fecha) {
+        if (periodo === 'custom') {
+          if (!(fechaInicio && fechaFin && fechaInicio > fechaFin)) {
+            if (fechaInicio) {
+              const dInicio = parseInicioDiaElSalvador(fechaInicio);
+              if (dInicio && fecha < dInicio) return false;
+            }
+            if (fechaFin) {
+              const dFin = parseFinDiaElSalvador(fechaFin);
+              if (dFin && fecha > dFin) return false;
+            }
+          }
+        } else if (periodo === 'historico') {
+          if (anioHistorico !== 'todos' && fecha.getFullYear() !== anioHistorico) return false;
+        } else if (periodo !== 'all') {
+          const diffDias = (ahora.getTime() - fecha.getTime()) / (1000 * 3600 * 24);
+          if (periodo === '7d' && diffDias > 7) return false;
+          if (periodo === '30d' && diffDias > 30) return false;
+          if (periodo === '90d' && diffDias > 90) return false;
+          if (periodo === 'this_month' && (fecha < rangoEsteMes.inicio || fecha >= rangoEsteMes.fin)) return false;
+          if (periodo === 'this_year' && fecha.getFullYear() !== anioActual) return false;
+        }
+      }
+
       if (vendedorFilter && s.vendedorNombre !== vendedorFilter) return false;
       if (clienteFilter) {
         const term = normalizarBusqueda(clienteFilter);
@@ -131,7 +211,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
       }
       return true;
     });
-  }, [solicitudes, tabActual, vendedorFilter, clienteFilter]);
+  }, [solicitudes, tabActual, vendedorFilter, clienteFilter, filtroPeriodo, rangoEsteMes]);
 
   // Filtrar por término de búsqueda
   const solicitudesFiltradas = useMemo(() => {
@@ -186,7 +266,9 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
   }
 
   return (
-    <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
+    <>
+      <MotivoAnulacionModal movimientos={itemsMotivo} onClose={() => setItemsMotivo([])} />
+      <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
       {/* CABECERA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -339,6 +421,8 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                 const ocs = obtenerOCs(s);
                 const tieneLink = s.linkOC && s.linkOC.startsWith('http');
                 const res = evaluarEstadoGanada(s);
+                const motivosAnulacion = obtenerMotivosAnulacion(s);
+                const itemsAnulados = obtenerItemsAnulados(s);
 
                 return (
                   <div key={s.id} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 relative">
@@ -391,6 +475,20 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                         </span>
                       </div>
                     </div>
+
+                    {tabActual.startsWith('anuladas') && (
+                      <div className="border-t border-slate-100 pt-2">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Motivo</p>
+                        <button
+                          type="button"
+                          onClick={() => setItemsMotivo(itemsAnulados)}
+                          className="mt-1 inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px active:shadow-inner"
+                        >
+                          <MessageCircleQuestion size={13} /> Consulta
+                          <span className="text-[10px] font-normal">({motivosAnulacion.length})</span>
+                        </button>
+                      </div>
+                    )}
 
                     {ocs.length > 0 || tieneLink ? (
                       <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-1.5 items-center">
@@ -448,6 +546,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                       <th className="py-2.5 px-3.5 whitespace-nowrap">Vendedor</th>
                       <th className="py-2.5 px-3.5 whitespace-nowrap">Fecha</th>
                       <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ítems</th>
+                      {tabActual.startsWith('anuladas') && <th className="py-2.5 px-3.5 whitespace-nowrap">Motivo</th>}
                       <th className="py-2.5 px-3.5 whitespace-nowrap">OC Ref</th>
                       <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Estado</th>
                       <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Resultado</th>
@@ -460,6 +559,8 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                       const primerProd = s.productos?.[0]?.desc || '';
                       const ocs = obtenerOCs(s);
                       const tieneLink = s.linkOC && s.linkOC.startsWith('http');
+                      const motivosAnulacion = obtenerMotivosAnulacion(s);
+                      const itemsAnulados = obtenerItemsAnulados(s);
 
                       return (
                         <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
@@ -506,6 +607,14 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                               {cantItems}
                             </span>
                           </td>
+                          {tabActual.startsWith('anuladas') && (
+                            <td className="max-w-[280px] py-2.5 px-3.5 align-top text-xs text-slate-600">
+                              <button type="button" onClick={() => setItemsMotivo(itemsAnulados)} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px active:shadow-inner" title="Consultar motivos de anulación">
+                                <MessageCircleQuestion size={13} /> Consulta
+                                <span className="text-[10px] font-normal">({motivosAnulacion.length})</span>
+                              </button>
+                            </td>
+                          )}
                           <td className="py-2.5 px-3.5 whitespace-nowrap">
                             {ocs.length > 0 ? (
                               <div className="flex flex-wrap gap-1 items-center">
@@ -610,7 +719,8 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
           </button>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

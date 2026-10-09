@@ -1,20 +1,60 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Search, Package, ChevronRight, Download, X, User, Building } from 'lucide-react';
 import { extraerTodosLosMovimientos, exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
+import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
+import {
+  getHoyElSalvador,
+  getAnioActualElSalvador,
+  parseInicioDiaElSalvador,
+  parseFinDiaElSalvador,
+  cargarFiltroPeriodoStorage
+} from '../../utils/dateValidation';
 
 export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const theme = useMemo(() => getRoleTheme(role), [role]);
   const [searchTerm, setSearchTerm] = useSessionState('analisis_prod_dir_search', '');
   const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [clienteFilter, setClienteFilter] = useSessionState('analisis_cliente_search', '');
-  const [ordenarPor, setOrdenarPor] = useSessionState('analisis_prod_dir_orden', 'veces'); // 'veces' (default) | 'unidades' | 'pedidos'
+  const [resultadoFilter] = useSessionState('analisis_resultado_filter', '');
+  const ordenInicial = useMemo(() => {
+    const orden = searchParams.get('orden');
+    return orden === 'ganadas' ? 'pedidos' : ['veces', 'unidades', 'pedidos', 'anulaciones'].includes(orden) ? orden : 'veces';
+  }, [searchParams]);
+  const [ordenarPor, setOrdenarPor] = useState(ordenInicial); // 'veces' | 'unidades' | 'pedidos' | 'anulaciones'
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Filtro de período sincronizado con el dashboard (guardado en sessionStorage)
+  const filtroPeriodo = useMemo(() => {
+    const almacenado = cargarFiltroPeriodoStorage();
+    const periodoRuta = searchParams.get('periodo');
+    if (!periodoRuta) return almacenado;
+
+    return {
+      periodo: periodoRuta,
+      fechaInicio: searchParams.get('fechaInicio') || '',
+      fechaFin: searchParams.get('fechaFin') || '',
+      anioHistorico: searchParams.get('anioHistorico') || 'todos'
+    };
+  }, [searchParams]);
+  const rangoEsteMes = useMemo(() => {
+    const hoy = getHoyElSalvador();
+    const [yStr, mStr] = hoy.split('-');
+    const y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    const sigY = m === 12 ? y + 1 : y;
+    const sigM = m === 12 ? 1 : m + 1;
+    return {
+      inicio: new Date(`${yStr}-${mStr}-01T00:00:00-06:00`),
+      fin: new Date(`${sigY}-${String(sigM).padStart(2, '0')}-01T00:00:00-06:00`)
+    };
+  }, []);
 
   useEffect(() => {
     document.querySelector('main')?.scrollTo(0, 0);
@@ -26,15 +66,63 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
     if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [ordenarPor]);
 
+  const parseDate = (val) => {
+    if (!val) return null;
+    if (typeof val === 'object') {
+      if (typeof val.toDate === 'function') {
+        try { return val.toDate(); } catch { return null; }
+      }
+      if (typeof val.seconds === 'number') {
+        return new Date(val.seconds * 1000);
+      }
+    }
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
   // Agrupar productos de todas las solicitudes (filtradas por vendedor / cliente si están activos)
   const todosLosProductos = useMemo(() => {
     const map = {};
+    const { periodo, fechaInicio, fechaFin, anioHistorico } = filtroPeriodo;
+    const ahora = new Date();
+    const anioActual = getAnioActualElSalvador();
 
     solicitudes.forEach((s) => {
+      // Filtro por fecha (respeta el período seleccionado en el dashboard)
+      const fechaSol = parseDate(s.fechaS || s.fechaCreacion);
+      if (fechaSol) {
+        if (periodo === 'custom') {
+          if (!(fechaInicio && fechaFin && fechaInicio > fechaFin)) {
+            if (fechaInicio) {
+              const dInicio = parseInicioDiaElSalvador(fechaInicio);
+              if (dInicio && fechaSol < dInicio) return;
+            }
+            if (fechaFin) {
+              const dFin = parseFinDiaElSalvador(fechaFin);
+              if (dFin && fechaSol > dFin) return;
+            }
+          }
+        } else if (periodo === 'historico') {
+          if (anioHistorico !== 'todos' && fechaSol.getFullYear() !== anioHistorico) return;
+        } else if (periodo !== 'all') {
+          const diffDias = (ahora.getTime() - fechaSol.getTime()) / (1000 * 3600 * 24);
+          if (periodo === '7d' && diffDias > 7) return;
+          if (periodo === '30d' && diffDias > 30) return;
+          if (periodo === '90d' && diffDias > 90) return;
+          if (periodo === 'this_month' && (fechaSol < rangoEsteMes.inicio || fechaSol >= rangoEsteMes.fin)) return;
+          if (periodo === 'this_year' && fechaSol.getFullYear() !== anioActual) return;
+        }
+      }
+
       if (vendedorFilter && s.vendedorNombre !== vendedorFilter) return;
       if (clienteFilter) {
         const term = normalizarBusqueda(clienteFilter);
         if (!normalizarBusqueda(s.cliente || '').includes(term)) return;
+      }
+      // Filtro por resultado (respeta el selector activo en el dashboard)
+      if (resultadoFilter) {
+        const resultado = s.resultado || clasificarSolicitud(s.productos, s.estado).resultado;
+        if (resultado !== resultadoFilter) return;
       }
       if (!Array.isArray(s.productos)) return;
 
@@ -45,8 +133,6 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
 
         const cant = Number(p.cant || 1);
         const marca = p.marca?.trim() || '';
-        const esPedido = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || 
-          (s.estado === 'Pedido' && p.estadoItem !== 'Cotizado' && p.estadoItem !== 'Pendiente');
 
         if (!map[key]) {
           map[key] = {
@@ -57,17 +143,27 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
             unidadesCotizadas: 0,
             vecesPedido: 0,
             unidadesPedidas: 0,
+            anulaciones: 0,
             clientes: new Set(),
             rfqIds: new Set()
           };
         }
 
         const item = map[key];
-        item.vecesCotizado++;
-        item.unidadesCotizadas += cant;
         if (marca) item.marcas.add(marca);
         if (s.cliente) item.clientes.add(s.cliente.trim());
         if (s.id) item.rfqIds.add(s.id);
+
+        if (p.estadoItem === 'Anulado') {
+          item.anulaciones++;
+          return;
+        }
+
+        const esPedido = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' ||
+          (s.estado === 'Pedido' && p.estadoItem !== 'Cotizado' && p.estadoItem !== 'Pendiente');
+
+        item.vecesCotizado++;
+        item.unidadesCotizadas += cant;
 
         if (esPedido) {
           item.vecesPedido++;
@@ -81,7 +177,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
       marcaPrincipal: Array.from(p.marcas).join(', ') || 'Sin marca',
       totalClientes: p.clientes.size
     }));
-  }, [solicitudes, vendedorFilter, clienteFilter]);
+  }, [solicitudes, vendedorFilter, clienteFilter, resultadoFilter, filtroPeriodo, rangoEsteMes]);
 
   // Filtrar por término de búsqueda
   const productosFiltrados = useMemo(() => {
@@ -103,7 +199,10 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
         return b.unidadesCotizadas - a.unidadesCotizadas || b.vecesCotizado - a.vecesCotizado;
       }
       if (ordenarPor === 'pedidos') {
-        return b.vecesPedido - a.vecesPedido || b.unidadesPedidas - a.unidadesPedidas;
+        return b.vecesPedido - a.vecesPedido || b.unidadesPedidas - a.unidadesPedidas || b.vecesCotizado - a.vecesCotizado;
+      }
+      if (ordenarPor === 'anulaciones') {
+        return b.anulaciones - a.anulaciones || b.vecesCotizado - a.vecesCotizado;
       }
       // 'veces' por defecto (más veces cotizado)
       return b.vecesCotizado - a.vecesCotizado || b.unidadesCotizadas - a.unidadesCotizadas;
@@ -153,7 +252,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
           {[
             { id: 'veces', label: 'Más cotizados' },
             { id: 'unidades', label: 'Mayor volumen' },
-            { id: 'pedidos', label: 'Más ganados' }
+            { id: 'pedidos', label: 'Más ganados' },
+            { id: 'anulaciones', label: 'Más anulaciones' }
           ].map((btn) => (
             <button
               key={btn.id}
@@ -309,6 +409,23 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                       <span className="text-slate-500">Clientes</span>
                       <span className="font-mono font-bold text-slate-800">{p.totalClientes}</span>
                     </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Anulaciones</span>
+                      {p.anulaciones > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}/anulados`)}
+                          className="inline-flex items-center min-h-7 px-2 -mr-2 rounded-md bg-white border border-slate-200/80 shadow-sm font-mono font-bold text-rose-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-900 active:translate-y-px active:shadow-inner transition-all cursor-pointer"
+                          title="Ver productos anulados"
+                        >
+                          {p.anulaciones}
+                          <span className="hidden sm:inline text-[9px] font-normal ml-1">anulaciones</span>
+                          <span className="sm:hidden text-[9px] font-normal ml-1">anul.</span>
+                        </button>
+                      ) : (
+                        <span className="font-mono font-bold text-slate-400">0</span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="pt-2 border-t border-slate-100">
@@ -334,6 +451,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     <th className="py-2.5 px-3.5">Descripción del Producto</th>
                     <th className="py-2.5 px-3.5">Marca</th>
                     <th className="py-2.5 px-3.5 text-center">Veces Cotizado</th>
+                    <th className="py-2.5 px-3.5 text-center">Anulaciones</th>
                     <th className="py-2.5 px-3.5 text-center">Unidades Cotizadas</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Cotizaciones Ganadas</th>
                     <th className="py-2.5 px-3.5 text-center">Unidades Pedidas</th>
@@ -371,6 +489,19 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                           <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-xs font-semibold">
                             {p.vecesCotizado} RFQ{p.vecesCotizado > 1 ? 's' : ''}
                           </span>
+                        </td>
+                        <td className="py-2.5 px-3.5 text-center">
+                          {p.anulaciones > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}/anulados`)}
+                              className="font-mono text-xs font-semibold text-rose-700 hover:text-rose-900 underline underline-offset-2 cursor-pointer whitespace-nowrap"
+                            >
+                              {p.anulaciones} anulaciones
+                            </button>
+                          ) : (
+                            <span className="font-mono text-xs font-semibold text-slate-400">0</span>
+                          )}
                         </td>
                         <td className="py-2.5 px-3.5 text-center">
                           <span className="inline-block font-mono text-slate-800 font-semibold text-xs">

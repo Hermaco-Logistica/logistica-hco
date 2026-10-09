@@ -135,6 +135,7 @@ export function extraerTodosLosMovimientos(solicitudes = [], ordenesCompra = [])
         totalConIva,
         ocRef,
         estado: estadoItem,
+        motivoAnulacion: p.motivoAnulacion || p.motivoEstadoItem || p.motivoDenegacion || p.motivoRechazo || '',
         fob: Number(p.fob || 0),
         itemOriginal: p,
         solicitudOriginal: s
@@ -258,6 +259,7 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
     'Total con IVA ($)',
     'OC Ref',
     'Estado',
+    'Motivo del Estado',
     'Resultado'
   ];
 
@@ -284,6 +286,7 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
       'Total con IVA ($)': totIva,
       'OC Ref': m.ocRef || '---',
       'Estado': m.estado || '---',
+      'Motivo del Estado': m.motivoAnulacion || m.motivoEstadoItem || m.motivoDenegacion || m.motivoRechazo || '---',
       'Resultado': res?.label || m.estado || '---'
     };
   });
@@ -304,6 +307,7 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
     { wch: 18 }, // Total con IVA ($)
     { wch: 18 }, // OC Ref
     { wch: 16 }, // Estado
+    { wch: 34 }, // Motivo del Estado
     { wch: 16 }  // Resultado
   ];
 

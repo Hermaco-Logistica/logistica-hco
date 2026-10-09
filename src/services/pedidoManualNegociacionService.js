@@ -150,7 +150,10 @@ async function ejecutarMutacion({ solicitudId, idx, versionEsperada, actor, acci
       modalidad: itemActual.modalidad,
       fobAnterior: itemActual.fobAnterior,
       tiempoEntregaAnterior: itemActual.tiempoEntregaAnterior,
-      modalidadAnterior: itemActual.modalidadAnterior
+      modalidadAnterior: itemActual.modalidadAnterior,
+      motivoEstadoItem: itemActual.motivoEstadoItem,
+      motivoDenegacion: itemActual.motivoDenegacion,
+      motivoRechazo: itemActual.motivoRechazo
     };
 
     const prevMensajeId = negActual.ofertaVigente?.mensajeId;
@@ -316,7 +319,11 @@ export const denegarItem = ({ solicitudId, idx, versionEsperada, actor, motivo }
       neg.resultado = 'denegado';
       return {
         negociacion: neg,
-        itemUpdate: { estadoItem: 'Denegado' },
+        itemUpdate: {
+          estadoItem: 'Denegado',
+          motivoEstadoItem: motivo,
+          motivoDenegacion: motivo
+        },
         comentario: motivo
       };
     }
@@ -382,7 +389,11 @@ export const rechazarOferta = ({ solicitudId, idx, versionEsperada, actor, motiv
       neg.resultado = 'cancelado';
       return {
         negociacion: neg,
-        itemUpdate: { estadoItem: 'Cancelado' },
+        itemUpdate: {
+          estadoItem: 'Cancelado',
+          motivoEstadoItem: motivo,
+          motivoRechazo: motivo
+        },
         comentario: motivo
       };
     }
@@ -423,7 +434,10 @@ export const deshacerUltimoCambio = ({ solicitudId, idx, versionEsperada, actor 
       modalidad: previo.modalidad,
       fobAnterior: previo.fobAnterior,
       tiempoEntregaAnterior: previo.tiempoEntregaAnterior,
-      modalidadAnterior: previo.modalidadAnterior
+      modalidadAnterior: previo.modalidadAnterior,
+      motivoEstadoItem: previo.motivoEstadoItem || null,
+      motivoDenegacion: previo.motivoDenegacion || null,
+      motivoRechazo: previo.motivoRechazo || null
     };
     
     // Firestore no soporta 'undefined', así que lo eliminamos

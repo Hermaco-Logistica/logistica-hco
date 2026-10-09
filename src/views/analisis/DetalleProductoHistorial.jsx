@@ -18,15 +18,24 @@ import {
   Download,
   X,
   ChevronDown,
-  Ban
+  Ban,
+  MessageCircleQuestion
 } from 'lucide-react';
 import { exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { Badge } from '../../components/Badge';
+import { MotivoAnulacionModal } from '../../components/MotivoAnulacionModal';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, evaluarEstadoGanada } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
+import {
+  getHoyElSalvador,
+  getAnioActualElSalvador,
+  parseInicioDiaElSalvador,
+  parseFinDiaElSalvador,
+  cargarFiltroPeriodoStorage
+} from '../../utils/dateValidation';
 
-const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGanada, irADetalle }) => {
+const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGanada, irADetalle, onMostrarMotivo, soloAnulados = false }) => {
   const [expanded, setExpanded] = useState(false);
   const esAereo = m.modalidad === 'Aéreo';
   const esMaritimo = m.modalidad === 'Marítimo';
@@ -57,13 +66,13 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
               </span>
               <span className="text-slate-300 text-[9px]">•</span>
               <span className="text-slate-500 font-mono font-medium text-[10px] uppercase">{m.correlativo}</span>
-              {res.esParcial && (
+              {!soloAnulados && res.esParcial && (
                 <span className="bg-amber-100 text-amber-800 text-[8px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Parcial</span>
               )}
-              {m.solicitudOriginal?.estado !== 'Anulado' && (m.estado === 'Anulado' || m.solicitudOriginal?.productos?.some(p => p.estadoItem === 'Anulado')) && (
+              {soloAnulados && (
                 <span className="inline-flex items-center gap-1 text-[8px] font-semibold text-rose-500 bg-rose-50 px-1 py-0.5 rounded border border-rose-200">
                   <Ban size={8} className="shrink-0" />
-                  {m.estado === 'Anulado' ? 'Ítem Anulado' : 'Ítems Anulados'}
+                  Ítem Anulado
                 </span>
               )}
             </div>
@@ -113,10 +122,10 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
                 <span className="text-slate-500">Fecha Resp.</span>
                 <span className="font-mono text-slate-700">{m.fechaResp ? formatFecha(m.fechaResp) : 'Pendiente'}</span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-100/60">
+              {!soloAnulados && <div className="flex justify-between py-1.5 border-b border-slate-100/60">
                 <span className="text-slate-500">Fecha OC</span>
                 <span className="font-mono text-slate-700">{m.fechaOC ? formatFecha(m.fechaOC) : '---'}</span>
-              </div>
+              </div>}
               <div className="flex justify-between py-1.5 border-b border-slate-100/60">
                 <span className="text-slate-500">Modalidad</span>
                 <span className="font-medium text-slate-700">{m.modalidad}</span>
@@ -141,10 +150,10 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
                 <span className="text-slate-500">Total (IVA)</span>
                 <span className="font-mono text-slate-500">{formatMoneda(m.totalConIva)}</span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
+              {!soloAnulados && <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
                 <span className="text-slate-500">Estado / Sistema</span>
                 <Badge estado={m.estado} roleTheme={theme} className="scale-90 origin-right" />
-              </div>
+              </div>}
               {m.ocRef && (
                 <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
                   <span className="text-slate-500">OC Ref</span>
@@ -155,6 +164,14 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
                   ) : (
                     <span className="font-mono text-slate-700">{m.ocRef}</span>
                   )}
+                </div>
+              )}
+              {m.motivoAnulacion && (
+                <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
+                  <span className="text-slate-500">Motivo</span>
+                  <button type="button" onClick={() => onMostrarMotivo(m)} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px active:shadow-inner">
+                    <MessageCircleQuestion size={13} /> Consulta
+                  </button>
                 </div>
               )}
             </div>
@@ -182,7 +199,7 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
   );
 };
 
-export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra = [] }) => {
+export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra = [], soloAnulados = false }) => {
   const params = useParams();
   const productId = params.productId || params['*'] || '';
   const navigate = useNavigate();
@@ -200,7 +217,18 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
   const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [clienteFilter, setClienteFilter] = useSessionState('analisis_cliente_search', '');
   const [currentPage, setCurrentPage] = useState(1);
+  const [movimientoMotivo, setMovimientoMotivo] = useState(null);
   const itemsPerPage = 10;
+  const filtroPeriodo = useMemo(() => cargarFiltroPeriodoStorage(), []);
+  const rangoEsteMes = useMemo(() => {
+    const [yStr, mStr] = getHoyElSalvador().split('-');
+    const y = Number(yStr);
+    const m = Number(mStr);
+    return {
+      inicio: new Date(`${yStr}-${mStr}-01T00:00:00-06:00`),
+      fin: new Date(`${m === 12 ? y + 1 : y}-${String(m === 12 ? 1 : m + 1).padStart(2, '0')}-01T00:00:00-06:00`)
+    };
+  }, []);
 
   // Scroll horizontal por arrastre (drag) para la tabla, además del swipe nativo táctil
   const scrollContainerRef = useRef(null);
@@ -295,6 +323,30 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
     const IVA_TASA = 0.13;
 
     solicitudes.forEach((s) => {
+      const fechaSolicitud = parseDate(s.fechaS || s.fechaCreacion);
+      const { periodo, fechaInicio, fechaFin, anioHistorico } = filtroPeriodo;
+      const ahora = new Date();
+      if (fechaSolicitud) {
+        if (periodo === 'custom') {
+          if (fechaInicio) {
+            const inicio = parseInicioDiaElSalvador(fechaInicio);
+            if (inicio && fechaSolicitud < inicio) return;
+          }
+          if (fechaFin) {
+            const fin = parseFinDiaElSalvador(fechaFin);
+            if (fin && fechaSolicitud > fin) return;
+          }
+        } else if (periodo === 'historico') {
+          if (anioHistorico !== 'todos' && fechaSolicitud.getFullYear() !== Number(anioHistorico)) return;
+        } else if (periodo !== 'all') {
+          const diffDias = (ahora.getTime() - fechaSolicitud.getTime()) / (1000 * 3600 * 24);
+          if (periodo === '7d' && diffDias > 7) return;
+          if (periodo === '30d' && diffDias > 30) return;
+          if (periodo === '90d' && diffDias > 90) return;
+          if (periodo === 'this_month' && (fechaSolicitud < rangoEsteMes.inicio || fechaSolicitud >= rangoEsteMes.fin)) return;
+          if (periodo === 'this_year' && fechaSolicitud.getFullYear() !== getAnioActualElSalvador()) return;
+        }
+      }
       if (vendedorFilter && s.vendedorNombre !== vendedorFilter) return;
       if (clienteFilter) {
         const term = normalizarBusqueda(clienteFilter);
@@ -308,6 +360,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
 
         // Coincidencia estricta e idéntica por SKU (no agrupa similares, preserva puntos, plecas, guiones y comas)
         if (pSku && pSku === targetSku) {
+          if (soloAnulados && p.estadoItem !== 'Anulado') return;
           if (desc && (!nombreOficial || nombreOficial === decodedSearch)) {
             nombreOficial = desc;
           }
@@ -402,6 +455,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
             ocRef: ocRef,
             estado: s.estado || 'Pendiente',
             estadoItem: estadoItem,
+            motivoAnulacion: p.motivoAnulacion || p.motivoEstadoItem || p.motivoDenegacion || p.motivoRechazo || '',
             fob: Number(p.fob || 0),
             itemOriginal: p,
             solicitudOriginal: s
@@ -424,7 +478,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
         marca: Array.from(marcasSet).join(', ') || 'Sin marca especificada'
       }
     };
-  }, [solicitudes, targetSku, decodedSearch, mapFechasOC, vendedorFilter, clienteFilter]);
+  }, [solicitudes, targetSku, decodedSearch, mapFechasOC, vendedorFilter, clienteFilter, soloAnulados, filtroPeriodo, rangoEsteMes]);
 
   const estadosDisponibles = useMemo(() => {
     return Array.from(new Set(movimientos.map(m => m.estado).filter(Boolean))).sort();
@@ -437,7 +491,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
   // Filtrado de la tabla según filtros y búsqueda
   const movimientosFiltrados = useMemo(() => {
     return movimientos.filter((m) => {
-      if (filterEstado) {
+      if (!soloAnulados && filterEstado) {
         if (filterEstado === 'Pedido Parcial') {
           if (m.estado !== 'Pedido Parcial' && m.solicitudOriginal?.estado !== 'Pedido Parcial') return false;
         } else if (filterEstado === 'Pedido') {
@@ -459,42 +513,49 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
 
       return true;
     });
-  }, [movimientos, filterEstado, filterModalidad, searchTerm]);
+  }, [movimientos, filterEstado, filterModalidad, searchTerm, soloAnulados]);
 
   // Métricas dinámicas calculadas sobre los movimientos filtrados
   const metricas = useMemo(() => {
     const totalMovimientos = movimientosFiltrados.length;
     let unidadesTotales = 0;
     let unidadesEnPedido = 0;
-    let pedidosCount = 0;
-    let parcialesCount = 0;
     let sumaValorNeto = 0;
     let sumaTotalConIva = 0;
     const clientesSet = new Set();
+    const rfqResultados = new Map();
+    const rfqsSet = new Set();
 
     movimientosFiltrados.forEach((m) => {
       unidadesTotales += Number(m.unidades || 0);
       sumaValorNeto += Number(m.valorNeto || 0);
       sumaTotalConIva += Number(m.totalConIva || 0);
       if (m.cliente) clientesSet.add(normalizarBusqueda(m.cliente));
+      const rfqKey = m.rfqId || m.correlativo || m.idMov;
+      if (rfqKey) rfqsSet.add(rfqKey);
       const resGanada = evaluarEstadoGanada(m);
+      const resultado = rfqResultados.get(rfqKey) || { ganada: false, parcial: false };
       if (resGanada.esGanada) {
-        pedidosCount++;
+        resultado.ganada = true;
         unidadesEnPedido += Number(m.unidades || 0);
       } else if (resGanada.esParcial && (m.estado === 'Pedido Parcial' || m.estado === 'Pedido' || m.estado === 'Comprado')) {
-        parcialesCount++;
+        resultado.parcial = true;
         unidadesEnPedido += Number(m.unidades || 0);
       }
+      if (rfqKey) rfqResultados.set(rfqKey, resultado);
     });
 
-    const tasaConversion = totalMovimientos > 0 
-      ? ((pedidosCount / totalMovimientos) * 100).toFixed(1)
+    const pedidosCount = [...rfqResultados.values()].filter((r) => r.ganada).length;
+    const parcialesCount = [...rfqResultados.values()].filter((r) => !r.ganada && r.parcial).length;
+    const tasaConversion = rfqsSet.size > 0
+      ? ((pedidosCount / rfqsSet.size) * 100).toFixed(1)
       : 0;
 
     return {
       totalMovimientos,
       totalHistorico: movimientos.length,
       estaFiltrado: movimientosFiltrados.length !== movimientos.length,
+      rfqsUnicas: rfqsSet.size,
       unidadesTotales,
       unidadesEnPedido,
       pedidosCount,
@@ -524,7 +585,9 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
   }
 
   return (
-    <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
+    <>
+      <MotivoAnulacionModal movimiento={movimientoMotivo} onClose={() => setMovimientoMotivo(null)} />
+      <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
       {/* CABECERA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-start sm:items-center gap-3">
@@ -539,7 +602,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-1.5">
               <span className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-sm ${theme.bgBadge}`}>
-                Historial de Producto
+                {soloAnulados ? 'Anulaciones de Producto' : 'Historial de Producto'}
               </span>
             </div>
             
@@ -635,9 +698,9 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
             </div>
             <div
               className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate cursor-help"
-              title={`${metricas.pedidosCount} ganadas (100% adjudicadas) + ${metricas.parcialesCount} ganadas parciales de ${metricas.totalMovimientos} cotizaciones totales`}
+              title={`${metricas.pedidosCount} RFQs ganadas + ${metricas.parcialesCount} RFQs parciales de ${metricas.rfqsUnicas} RFQs totales`}
             >
-              {metricas.pedidosCount} gan. {metricas.parcialesCount > 0 && <span className="text-amber-600 font-semibold">(+{metricas.parcialesCount} pc.)</span>} / {metricas.totalMovimientos} cots.
+              {metricas.pedidosCount} gan. {metricas.parcialesCount > 0 && <span className="text-amber-600 font-semibold">(+{metricas.parcialesCount} pc.)</span>} / {metricas.rfqsUnicas} RFQs
             </div>
           </div>
         </div>
@@ -695,7 +758,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <div className="grid grid-cols-2 sm:flex items-center gap-2">
             {/* Filtro estado */}
-            <select
+            {!soloAnulados && <select
               value={filterEstado}
               onChange={(e) => { setFilterEstado(e.target.value); setCurrentPage(1); }}
               className="w-full sm:w-auto bg-slate-50 border border-slate-200/70 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-slate-300 focus:bg-white cursor-pointer"
@@ -704,7 +767,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
               {estadosDisponibles.map((est) => (
                 <option key={est} value={est}>{est}</option>
               ))}
-            </select>
+            </select>}
 
             {/* Filtro modalidad */}
             <select
@@ -773,7 +836,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
           {/* VISTA MÓVIL (Tarjetas Expansibles) */}
           <div className="md:hidden space-y-3 mt-2">
             {paginatedMovimientos.map((m) => (
-              <MovimientoCard 
+              <MovimientoCard
                 key={m.idMov} 
                 m={m} 
                 theme={theme} 
@@ -781,6 +844,8 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                 formatMoneda={formatMoneda} 
                 evaluarEstadoGanada={evaluarEstadoGanada} 
                 irADetalle={irADetalle} 
+                onMostrarMotivo={setMovimientoMotivo}
+                soloAnulados={soloAnulados}
               />
             ))}
           </div>
@@ -801,7 +866,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                   <th className="py-2.5 px-3 whitespace-nowrap">RFQ</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Sol.</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Resp.</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap">Fecha OC</th>
+                  {!soloAnulados && <th className="py-2.5 px-3 whitespace-nowrap">Fecha OC</th>}
                   <th className="py-2.5 px-3 whitespace-nowrap">Cliente</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Producto</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Marca</th>
@@ -812,8 +877,9 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                   <th className="py-2.5 px-3 text-right whitespace-nowrap">Valor Neto</th>
                   <th className="py-2.5 px-3 text-right whitespace-nowrap">Total (IVA)</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">OC Ref</th>
-                  <th className="py-2.5 px-3 text-center whitespace-nowrap">Estado</th>
-                  <th className="py-2.5 px-3 text-center whitespace-nowrap">Resultado</th>
+                  {!soloAnulados && <th className="py-2.5 px-3 text-center whitespace-nowrap">Estado</th>}
+                  {!soloAnulados && <th className="py-2.5 px-3 text-center whitespace-nowrap">Resultado</th>}
+                  <th className="py-2.5 px-3 text-center whitespace-nowrap">Motivo</th>
                   <th className="py-2.5 px-3 text-right whitespace-nowrap">Acción</th>
                 </tr>
               </thead>
@@ -862,7 +928,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                       </td>
 
                       {/* Fecha OC */}
-                      <td className="py-2.5 px-3 whitespace-nowrap font-mono text-[11px]">
+                      {!soloAnulados && <td className="py-2.5 px-3 whitespace-nowrap font-mono text-[11px]">
                         {m.fechaOC ? (
                           <div className="flex items-center gap-1.5 text-slate-700">
                             <Calendar size={12} className="text-slate-400 shrink-0" />
@@ -871,7 +937,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                         ) : (
                           <span className="text-slate-300 text-[11px]">---</span>
                         )}
-                      </td>
+                      </td>}
 
                       {/* Cliente: enlace directo a su detalle */}
                       <td className="py-2.5 px-3 whitespace-nowrap">
@@ -987,12 +1053,12 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                       </td>
 
                       {/* Estado */}
-                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      {!soloAnulados && <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         <Badge estado={m.estado} roleTheme={theme} />
-                      </td>
+                      </td>}
 
                       {/* Resultado (Ganada / Cotizada / Pendiente) */}
-                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      {!soloAnulados && <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         <div className="flex flex-col items-center gap-1">
                           {(() => {
                             const res = evaluarEstadoGanada(m);
@@ -1010,9 +1076,17 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                             </span>
                           )}
                         </div>
-                      </td>
+                      </td>}
 
                       {/* Acción */}
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        {m.motivoAnulacion ? (
+                          <button type="button" onClick={() => setMovimientoMotivo(m)} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px active:shadow-inner" title="Consultar motivo de anulación">
+                            <MessageCircleQuestion size={13} /> Consulta
+                          </button>
+                        ) : <span className="text-slate-300">---</span>}
+                      </td>
+
                       <td className="py-2.5 px-3 text-right whitespace-nowrap">
                         <button
                           type="button"
@@ -1056,6 +1130,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 };

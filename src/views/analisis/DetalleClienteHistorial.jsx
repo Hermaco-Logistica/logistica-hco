@@ -18,15 +18,24 @@ import {
   Download,
   X,
   ChevronDown,
-  Ban
+  Ban,
+  MessageCircleQuestion
 } from 'lucide-react';
 import { exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { Badge } from '../../components/Badge';
+import { MotivoAnulacionModal } from '../../components/MotivoAnulacionModal';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, evaluarEstadoGanada } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
+import {
+  getHoyElSalvador,
+  getAnioActualElSalvador,
+  parseInicioDiaElSalvador,
+  parseFinDiaElSalvador,
+  cargarFiltroPeriodoStorage
+} from '../../utils/dateValidation';
 
-const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGanada, irADetalle }) => {
+const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGanada, irADetalle, onMostrarMotivo, soloAnulados = false }) => {
   const [expanded, setExpanded] = useState(false);
   const esAereo = m.modalidad === 'Aéreo';
   const esMaritimo = m.modalidad === 'Marítimo';
@@ -52,14 +61,17 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
         <div className="flex justify-between items-start w-full gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-              <span className={`text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-sm border ${res.badgeClase}`}>
-                {res.label}
-              </span>
+              {!soloAnulados && (
+                <span className={`text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-sm border ${res.badgeClase}`}>
+                  {res.label}
+                </span>
+              )}
               <span className="text-slate-300 text-[9px]">•</span>
               <span className="text-slate-500 font-mono font-medium text-[10px] uppercase">{m.correlativo}</span>
-              {res.esParcial && (
+              {!soloAnulados && res.esParcial && (
                 <span className="bg-amber-100 text-amber-800 text-[8px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Parcial</span>
               )}
+              {soloAnulados && <span className="text-[8px] font-semibold text-rose-600 uppercase tracking-wider">Anulado</span>}
               {m.solicitudOriginal?.estado !== 'Anulado' && (m.estado === 'Anulado' || m.solicitudOriginal?.productos?.some(p => p.estadoItem === 'Anulado')) && (
                 <span className="inline-flex items-center gap-1 text-[8px] font-semibold text-rose-500 bg-rose-50 px-1 py-0.5 rounded border border-rose-200">
                   <Ban size={8} className="shrink-0" />
@@ -113,10 +125,10 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
                 <span className="text-slate-500">Fecha Resp.</span>
                 <span className="font-mono text-slate-700">{m.fechaResp ? formatFecha(m.fechaResp) : 'Pendiente'}</span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-100/60">
+              {!soloAnulados && <div className="flex justify-between py-1.5 border-b border-slate-100/60">
                 <span className="text-slate-500">Fecha OC</span>
                 <span className="font-mono text-slate-700">{m.fechaOC ? formatFecha(m.fechaOC) : '---'}</span>
-              </div>
+              </div>}
               <div className="flex justify-between py-1.5 border-b border-slate-100/60">
                 <span className="text-slate-500">Modalidad</span>
                 <span className="font-medium text-slate-700">{m.modalidad}</span>
@@ -141,11 +153,11 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
                 <span className="text-slate-500">Total (IVA)</span>
                 <span className="font-mono text-slate-500">{formatMoneda(m.totalConIva)}</span>
               </div>
-              <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
+              {!soloAnulados && <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
                 <span className="text-slate-500">Estado / Sistema</span>
                 <Badge estado={m.estado} roleTheme={theme} className="scale-90 origin-right" />
-              </div>
-              {m.ocRef && (
+              </div>}
+              {!soloAnulados && m.ocRef && (
                 <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
                   <span className="text-slate-500">OC Ref</span>
                   {m.ocRef.startsWith('http') ? (
@@ -155,6 +167,14 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
                   ) : (
                     <span className="font-mono text-slate-700">{m.ocRef}</span>
                   )}
+                </div>
+              )}
+              {m.motivoAnulacion && (
+                <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
+                  <span className="text-slate-500">Motivo</span>
+                  <button type="button" onClick={() => onMostrarMotivo(m)} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px active:shadow-inner">
+                    <MessageCircleQuestion size={13} /> Consulta
+                  </button>
                 </div>
               )}
             </div>
@@ -182,7 +202,7 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
   );
 };
 
-export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra = [] }) => {
+export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra = [], soloAnulados = false }) => {
   const { clienteId } = useParams();
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
@@ -198,7 +218,18 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
   const [filterModalidad, setFilterModalidad] = useSessionState('analisis_cli_hist_modalidad', '');
   const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [currentPage, setCurrentPage] = useState(1);
+  const [movimientoMotivo, setMovimientoMotivo] = useState(null);
   const itemsPerPage = 10;
+  const filtroPeriodo = useMemo(() => cargarFiltroPeriodoStorage(), []);
+  const rangoEsteMes = useMemo(() => {
+    const [yStr, mStr] = getHoyElSalvador().split('-');
+    const y = Number(yStr);
+    const m = Number(mStr) - 1;
+    return {
+      inicio: new Date(`${yStr}-${mStr}-01T00:00:00-06:00`),
+      fin: new Date(`${m === 11 ? y + 1 : y}-${String(m === 11 ? 1 : m + 2).padStart(2, '0')}-01T00:00:00-06:00`)
+    };
+  }, []);
 
   // Scroll horizontal por arrastre (drag) para la tabla, además del swipe nativo táctil
   const scrollContainerRef = useRef(null);
@@ -294,6 +325,34 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
     const IVA_TASA = 0.13;
 
     solicitudes.forEach((s) => {
+      const fechaSolicitud = parseDate(s.fechaS || s.fechaCreacion);
+      const { periodo, fechaInicio, fechaFin, anioHistorico } = filtroPeriodo;
+      const ahora = new Date();
+
+      if (fechaSolicitud) {
+        if (periodo === 'custom') {
+          if (!(fechaInicio && fechaFin && fechaInicio > fechaFin)) {
+            if (fechaInicio) {
+              const inicio = parseInicioDiaElSalvador(fechaInicio);
+              if (inicio && fechaSolicitud < inicio) return;
+            }
+            if (fechaFin) {
+              const fin = parseFinDiaElSalvador(fechaFin);
+              if (fin && fechaSolicitud > fin) return;
+            }
+          }
+        } else if (periodo === 'historico') {
+          if (anioHistorico !== 'todos' && fechaSolicitud.getFullYear() !== anioHistorico) return;
+        } else if (periodo !== 'all') {
+          const diffDias = (ahora.getTime() - fechaSolicitud.getTime()) / (1000 * 3600 * 24);
+          if (periodo === '7d' && diffDias > 7) return;
+          if (periodo === '30d' && diffDias > 30) return;
+          if (periodo === '90d' && diffDias > 90) return;
+          if (periodo === 'this_month' && (fechaSolicitud < rangoEsteMes.inicio || fechaSolicitud >= rangoEsteMes.fin)) return;
+          if (periodo === 'this_year' && fechaSolicitud.getFullYear() !== getAnioActualElSalvador()) return;
+        }
+      }
+
       if (vendedorFilter && s.vendedorNombre !== vendedorFilter) return;
       const clienteNombre = (s.cliente || 'Consumidor Final').trim();
       const normCliente = normalizarBusqueda(clienteNombre);
@@ -311,7 +370,11 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           ? s.productos 
           : [{ desc: 'Sin productos detallados', cant: 1 }];
 
-        productosLista.forEach((p, idx) => {
+        const productosVisibles = soloAnulados
+          ? productosLista.filter((p) => p.estadoItem === 'Anulado')
+          : productosLista;
+
+        productosVisibles.forEach((p, idx) => {
           const descProducto = (p.desc || p.descripcion || 'Sin descripción').trim().toUpperCase();
           const marcaProducto = (p.marca || '').trim();
 
@@ -404,6 +467,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
             ocRef: ocRef,
             estado: s.estado || 'Pendiente',
             estadoItem: estadoItem,
+            motivoAnulacion: p.motivoAnulacion || p.motivoEstadoItem || p.motivoDenegacion || p.motivoRechazo || '',
             fob: Number(p.fob || 0),
             itemOriginal: p,
             solicitudOriginal: s
@@ -427,7 +491,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
         vendedores: Array.from(vendedoresSet).join(', ') || 'Sin vendedor asignado'
       }
     };
-  }, [solicitudes, targetKey, decodedSearch, mapFechasOC, vendedorFilter]);
+  }, [solicitudes, targetKey, decodedSearch, mapFechasOC, vendedorFilter, soloAnulados, filtroPeriodo, rangoEsteMes]);
 
   const estadosDisponibles = useMemo(() => {
     return Array.from(new Set(movimientos.map(m => m.estado).filter(Boolean))).sort();
@@ -440,7 +504,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
   // Filtrado de la tabla según filtros y búsqueda
   const movimientosFiltrados = useMemo(() => {
     return movimientos.filter((m) => {
-      if (filterEstado) {
+      if (!soloAnulados && filterEstado) {
         if (filterEstado === 'Pedido Parcial') {
           if (m.estado !== 'Pedido Parcial' && m.solicitudOriginal?.estado !== 'Pedido Parcial') return false;
         } else if (filterEstado === 'Pedido') {
@@ -463,38 +527,42 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
 
       return true;
     });
-  }, [movimientos, filterEstado, filterModalidad, searchTerm]);
+  }, [movimientos, filterEstado, filterModalidad, searchTerm, soloAnulados]);
 
   // Métricas dinámicas calculadas sobre los movimientos filtrados
   const metricas = useMemo(() => {
     const totalMovimientos = movimientosFiltrados.length;
     let unidadesTotales = 0;
     let unidadesEnPedido = 0;
-    let pedidosCount = 0;
-    let parcialesCount = 0;
     let sumaValorNeto = 0;
     let sumaTotalConIva = 0;
     const productosSet = new Set();
     const rfqsSet = new Set();
+    const rfqResultados = new Map();
 
     movimientosFiltrados.forEach((m) => {
       unidadesTotales += Number(m.unidades || 0);
       sumaValorNeto += Number(m.valorNeto || 0);
       sumaTotalConIva += Number(m.totalConIva || 0);
       if (m.producto) productosSet.add(m.producto.trim().toUpperCase());
-      if (m.correlativo) rfqsSet.add(m.correlativo);
+      const rfqKey = m.rfqId || m.correlativo || m.idMov;
+      if (rfqKey) rfqsSet.add(rfqKey);
       const resGanada = evaluarEstadoGanada(m);
+      const resultado = rfqResultados.get(rfqKey) || { ganada: false, parcial: false };
       if (resGanada.esGanada) {
-        pedidosCount++;
+        resultado.ganada = true;
         unidadesEnPedido += Number(m.unidades || 0);
       } else if (resGanada.esParcial && (m.estado === 'Pedido Parcial' || m.solicitudOriginal?.estado === 'Pedido Parcial')) {
-        parcialesCount++;
+        resultado.parcial = true;
         unidadesEnPedido += Number(m.unidades || 0);
       }
+      if (rfqKey) rfqResultados.set(rfqKey, resultado);
     });
 
-    const tasaConversion = totalMovimientos > 0 
-      ? ((pedidosCount / totalMovimientos) * 100).toFixed(1)
+    const pedidosCount = [...rfqResultados.values()].filter((r) => r.ganada).length;
+    const parcialesCount = [...rfqResultados.values()].filter((r) => !r.ganada && r.parcial).length;
+    const tasaConversion = rfqsSet.size > 0
+      ? ((pedidosCount / rfqsSet.size) * 100).toFixed(1)
       : 0;
 
     return {
@@ -531,7 +599,9 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
   }
 
   return (
-    <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
+    <>
+      <MotivoAnulacionModal movimiento={movimientoMotivo} onClose={() => setMovimientoMotivo(null)} />
+      <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
       {/* CABECERA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-start sm:items-center gap-3">
@@ -546,7 +616,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-1.5">
               <span className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-sm ${theme.bgBadge}`}>
-                Historial de Cliente
+                {soloAnulados ? 'Anulaciones de Cliente' : 'Historial de Cliente'}
               </span>
             </div>
             
@@ -555,6 +625,11 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                 <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none mb-2.5 truncate">
                   {infoCliente.nombre}
                 </h1>
+                {soloAnulados && (
+                  <p className="text-xs font-medium text-rose-600 mb-2.5">
+                    Vista exclusiva de productos anulados
+                  </p>
+                )}
                 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                   <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
@@ -573,14 +648,14 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
         <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <Package size={14} className="text-slate-400 shrink-0" />
-            <span className="text-[10px] font-bold uppercase tracking-wider truncate">Productos Únicos</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider truncate">Productos</span>
           </div>
           <div>
             <div className="text-lg sm:text-2xl font-bold font-mono text-slate-800 tracking-tight">
               {metricas.productosUnicos}
             </div>
             <div className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate">
-              {metricas.totalMovimientos} cots. en {metricas.rfqsUnicas} {metricas.rfqsUnicas === 1 ? 'RFQ' : 'RFQs'}
+              {metricas.totalMovimientos} items en {metricas.rfqsUnicas} {metricas.rfqsUnicas === 1 ? 'RFQ' : 'RFQs'}
             </div>
           </div>
         </div>
@@ -642,9 +717,9 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
             </div>
             <div
               className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate cursor-help"
-              title={`${metricas.pedidosCount} ganadas (100% adjudicadas) + ${metricas.parcialesCount} ganadas parciales de ${metricas.totalMovimientos} cotizaciones totales`}
+              title={`${metricas.pedidosCount} RFQs ganadas + ${metricas.parcialesCount} RFQs parciales de ${metricas.rfqsUnicas} RFQs totales`}
             >
-              {metricas.pedidosCount} gan. {metricas.parcialesCount > 0 && <span className="text-amber-600 font-semibold">(+{metricas.parcialesCount} pc.)</span>} / {metricas.totalMovimientos} cots.
+              {metricas.pedidosCount} gan. {metricas.parcialesCount > 0 && <span className="text-amber-600 font-semibold">(+{metricas.parcialesCount} pc.)</span>} / {metricas.rfqsUnicas} RFQs
             </div>
           </div>
         </div>
@@ -683,8 +758,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <div className="grid grid-cols-2 sm:flex items-center gap-2">
-            {/* Filtro estado */}
-            <select
+            {!soloAnulados && <select
               value={filterEstado}
               onChange={(e) => { setFilterEstado(e.target.value); setCurrentPage(1); }}
               className="w-full sm:w-auto bg-slate-50 border border-slate-200/70 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-slate-300 focus:bg-white cursor-pointer"
@@ -693,7 +767,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
               {estadosDisponibles.map((est) => (
                 <option key={est} value={est}>{est}</option>
               ))}
-            </select>
+            </select>}
 
             {/* Filtro modalidad */}
             <select
@@ -765,6 +839,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                 formatMoneda={formatMoneda} 
                 evaluarEstadoGanada={evaluarEstadoGanada} 
                 irADetalle={irADetalle} 
+                onMostrarMotivo={setMovimientoMotivo}
               />
             ))}
           </div>
@@ -785,8 +860,8 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                   <th className="py-2.5 px-3 whitespace-nowrap">RFQ</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Sol.</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Resp.</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap">Fecha OC</th>
-                  <th className="py-2.5 px-3 whitespace-nowrap">Producto</th>
+                  {!soloAnulados && <th className="py-2.5 px-3 whitespace-nowrap">Fecha OC</th>}
+                  <th className="py-2.5 px-3 whitespace-nowrap">{soloAnulados ? 'Ítem' : 'Producto'}</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Marca</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Vendedor</th>
                   <th className="py-2.5 px-3 text-center whitespace-nowrap">Modalidad</th>
@@ -795,8 +870,9 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                   <th className="py-2.5 px-3 text-right whitespace-nowrap">Valor Neto</th>
                   <th className="py-2.5 px-3 text-right whitespace-nowrap">Total (IVA)</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">OC Ref</th>
-                  <th className="py-2.5 px-3 text-center whitespace-nowrap">Estado</th>
-                  <th className="py-2.5 px-3 text-center whitespace-nowrap">Resultado</th>
+                  {!soloAnulados && <th className="py-2.5 px-3 text-center whitespace-nowrap">Estado</th>}
+                  {!soloAnulados && <th className="py-2.5 px-3 text-center whitespace-nowrap">Resultado</th>}
+                  <th className="py-2.5 px-3 text-center whitespace-nowrap">Motivo</th>
                   <th className="py-2.5 px-3 text-right whitespace-nowrap">Acción</th>
                 </tr>
               </thead>
@@ -844,8 +920,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                         )}
                       </td>
 
-                      {/* Fecha OC */}
-                      <td className="py-2.5 px-3 whitespace-nowrap font-mono text-[11px]">
+                      {!soloAnulados && <td className="py-2.5 px-3 whitespace-nowrap font-mono text-[11px]">
                         {m.fechaOC ? (
                           <div className="flex items-center gap-1.5 text-slate-700">
                             <Calendar size={12} className="text-slate-400 shrink-0" />
@@ -854,7 +929,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                         ) : (
                           <span className="text-slate-300 text-[11px]">---</span>
                         )}
-                      </td>
+                      </td>}
 
                       {/* Producto */}
                       <td className="py-2.5 px-3 whitespace-nowrap">
@@ -956,13 +1031,11 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                         )}
                       </td>
 
-                      {/* Estado */}
-                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      {!soloAnulados && <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         <Badge estado={m.estado} roleTheme={theme} />
-                      </td>
+                      </td>}
 
-                      {/* Resultado (Ganada / Cotizada / Pendiente) */}
-                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                      {!soloAnulados && <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         <div className="flex flex-col items-center gap-1">
                           {(() => {
                             const res = evaluarEstadoGanada(m);
@@ -980,9 +1053,17 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                             </span>
                           )}
                         </div>
-                      </td>
+                      </td>}
 
                       {/* Acción */}
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
+                        {m.motivoAnulacion ? (
+                          <button type="button" onClick={() => setMovimientoMotivo(m)} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px active:shadow-inner" title="Consultar motivo de anulación">
+                            <MessageCircleQuestion size={13} /> Consulta
+                          </button>
+                        ) : <span className="text-slate-300">---</span>}
+                      </td>
+
                       <td className="py-2.5 px-3 text-right whitespace-nowrap">
                         <button
                           type="button"
@@ -1026,6 +1107,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 };

@@ -41,6 +41,7 @@ export const GestionOC = ({ readOnly = false }) => {
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [mesActual, setMesActual] = useState(new Date());
   const refCalendario = useRef(null);
+  const refCalendarioMobile = useRef(null);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Pagination states
@@ -81,7 +82,7 @@ export const GestionOC = ({ readOnly = false }) => {
   // Cerrar popover al hacer clic fuera
   useEffect(() => {
     const clickFuera = (e) => {
-      if (refCalendario.current && !refCalendario.current.contains(e.target)) {
+      if (refCalendario.current && !refCalendario.current.contains(e.target) && !refCalendarioMobile.current?.contains(e.target)) {
         setMostrarCalendario(false);
       }
     };
@@ -648,7 +649,7 @@ export const GestionOC = ({ readOnly = false }) => {
         </div>
 
         {showMobileFilters && (
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div ref={refCalendarioMobile} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
             <div>
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Proveedor</label>
               <select 
@@ -694,6 +695,37 @@ export const GestionOC = ({ readOnly = false }) => {
                   </button>
                 )}
               </div>
+              {mostrarCalendario && (
+                <div className="absolute right-0 mt-2 z-40 bg-white border border-slate-200 shadow-2xl rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
+                    <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
+                      {mesActual.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button type="button" onClick={() => cambiarMes(1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&gt;</button>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-slate-400 mb-2">
+                    <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1">
+                    {getDiasDelMes().map((dia, idx) => {
+                      if (!dia) return <div key={`empty-mobile-${idx}`} />;
+                      const timestampDia = dia.getTime();
+                      const isInicio = fechaInicio && timestampDia === fechaInicio.getTime();
+                      const isFin = fechaFin && timestampDia === fechaFin.getTime();
+                      const isRango = fechaInicio && fechaFin && timestampDia > fechaInicio.getTime() && timestampDia < fechaFin.getTime();
+                      let bgClass = 'hover:bg-slate-100 text-slate-700';
+                      if (isInicio || isFin) bgClass = 'bg-slate-900 text-white rounded-full font-black';
+                      if (isRango) bgClass = 'bg-slate-100 text-slate-900 rounded-none';
+                      return (
+                        <button key={idx} type="button" onClick={() => handleSelectDia(dia)} className={`text-center py-1 text-[11px] font-bold rounded-full transition-all ${bgClass}`}>
+                          {dia.getDate()}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="pt-2 flex justify-end">
               <button

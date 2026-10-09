@@ -323,10 +323,13 @@ function App() {
       <Route path="/analisis/solicitudes" element={<Navigate to="/analisis/solicitudes/todas" replace />} />
       <Route path="/analisis/solicitudes/:tipoEstado" element={<DetalleSolicitudesAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
       <Route path="/analisis/clientes" element={<DetalleClientesAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
+      <Route path="/analisis/cliente/:clienteId/anulados" element={<DetalleClienteHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} soloAnulados />} />
       <Route path="/analisis/cliente/:clienteId" element={<DetalleClienteHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
       <Route path="/analisis/vendedores" element={<DetalleVendedoresAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
+      <Route path="/analisis/vendedor/:vendedorId/anulados" element={<DetalleVendedorHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} soloAnulados />} />
       <Route path="/analisis/vendedor/:vendedorId" element={<DetalleVendedorHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
       <Route path="/analisis/productos" element={<DetalleProductosAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
+      <Route path="/analisis/producto/:productId/anulados" element={<DetalleProductoHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} soloAnulados />} />
       <Route path="/analisis/producto/:productId" element={<DetalleProductoHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
       <Route path="/analisis/producto/*" element={<DetalleProductoHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
       <Route path="/analisis/logistica" element={(isComprador || isAdmin) ? <DetalleLogisticaAnalisis role={role} ordenesCompra={ordenesCompra} /> : <Navigate to="/analisis" replace />} />

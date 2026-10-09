@@ -58,7 +58,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
   const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [clienteSearch, setClienteSearch] = useSessionState('analisis_cliente_search', '');
   const [resultadoFilter, setResultadoFilter] = useSessionState('analisis_resultado_filter', '');
-  const [ordenarProductosPor, setOrdenarProductosPor] = useSessionState('analisis_top_prod_orden', 'veces'); // 'veces' (default) | 'unidades'
+  const [ordenarProductosPor, setOrdenarProductosPor] = useSessionState('analisis_top_prod_orden', 'veces'); // 'veces' | 'ganadas' | 'unidades' | 'anulaciones'
   const [pageVendedores, setPageVendedores] = useState(1);
   const itemsPerPageVendedores = 5;
 
@@ -352,15 +352,20 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       if (!Array.isArray(s.productos)) return;
       s.productos.forEach((p) => {
         const desc = (p.desc || p.descripcion || '').trim().toUpperCase();
-        if (!desc || p.estadoItem === 'Anulado') return; // Ignorar anulados
+        if (!desc) return;
         const key = desc;
         const cant = Number(p.cant || 1);
         const marca = (p.marca || '').trim();
-        const ganado = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || 
-          (s.estado === 'Pedido' && p.estadoItem !== 'Cotizado' && p.estadoItem !== 'Pendiente');
         if (!map[key]) {
-          map[key] = { desc, marca, veces: 0, unidades: 0, ganadas: 0, unidadesGanadas: 0 };
+          map[key] = { desc, marca, veces: 0, unidades: 0, ganadas: 0, unidadesGanadas: 0, anulaciones: 0 };
         }
+        if (p.estadoItem === 'Anulado') {
+          map[key].anulaciones++;
+          if (!map[key].marca && marca) map[key].marca = marca;
+          return;
+        }
+        const ganado = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' ||
+          (s.estado === 'Pedido' && p.estadoItem !== 'Cotizado' && p.estadoItem !== 'Pendiente');
         map[key].veces++;
         map[key].unidades += cant;
         if (ganado) {
@@ -373,7 +378,10 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     return Object.values(map)
       .sort((a, b) => {
         if (ordenarProductosPor === 'unidades') return b.unidades - a.unidades || b.veces - a.veces;
-        if (ordenarProductosPor === 'ganadas') return b.ganadas - a.ganadas || b.veces - a.veces;
+        if (ordenarProductosPor === 'ganadas') {
+          return b.ganadas - a.ganadas || b.unidadesGanadas - a.unidadesGanadas || b.veces - a.veces;
+        }
+        if (ordenarProductosPor === 'anulaciones') return b.anulaciones - a.anulaciones || b.veces - a.veces;
         return b.veces - a.veces || b.unidades - a.unidades;
       })
       .slice(0, 5);
@@ -1274,11 +1282,31 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
               >
                 Por unidades
               </button>
+              <button
+                type="button"
+                onClick={() => setOrdenarProductosPor('anulaciones')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                  ordenarProductosPor === 'anulaciones'
+                    ? 'bg-white text-slate-800 shadow-xs font-semibold'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Más anulaciones
+              </button>
             </div>
 
             <button
               type="button"
-              onClick={() => navigate('/analisis/productos')}
+              onClick={() => {
+                const params = new URLSearchParams({
+                  orden: ordenarProductosPor,
+                  periodo,
+                  fechaInicio: fechaInicio || '',
+                  fechaFin: fechaFin || '',
+                  anioHistorico: anioHistorico || ''
+                });
+                navigate(`/analisis/productos?${params.toString()}`);
+              }}
               className={`text-xs font-semibold ${theme.linkClass} flex items-center gap-1 cursor-pointer whitespace-nowrap ml-1 transition-colors`}
             >
               <span>Ver todos</span>
@@ -1351,6 +1379,12 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                     <span className="text-[10px] text-slate-400 font-medium">Unidades</span>
                     <span className="font-mono font-semibold text-slate-700 text-xs">
                       {p.unidades.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-400 font-medium">Anulaciones</span>
+                    <span className={`font-mono font-semibold text-xs ${p.anulaciones > 0 ? 'text-rose-700' : 'text-slate-400'}`}>
+                      {p.anulaciones}
                     </span>
                   </div>
                 </div>

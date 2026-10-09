@@ -5,14 +5,36 @@ import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
+import {
+  getHoyElSalvador,
+  getAnioActualElSalvador,
+  parseInicioDiaElSalvador,
+  parseFinDiaElSalvador,
+  cargarFiltroPeriodoStorage
+} from '../../utils/dateValidation';
 
 export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
   const [searchTerm, setSearchTerm] = useSessionState('analisis_clientes_dir_search', '');
-  const [criterioOrden, setCriterioOrden] = useSessionState('analisis_clientes_dir_orden', 'total'); // 'total' | 'pedidos' | 'monto'
+  const [criterioOrden, setCriterioOrden] = useSessionState('analisis_clientes_dir_orden', 'total'); // 'total' | 'pedidos' | 'monto' | 'anulaciones'
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Filtro de período sincronizado con el dashboard (guardado en sessionStorage)
+  const filtroPeriodo = useMemo(() => cargarFiltroPeriodoStorage(), []);
+  const rangoEsteMes = useMemo(() => {
+    const hoy = getHoyElSalvador();
+    const [yStr, mStr] = hoy.split('-');
+    const y = parseInt(yStr, 10);
+    const m = parseInt(mStr, 10);
+    const sigY = m === 12 ? y + 1 : y;
+    const sigM = m === 12 ? 1 : m + 1;
+    return {
+      inicio: new Date(`${yStr}-${mStr}-01T00:00:00-06:00`),
+      fin: new Date(`${sigY}-${String(sigM).padStart(2, '0')}-01T00:00:00-06:00`)
+    };
+  }, []);
 
   useEffect(() => {
     document.querySelector('main')?.scrollTo(0, 0);
@@ -24,11 +46,54 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
     if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
   }, [criterioOrden]);
 
+  const parseDate = (val) => {
+    if (!val) return null;
+    if (typeof val === 'object') {
+      if (typeof val.toDate === 'function') {
+        try { return val.toDate(); } catch { return null; }
+      }
+      if (typeof val.seconds === 'number') {
+        return new Date(val.seconds * 1000);
+      }
+    }
+    const d = new Date(val);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
   // Agrupar solicitudes por cliente (sin duplicados por mayúsculas, tildes o espacios)
   const todosLosClientes = useMemo(() => {
     const map = {};
+    const { periodo, fechaInicio, fechaFin, anioHistorico } = filtroPeriodo;
+    const ahora = new Date();
+    const anioActual = getAnioActualElSalvador();
 
     solicitudes.forEach((s) => {
+      // Filtro por fecha (respeta el período seleccionado en el dashboard)
+      const fechaSol = parseDate(s.fechaS || s.fechaCreacion);
+      if (fechaSol) {
+        if (periodo === 'custom') {
+          if (!(fechaInicio && fechaFin && fechaInicio > fechaFin)) {
+            if (fechaInicio) {
+              const dInicio = parseInicioDiaElSalvador(fechaInicio);
+              if (dInicio && fechaSol < dInicio) return;
+            }
+            if (fechaFin) {
+              const dFin = parseFinDiaElSalvador(fechaFin);
+              if (dFin && fechaSol > dFin) return;
+            }
+          }
+        } else if (periodo === 'historico') {
+          if (anioHistorico !== 'todos' && fechaSol.getFullYear() !== anioHistorico) return;
+        } else if (periodo !== 'all') {
+          const diffDias = (ahora.getTime() - fechaSol.getTime()) / (1000 * 3600 * 24);
+          if (periodo === '7d' && diffDias > 7) return;
+          if (periodo === '30d' && diffDias > 30) return;
+          if (periodo === '90d' && diffDias > 90) return;
+          if (periodo === 'this_month' && (fechaSol < rangoEsteMes.inicio || fechaSol >= rangoEsteMes.fin)) return;
+          if (periodo === 'this_year' && fechaSol.getFullYear() !== anioActual) return;
+        }
+      }
+
       const nombre = (s.cliente || 'Consumidor Final').trim();
       const key = normalizarBusqueda(nombre) || 'consumidor final';
       if (!map[key]) {
@@ -38,6 +103,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
           cotizadas: 0,
           pedidos: 0,
           pedidosParciales: 0,
+          anulaciones: 0,
           pendientes: 0,
           montoTotal: 0,
           montoPedidos: 0,
@@ -65,6 +131,10 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
 
       // Montos
       if (Array.isArray(s.productos)) {
+        const productosAnulados = s.productos.filter((p) => p.estadoItem === 'Anulado').length;
+        if (productosAnulados > 0) {
+          item.anulaciones += productosAnulados;
+        }
         s.productos.forEach((p) => {
           const cant = Number(p.cant || 1);
           const fob = Number(p.fob || 0);
@@ -91,7 +161,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
     });
 
     return Object.values(map);
-  }, [solicitudes]);
+  }, [solicitudes, filtroPeriodo, rangoEsteMes]);
 
   // Filtrado por búsqueda
   const clientesFiltrados = useMemo(() => {
@@ -108,6 +178,9 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
       }
       if (criterioOrden === 'monto') {
         return b.montoTotal - a.montoTotal;
+      }
+      if (criterioOrden === 'anulaciones') {
+        return b.anulaciones - a.anulaciones || b.totalRFQs - a.totalRFQs;
       }
       return b.totalRFQs - a.totalRFQs;
     });
@@ -165,7 +238,8 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
           {[
             { id: 'total', label: 'Más RFQs' },
             { id: 'pedidos', label: 'Más Pedidos' },
-            { id: 'monto', label: 'Mayor Monto' }
+            { id: 'monto', label: 'Mayor Monto' },
+            { id: 'anulaciones', label: 'Más anulaciones' }
           ].map((ord) => (
             <button
               key={ord.id}
@@ -284,6 +358,23 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                       <span className="text-slate-500">Conversión</span>
                       <span className="font-mono font-bold text-blue-600">{convPct}%</span>
                     </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Anulaciones</span>
+                      {c.anulaciones > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}/anulados`)}
+                          className="inline-flex items-center min-h-7 px-2 -mr-2 rounded-md bg-white border border-slate-200/80 shadow-sm font-mono font-bold text-rose-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-900 active:translate-y-px active:shadow-inner transition-all cursor-pointer"
+                          title="Ver productos anulados"
+                        >
+                          {c.anulaciones}
+                          <span className="hidden sm:inline text-[9px] font-normal ml-1">anulaciones</span>
+                          <span className="sm:hidden text-[9px] font-normal ml-1">anul.</span>
+                        </button>
+                      ) : (
+                        <span className="font-mono font-bold text-slate-400">0</span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="pt-2 border-t border-slate-100">
@@ -309,6 +400,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                     <th className="py-2.5 px-3.5">Cliente</th>
                     <th className="py-2.5 px-3.5 text-center">Total RFQs</th>
                     <th className="py-2.5 px-3.5 text-center">Cotizadas</th>
+                    <th className="py-2.5 px-3.5 text-center">Anulaciones</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ganadas (Pedidos)</th>
                     <th className="py-2.5 px-3.5 text-center">Conversión</th>
                     <th className="py-2.5 px-3.5 text-right">Volumen Estimado</th>
@@ -346,6 +438,20 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         </td>
                         <td className="py-2.5 px-3.5 text-center font-mono text-slate-600">
                           {c.cotizadas}
+                        </td>
+                        <td className="py-2.5 px-3.5 text-center">
+                          {c.anulaciones > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}/anulados`)}
+                              className="font-mono font-semibold text-rose-700 hover:text-rose-900 transition-colors cursor-pointer"
+                              title="Ver productos anulados"
+                            >
+                              {c.anulaciones}<span className="text-[10px] font-normal ml-1">anulaciones</span>
+                            </button>
+                          ) : (
+                            <span className="font-mono font-semibold text-slate-400">0</span>
+                          )}
                         </td>
                         <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
                           <span>{c.pedidos}</span>
