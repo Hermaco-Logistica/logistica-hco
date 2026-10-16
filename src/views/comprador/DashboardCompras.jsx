@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Printer, X, Calendar as CalendarIcon, Trash2, Filter, 
   ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Package, Ban,
-  Inbox, Send
+  Inbox, Send, MessageCircleQuestion
 } from 'lucide-react';
 import { db, auth } from '../../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -16,6 +16,10 @@ import { generarPlantillaAnulacion } from '../../utils/emailTemplates';
 import { pdf } from '@react-pdf/renderer';
 import CotizacionPDF from '../../components/CotizacionPDF';
 import { clasificarSolicitud, etiquetaResultadoSolicitud, RESULTADOS_SOLICITUD } from '../../utils/clasificarSolicitud';
+import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
+import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
+import { prepararDatosConsultaVentaPerdida, tieneVentaPerdidaSolicitud } from '../../utils/ventasPerdidasHelpers';
+import { tieneDecisionSolicitud, prepararDatosDecisionSolicitud } from '../../utils/decisionItemHelpers';
 
 export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const navigate = useNavigate();
@@ -31,6 +35,16 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const [mostrarFiltrosMobile, setMostrarFiltrosMobile] = useState(false);
   
   const [modalAnulacionGlobal, setModalAnulacionGlobal] = useState({ open: false, rfqId: null, rfqData: null, motivo: '', enviando: false });
+  const [consultaVentaPerdidaData, setConsultaVentaPerdidaData] = useState(null);
+  const [consultaDecisionData, setConsultaDecisionData] = useState(null);
+
+  const abrirConsultaVentaPerdida = (solicitud) => {
+    setConsultaVentaPerdidaData(prepararDatosConsultaVentaPerdida({ solicitud }));
+  };
+
+  const abrirConsultaDecision = (solicitud) => {
+    setConsultaDecisionData(prepararDatosDecisionSolicitud(solicitud));
+  };
 
   const handleAnularSolicitudGlobal = async () => {
     if (!modalAnulacionGlobal.motivo.trim()) return alert("El motivo es obligatorio");
@@ -175,6 +189,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
     const tienePendientes = tieneItemsPendientesPorCotizar(solicitud);
 
     if (estado === 'Anulado') return 'Ver Anulada';
+    if (estado === 'Venta Perdida') return 'Ver Venta Perdida';
     if (estado === 'Pedido') {
       return tienePendientes ? 'Cotizar Restante' : 'Ver Cotización';
     }
@@ -191,6 +206,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
     if (estado === 'Anulado') {
       return 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200 cursor-default';
+    }
+    if (estado === 'Venta Perdida') {
+      return 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300 cursor-pointer';
     }
     if ((estado === 'Pedido' || estado === 'Cotizado Parcial') && tienePendientes) {
       return 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700';
@@ -683,6 +701,8 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             let fechaResp = s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en ? s.ultimaNotificacion.en : (s.fechaCotizacion || s.fechaRespuesta);
             if (s.estado === 'Anulado') {
               fechaResp = s.productos?.find(p => p.fechaAnulacion)?.fechaAnulacion || fechaResp;
+            } else if (s.estado === 'Venta Perdida') {
+              fechaResp = s.fechaVentaPerdida || s.productos?.find(p => p.fechaVentaPerdida)?.fechaVentaPerdida || fechaResp;
             }
             const esPedidoManualTerminado = s.tipo === 'Pedido Manual' && s.productos && s.productos.length > 0 && s.productos.every(p => ['Pedido', 'Comprado', 'Denegado', 'Cancelado', 'Rechazado'].includes(p.estadoItem));
 
@@ -711,8 +731,55 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <MobileBadge estado={s.estado} size="xs" className="shadow-xs" />
-                    {resultado !== 'En proceso' && (
-                      <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                    {s.estado === 'Venta Perdida' ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[9px] font-black uppercase tracking-wide text-rose-600">VENTA PERDIDA</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            abrirConsultaVentaPerdida(s);
+                          }}
+                          title="Ver motivo de venta perdida"
+                          className="p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                        >
+                          <MessageCircleQuestion size={13} />
+                        </button>
+                      </div>
+                    ) : (
+                      (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
+                        <div className="flex items-center gap-1">
+                          {resultado !== 'En proceso' && (
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                          )}
+                          {tieneDecisionSolicitud(s) && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                abrirConsultaDecision(s);
+                              }}
+                              title="Ver motivo de la decisión (anulación, rechazo o denegación)"
+                              className="p-0.5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+                            >
+                              <MessageCircleQuestion size={13} />
+                            </button>
+                          )}
+                          {s.estado !== 'Venta Perdida' && tieneVentaPerdidaSolicitud(s) && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                abrirConsultaVentaPerdida(s);
+                              }}
+                              title="Ver motivo de venta perdida"
+                              className="p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                            >
+                              <MessageCircleQuestion size={13} />
+                            </button>
+                          )}
+                        </div>
+                      )
                     )}
                   </div>
                 </div>
@@ -796,12 +863,14 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                           <button 
                             onClick={() => navigate(`/compras/revision-pedido/${s.id}`)}
                             className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border ${
-                              esPedidoManualTerminado
+                              s.estado === 'Venta Perdida'
+                                ? 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300'
+                                : esPedidoManualTerminado
                                 ? 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300'
                                 : 'bg-blue-600 hover:bg-blue-700 text-white border-transparent'
                             }`}
                           >
-                            {esPedidoManualTerminado ? 'Ver Pedido' : 'Revisar Pedido'}
+                            {s.estado === 'Venta Perdida' ? 'Ver Venta Perdida' : (esPedidoManualTerminado ? 'Ver Pedido' : 'Revisar Pedido')}
                           </button>
                         </>
                       )
@@ -847,7 +916,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                       </>
                     ) : (
                       <>
-                        {s.estado === 'Anulado' && (
+                        {(s.estado === 'Anulado' || s.estado === 'Venta Perdida') && (
                           <button
                             type="button"
                             onClick={() => abrirVistaCotizacion(s)}
@@ -859,7 +928,13 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                         <button
                           type="button"
                           onClick={() => {
-                            if (!readOnly) navigate(`/calculadora/${s.id}`);
+                            if (!readOnly) {
+                              if (s.tipo === 'Pedido Manual') {
+                                navigate(`/compras/revision-pedido/${s.id}`);
+                              } else {
+                                navigate(`/calculadora/${s.id}`);
+                              }
+                            }
                           }}
                           disabled={readOnly}
                           className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border ${
@@ -872,7 +947,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                         </button>
                       </>
                     )}
-                    {!readOnly && s.estado !== 'Pedido' && s.estado !== 'Pedido Parcial' && s.estado !== 'Anulado' && (
+                    {!readOnly && s.estado !== 'Pedido' && s.estado !== 'Pedido Parcial' && s.estado !== 'Anulado' && s.estado !== 'Venta Perdida' && (
                       <button
                         type="button"
                         onClick={() => setModalAnulacionGlobal({ open: true, rfqId: s.id, rfqData: s, motivo: '', enviando: false })}
@@ -916,6 +991,8 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   : (s.fechaCotizacion || s.fechaRespuesta);
                 if (s.estado === 'Anulado') {
                   fechaResp = s.productos?.find(p => p.fechaAnulacion)?.fechaAnulacion || fechaResp;
+                } else if (s.estado === 'Venta Perdida') {
+                  fechaResp = s.fechaVentaPerdida || s.productos?.find(p => p.fechaVentaPerdida)?.fechaVentaPerdida || fechaResp;
                 }
                 
                 const esPedidoManualTerminado = s.tipo === 'Pedido Manual' && s.productos && s.productos.length > 0 && s.productos.every(p => ['Pedido', 'Comprado', 'Denegado', 'Cancelado', 'Rechazado'].includes(p.estadoItem));
@@ -960,8 +1037,55 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   <td className="p-4 text-center">
                     <div className="flex flex-col items-center gap-1">
                       <Badge estado={s.estado} />
-                      {resultado !== 'En proceso' && (
-                        <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                      {s.estado === 'Venta Perdida' ? (
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9px] font-black uppercase tracking-wide text-rose-600">VENTA PERDIDA</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              abrirConsultaVentaPerdida(s);
+                            }}
+                            title="Ver motivo de venta perdida"
+                            className="p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                          >
+                            <MessageCircleQuestion size={13} />
+                          </button>
+                        </div>
+                      ) : (
+                        (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
+                          <div className="flex items-center gap-1">
+                            {resultado !== 'En proceso' && (
+                              <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                            )}
+                            {tieneDecisionSolicitud(s) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  abrirConsultaDecision(s);
+                                }}
+                                title="Ver motivo de la decisión (anulación, rechazo o denegación)"
+                                className="p-0.5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+                              >
+                                <MessageCircleQuestion size={13} />
+                              </button>
+                            )}
+                            {s.estado !== 'Venta Perdida' && tieneVentaPerdidaSolicitud(s) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  abrirConsultaVentaPerdida(s);
+                                }}
+                                title="Ver motivo de venta perdida"
+                                className="p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                              >
+                                <MessageCircleQuestion size={13} />
+                              </button>
+                            )}
+                          </div>
+                        )
                       )}
                     </div>
                   </td>
@@ -987,12 +1111,14 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                             <button 
                               onClick={() => navigate(`/compras/revision-pedido/${s.id}`)}
                               className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border ${
-                                esPedidoManualTerminado
+                                s.estado === 'Venta Perdida'
+                                  ? 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300'
+                                  : esPedidoManualTerminado
                                   ? 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300'
                                   : 'bg-blue-600 hover:bg-blue-700 text-white border-transparent'
                               }`}
                             >
-                              {esPedidoManualTerminado ? 'Ver Pedido' : 'Revisar Pedido'}
+                              {s.estado === 'Venta Perdida' ? 'Ver Venta Perdida' : (esPedidoManualTerminado ? 'Ver Pedido' : 'Revisar Pedido')}
                             </button>
                           </>
                         )
@@ -1038,11 +1164,11 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                         </>
                       ) : (
                         <>
-                          {s.estado === 'Anulado' && (
+                          {(s.estado === 'Anulado' || s.estado === 'Venta Perdida') && (
                             <button
                               type="button"
                               onClick={() => abrirVistaCotizacion(s)}
-                              title="Ver / Imprimir PDF de Anulación"
+                              title={s.estado === 'Venta Perdida' ? "Ver / Imprimir PDF de Venta Perdida" : "Ver / Imprimir PDF de Anulación"}
                               className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 transition-all uppercase mr-2"
                             >
                               PDF
@@ -1051,7 +1177,11 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                           <button 
                             onClick={() => {
                               if (!readOnly) {
-                                navigate(`/calculadora/${s.id}`);
+                                if (s.tipo === 'Pedido Manual') {
+                                  navigate(`/compras/revision-pedido/${s.id}`);
+                                } else {
+                                  navigate(`/calculadora/${s.id}`);
+                                }
                               }
                             }}
                             disabled={readOnly}
@@ -1065,7 +1195,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                           </button>
                         </>
                       )}
-                      {!readOnly && s.estado !== 'Pedido' && s.estado !== 'Pedido Parcial' && s.estado !== 'Anulado' && (
+                      {!readOnly && s.estado !== 'Pedido' && s.estado !== 'Pedido Parcial' && s.estado !== 'Anulado' && s.estado !== 'Venta Perdida' && (
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setModalAnulacionGlobal({ open: true, rfqId: s.id, rfqData: s, motivo: '', enviando: false }); }}
@@ -1146,6 +1276,18 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
           </div>
         </div>
       )}
+
+      <ModalConsultaVentaPerdida
+        isOpen={consultaVentaPerdidaData !== null}
+        onClose={() => setConsultaVentaPerdidaData(null)}
+        data={consultaVentaPerdidaData}
+      />
+
+      <ModalConsultaDecisionItem
+        isOpen={consultaDecisionData !== null}
+        onClose={() => setConsultaDecisionData(null)}
+        data={consultaDecisionData}
+      />
     </div>
   );
 };

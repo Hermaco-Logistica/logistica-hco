@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
-import { Loader2, ArrowLeft, Check, X, ArrowLeftRight, MessageSquare, Save, Ban } from 'lucide-react';
+import { Loader2, ArrowLeft, Check, X, ArrowLeftRight, MessageSquare, Save, Ban, MessageCircleQuestion } from 'lucide-react';
 import { HiloComentariosItem } from '../../components/hilos/HiloComentariosItem';
 import { RevisionPedidoMobileCard } from '../../components/pedidos/RevisionPedidoMobileCard';
 import { useMensajesResumen } from '../../hooks/useMensajesResumen';
@@ -17,6 +17,10 @@ import { generarPlantillaAnulacion } from '../../utils/emailTemplates';
 import { pdf } from '@react-pdf/renderer';
 import CotizacionPDF from '../../components/CotizacionPDF';
 import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
+import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
+import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
+import { prepararDatosConsultaVentaPerdida, tieneMotivoConsultaItem } from '../../utils/ventasPerdidasHelpers';
+import { esDecisionItem, prepararDatosDecisionItem, esItemCerrado } from '../../utils/decisionItemHelpers';
 
 export const RevisionPedidoManual = ({ role = 'comprador' }) => {
   const { id } = useParams();
@@ -31,6 +35,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
   const currentUser = {
     uid: auth.currentUser?.uid,
     nombre: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'Comprador',
+    email: auth.currentUser?.email || '',
     rol: 'comprador'
   };
 
@@ -53,6 +58,30 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
   const { conteos, noLeidos } = useMensajesResumen(id, itemsServer, currentUser?.rol);
   const [modalAnulacion, setModalAnulacion] = useState({ open: false, index: null, motivo: '', enviando: false });
   const [modalDenegar, setModalDenegar] = useState({ open: false, index: null, versionEsperada: null, motivo: '' });
+  const [consultaVentaPerdidaData, setConsultaVentaPerdidaData] = useState(null);
+  const [consultaDecisionData, setConsultaDecisionData] = useState(null);
+
+  const abrirConsultaVentaPerdida = (p = null, idx = null) => {
+    setConsultaVentaPerdidaData(prepararDatosConsultaVentaPerdida({
+      solicitud: solicitudBase,
+      item: p,
+      items: itemsServer,
+      fallbackIndex: idx ?? 0,
+      currentUserEmail: auth.currentUser?.email || ''
+    }));
+  };
+
+  const handleAbrirConsultaItem = (p, idx = 0) => {
+    if (p?.estadoItem === 'Venta Perdida') {
+      abrirConsultaVentaPerdida(p, idx);
+    } else if (esDecisionItem(p)) {
+      setConsultaDecisionData(prepararDatosDecisionItem({
+        solicitud: { ...solicitudBase, id: solicitudBase?.id || id },
+        item: { ...p, idx, solicitudId: id },
+        fallbackIndex: idx
+      }));
+    }
+  };
 
   const handleConfirmarDenegar = () => {
     if (!modalDenegar.motivo.trim()) return;
@@ -196,15 +225,16 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
 
   const filteredItems = itemsServer.map((item, idx) => ({ item, idx })).filter(({ item }) => {
     if (!filtroTurno) return true;
-    const turno = item.negociacion?.turno;
+    const cerrado = esItemCerrado(item);
+    const turno = cerrado ? null : item.negociacion?.turno;
     const res = item.negociacion?.resultado;
     if (filtroTurno === 'compras') return turno === 'compras';
     if (filtroTurno === 'vendedor') return turno === 'vendedor';
-    if (filtroTurno === 'cerrados') return res != null;
+    if (filtroTurno === 'cerrados') return cerrado || res != null;
     return true;
   });
 
-  const allClosed = itemsServer.length > 0 && itemsServer.every(p => (p.negociacion?.resultado && p.negociacion.resultado !== 'pendiente') && !p.negociacion?.sinNotificar);
+  const allClosed = itemsServer.length > 0 && itemsServer.every(p => esItemCerrado(p) && !p.negociacion?.sinNotificar);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-36 fade-in">
@@ -288,7 +318,11 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {allClosed && (
+          {solicitudBase?.estado === 'Venta Perdida' ? (
+            <div className="bg-rose-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[10px] font-black uppercase flex items-center gap-1.5 shadow-md">
+              <span>Venta Perdida</span>
+            </div>
+          ) : allClosed && (
             <div className="bg-slate-800 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[10px] font-black uppercase flex items-center gap-1.5 shadow-md">
               <Check size={14} className="text-emerald-400" />
               <span className="hidden md:inline">Pedido Finalizado</span>
@@ -305,13 +339,36 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
             {solicitudBase.correlativo || '---'}
           </span>
           <span className="text-[10px] font-black uppercase text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-md">
-            {cerrados.length} de {itemsServer.length} cerrados
+            {cerrados} de {itemsServer.length} cerrados
           </span>
         </div>
         <p className={`text-xs font-bold uppercase leading-snug line-clamp-2 wrap-break-word ${colors.text}`}>
           {solicitudBase.cliente || 'Sin cliente'}
         </p>
       </div>
+
+      {/* Banner Venta Perdida */}
+      {solicitudBase?.estado === 'Venta Perdida' && (
+        <div className="mb-6 border border-rose-200 border-l-4 border-l-rose-500 rounded-r-2xl px-5 py-4 bg-rose-50/40 flex items-center justify-between gap-3 shadow-xs">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-0.5">
+              Pedido cerrado como venta perdida
+            </p>
+            <p className="text-xs font-bold text-slate-800">
+              {(solicitudBase?.productos || []).filter(p => p.estadoItem === 'Venta Perdida').length > 0
+                ? `${(solicitudBase?.productos || []).filter(p => p.estadoItem === 'Venta Perdida').length} ítems registrados como venta perdida por el vendedor`
+                : 'Esta solicitud fue cerrada como venta perdida por el vendedor.'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => abrirConsultaVentaPerdida()}
+            className="inline-flex min-h-7 items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-3 py-1.5 font-bold text-rose-600 shadow-2xs transition-all hover:bg-rose-50 active:translate-y-px text-xs cursor-pointer shrink-0"
+          >
+            <MessageCircleQuestion size={13} /> Consulta
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col justify-center">
@@ -393,6 +450,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
               setHiloAbierto={setHiloAbierto}
               onAnular={() => setModalAnulacion({ open: true, index: idx, motivo: '', enviando: false })}
               onDenegar={(index, versionEsperada) => setModalDenegar({ open: true, index, versionEsperada, motivo: '' })}
+              onConsultaVentaPerdida={() => handleAbrirConsultaItem(item, idx)}
               estaAnulado={item.estadoItem === 'Anulado'}
               role={role}
             />
@@ -422,8 +480,8 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
               {filteredItems.map(({ item: p, idx }) => {
                 const neg = p.negociacion || {};
                 const tiempoEntrega = neg.ofertaVigente?.tiempoEntrega || p.tiempoEntrega || p.diasPrometidos || '';
-                const versionEsperada = neg.version || 0;
-                const isPending = neg.turno === 'compras';
+                const esCerrado = esItemCerrado(p);
+                const isPending = neg.turno === 'compras' && !esCerrado;
                 const hasCounterOffer = neg.ofertaVigente && neg.ofertaAnterior && isPending;
                 
                 const draft = borradores[idx] || {
@@ -439,10 +497,11 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                 const msgCount = conteos[idx] || 0;
                 const unreadCount = noLeidos[idx] || 0;
                 const estaAnulado = p.estadoItem === 'Anulado';
+                const esVentaPerdidaItem = p.estadoItem === 'Venta Perdida';
 
                 return (
                   <React.Fragment key={idx}>
-                    <tr className={`transition-colors ${isPending ? 'bg-white' : 'hover:bg-slate-50'} ${estaAnulado ? 'opacity-60 bg-slate-50/50' : ''}`}>
+                    <tr className={`transition-colors ${esCerrado ? 'opacity-60 bg-slate-50/50' : isPending ? 'bg-white' : 'hover:bg-slate-50'}`}>
                       <td className="p-4 align-top">
                         <div className="font-bold text-sm uppercase text-slate-700 leading-tight pr-4">{p.descripcion}</div>
                         <div className="text-[10px] font-bold text-slate-400 uppercase mt-1">Marca: {p.marca}</div>
@@ -519,7 +578,17 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                         <div className="flex flex-col items-end gap-3">
                           <div className="flex items-center gap-2">
                             <EstadoItemChip estado={p.estadoItem} pendingRole={neg.turno} />
-                            {role === 'comprador' && ['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !estaAnulado && unnotifiedCount === 0 && (
+                            {tieneMotivoConsultaItem(p) && (
+                              <button
+                                type="button"
+                                onClick={() => handleAbrirConsultaItem(p, idx)}
+                                className="inline-flex min-h-6 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 font-semibold text-slate-600 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px text-[9px] cursor-pointer"
+                                title="Consultar motivo de la decisión"
+                              >
+                                <MessageCircleQuestion size={11} /> Consulta
+                              </button>
+                            )}
+                            {role === 'comprador' && ['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !esCerrado && unnotifiedCount === 0 && (
                               <button
                                 type="button"
                                 title="Anular"
@@ -630,6 +699,20 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
         isLoading={false}
         isVendedor={false}
         resumenAcciones={resumenAcciones}
+      />
+
+      {/* Modal de Consulta de Motivo de Venta Perdida (Comercial) */}
+      <ModalConsultaVentaPerdida
+        isOpen={consultaVentaPerdidaData !== null}
+        data={consultaVentaPerdidaData}
+        onClose={() => setConsultaVentaPerdidaData(null)}
+      />
+
+      {/* Modal de Consulta de Decisión de Ítem (Rechazo, Denegación, Anulación) */}
+      <ModalConsultaDecisionItem
+        isOpen={consultaDecisionData !== null}
+        data={consultaDecisionData}
+        onClose={() => setConsultaDecisionData(null)}
       />
     </div>
   );

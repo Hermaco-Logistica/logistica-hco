@@ -110,18 +110,28 @@ export default function CotizacionDocumento({ cotizacionData }) {
   const esPedidoManual = cotizacionData.tipo === 'Pedido Manual';
   const todoAnulado = cotizacionData.estado === 'Anulado' ||
     (productos.length > 0 && productos.every(p => p.estadoItem === 'Anulado'));
+  const esVentaPerdidaTotal = cotizacionData.estado === 'Venta Perdida' ||
+    (productos.length > 0 && productos.every(p => p.estadoItem === 'Venta Perdida'));
+  const productosVentaPerdida = productos.filter(item => item?.estadoItem === 'Venta Perdida');
   const motivosAnulacion = [...new Set(
     productosAnulados
       .filter(item => item?.motivoAnulacion)
       .map(item => item.motivoAnulacion.toString().trim())
       .filter(Boolean)
   )];
+  const motivosVentaPerdida = [...new Set(
+    (cotizacionData.estado === 'Venta Perdida' && cotizacionData.motivoVentaPerdida ? [cotizacionData.motivoVentaPerdida] : [])
+      .concat(productosVentaPerdida.map(item => item?.motivoVentaPerdida?.motivo || item?.motivoVentaPerdida).filter(Boolean))
+      .map(m => typeof m === 'object' ? `${m.motivo || ''}${m.observaciones ? ` - ${m.observaciones}` : ''}` : String(m).trim())
+      .filter(Boolean)
+  )];
   const hayAnulacion = todoAnulado || productosAnulados.length > 0;
+  const hayVentaPerdida = esVentaPerdidaTotal || productosVentaPerdida.length > 0;
 
   return (
     <div className="w-full overflow-x-auto">
       <div className="cotizacion-documento min-w-162.5 sm:min-w-0" style={{ ...pageStyle, position: 'relative' }}>
-        {todoAnulado && (
+        {(todoAnulado || esVentaPerdidaTotal) && (
           <div style={{
             position: 'absolute',
             top: '50%',
@@ -138,7 +148,7 @@ export default function CotizacionDocumento({ cotizacionData }) {
             zIndex: 99,
             fontFamily: 'Arial, sans-serif'
           }}>
-            ANULADO
+            {todoAnulado ? 'ANULADO' : 'VENTA PERDIDA'}
           </div>
         )}
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '18px' }}>
@@ -358,6 +368,26 @@ export default function CotizacionDocumento({ cotizacionData }) {
           {motivosAnulacion.map((motivo, index) => (
             <div key={index}>{motivo}</div>
           ))}
+        </div>
+      )}
+
+      {hayVentaPerdida && (
+        <div style={{
+          marginTop: '14px',
+          paddingTop: '8px',
+          borderTop: '1px solid #d1d5db',
+          fontSize: '11px',
+          lineHeight: '1.55',
+          color: '#222222'
+        }}>
+          <div style={{ fontWeight: 'bold', marginBottom: '3px', color: '#be123c' }}>Motivo de venta perdida:</div>
+          {motivosVentaPerdida.length > 0 ? (
+            motivosVentaPerdida.map((motivo, index) => (
+              <div key={index}>{motivo}</div>
+            ))
+          ) : (
+            <div>Venta perdida registrada por el vendedor</div>
+          )}
         </div>
       )}
     </div>

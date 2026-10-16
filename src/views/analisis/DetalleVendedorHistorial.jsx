@@ -25,6 +25,7 @@ import {
 import { exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { Badge } from '../../components/Badge';
 import { MotivoAnulacionModal } from '../../components/MotivoAnulacionModal';
+import { esDecisionItem } from '../../utils/decisionItemHelpers';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, evaluarEstadoGanada } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
@@ -170,7 +171,7 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
                   )}
                 </div>
               )}
-              {m.motivoAnulacion && (
+              {(m.motivoAnulacion || esDecisionItem(m.itemOriginal)) && (
                 <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
                   <span className="text-slate-500">Motivo</span>
                   <button type="button" onClick={() => onMostrarMotivo(m)} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px active:shadow-inner">
@@ -465,6 +466,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
 
           list.push({
             idMov: `${s.id}-${idx}`,
+            idxProducto: idx,
             rfqId: s.id,
             correlativo: s.correlativo || 'S/N',
             producto: descProducto,
@@ -1151,7 +1153,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
 
                       {/* Acción */}
                       <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                        {m.motivoAnulacion ? (
+                        {(m.motivoAnulacion || esDecisionItem(m.itemOriginal)) ? (
                           <button type="button" onClick={() => setMovimientoMotivo(m)} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px active:shadow-inner" title="Consultar motivo de anulación">
                             <MessageCircleQuestion size={13} /> Consulta
                           </button>

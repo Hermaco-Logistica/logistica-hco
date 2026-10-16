@@ -77,6 +77,13 @@ const ESTADOS_CONFIG = {
     icon: MessageSquare,
     label: 'En Consulta'
   },
+  'Venta Perdida': {
+    bg: 'bg-rose-50',
+    border: 'border-rose-200',
+    text: 'text-rose-700',
+    icon: AlertCircle,
+    label: 'Venta Perdida'
+  },
 
   // Estados Logísticos (DashboardPedidos, GestionOC)
   'Por Procesar': {

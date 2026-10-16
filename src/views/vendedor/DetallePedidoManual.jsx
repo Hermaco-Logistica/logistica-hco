@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { 
   ChevronLeft, CheckCircle2, MessageSquare, ArrowLeftRight, Check, X,
-  ChevronDown, Link as LinkIcon, Save, AlertCircle
+  ChevronDown, Link as LinkIcon, Save, AlertCircle, TrendingDown, MessageCircleQuestion
 } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -17,11 +17,43 @@ import { FormularioOferta } from '../../components/pedidos/negociacion/Formulari
 import { ResumenTurnos } from '../../components/pedidos/negociacion/ResumenTurnos';
 import { BarraNotificar } from '../../components/pedidos/negociacion/BarraNotificar';
 import { getRoleColors } from '../../utils/roleColors';
+import { ModalVentaPerdida } from '../../components/vendedor/ModalVentaPerdida';
+import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
+import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
+import { esItemEstancado } from '../../utils/cotizacionesEstancadasHelpers';
+import { prepararDatosConsultaVentaPerdida, tieneMotivoConsultaItem } from '../../utils/ventasPerdidasHelpers';
+import { esDecisionItem, prepararDatosDecisionItem, esItemCerrado } from '../../utils/decisionItemHelpers';
 
 export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [hiloAbierto, setHiloAbierto] = useState(null);
+  const [modalVentaPerdidaOpen, setModalVentaPerdidaOpen] = useState(false);
+  const [itemsVentaPerdidaSeleccionados, setItemsVentaPerdidaSeleccionados] = useState(null);
+  const [itemsSeleccionados, setItemsSeleccionados] = useState({});
+  const [ventasPerdidasPendientes, setVentasPerdidasPendientes] = useState({});
+  const [notificandoTodo, setNotificandoTodo] = useState(false);
+  const [consultaVentaPerdidaData, setConsultaVentaPerdidaData] = useState(null);
+  const [consultaDecisionData, setConsultaDecisionData] = useState(null);
+  const [modalRechazar, setModalRechazar] = useState({ open: false, index: null, versionEsperada: null, motivo: '' });
+
+  const handleAbrirModalRechazar = (index, versionEsperada) => {
+    setModalRechazar({ open: true, index, versionEsperada, motivo: '' });
+  };
+
+  const handleConfirmarRechazo = () => {
+    if (!modalRechazar.motivo.trim()) return;
+    const { index, versionEsperada, motivo } = modalRechazar;
+    actions.rechazar(index, versionEsperada, motivo.trim());
+    if (index !== null) {
+      setItemsSeleccionados(prev => {
+        const next = { ...prev };
+        delete next[index];
+        return next;
+      });
+    }
+    setModalRechazar({ open: false, index: null, versionEsperada: null, motivo: '' });
+  };
   const colors = getRoleColors(role);
   const [filtroTurno, setFiltroTurno] = useState(null);
   const [linkOC, setLinkOC] = useState('');
@@ -33,6 +65,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   const currentUser = {
     uid: auth.currentUser?.uid,
     nombre: auth.currentUser?.displayName || auth.currentUser?.email?.split('@')[0] || 'Vendedor',
+    email: auth.currentUser?.email || '',
     rol: 'vendedor'
   };
 
@@ -63,8 +96,9 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   const puedeVerCualquierSolicitud = role === 'gerente' || role === 'administrador' || role === 'comprador' ||
     Boolean(email.toLowerCase().match(/admin|gerente|compras/));
 
-  const puedeResponder = Boolean(esDuenio);
   const esAnulado = solicitudBase?.estado === 'Anulado';
+  const esVentaPerdida = solicitudBase?.estado === 'Venta Perdida';
+  const puedeResponder = (Boolean(esDuenio) || role === 'gerente' || role === 'administrador') && !esAnulado && !esVentaPerdida;
   const motivoAnulacion = solicitudBase?.motivoAnulacion
     || solicitudBase?.productos?.find(p => p.motivoAnulacion)?.motivoAnulacion
     || '';
@@ -130,15 +164,151 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
 
   const filteredItems = itemsServer.map((item, idx) => ({ item, idx })).filter(({ item }) => {
     if (!filtroTurno) return true;
-    const turno = item.negociacion?.turno;
+    const cerrado = esItemCerrado(item);
+    const turno = cerrado ? null : item.negociacion?.turno;
     const res = item.negociacion?.resultado;
     if (filtroTurno === 'compras') return turno === 'compras';
     if (filtroTurno === 'vendedor') return turno === 'vendedor';
-    if (filtroTurno === 'cerrados') return res != null;
+    if (filtroTurno === 'cerrados') return cerrado || res != null;
     return true;
   });
 
-  const allClosed = itemsServer.length > 0 && itemsServer.every(p => (p.negociacion?.resultado && p.negociacion.resultado !== 'pendiente') && !p.negociacion?.sinNotificar);
+  const allClosed = itemsServer.length > 0 && itemsServer.every(p => esItemCerrado(p) && !p.negociacion?.sinNotificar);
+
+  const toggleSeleccionItem = (idx) => {
+    const item = itemsServer[idx];
+    if (esItemCerrado(item)) return;
+    setItemsSeleccionados(prev => ({
+      ...prev,
+      [idx]: !prev[idx]
+    }));
+  };
+
+  const indicesSeleccionados = Object.keys(itemsSeleccionados)
+    .filter(idx => itemsSeleccionados[idx])
+    .map(Number);
+  const totalItemsSeleccionados = indicesSeleccionados.length;
+
+  const esVendedorOGerente = role === 'vendedor' || role === 'gerente';
+
+  const itemsPendientes = itemsServer
+    .map((p, idx) => ({ p, idx }))
+    .filter(({ p }) => !esItemCerrado(p));
+
+  const tieneItemsSeleccionadosValidos = indicesSeleccionados.some(idx => {
+    const item = itemsServer[idx];
+    return item && !esItemCerrado(item);
+  });
+
+  const hayItemsPendientes = itemsPendientes.length > 0;
+
+  const debeMostrarBotonVentaPerdida = esVendedorOGerente && puedeResponder && !esAnulado && solicitudBase?.estado !== 'Venta Perdida' && (
+    (totalItemsSeleccionados > 0 && tieneItemsSeleccionadosValidos) ||
+    (totalItemsSeleccionados === 0 && hayItemsPendientes)
+  );
+
+  const handleAbrirVentaPerdida = (indices = null) => {
+    if (Array.isArray(indices) && indices.length > 0) {
+      setItemsVentaPerdidaSeleccionados(indices);
+      setModalVentaPerdidaOpen(true);
+      return;
+    }
+
+    if (totalItemsSeleccionados > 0) {
+      setItemsVentaPerdidaSeleccionados(indicesSeleccionados);
+      setModalVentaPerdidaOpen(true);
+      return;
+    }
+
+    if (itemsPendientes.length > 0) {
+      const indicesPendientes = itemsPendientes.map(({ idx }) => idx);
+      setItemsVentaPerdidaSeleccionados(indicesPendientes);
+      setModalVentaPerdidaOpen(true);
+      return;
+    }
+
+    alert('Selecciona con la casilla los ítems específicos para registrar venta perdida.');
+  };
+
+  const handleConfirmarVentaPerdidaStaged = ({ motivo, comentario, itemsSeleccionados: itemsParam }) => {
+    let indices = itemsParam;
+    if (!Array.isArray(indices) || indices.length === 0) {
+      indices = itemsPendientes
+        .map(({ idx }) => idx);
+    }
+
+    setVentasPerdidasPendientes(prev => {
+      const next = { ...prev };
+      indices.forEach(idx => {
+        next[idx] = {
+          motivo,
+          comentario,
+          fecha: new Date()
+        };
+      });
+      return next;
+    });
+
+    setItemsSeleccionados(prev => {
+      const next = { ...prev };
+      indices.forEach(idx => {
+        delete next[idx];
+      });
+      return next;
+    });
+
+    setModalVentaPerdidaOpen(false);
+    setItemsVentaPerdidaSeleccionados(null);
+  };
+
+  const handleCancelarVentaPerdidaPendiente = (idx) => {
+    setVentasPerdidasPendientes(prev => {
+      const next = { ...prev };
+      delete next[idx];
+      return next;
+    });
+  };
+
+  const totalVentasPerdidasPendientes = Object.keys(ventasPerdidasPendientes).length;
+  const totalPendientesNotificar = unnotifiedCount + totalVentasPerdidasPendientes;
+
+  const handleNotificarComprasCompleto = async () => {
+    setNotificandoTodo(true);
+    try {
+      await actions.notificar({
+        ventasPerdidasPendientes
+      });
+      setVentasPerdidasPendientes({});
+    } catch (err) {
+      console.error('Error al notificar compras o ventas perdidas:', err);
+    } finally {
+      setNotificandoTodo(false);
+    }
+  };
+
+  const abrirConsultaVentaPerdida = (p = null, idx = null) => {
+    const staged = idx !== null ? ventasPerdidasPendientes[idx] : null;
+    setConsultaVentaPerdidaData(prepararDatosConsultaVentaPerdida({
+      solicitud: solicitudBase,
+      item: p,
+      staged,
+      items: itemsServer,
+      currentUserEmail: auth.currentUser?.email || currentUser.nombre
+    }));
+  };
+
+  const handleAbrirConsultaItem = (p, idx = 0) => {
+    const staged = idx !== null ? ventasPerdidasPendientes[idx] : null;
+    if (staged || p?.estadoItem === 'Venta Perdida') {
+      abrirConsultaVentaPerdida(p, idx);
+    } else if (esDecisionItem(p)) {
+      setConsultaDecisionData(prepararDatosDecisionItem({
+        solicitud: { ...solicitudBase, id: solicitudBase?.id || id },
+        item: { ...p, idx, solicitudId: id },
+        fallbackIndex: idx
+      }));
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-36 fade-in">
@@ -160,8 +330,26 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {debeMostrarBotonVentaPerdida && (
+            <button
+              onClick={() => handleAbrirVentaPerdida()}
+              className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-3 md:px-3.5 py-1.5 md:py-2 rounded-md text-[11px] font-semibold uppercase flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+            >
+              <TrendingDown size={13} className="text-slate-500" />
+              <span className="hidden md:inline">
+                {totalItemsSeleccionados > 0
+                  ? `Registrar Venta Perdida (${totalItemsSeleccionados} sel.)`
+                  : 'Registrar Venta Perdida'}
+              </span>
+              <span className="md:hidden">
+                {totalItemsSeleccionados > 0
+                  ? `Venta Perdida (${totalItemsSeleccionados})`
+                  : 'Venta Perdida'}
+              </span>
+            </button>
+          )}
           {allClosed && (
-            <div className="bg-slate-800 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[10px] font-black uppercase flex items-center gap-1.5 shadow-md">
+            <div className="bg-slate-800 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-[10px] font-black uppercase flex items-center gap-1.5 shadow-md">
               <CheckCircle2 size={14} className="text-emerald-400" />
               <span className="hidden md:inline">Pedido Finalizado</span>
               <span className="md:hidden">Finalizado</span>
@@ -171,29 +359,52 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
       </div>
 
       {/* Resumen Móvil (< md): Correlativo, estado e info del cliente */}
-      <div className="md:hidden bg-white rounded-2xl p-4 border border-slate-200/90 shadow-sm mb-4 space-y-2">
+      <div className="md:hidden bg-white rounded-lg p-3.5 border border-slate-200 shadow-2xs mb-4 space-y-1.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="font-mono font-black text-base text-slate-900 tracking-tight">
+          <span className="font-mono font-bold text-base text-slate-900 tracking-tight">
             {solicitudBase.correlativo || '---'}
           </span>
-          <span className="text-[10px] font-black uppercase text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-md">
-            {cerrados.length} de {itemsServer.length} cerrados
+          <span className="text-[10px] font-semibold uppercase text-slate-600 bg-slate-100 px-2 py-0.5 rounded-sm border border-slate-200">
+            {cerrados} de {itemsServer.length} cerrados
           </span>
         </div>
-        <p className={`text-xs font-bold uppercase leading-snug line-clamp-2 wrap-break-word ${colors.text}`}>
+        <p className={`text-xs font-semibold uppercase leading-snug line-clamp-2 wrap-break-word ${colors.text}`}>
           {solicitudBase.cliente || 'Sin cliente'}
         </p>
       </div>
 
       {/* Banner anulación */}
       {esAnulado && (
-        <div className="mb-5 border border-slate-300 border-l-4 border-l-slate-800 rounded-r-xl px-5 py-4 bg-white">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Pedido anulado · solo lectura</p>
+        <div className="mb-5 border border-slate-300 border-l-4 border-l-slate-800 rounded-r-lg px-5 py-3.5 bg-white">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">Pedido anulado · solo lectura</p>
           {motivoAnulacion ? (
-            <p className="text-sm font-bold text-slate-800 leading-snug">{motivoAnulacion}</p>
+            <p className="text-sm font-semibold text-slate-800 leading-snug">{motivoAnulacion}</p>
           ) : (
             <p className="text-xs text-slate-400 italic">Sin motivo registrado.</p>
           )}
+        </div>
+      )}
+
+      {/* Banner Venta Perdida */}
+      {solicitudBase?.estado === 'Venta Perdida' && (
+        <div className="mb-5 border border-slate-300 border-l-4 border-l-slate-700 rounded-r-lg px-5 py-3.5 bg-slate-50/70 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">
+              Pedido cerrado como venta perdida
+            </p>
+            <p className="text-xs font-semibold text-slate-700">
+              {(solicitudBase?.productos || []).filter(p => p.estadoItem === 'Venta Perdida').length > 0
+                ? `${(solicitudBase?.productos || []).filter(p => p.estadoItem === 'Venta Perdida').length} ítems registrados como venta perdida`
+                : 'Todos los ítems cerrados como venta perdida'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => abrirConsultaVentaPerdida()}
+            className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2.5 py-1 font-semibold text-slate-700 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px text-xs cursor-pointer shrink-0"
+          >
+            <MessageCircleQuestion size={13} /> Consulta
+          </button>
         </div>
       )}
 
@@ -303,6 +514,14 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
               hiloAbierto={hiloAbierto}
               setHiloAbierto={setHiloAbierto}
               puedeResponder={puedeResponder}
+              esEstancado={esItemEstancado(item, solicitudBase)}
+              estaSeleccionado={Boolean(itemsSeleccionados[idx])}
+              stagedVP={Boolean(ventasPerdidasPendientes[idx])}
+              onToggleSeleccion={() => toggleSeleccionItem(idx)}
+              onVentaPerdida={() => handleAbrirVentaPerdida([idx])}
+              onConsultaVentaPerdida={() => handleAbrirConsultaItem(item, idx)}
+              onDeshacerVentaPerdida={() => handleCancelarVentaPerdidaPendiente(idx)}
+              onRechazar={(index, vEsperada) => handleAbrirModalRechazar(index, vEsperada)}
             />
           ))}
           {filteredItems.length === 0 && (
@@ -315,23 +534,27 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
           <table className="w-full text-left">
             <thead className="text-[10px] uppercase font-black tracking-widest text-slate-400 border-b border-slate-100">
               <tr>
-                <th className="p-4 w-[25%]">Producto</th>
-                <th className="p-4 w-[40%]">Condiciones</th>
-                <th className="p-4 w-28 text-center">Mensajes</th>
-                <th className="p-4 w-[20%] text-right">Estado y Acciones</th>
+                <th className="p-4 w-12 text-center">Sel.</th>
+                <th className="p-4 w-[22%]">Producto</th>
+                <th className="p-4 w-[28%]">Condiciones</th>
+                <th className="p-4 w-24 text-center">Mensajes</th>
+                <th className="p-4 w-36 text-center">Estado</th>
+                <th className="p-4 w-[30%] text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredItems.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="p-8 text-center text-slate-500 text-sm font-medium">No hay ítems en esta vista.</td>
+                  <td colSpan={6} className="p-8 text-center text-slate-500 text-sm font-medium">No hay ítems en esta vista.</td>
                 </tr>
               )}
               {filteredItems.map(({ item: p, idx }) => {
                 const neg = p.negociacion || {};
                 const tiempoEntrega = neg.ofertaVigente?.tiempoEntrega || p.tiempoEntrega || p.diasPrometidos || '';
                 const versionEsperada = neg.version || 0;
-                const isMyTurn = neg.turno === 'vendedor';
+                const esCerrado = esItemCerrado(p);
+                const stagedVP = Boolean(ventasPerdidasPendientes[idx]);
+                const isMyTurn = neg.turno === 'vendedor' && !esCerrado && !stagedVP;
                 const currentFob = neg.ofertaVigente?.precio || p.fob || 0;
                 
                 const draft = borradores[idx];
@@ -343,9 +566,33 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                   String(draft.tiempoEntrega) === String(tiempoEntrega) &&
                   String(draft.modalidad) === String(neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo');
 
+                const puedeSeleccionar = !esCerrado && puedeResponder && !stagedVP;
+
                 return (
                   <React.Fragment key={idx}>
-                    <tr className={`transition-colors ${isMyTurn ? 'bg-amber-50/20' : 'hover:bg-slate-50'}`}>
+                    <tr className={`transition-colors ${esCerrado ? 'opacity-60 bg-slate-50/50' : isMyTurn ? 'bg-amber-50/20' : stagedVP ? 'bg-rose-50/20' : 'hover:bg-slate-50'}`}>
+                      <td className="p-4 text-center align-top">
+                        {stagedVP ? (
+                          <div className="w-6 h-6 rounded-md bg-rose-50 border border-rose-300 text-rose-700 flex items-center justify-center mx-auto shadow-xs" title="Venta Perdida por enviar">
+                            <TrendingDown size={14} />
+                          </div>
+                        ) : puedeSeleccionar ? (
+                          <button
+                            type="button"
+                            onClick={() => toggleSeleccionItem(idx)}
+                            className={`w-6 h-6 rounded-md border flex items-center justify-center mx-auto transition-all cursor-pointer ${
+                              itemsSeleccionados[idx]
+                                ? 'bg-slate-900 border-slate-900 text-white shadow-xs'
+                                : 'border-slate-300 text-transparent hover:border-slate-400 bg-white'
+                            }`}
+                            title={itemsSeleccionados[idx] ? "Deseleccionar ítem" : "Seleccionar ítem para venta perdida"}
+                          >
+                            <Check size={14} strokeWidth={3} />
+                          </button>
+                        ) : (
+                          <div className="w-6 h-6 mx-auto" />
+                        )}
+                      </td>
                       <td className="p-4 align-top">
                         <div className="font-bold text-sm uppercase text-slate-700 leading-tight pr-4">{p.descripcion}</div>
                         <div className="text-[10px] font-bold text-slate-400 uppercase mt-1">Marca: {p.marca}</div>
@@ -359,7 +606,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                           </div>
                           <div>
                             <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Precio (OC)</span>
-                            {draft ? (
+                            {draft && isMyTurn ? (
                               <div className="relative">
                                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-xs">$</span>
                                 <input 
@@ -376,7 +623,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                           </div>
                           <div>
                             <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Días de entrega</span>
-                            {draft ? (
+                            {draft && isMyTurn ? (
                               <input 
                                 type="text" 
                                 value={draft.tiempoEntrega || ''} 
@@ -390,7 +637,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                           </div>
                           <div>
                             <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Modalidad</span>
-                            {draft ? (
+                            {draft && isMyTurn ? (
                               <select 
                                 value={draft.modalidad || 'Aéreo'} 
                                 onChange={(e) => updateBorrador(idx, { ...draft, modalidad: e.target.value })} 
@@ -417,87 +664,175 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                           {unreadCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-blue-500 text-white text-[8px] w-4 h-4 flex items-center justify-center rounded-full shadow-sm">{unreadCount}</span>}
                         </button>
                       </td>
-                      
-                      <td className="p-4 align-top">
-                        <div className="flex flex-col items-end gap-3">
-                          <EstadoItemChip estado={p.estadoItem} pendingRole={p.estadoItem === 'Anulado' ? null : neg.turno} />
-                          {p.estadoItem === 'Anulado' && p.motivoAnulacion && (
-                            <span className="text-[9px] text-slate-400 italic mt-1 block text-right max-w-40" title={p.motivoAnulacion}>
-                              {p.motivoAnulacion.length > 40 ? p.motivoAnulacion.slice(0, 40) + '\u2026' : p.motivoAnulacion}
-                            </span>
-                          )}
-                          
-                          {isMyTurn && puedeResponder && p.estadoItem !== 'Anulado' ? (
-                            <div className="flex flex-wrap justify-end gap-1.5 w-full mt-2">
-                              {!draft ? (
-                                <>
-                                  <button 
-                                    onClick={() => actions.aceptar(idx, versionEsperada)} 
-                                    className="px-3 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg font-black text-[10px] uppercase transition-colors flex items-center gap-1 shadow-sm"
-                                  >
-                                    <Check size={14} /> Aceptar ${Number(currentFob).toFixed(2)}
-                                  </button>
-                                  <button 
-                                    onClick={() => {
-                                      updateBorrador(idx, {
-                                        precio: currentFob,
-                                        tiempoEntrega,
-                                        modalidad: neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo'
-                                      });
-                                    }} 
-                                    className="px-3 py-2.5 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-lg font-black text-[10px] uppercase transition-colors flex items-center gap-1"
-                                  >
-                                    <ArrowLeftRight size={14} /> Contraofertar
-                                  </button>
-                                  <button 
-                                    onClick={() => {
-                                      const m = window.prompt("Motivo del rechazo:");
-                                      if (m !== null) actions.rechazar(idx, versionEsperada, m);
-                                    }} 
-                                    className="px-2 py-2 bg-slate-100 text-slate-500 hover:bg-rose-100 hover:text-rose-700 rounded-lg transition-colors"
-                                    title="Rechazar Oferta"
-                                  >
-                                    <X size={14} />
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <button 
-                                    onClick={() => {
-                                      actions.contraofertar(idx, versionEsperada, draft);
-                                      clearBorrador(idx);
-                                    }} 
-                                    disabled={!draft.precio || isUnchanged}
-                                    className="px-3 py-2.5 bg-amber-500 text-white hover:bg-amber-600 rounded-lg font-black text-[10px] uppercase transition-colors flex items-center gap-1 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    <Check size={14} /> Enviar Contraoferta
-                                  </button>
-                                  <button 
-                                    onClick={() => clearBorrador(idx)} 
-                                    className="px-3 py-2.5 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-lg font-black text-[10px] uppercase transition-colors flex items-center gap-1"
-                                  >
-                                    <X size={14} /> Cancelar
-                                  </button>
-                                </>
+
+                      {/* Columna dedicada: Estado */}
+                      <td className="p-4 align-top text-center">
+                        <div className="flex flex-col items-center gap-1.5 mt-1">
+                          {stagedVP ? (
+                            <>
+                              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-sm">
+                                <TrendingDown size={11} />
+                                <span>Por enviar</span>
+                              </span>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => abrirConsultaVentaPerdida(p, idx)}
+                                  className="inline-flex min-h-6 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 font-semibold text-slate-600 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px text-[9px] cursor-pointer"
+                                  title="Consultar motivo de venta perdida"
+                                >
+                                  <MessageCircleQuestion size={11} /> Consulta
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCancelarVentaPerdidaPendiente(idx)}
+                                  className="text-[10px] font-bold text-slate-400 hover:text-rose-600 underline cursor-pointer"
+                                >
+                                  Deshacer
+                                </button>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <EstadoItemChip estado={p.estadoItem} pendingRole={p.estadoItem === 'Anulado' ? null : neg.turno} />
+                              {p.estadoItem === 'Anulado' && p.motivoAnulacion && (
+                                <span className="text-[9px] text-slate-400 italic text-center max-w-[130px] leading-tight mt-0.5" title={p.motivoAnulacion}>
+                                  {p.motivoAnulacion.length > 40 ? p.motivoAnulacion.slice(0, 40) + '…' : p.motivoAnulacion}
+                                </span>
                               )}
-                            </div>
-                          ) : neg.sinNotificar && neg.ultimoCambio?.rol === currentUser.rol && !draft ? (
-                            <div className="flex justify-end mt-2">
-                              <button 
-                                onClick={() => actions.deshacer(idx, versionEsperada)}
-                                className="px-3 py-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-lg text-[10px] font-bold uppercase transition-colors"
+                              {tieneMotivoConsultaItem(p) && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAbrirConsultaItem(p, idx)}
+                                  className="inline-flex min-h-6 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 font-semibold text-slate-600 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px text-[9px] cursor-pointer mt-0.5"
+                                  title="Consultar motivo de la decisión"
+                                >
+                                  <MessageCircleQuestion size={11} /> Consulta
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </td>
+                      
+                      {/* Columna dedicada: Acciones */}
+                      <td className="p-4 align-top">
+                        <div className="flex flex-col items-end gap-2">
+                          {stagedVP ? (
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="text-[10px] font-bold text-rose-600 uppercase">Venta Perdida pendiente</span>
+                              <button
+                                type="button"
+                                onClick={() => handleCancelarVentaPerdidaPendiente(idx)}
+                                className="text-[10px] font-bold text-slate-400 hover:text-rose-600 underline cursor-pointer"
                               >
-                                Deshacer cambio
+                                Deshacer
                               </button>
                             </div>
-                          ) : null}
+                          ) : (
+                            <>
+                              {/* Bloque de Negociación */}
+                              {isMyTurn && puedeResponder && !esCerrado && !stagedVP ? (
+                                <div className="flex flex-col gap-2 w-full bg-slate-50 border border-slate-200/80 p-2.5 rounded-lg shadow-2xs">
+                                  {!draft ? (
+                                    <>
+                                      {/* Acciones Principales: Aceptar y Contraofertar */}
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <button 
+                                          type="button"
+                                          onClick={() => actions.aceptar(idx, versionEsperada)} 
+                                          className="py-2.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-bold text-xs uppercase tracking-wide transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                                        >
+                                          <Check size={14} /> Aceptar ${Number(currentFob).toFixed(2)}
+                                        </button>
+                                        <button 
+                                          type="button"
+                                          onClick={() => {
+                                            updateBorrador(idx, {
+                                              precio: currentFob,
+                                              tiempoEntrega,
+                                              modalidad: neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo'
+                                            });
+                                          }} 
+                                          className="py-2.5 px-2 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-md font-bold text-xs uppercase tracking-wide transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                                        >
+                                          <ArrowLeftRight size={14} /> Contraofertar
+                                        </button>
+                                      </div>
+
+                                      {/* Rechazar oferta de Compras (negociación interna) */}
+                                      <div className="flex justify-end pt-0.5">
+                                        <button 
+                                          type="button"
+                                          onClick={() => handleAbrirModalRechazar(idx, versionEsperada)} 
+                                          className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 py-1 px-1.5 rounded-md hover:bg-slate-200/50 transition-colors cursor-pointer"
+                                          title="Rechazar la oferta interna enviada por Compras"
+                                        >
+                                          <X size={13} className="text-slate-400" />
+                                          <span>Rechazar oferta de Compras</span>
+                                        </button>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <button 
+                                        type="button"
+                                        onClick={() => {
+                                          actions.contraofertar(idx, versionEsperada, draft);
+                                          clearBorrador(idx);
+                                        }} 
+                                        disabled={!draft.precio || isUnchanged}
+                                        className="py-2 px-2 bg-amber-500 text-white hover:bg-amber-600 rounded-md font-bold text-[10px] uppercase tracking-wide transition-colors flex items-center justify-center gap-1 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                      >
+                                        <Check size={13} /> Enviar
+                                      </button>
+                                      <button 
+                                        type="button"
+                                        onClick={() => clearBorrador(idx)} 
+                                        className="py-2 px-2 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-md font-bold text-[10px] uppercase tracking-wide transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                                      >
+                                        <X size={13} /> Cancelar
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : neg.sinNotificar && neg.ultimoCambio?.rol === currentUser.rol && !draft ? (
+                                <div className="flex justify-end">
+                                  <button 
+                                    type="button"
+                                    onClick={() => actions.deshacer(idx, versionEsperada)} 
+                                    className="text-[10px] text-slate-400 hover:text-slate-700 underline font-bold px-1 py-1 cursor-pointer"
+                                  >
+                                    Deshacer cambios
+                                  </button>
+                                </div>
+                              ) : null}
+
+                              {/* Acción Comercial: Venta Perdida */}
+                              {esVendedorOGerente && !esCerrado && puedeResponder && !stagedVP && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAbrirVentaPerdida([idx])}
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold text-[10px] uppercase tracking-wide transition-colors cursor-pointer shadow-xs ${
+                                    esItemEstancado(p, solicitudBase)
+                                      ? 'border border-rose-300 bg-rose-100 hover:bg-rose-200 text-rose-800'
+                                      : 'border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700'
+                                  }`}
+                                  title={esItemEstancado(p, solicitudBase) ? "Registrar Venta Perdida comercial (>5 días hábiles sin cierre)" : "Registrar Venta Perdida de este ítem"}
+                                >
+                                  <TrendingDown size={13} />
+                                  <span>Venta Perdida</span>
+                                </button>
+                              )}
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
 
                     {(neg.ofertaVigente && neg.ofertaAnterior) && (
                       <tr className={p.estadoItem === 'Anulado' ? 'opacity-50 bg-slate-50/40' : 'bg-slate-50/40'}>
-                        <td colSpan={4} className="px-5 pt-3 pb-5">
+                        <td colSpan={6} className="px-5 pt-3 pb-5">
                           <OfertaDiff actual={neg.ofertaVigente} anterior={neg.ofertaAnterior} label="Ajuste de Compras" />
                         </td>
                       </tr>
@@ -505,7 +840,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
 
                     {hiloAbierto === idx && (
                       <tr className="bg-slate-50">
-                        <td colSpan={4} className="p-0 border-t border-slate-100">
+                        <td colSpan={6} className="p-0 border-t border-slate-100">
                           <HiloComentariosItem
                             solicitudId={id}
                             itemId={idx}
@@ -514,7 +849,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                             todosLosProductos={[]}
                             onClose={() => setHiloAbierto(null)}
                             accionesHabilitadas={false}
-                            soloLectura={!puedeResponder || p.estadoItem === 'Anulado'}
+                            soloLectura={!puedeResponder || esCerrado}
                           />
                         </td>
                       </tr>
@@ -529,14 +864,83 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
 
       {puedeResponder && (
         <BarraNotificar 
-          unnotifiedCount={unnotifiedCount}
+          unnotifiedCount={totalPendientesNotificar}
           notificacionPendienteEmail={notificacionPendienteEmail}
-          onNotificar={() => actions.notificar(resumenAcciones)}
+          onNotificar={handleNotificarComprasCompleto}
           onReintentar={() => actions.reintentarCorreo()}
-          isLoading={false}
+          isLoading={notificandoTodo}
           isVendedor={true}
-          resumenAcciones={resumenAcciones}
+          resumenAcciones={{ ...resumenAcciones, ventasPerdidas: totalVentasPerdidasPendientes }}
         />
+      )}
+
+      {/* Modal de Registro de Venta Perdida */}
+      <ModalVentaPerdida
+        isOpen={modalVentaPerdidaOpen}
+        onClose={() => {
+          setModalVentaPerdidaOpen(false);
+          setItemsVentaPerdidaSeleccionados(null);
+          setItemsSeleccionados({});
+        }}
+        solicitud={{ id, ...solicitudBase }}
+        itemsSeleccionados={itemsVentaPerdidaSeleccionados}
+        onConfirmarStaged={handleConfirmarVentaPerdidaStaged}
+        onExito={() => {
+          setModalVentaPerdidaOpen(false);
+          setItemsVentaPerdidaSeleccionados(null);
+          setItemsSeleccionados({});
+          navigate('/vendedor');
+        }}
+      />
+
+      {/* Modal de Consulta de Motivo de Venta Perdida (Comercial) */}
+      <ModalConsultaVentaPerdida
+        isOpen={consultaVentaPerdidaData !== null}
+        onClose={() => setConsultaVentaPerdidaData(null)}
+        data={consultaVentaPerdidaData}
+      />
+
+      {/* Modal de Consulta de Decisión de Ítem (Rechazo, Denegación, Anulación) */}
+      <ModalConsultaDecisionItem
+        isOpen={consultaDecisionData !== null}
+        onClose={() => setConsultaDecisionData(null)}
+        data={consultaDecisionData}
+      />
+
+      {/* Modal Rechazar Oferta de Compras */}
+      {modalRechazar.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6 border border-slate-100">
+            <h3 className="text-lg font-black text-slate-800 mb-2">Rechazar Oferta de Compras</h3>
+            <p className="text-sm text-slate-500 mb-4 leading-snug">
+              Ingresa el motivo del rechazo de la oferta de Compras. Esta información quedará registrada en el historial de negociación.
+            </p>
+            <textarea
+              className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all resize-none text-sm font-medium h-24 mb-4 outline-none"
+              placeholder="Motivo del rechazo (obligatorio)..."
+              value={modalRechazar.motivo}
+              onChange={e => setModalRechazar(prev => ({ ...prev, motivo: e.target.value }))}
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button 
+                type="button"
+                onClick={() => setModalRechazar({ open: false, index: null, versionEsperada: null, motivo: '' })}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="button"
+                onClick={handleConfirmarRechazo}
+                disabled={!modalRechazar.motivo.trim()}
+                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm cursor-pointer shadow-sm"
+              >
+                Confirmar Rechazo
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

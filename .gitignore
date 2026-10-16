@@ -17,6 +17,7 @@ build
 MAPA_FLUJO.md
 .github
 scripts
+tests
 
 # Editor directories and files
 .vscode/*

@@ -40,11 +40,21 @@ const sanitizeFileName = (name) => {
  */
 export function extraerTodosLosMovimientos(solicitudes = [], ordenesCompra = []) {
   const mapFechasOC = {};
+  const mapFobConfirmado = {};
   if (Array.isArray(ordenesCompra)) {
     ordenesCompra.forEach((oc) => {
       const num = oc.numeroOC || oc.numero || oc.ocRef;
       if (num && oc.fechaCreacion) {
         mapFechasOC[num.toString().trim()] = oc.fechaCreacion;
+      }
+
+      if (Array.isArray(oc.items)) {
+        oc.items.forEach((item) => {
+          if (item.idRFQ && item.indexOriginal !== undefined && item.indexOriginal !== null) {
+            const key = `${item.idRFQ}-${item.indexOriginal}`;
+            mapFobConfirmado[key] = item.fobConfirmado ?? item.fobReal ?? item.fob ?? null;
+          }
+        });
       }
     });
   }
@@ -58,7 +68,8 @@ export function extraerTodosLosMovimientos(solicitudes = [], ordenesCompra = [])
       ? s.productos
       : [{ desc: 'Sin productos detallados', cant: 1 }];
 
-    productosLista.forEach((p, idx) => {
+      productosLista.forEach((p, idx) => {
+      const fobConfirmado = mapFobConfirmado[`${s.id}-${idx}`];
       const descProducto = (p.desc || p.descripcion || 'Sin descripción').trim().toUpperCase();
       const marcaProducto = (p.marca || '').trim();
 
@@ -136,7 +147,9 @@ export function extraerTodosLosMovimientos(solicitudes = [], ordenesCompra = [])
         ocRef,
         estado: estadoItem,
         motivoAnulacion: p.motivoAnulacion || p.motivoEstadoItem || p.motivoDenegacion || p.motivoRechazo || '',
-        fob: Number(p.fob || 0),
+        // GestionOC muestra ordenesCompra.items[].fobConfirmado.
+        // Prioridad: FOB confirmado de la OC, FOB real persistido y FOB cotizado.
+        fob: Number(fobConfirmado ?? p.fobReal ?? p.fob ?? 0),
         itemOriginal: p,
         solicitudOriginal: s
       });
@@ -254,6 +267,7 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
     'Marca',
     'Modalidad',
     'Unidades',
+    'FOB Unitario ($)',
     'Precio Unitario ($)',
     'Valor Neto ($)',
     'Total con IVA ($)',
@@ -265,6 +279,7 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
 
   const rows = movimientos.map(m => {
     const pu = Number(m.precioUnitario || 0);
+    const fob = Number(m.fob ?? m.itemOriginal?.fob ?? 0);
     const vn = Number(m.valorNeto || 0);
     const totIva = Number(m.totalConIva || 0);
     const unids = Number(m.unidades || 0);
@@ -281,6 +296,7 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
       'Marca': m.marca || '---',
       'Modalidad': m.modalidad || '---',
       'Unidades': unids,
+      'FOB Unitario ($)': fob,
       'Precio Unitario ($)': pu,
       'Valor Neto ($)': vn,
       'Total con IVA ($)': totIva,
@@ -302,6 +318,7 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
     { wch: 18 }, // Marca
     { wch: 14 }, // Modalidad
     { wch: 12 }, // Unidades
+    { wch: 16 }, // FOB Unitario ($)
     { wch: 18 }, // Precio Unitario ($)
     { wch: 18 }, // Valor Neto ($)
     { wch: 18 }, // Total con IVA ($)
@@ -317,7 +334,7 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
     headers,
     rows,
     colsWidths,
-    moneyColIndexes: [10, 11, 12],
+    moneyColIndexes: [10, 11, 12, 13],
     intColIndexes: [9]
   });
 

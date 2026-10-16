@@ -40,7 +40,8 @@ export const construirCorreoActualizacion = async ({ pedido, items, indicesModif
     if (p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado') { estadoLabel = 'APROBADO'; }
     else if (p.estadoItem === 'Cotizado') { estadoLabel = 'NUEVA OFERTA'; }
     else if (p.estadoItem === 'Denegado') { estadoLabel = 'DENEGADO'; }
-    else if (p.estadoItem === 'Cancelado') { estadoLabel = 'CANCELADO'; }
+    else if (p.estadoItem === 'Cancelado' || p.estadoItem === 'Rechazado') { estadoLabel = 'RECHAZADO'; }
+    else if (p.estadoItem === 'Venta Perdida') { estadoLabel = 'VENTA PERDIDA'; }
 
     let historialHtml = '';
     if (mensajesItem.length > 0) {
@@ -141,6 +142,29 @@ export const construirCorreoActualizacion = async ({ pedido, items, indicesModif
     const tiempoAnterior = p.tiempoEntregaAnterior || tiempoActual;
     const hayTiempoCambioEmail = tiempoAnterior && tiempoAnterior !== tiempoActual;
 
+    let infoRechazoHtml = '';
+    if (p.estadoItem === 'Venta Perdida') {
+      const motivoNombre = p.motivoVentaPerdida?.nombre || p.motivoEstadoItem || 'Venta Perdida';
+      const comentario = p.motivoVentaPerdida?.comentario;
+      infoRechazoHtml = `
+        <div style="margin-top: 10px; background-color: #fef2f2; border: 1px solid #fecaca; border-left: 3px solid #ef4444; padding: 10px 14px; border-radius: 0 4px 4px 0;">
+          <div style="font-size: 11px; font-weight: bold; color: #991b1b; text-transform: uppercase; margin-bottom: 2px;">Venta Perdida</div>
+          <div style="font-size: 12px; color: #b91c1c;"><strong>Motivo:</strong> ${motivoNombre}</div>
+          ${comentario ? `<div style="font-size: 12px; color: #475569; font-style: italic; margin-top: 4px;">"${comentario}"</div>` : ''}
+        </div>
+      `;
+    } else if (p.estadoItem === 'Cancelado' || p.estadoItem === 'Rechazado' || p.estadoItem === 'Denegado') {
+      const motivo = p.motivoRechazo || p.motivoDenegacion || p.motivoEstadoItem;
+      if (motivo) {
+        infoRechazoHtml = `
+          <div style="margin-top: 10px; background-color: #fff1f2; border: 1px solid #ffe4e6; border-left: 3px solid #e11d48; padding: 10px 14px; border-radius: 0 4px 4px 0;">
+            <div style="font-size: 11px; font-weight: bold; color: #9f1239; text-transform: uppercase; margin-bottom: 2px;">Motivo de ${p.estadoItem === 'Denegado' ? 'Denegación' : 'Rechazo'}</div>
+            <div style="font-size: 12px; color: #be123c;">${motivo}</div>
+          </div>
+        `;
+      }
+    }
+
     detallesHtml += `
       <div style="margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background-color: #ffffff;">
         <table style="width: 100%; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 12px 15px; border-collapse: collapse;">
@@ -180,13 +204,18 @@ export const construirCorreoActualizacion = async ({ pedido, items, indicesModif
               </td>
             </tr>
           </table>
+          ${infoRechazoHtml}
           ${historialHtml}
         </div>
       </div>
     `;
   });
 
-  const tituloHeader = rol === 'compras' ? 'Actualización de Pedido Manual' : 'Pedido Manual Confirmado';
+  const esRolCompras = rol === 'compras' || rol === 'comprador';
+  const hayPedidos = pedido.estado === 'Pedido' || pedido.estado === 'Pedido Parcial';
+  const tituloHeader = esRolCompras 
+    ? 'Actualización de Pedido Manual' 
+    : (hayPedidos ? 'Pedido Manual Confirmado' : 'Actualización de Pedido Manual');
 
   return `
     <div style="font-family: Arial, sans-serif; color: #334155; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background-color: #ffffff;">

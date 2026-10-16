@@ -1,21 +1,75 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Ban, X } from 'lucide-react';
+import { esMotivoGenerico, buscarMotivoDecisionMensajes } from '../utils/decisionItemHelpers';
 
 export const MotivoAnulacionModal = ({ movimiento, movimientos = [], onClose }) => {
+  const [motivosResueltos, setMotivosResueltos] = useState({});
+
   useEffect(() => {
-    if (!movimiento) return undefined;
+    if (!movimiento && movimientos.length === 0) return undefined;
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') onClose();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [movimiento, onClose]);
+  }, [movimiento, movimientos, onClose]);
 
   const registros = movimientos.length > 0 ? movimientos : movimiento ? [movimiento] : [];
+
+  useEffect(() => {
+    if (registros.length === 0) return undefined;
+    let cancelado = false;
+
+    registros.forEach(async (reg, index) => {
+      const key = `${reg.idMov || reg.producto}-${index}`;
+      const motivoActual = reg.motivoAnulacion?.toString().trim();
+      if (!esMotivoGenerico(motivoActual)) return;
+
+      const solId = reg.rfqId || reg.solicitudOriginal?.id;
+      if (!solId) return;
+
+      let itemId = reg.idxProducto;
+      if (itemId === undefined && reg.idMov) {
+        const parts = reg.idMov.split('-');
+        const lastPart = parts[parts.length - 1];
+        if (!isNaN(Number(lastPart))) itemId = Number(lastPart);
+      }
+      if (itemId === undefined) itemId = index;
+
+      const tipo = (reg.estadoItem === 'Denegado' || reg.estado === 'Denegado')
+        ? 'denegacion'
+        : ((reg.estadoItem === 'Cancelado' || reg.estadoItem === 'Rechazado') ? 'rechazo' : 'anulacion');
+
+      const mensajeEventoId = reg.itemOriginal?.negociacion?.ultimoCambio?.mensajeEventoId;
+      const fechaEvento = reg.itemOriginal?.negociacion?.ultimoCambio?.en;
+
+      try {
+        const res = await buscarMotivoDecisionMensajes({
+          solicitudId: solId,
+          itemId,
+          tipoDecision: tipo,
+          mensajeEventoId,
+          fechaEvento
+        });
+
+        if (res && res.texto && !cancelado) {
+          setMotivosResueltos(prev => ({
+            ...prev,
+            [key]: res.texto
+          }));
+        }
+      } catch (e) {
+        console.error('Error buscando motivo en MotivoAnulacionModal:', e);
+      }
+    });
+
+    return () => { cancelado = true; };
+  }, [registros]);
+
   if (registros.length === 0) return null;
 
   const principal = registros[0];
-  const esDenegado = principal.estado === 'Denegado';
+  const esDenegado = principal.estado === 'Denegado' || principal.estadoItem === 'Denegado';
   const etiquetaMotivo = esDenegado ? 'Motivo de denegación' : 'Motivo de anulación';
 
   return (
@@ -60,9 +114,10 @@ export const MotivoAnulacionModal = ({ movimiento, movimientos = [], onClose }) 
         <div className="max-h-[65vh] space-y-5 overflow-y-auto px-5 py-5">
           <div className="space-y-3 border-b border-slate-100 pb-4">
             {registros.map((registro, index) => {
-              const motivo = registro.motivoAnulacion?.toString().trim() || 'No se registró un motivo.';
+              const key = `${registro.idMov || registro.producto}-${index}`;
+              const motivo = motivosResueltos[key] || registro.motivoAnulacion?.toString().trim() || 'No se registró un motivo.';
               return (
-                <div key={`${registro.idMov || registro.producto}-${index}`} className="border-l-2 border-rose-500 bg-slate-50 px-4 py-3">
+                <div key={key} className="border-l-2 border-rose-500 bg-slate-50 px-4 py-3">
                   <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
                     <span className="text-slate-400">Ítem / SKU</span>
                     <span className="truncate text-right font-semibold uppercase text-slate-800" title={registro.producto || 'N/D'}>{registro.producto || 'N/D'}</span>

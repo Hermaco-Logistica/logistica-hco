@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Check, X, MessageSquare, ArrowLeftRight, Ban } from 'lucide-react';
+import { Check, X, MessageSquare, ArrowLeftRight, Ban, MessageCircleQuestion } from 'lucide-react';
 import { auth } from '../../firebase';
 import { HiloComentariosItem } from '../hilos/HiloComentariosItem';
 import { EstadoItemChip } from './negociacion/EstadoItemChip';
 import { FormularioOferta } from './negociacion/FormularioOferta';
 import { OfertaDiff } from './negociacion/OfertaDiff';
+import { tieneMotivoConsultaItem } from '../../utils/ventasPerdidasHelpers';
+import { esItemCerrado } from '../../utils/decisionItemHelpers';
 
 export const RevisionPedidoMobileCard = ({
   idx,
@@ -20,6 +22,8 @@ export const RevisionPedidoMobileCard = ({
   setHiloAbierto,
   onAnular,
   onDenegar,
+  onConsulta,
+  onConsultaVentaPerdida,
   estaAnulado,
   role
 }) => {
@@ -30,6 +34,7 @@ export const RevisionPedidoMobileCard = ({
   }, [idx]);
 
   const p = itemServer;
+  const esCerrado = esItemCerrado(p);
   const neg = p.negociacion || {};
   const tiempoEntrega = neg.ofertaVigente?.tiempoEntrega || p.tiempoEntrega || p.diasPrometidos || '';
   const versionEsperada = neg.version || 0;
@@ -37,7 +42,7 @@ export const RevisionPedidoMobileCard = ({
   const msgCount = conteos[idx] || 0;
   const unreadCount = noLeidos[idx] || 0;
 
-  const isPending = neg.turno === 'compras';
+  const isPending = neg.turno === 'compras' && !esCerrado;
   
   let currentBorrador = borrador || {
     precio: p.fob || 0,
@@ -46,7 +51,7 @@ export const RevisionPedidoMobileCard = ({
   };
 
   return (
-    <div className={`bg-white p-4 ${estaAnulado ? 'opacity-60 grayscale-[0.5]' : ''}`}>
+    <div className={`bg-white p-4 ${esCerrado ? 'opacity-60 bg-slate-50/50' : estaAnulado ? 'opacity-60 grayscale-[0.5]' : ''}`}>
       <div className="flex justify-between items-start mb-4 gap-3">
         <div className="flex-1 min-w-0">
           <h4 className="font-bold text-sm text-slate-800 uppercase line-clamp-2 wrap-break-word leading-snug">{p.descripcion}</h4>
@@ -55,7 +60,7 @@ export const RevisionPedidoMobileCard = ({
         <div className="flex flex-col items-end gap-1">
           <div className="flex items-center gap-2">
             <EstadoItemChip estado={p.estadoItem} pendingRole={estaAnulado ? null : neg.turno} />
-            {role === 'comprador' && ['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !estaAnulado && (
+            {role === 'comprador' && ['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !esCerrado && (
               <button
                 type="button"
                 title="Anular"
@@ -70,6 +75,16 @@ export const RevisionPedidoMobileCard = ({
             <span className="text-[9px] text-slate-400 italic text-right max-w-30 leading-tight" title={p.motivoAnulacion}>
               {p.motivoAnulacion.length > 30 ? p.motivoAnulacion.slice(0, 30) + '…' : p.motivoAnulacion}
             </span>
+          )}
+          {tieneMotivoConsultaItem(p) && (onConsulta || onConsultaVentaPerdida) && (
+            <button
+              type="button"
+              onClick={onConsulta || onConsultaVentaPerdida}
+              className="inline-flex min-h-6 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 font-semibold text-slate-600 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px text-[9px] cursor-pointer"
+              title="Consultar motivo de la decisión"
+            >
+              <MessageCircleQuestion size={11} /> Consulta
+            </button>
           )}
         </div>
       </div>
@@ -106,7 +121,7 @@ export const RevisionPedidoMobileCard = ({
         </div>
       )}
 
-      {showAdjustForm && !estaAnulado ? (
+      {showAdjustForm && isPending ? (
         <div className="mb-4">
           <FormularioOferta 
             ofertaDraft={currentBorrador}
@@ -119,7 +134,7 @@ export const RevisionPedidoMobileCard = ({
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {isPending && !estaAnulado && (
+          {isPending && !esCerrado && (
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => actions.aprobar(idx, versionEsperada)} 
@@ -178,7 +193,7 @@ export const RevisionPedidoMobileCard = ({
             todosLosProductos={[]}
             onClose={() => setHiloAbierto(null)}
             accionesHabilitadas={false}
-            soloLectura={estaAnulado}
+            soloLectura={estaAnulado || esCerrado}
           />
         </div>
       )}

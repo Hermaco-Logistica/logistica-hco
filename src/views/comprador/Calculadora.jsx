@@ -5,9 +5,11 @@ import { db } from '../../firebase';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
 import { pdf } from '@react-pdf/renderer';
 import CotizacionPDF from '../../components/CotizacionPDF';
-import { HelpCircle, Info, ChevronDown, ChevronUp, Tag, Plane, Ship, Receipt, Calculator, Sliders, X, Check, Ban } from 'lucide-react';
+import { HelpCircle, Info, ChevronDown, ChevronUp, Tag, Plane, Ship, Receipt, Calculator, Sliders, X, Check, Ban, MessageCircleQuestion } from 'lucide-react';
 import { useDHLCalculator } from '../../hooks/useDHLCalculator';
 import { AlertCircle } from 'lucide-react';
+import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
+import { prepararDatosConsultaVentaPerdida } from '../../utils/ventasPerdidasHelpers';
 
 const injectStyles = () => {
   if (typeof document !== 'undefined' && !document.getElementById('anim-cant-styles')) {
@@ -61,7 +63,8 @@ export const Calculadora = ({ onGuardar }) => {
   const [rfq, setRfq] = useState(null);
   const [loading, setLoading] = useState(true);
   const esAnulado = rfq?.estado === 'Anulado';
-  const esSolicitudCerrada = rfq?.estado === 'Cotizado' || rfq?.estado === 'Pedido' || esAnulado;
+  const esVentaPerdida = rfq?.estado === 'Venta Perdida' || (rfq?.productos?.length > 0 && rfq?.productos?.every(p => p.estadoItem === 'Venta Perdida' || p.estadoItem === 'Anulado'));
+  const esSolicitudCerrada = rfq?.estado === 'Cotizado' || rfq?.estado === 'Pedido' || esAnulado || esVentaPerdida;
   const esSoloLectura = isReadOnlyMode || esSolicitudCerrada;
 
   // Motivo de anulación: puede estar en el doc raíz o en el primer producto anulado
@@ -75,6 +78,11 @@ export const Calculadora = ({ onGuardar }) => {
   const [modalAnulacion, setModalAnulacion] = useState({ open: false, index: null, motivo: '' });
   const [motivoAnulacionVisible, setMotivoAnulacionVisible] = useState(null);
   const [anulacionMobileExpandida, setAnulacionMobileExpandida] = useState(null);
+  const [consultaVentaPerdidaData, setConsultaVentaPerdidaData] = useState(null);
+
+  const abrirConsultaVentaPerdida = (p = null) => {
+    setConsultaVentaPerdidaData(prepararDatosConsultaVentaPerdida({ solicitud: rfq, item: p }));
+  };
   const [flete, setFlete] = useState(0);
   
   // Nuevos Gastos
@@ -414,7 +422,7 @@ export const Calculadora = ({ onGuardar }) => {
     
     // Procesamos todos los ítems para no perder los que no estaban seleccionados
     const itemsFinales = items.map(p => {
-      if (p.estadoItem === 'Anulado') return p;
+      if (p.estadoItem === 'Anulado' || p.estadoItem === 'Venta Perdida') return p;
 
       const esPedidoPrevio = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado';
       const tieneFob = Number(p.fob || 0) > 0;
@@ -546,6 +554,27 @@ export const Calculadora = ({ onGuardar }) => {
           ) : (
             <p className="text-xs text-slate-400 italic">Sin motivo registrado.</p>
           )}
+        </div>
+      )}
+
+      {/* ── Banner de Venta Perdida ── */}
+      {esVentaPerdida && (
+        <div className="mb-5 border border-rose-200 border-l-4 border-l-rose-500 rounded-r-xl px-5 py-4 bg-rose-50/40">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-rose-500 mb-1">Venta Perdida · solo lectura</p>
+              <p className="text-sm font-bold text-slate-800 leading-snug">
+                Esta solicitud fue cerrada como venta perdida por el vendedor.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => abrirConsultaVentaPerdida()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-rose-200 bg-white text-xs font-black text-rose-600 hover:bg-rose-50 transition-colors shadow-2xs shrink-0 cursor-pointer"
+            >
+              <MessageCircleQuestion size={14} /> Consulta
+            </button>
+          </div>
         </div>
       )}
 
@@ -1096,13 +1125,14 @@ export const Calculadora = ({ onGuardar }) => {
           const picardEsMejor = esSKF && fobPicard > 0 && fvPicard > Number(p.fva);
           const esPedidoPrevio = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || (!!p.modalidad && Number(p.precioUnitario || 0) > 0);
           const esAnuladoItem = p.estadoItem === 'Anulado';
-          const isRowDisabled = esSoloLectura || esPedidoPrevio || esAnuladoItem;
+          const esVentaPerdidaItem = p.estadoItem === 'Venta Perdida';
+          const isRowDisabled = esSoloLectura || esPedidoPrevio || esAnuladoItem || esVentaPerdidaItem;
           const isActive = activeItemIndex === idx;
 
           return (
             <div
               key={idx}
-              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${esAnuladoItem ? 'bg-slate-100 border-slate-300 opacity-60' : isActive ? 'bg-white border-emerald-400 shadow-md ring-2 ring-emerald-500/10' : isSelected ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-50 border-slate-200/80 opacity-70'} ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}
+              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${esAnuladoItem || esVentaPerdidaItem ? 'bg-slate-100 border-slate-300 opacity-60' : isActive ? 'bg-white border-emerald-400 shadow-md ring-2 ring-emerald-500/10' : isSelected ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-50 border-slate-200/80 opacity-70'} ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}
             >
               {/* Encabezado del Producto: Producto Principal (SKU) */}
               <div className="p-4 bg-white flex flex-col gap-3">
@@ -1134,13 +1164,26 @@ export const Calculadora = ({ onGuardar }) => {
                         Ver motivo
                       </button>
                     </div>
+                  ) : esVentaPerdidaItem ? (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wide border bg-rose-50 text-rose-700 border-rose-200">
+                        Venta Perdida
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => abrirConsultaVentaPerdida(p)}
+                        className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 hover:underline"
+                      >
+                        <MessageCircleQuestion size={12} /> Motivo
+                      </button>
+                    </div>
                   ) : esPedidoPrevio && (
                     <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wide border bg-emerald-50 text-emerald-700 border-emerald-200/60">
                       <Check size={10} className="text-emerald-500" />
                       <span>Pedido</span>
                     </span>
                   )}
-                  {!esAnuladoItem && !esPedidoPrevio && !esSoloLectura && (
+                  {!esAnuladoItem && !esVentaPerdidaItem && !esPedidoPrevio && !esSoloLectura && (
                     <div
                       data-anulacion-mobile
                       className={`flex items-center gap-1 overflow-hidden transition-all duration-200 ease-out ${anulacionMobileExpandida === idx ? 'w-[136px]' : 'w-8'}`}
@@ -1527,10 +1570,11 @@ export const Calculadora = ({ onGuardar }) => {
                 const skfEsMejor = esSKF && fobPicard > 0 && Number(p.fva) >= fvPicard;
                 const esPedidoPrevio = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' || (!!p.modalidad && Number(p.precioUnitario || 0) > 0);
                 const esAnuladoItem = p.estadoItem === 'Anulado';
-                const isRowDisabled = esSoloLectura || esPedidoPrevio || esAnuladoItem;
+                const esVentaPerdidaItem = p.estadoItem === 'Venta Perdida';
+                const isRowDisabled = esSoloLectura || esPedidoPrevio || esAnuladoItem || esVentaPerdidaItem;
 
                 return (
-                  <tr key={idx} className={`${esAnuladoItem ? 'bg-slate-100 opacity-60' : isSelected ? (esPedidoPrevio ? 'bg-emerald-50/20' : 'bg-white') : 'bg-slate-50 opacity-60'} hover:bg-slate-50/50 transition-all ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}>
+                  <tr key={idx} className={`${esAnuladoItem || esVentaPerdidaItem ? 'bg-slate-100 opacity-60' : isSelected ? (esPedidoPrevio ? 'bg-emerald-50/20' : 'bg-white') : 'bg-slate-50 opacity-60'} hover:bg-slate-50/50 transition-all ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}>
                     <td className="p-2 text-center">
                       <input type="checkbox" checked={isSelected} 
                              disabled={isRowDisabled}
@@ -1542,7 +1586,7 @@ export const Calculadora = ({ onGuardar }) => {
                              disabled={isRowDisabled}
                              value={p.desc || p.descripcion} onChange={(e) => updateItem(idx, 'desc', e.target.value)}
                              onFocus={(e) => e.target.select()} />
-                      <input type="text" className="text-[10px] text-blue-600 w-full outline-none bg-transparent italic font-bold disabled:opacity-80" 
+                       <input type="text" className="text-[10px] text-blue-600 w-full outline-none bg-transparent italic font-bold disabled:opacity-80" 
                              disabled={isRowDisabled}
                              value={p.marca} onChange={(e) => updateItem(idx, 'marca', e.target.value)} placeholder="Indicar marca..."
                              onFocus={(e) => e.target.select()} />
@@ -1556,6 +1600,19 @@ export const Calculadora = ({ onGuardar }) => {
                               {p.motivoAnulacion}
                             </span>
                           )}
+                        </div>
+                      ) : esVentaPerdidaItem ? (
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest bg-rose-50 text-rose-700 border border-rose-200">
+                            Venta Perdida
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => abrirConsultaVentaPerdida(p)}
+                            className="inline-flex items-center gap-1 text-[9px] font-bold text-rose-600 hover:underline cursor-pointer"
+                          >
+                            <MessageCircleQuestion size={11} /> Consulta
+                          </button>
                         </div>
                       ) : esPedidoPrevio ? (
                         <div className="mt-1">
@@ -1732,7 +1789,7 @@ export const Calculadora = ({ onGuardar }) => {
                                 value={p.notas} onChange={(e) => updateItem(idx, 'notas', e.target.value)} placeholder="Notas..."></textarea>
                     </td>
                     <td className="p-2 text-center align-middle">
-                      {!esAnuladoItem && !esPedidoPrevio && !esSoloLectura && (
+                      {!esAnuladoItem && !esVentaPerdidaItem && !esPedidoPrevio && !esSoloLectura && (
                         <button
                           type="button"
                           title="Anular item"
@@ -2098,6 +2155,12 @@ export const Calculadora = ({ onGuardar }) => {
           </div>
         </div>
       )}
+
+      <ModalConsultaVentaPerdida
+        isOpen={consultaVentaPerdidaData !== null}
+        onClose={() => setConsultaVentaPerdidaData(null)}
+        data={consultaVentaPerdidaData}
+      />
     </div>
   );
 };

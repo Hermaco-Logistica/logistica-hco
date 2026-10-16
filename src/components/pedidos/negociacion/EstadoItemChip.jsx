@@ -10,7 +10,7 @@ export const EstadoItemChip = ({ estado, pendingRole }) => {
     badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
   } else if (estado === 'Pendiente') {
     badgeColor = 'bg-sky-50 text-sky-700 border-sky-200';
-  } else if (estado === 'Denegado' || estado === 'Cancelado' || estado === 'Rechazado') {
+  } else if (estado === 'Denegado' || estado === 'Cancelado' || estado === 'Rechazado' || estado === 'Venta Perdida') {
     badgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
   } else if (estado === 'Anulado') {
     badgeColor = 'bg-slate-100 text-slate-500 border-slate-300';

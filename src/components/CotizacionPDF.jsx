@@ -204,8 +204,11 @@ export default function CotizacionPDF({ cotizacionData }) {
 
   const todoAnulado = estado === 'Anulado' ||
     (productos.length > 0 && productos.every(p => p.estadoItem === 'Anulado'));
+  const esVentaPerdidaTotal = estado === 'Venta Perdida' ||
+    (productos.length > 0 && productos.every(p => p.estadoItem === 'Venta Perdida'));
   const productosAnulados = productos.filter(item => item?.estadoItem === 'Anulado');
-  const productosVisibles = productos.filter(item => item?.estadoItem !== 'Anulado');
+  const productosVentaPerdida = productos.filter(item => item?.estadoItem === 'Venta Perdida');
+  const productosVisibles = productos.filter(item => item?.estadoItem !== 'Anulado' && item?.estadoItem !== 'Venta Perdida');
 
   // Formatear fecha
   let fechaFormateada = '';
@@ -248,7 +251,14 @@ export default function CotizacionPDF({ cotizacionData }) {
       .map(item => item.motivoAnulacion.toString().trim())
       .filter(Boolean)
   )];
+  const motivosVentaPerdida = [...new Set(
+    (cotizacionData.estado === 'Venta Perdida' && cotizacionData.motivoVentaPerdida ? [cotizacionData.motivoVentaPerdida] : [])
+      .concat(productosVentaPerdida.map(item => item?.motivoVentaPerdida?.motivo || item?.motivoVentaPerdida).filter(Boolean))
+      .map(m => typeof m === 'object' ? `${m.motivo || ''}${m.observaciones ? ` - ${m.observaciones}` : ''}` : String(m).trim())
+      .filter(Boolean)
+  )];
   const hayAnulacion = todoAnulado || productosAnulados.length > 0;
+  const hayVentaPerdida = esVentaPerdidaTotal || productosVentaPerdida.length > 0;
 
   return (
     <Document>
@@ -387,8 +397,25 @@ export default function CotizacionPDF({ cotizacionData }) {
           </View>
         )}
 
+        {hayVentaPerdida && (
+          <View style={styles.motivoAnulacion}>
+            <Text style={[styles.motivoAnulacionLabel, { color: '#be123c' }]}>Motivo de venta perdida:</Text>
+            {motivosVentaPerdida.length > 0 ? (
+              motivosVentaPerdida.map((motivo, index) => (
+                <Text key={index} style={{ color: '#222222' }}>{motivo}</Text>
+              ))
+            ) : (
+              <Text style={{ color: '#222222' }}>Venta perdida registrada por el vendedor</Text>
+            )}
+          </View>
+        )}
+
         {todoAnulado && (
           <Text fixed style={styles.watermark}>ANULADO</Text>
+        )}
+
+        {esVentaPerdidaTotal && !todoAnulado && (
+          <Text fixed style={styles.watermark}>VENTA PERDIDA</Text>
         )}
 
       </Page>

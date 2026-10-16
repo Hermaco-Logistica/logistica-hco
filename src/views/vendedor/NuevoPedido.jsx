@@ -19,9 +19,12 @@ import { emailConfig } from '../../config/emailConfig';
 import { StickyActionBar } from '../../components/mobile';
 import { NuevoPedidoMobileCard } from '../../components/pedidos/NuevoPedidoMobileCard';
 import { calcularFechaEstimada } from '../../utils/itemHelpers';
+import { useCotizacionesEstancadas } from '../../hooks/useCotizacionesEstancadas';
+import { ModalBloqueoCotizaciones } from '../../components/vendedor/ModalBloqueoCotizaciones';
 
-export const NuevoPedido = () => {
+export const NuevoPedido = ({ role }) => {
   const navigate = useNavigate();
+  const { cotizacionesEstancadas, tieneBloqueo, loading: loadingBloqueo } = useCotizacionesEstancadas({ role });
   const [cliente, setCliente] = useState('');
   const [sugerenciasCliente, setSugerenciasCliente] = useState([]);
   const [indiceSugerenciaActiva, setIndiceSugerenciaActiva] = useState(-1);
@@ -549,6 +552,10 @@ export const NuevoPedido = () => {
       setLoading(false);
     }
   };
+
+  if (!loadingBloqueo && tieneBloqueo) {
+    return <ModalBloqueoCotizaciones cotizaciones={cotizacionesEstancadas} onVolver={() => navigate('/vendedor')} />;
+  }
 
   return (
     <div className="w-full max-w-[1700px] mx-auto px-3 sm:px-4 md:px-6 lg:px-10 animate-in slide-in-from-bottom-4 duration-500 pb-52 md:pb-12">

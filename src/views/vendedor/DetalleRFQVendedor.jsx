@@ -5,7 +5,8 @@ import { db, auth } from '../../firebase';
 import { 
   ChevronLeft, ChevronDown, Clock, Tag, CheckCircle2, ShoppingCart, Link as LinkIcon, 
   Pencil, AlertCircle, Printer, X, Paperclip, Minus, Plus, FileText, Trash2, Ban,
-  Plane, Ship, MessageSquare, Calendar, CheckSquare, Square, Package
+  Plane, Ship, MessageSquare, Calendar, CheckSquare, Square, Package, TrendingDown,
+  MessageCircleQuestion
 } from 'lucide-react';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
 import { generarPlantillaNuevoPedido } from '../../utils/emailTemplates';
@@ -13,6 +14,9 @@ import { emailConfig } from '../../config/emailConfig';
 import { StickyActionBar } from '../../components/mobile';
 import { getRoleColors } from '../../utils/roleColors';
 import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
+import { ModalVentaPerdida } from '../../components/vendedor/ModalVentaPerdida';
+import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
+import { prepararDatosConsultaVentaPerdida } from '../../utils/ventasPerdidasHelpers';
 
 export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPedido = false, role }) => {
   const { id } = useParams();
@@ -38,6 +42,10 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   const [modalAnulacion, setModalAnulacion] = useState({ open: false, index: null, motivo: '', enviando: false });
   const [motivoAnulacionVisible, setMotivoAnulacionVisible] = useState(null);
   const [editandoCant, setEditandoCant] = useState({ index: null, value: '' });
+  const [modalVentaPerdidaOpen, setModalVentaPerdidaOpen] = useState(false);
+  const [itemsVentaPerdidaSeleccionados, setItemsVentaPerdidaSeleccionados] = useState(null);
+  const [ventasPerdidasPendientes, setVentasPerdidasPendientes] = useState({});
+  const [consultaVentaPerdidaData, setConsultaVentaPerdidaData] = useState(null);
 
   const handleGuardarCant = async (idx) => {
     try {
@@ -142,20 +150,66 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     return false;
   };
 
-  const esItemDenegado = (p) => p && (p.estadoItem === 'Denegado' || p.estadoItem === 'Cancelado' || p.estadoItem === 'Rechazado');
+  const esItemVentaPerdida = (p, idx = null) => Boolean(
+    p && (
+      p.estadoItem === 'Venta Perdida' ||
+      p.motivoEstadoItem?.toLowerCase().includes('venta perdida') ||
+      rfq?.estado === 'Venta Perdida' ||
+      (idx !== null && ventasPerdidasPendientes[idx])
+    )
+  );
 
-  const hayItemsPendientesDePedir = rfq?.productos?.some(p => Number(p.fob || 0) > 0 && !esItemYaPedido(p) && !esItemDenegado(p));
+  const esItemDenegado = (p, idx = null) => Boolean(
+    p && !esItemVentaPerdida(p, idx) && (
+      p.estadoItem === 'Denegado' ||
+      p.estadoItem === 'Cancelado' ||
+      p.estadoItem === 'Rechazado'
+    )
+  );
+
+  const esItemAnulado = (p) => Boolean(p && p.estadoItem === 'Anulado');
+
+  const totalVentasPerdidasPendientes = Object.keys(ventasPerdidasPendientes).length;
+  const hayItemsPendientesDePedir = rfq?.productos?.some((p, idx) => Number(p.fob || 0) > 0 && !esItemYaPedido(p) && !esItemDenegado(p, idx) && !esItemVentaPerdida(p, idx) && !esItemAnulado(p));
   const esAnulado = rfq?.estado === 'Anulado';
+  const esVentaPerdida = rfq?.estado === 'Venta Perdida';
   const motivoAnulacion = rfq?.motivoAnulacion
     || rfq?.productos?.find(p => p.motivoAnulacion)?.motivoAnulacion
     || '';
   const pedidoYaCreado = (rfq?.estado === 'Pedido' || rfq?.estado === 'Comprado') || (rfq?.estado === 'Pedido Parcial' && !hayItemsPendientesDePedir);
   const esPropietarioDeRFQ = (rfq?.vendedorId && rfq.vendedorId === auth.currentUser?.uid) ||
     (rfq?.vendedorEmail && auth.currentUser?.email && rfq.vendedorEmail.toLowerCase() === auth.currentUser.email.toLowerCase());
-  const puedeConfirmarPedido = canGenerarPedido && (!soloPropiasParaPedido || esPropietarioDeRFQ) && hayItemsPendientesDePedir;
-  const totalItemsSeleccionables = rfq?.productos?.filter(p => Number(p.fob || 0) > 0 && !esItemYaPedido(p) && !esItemDenegado(p)).length ?? 0;
+  const puedeConfirmarPedido = canGenerarPedido && (!soloPropiasParaPedido || esPropietarioDeRFQ) && hayItemsPendientesDePedir && !esAnulado && !esVentaPerdida;
+  const totalItemsSeleccionables = rfq?.productos?.filter((p, idx) => Number(p.fob || 0) > 0 && !esItemYaPedido(p) && !esItemDenegado(p, idx) && !esItemVentaPerdida(p, idx) && !esItemAnulado(p)).length ?? 0;
   const totalItemsSeleccionados = Object.values(seleccionados).filter(Boolean).length;
+  const puedeConfirmarOEnviar = ((puedeConfirmarPedido || canGenerarPedido) && (!soloPropiasParaPedido || esPropietarioDeRFQ) && !esAnulado && !esVentaPerdida) && (totalItemsSeleccionados > 0 || totalVentasPerdidasPendientes > 0);
   const seraParcial = puedeConfirmarPedido && totalItemsSeleccionados > 0 && totalItemsSeleccionados < totalItemsSeleccionables;
+
+  const productosRFQ = rfq?.productos || [];
+  const todosEnCotizadoPuro = productosRFQ.length > 0 && productosRFQ.every((p, idx) => 
+    p.estadoItem === 'Cotizado' && 
+    !esItemYaPedido(p) && 
+    !esItemDenegado(p, idx) && 
+    !esItemAnulado(p) && 
+    !esItemVentaPerdida(p, idx)
+  );
+
+  const esVendedorOGerente = role === 'vendedor' || role === 'gerente';
+  const hayItemsElegiblesVentaPerdida = (rfq?.productos || []).some((p, idx) => 
+    !esItemYaPedido(p) && !esItemDenegado(p, idx) && !esItemVentaPerdida(p, idx) && !esItemAnulado(p)
+  );
+
+  const tieneItemsSeleccionadosValidos = Object.keys(seleccionados)
+    .filter(idx => seleccionados[idx])
+    .some(idx => {
+      const prod = rfq?.productos?.[Number(idx)];
+      return prod && !esItemYaPedido(prod) && !esItemDenegado(prod, Number(idx)) && !esItemVentaPerdida(prod, Number(idx)) && !esItemAnulado(prod);
+    });
+
+  const debeMostrarBotonVentaPerdida = esVendedorOGerente && (!soloPropiasParaPedido || esPropietarioDeRFQ) && !esAnulado && !esVentaPerdida && (
+    (totalItemsSeleccionados > 0 && tieneItemsSeleccionadosValidos) ||
+    (totalItemsSeleccionados === 0 && hayItemsElegiblesVentaPerdida)
+  );
   const productosDelPedido = pedidoYaCreado
     ? (rfq?.productos || [])
         .map((item, idx) => ({ item, idx }))
@@ -251,7 +305,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         const selInit = {};
         const modInit = {};
         data.productos.forEach((p, idx) => {
-          if (Number(p.fob) > 0 && !esItemYaPedido(p) && !esItemDenegado(p)) {
+          if (Number(p.fob) > 0 && !esItemYaPedido(p) && !esItemDenegado(p) && !esItemVentaPerdida(p)) {
             selInit[idx] = false;
             modInit[idx] = 'A';
           }
@@ -270,6 +324,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     });
 
     return () => unsubscribe();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, navigate, role]);
 
   // ── Adjuntos múltiples directo a correo, sin límite en frontend ──────────
@@ -302,145 +357,334 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   };
   // ─────────────────────────────────────────────────────────────────────────
 
-  const handleCrearPedido = async () => {
-    if (!puedeConfirmarPedido) {
-      alert('Este pedido ya fue generado y no puede confirmarse de nuevo.');
+  const handleAbrirVentaPerdida = (itemIndices = null) => {
+    if (Array.isArray(itemIndices) && itemIndices.length > 0) {
+      const elegibles = itemIndices.filter(idx => {
+        const prod = rfq?.productos?.[idx];
+        return prod && !esItemYaPedido(prod) && !esItemDenegado(prod, idx) && !esItemVentaPerdida(prod, idx) && !esItemAnulado(prod);
+      });
+      if (elegibles.length === 0) {
+        alert('Los ítems seleccionados ya no están disponibles para registrar venta perdida.');
+        return;
+      }
+      setItemsVentaPerdidaSeleccionados(elegibles);
+      setModalVentaPerdidaOpen(true);
       return;
     }
-    const indicesSeleccionados = Object.keys(seleccionados).filter(idx => seleccionados[idx]);
-    if (indicesSeleccionados.length === 0) return alert("Selecciona productos para el pedido.");
+
+    const indicesSeleccionados = Object.keys(seleccionados).filter(idx => seleccionados[idx]).map(Number);
+    if (indicesSeleccionados.length > 0) {
+      const elegibles = indicesSeleccionados.filter(idx => {
+        const prod = rfq?.productos?.[idx];
+        return prod && !esItemYaPedido(prod) && !esItemDenegado(prod, idx) && !esItemVentaPerdida(prod, idx) && !esItemAnulado(prod);
+      });
+      if (elegibles.length === 0) {
+        alert('Ninguno de los ítems seleccionados está disponible para registrar venta perdida.');
+        return;
+      }
+      setItemsVentaPerdidaSeleccionados(elegibles);
+      setModalVentaPerdidaOpen(true);
+      return;
+    }
+
+    // Si no hay ítems marcados, evaluar si hay ítems pendientes disponibles
+    const itemsPendientes = (rfq?.productos || [])
+      .map((p, idx) => ({ p, idx }))
+      .filter(({ p, idx }) => !esItemYaPedido(p) && !esItemDenegado(p, idx) && !esItemVentaPerdida(p, idx) && !esItemAnulado(p));
+
+    if (itemsPendientes.length > 0) {
+      const indicesPendientes = itemsPendientes.map(({ idx }) => idx);
+      if (itemsPendientes.length === (rfq?.productos || []).length) {
+        setItemsVentaPerdidaSeleccionados(null);
+      } else {
+        setItemsVentaPerdidaSeleccionados(indicesPendientes);
+      }
+      setModalVentaPerdidaOpen(true);
+      return;
+    }
+
+    alert('Selecciona con la casilla los ítems específicos para registrar venta perdida.');
+  };
+
+  const handleConfirmarVentaPerdidaStaged = ({ motivo, comentario, itemsSeleccionados: itemsParam }) => {
+    let indices = itemsParam;
+    if (!Array.isArray(indices) || indices.length === 0) {
+      indices = (rfq?.productos || [])
+        .map((p, idx) => ({ p, idx }))
+        .filter(({ p, idx }) => !esItemYaPedido(p) && !esItemDenegado(p, idx) && !esItemVentaPerdida(p, idx) && !esItemAnulado(p))
+        .map(({ idx }) => idx);
+    }
+
+    setVentasPerdidasPendientes(prev => {
+      const next = { ...prev };
+      indices.forEach(idx => {
+        next[idx] = {
+          motivo,
+          comentario,
+          fecha: new Date()
+        };
+      });
+      return next;
+    });
+
+    setSeleccionados(prev => {
+      const next = { ...prev };
+      indices.forEach(idx => {
+        next[idx] = false;
+      });
+      return next;
+    });
+
+    setModalVentaPerdidaOpen(false);
+    setItemsVentaPerdidaSeleccionados(null);
+  };
+
+  const handleCancelarVentaPerdidaPendiente = (idx) => {
+    setVentasPerdidasPendientes(prev => {
+      const next = { ...prev };
+      delete next[idx];
+      return next;
+    });
+  };
+
+  const abrirConsultaVentaPerdida = (p = null, idx = null) => {
+    const staged = idx !== null ? ventasPerdidasPendientes[idx] : null;
+    setConsultaVentaPerdidaData(prepararDatosConsultaVentaPerdida({
+      solicitud: rfq,
+      item: p,
+      staged,
+      currentUserEmail: auth.currentUser?.email
+    }));
+  };
+
+  const handleCrearPedido = async () => {
+    if (!puedeConfirmarOEnviar) {
+      alert('No hay ítems seleccionados para pedido ni ventas perdidas por enviar.');
+      return;
+    }
+    const indicesSeleccionados = Object.keys(seleccionados).filter(idx => seleccionados[idx]).map(Number);
+    const indicesVentaPerdida = Object.keys(ventasPerdidasPendientes).map(Number);
+
+    if (indicesSeleccionados.length === 0 && indicesVentaPerdida.length === 0) {
+      alert("Selecciona productos para el pedido o registra ventas perdidas.");
+      return;
+    }
 
     setEnviandoPedido(true);
-    setMensajePedido('Creando pedido...');
+    setMensajePedido('Procesando solicitud...');
     try {
       const productosActualizadosParaRFQ = [...rfq.productos];
-      const productosParaPedido = indicesSeleccionados.map(idx => {
-        const p = rfq.productos[idx];
-        const mod = modalidades[idx];
-        const factor = mod === 'A'
-          ? (p.factorA || rfq.factorA || 1)
-          : (p.factorM || rfq.factorM || 1.08);
-        const margen = mod === 'A' ? (p.fva || 1.3) : (p.fvm || 1.25);
-        const precioVenta = p.fob * factor * margen;
-        const diasHabiles = mod === 'A' ? p.entregaA : p.entregaM;
+      const ahoraTimestamp = new Date();
 
-        const ahoraTimestamp = new Date();
-        const itemData = {
-          descripcion: p.descripcion || p.desc,
-          marca: p.marca || 'N/A',
-          cantidad: p.cant,
-          precioUnitario: precioVenta,
-          subtotal: precioVenta * p.cant,
-          modalidad: mod === 'A' ? 'Aéreo' : 'Marítimo',
-          diasPrometidos: parseInt(diasHabiles),
-          fechaCompromiso: obtenerFechaEstimada(diasHabiles),
-          estadoItem: 'Pedido',
-          fechaConfirmacion: p.fechaConfirmacion || ahoraTimestamp,
-          fob: p.fob
-        };
-
-        productosActualizadosParaRFQ[idx] = { ...p, ...itemData, precio: precioVenta };
-        return itemData;
-      });
-
+      // 1. Crear Pedido si hay productos seleccionados
+      let productosParaPedido = [];
       const valorLinkOC = linkOC || rfq?.linkOC || "";
       const valorNotasPedido = notasPedido || rfq?.notasPedido || "";
 
-      await addDoc(collection(db, "pedidos"), {
-        idCotizacion: rfq.id,
-        correlativoRFQ: rfq.correlativo,
-        cliente: rfq.cliente,
-        vendedorNombre: rfq.vendedorNombre,
-        productos: productosParaPedido,
-        linkOC: valorLinkOC,
-        notasPedido: valorNotasPedido,
-        fechaCreacion: serverTimestamp(),
-        estadoGeneral: 'Procesando'
-      });
+      if (indicesSeleccionados.length > 0) {
+        setMensajePedido('Creando pedido...');
+        productosParaPedido = indicesSeleccionados.map(idx => {
+          const p = rfq.productos[idx];
+          const mod = modalidades[idx];
+          const factor = mod === 'A'
+            ? (p.factorA || rfq.factorA || 1)
+            : (p.factorM || rfq.factorM || 1.08);
+          const margen = mod === 'A' ? (p.fva || 1.3) : (p.fvm || 1.25);
+          const precioVenta = p.fob * factor * margen;
+          const diasHabiles = mod === 'A' ? p.entregaA : p.entregaM;
 
+          const itemData = {
+            descripcion: p.descripcion || p.desc,
+            marca: p.marca || 'N/A',
+            cantidad: p.cant,
+            precioUnitario: precioVenta,
+            subtotal: precioVenta * p.cant,
+            modalidad: mod === 'A' ? 'Aéreo' : 'Marítimo',
+            diasPrometidos: parseInt(diasHabiles),
+            fechaCompromiso: obtenerFechaEstimada(diasHabiles),
+            estadoItem: 'Pedido',
+            fechaConfirmacion: p.fechaConfirmacion || ahoraTimestamp,
+            fob: p.fob
+          };
+
+          productosActualizadosParaRFQ[idx] = { ...p, ...itemData, precio: precioVenta };
+          return itemData;
+        });
+
+        await addDoc(collection(db, "pedidos"), {
+          idCotizacion: rfq.id,
+          correlativoRFQ: rfq.correlativo,
+          cliente: rfq.cliente,
+          vendedorNombre: rfq.vendedorNombre,
+          productos: productosParaPedido,
+          linkOC: valorLinkOC,
+          notasPedido: valorNotasPedido,
+          fechaCreacion: serverTimestamp(),
+          estadoGeneral: 'Procesando'
+        });
+      }
+
+      // 2. Registrar Ventas Perdidas si hay productos marcados
+      let ultimoMotivoVentaPerdida = null;
+      if (indicesVentaPerdida.length > 0) {
+        setMensajePedido('Registrando ventas perdidas...');
+        const vendedorUid = auth.currentUser?.uid || rfq.vendedorId || 'vendedor';
+        const factorA = Number(rfq.factorA || 1);
+        const factorM = Number(rfq.factorM || 1.08);
+
+        for (const idx of indicesVentaPerdida) {
+          const p = rfq.productos[idx];
+          const staged = ventasPerdidasPendientes[idx];
+          const cant = Number(p.cant || 1);
+          const fob = Number(p.fob || 0);
+          const itemFactorA = Number(p.factorA || factorA);
+          const itemFactorM = Number(p.factorM || factorM);
+          const fva = Number(p.fva || 1.3);
+          const fvm = Number(p.fvm || 1.25);
+          const subA = fob * itemFactorA * fva * cant;
+          const subM = fob * itemFactorM * fvm * cant;
+
+          const registroVentaPerdida = {
+            solicitudId: rfq.id,
+            motivoCodigo: staged.motivo.codigo,
+            comentario: staged.comentario,
+            vendedorId: vendedorUid,
+            fecha: serverTimestamp(),
+            tipoSolicitud: rfq.tipo || 'RFQ',
+            correlativo: rfq.correlativo || 'N/A',
+            cliente: rfq.cliente || 'Desconocido',
+            montoAereo: Math.round(subA * 100) / 100,
+            montoMaritimo: Math.round(subM * 100) / 100,
+            itemsIds: [p?.id || p?.codigo || String(idx)],
+            motivoNombre: staged.motivo.nombre,
+            categoriaMotivo: staged.motivo.categoria || 'Otros'
+          };
+
+          await addDoc(collection(db, 'ventasPerdidas'), registroVentaPerdida);
+
+          const infoMotivo = {
+            codigo: staged.motivo.codigo,
+            nombre: staged.motivo.nombre,
+            categoria: staged.motivo.categoria || 'Otros',
+            comentario: staged.comentario,
+            fecha: ahoraTimestamp,
+            registradoPor: auth.currentUser?.email || ''
+          };
+
+          productosActualizadosParaRFQ[idx] = {
+            ...p,
+            estadoItem: 'Venta Perdida',
+            motivoEstadoItem: `Venta Perdida: ${staged.motivo.nombre}`,
+            motivoVentaPerdida: infoMotivo
+          };
+
+          ultimoMotivoVentaPerdida = infoMotivo;
+        }
+      }
+
+      // 3. Clasificar solicitud y actualizar documento
       const clasificacion = clasificarSolicitud(productosActualizadosParaRFQ, rfq.estado);
-      const estadoNuevoSolicitud = clasificacion.estado;
+      let estadoNuevoSolicitud = clasificacion.estado;
+
+      const noPedidosNiAnulados = productosActualizadosParaRFQ.filter(
+        p => p.estadoItem !== 'Pedido' && p.estadoItem !== 'Comprado' && p.estadoItem !== 'Anulado'
+      );
+      const todosEnVentaPerdida = noPedidosNiAnulados.length > 0 && noPedidosNiAnulados.every(p => p.estadoItem === 'Venta Perdida');
+      const hayPedidos = productosActualizadosParaRFQ.some(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
+
+      if (todosEnVentaPerdida && !hayPedidos) {
+        estadoNuevoSolicitud = 'Venta Perdida';
+      }
 
       setMensajePedido('Actualizando solicitud...');
-      await updateDoc(doc(db, "solicitudes", id), {
+      const updatePayload = {
         estado: estadoNuevoSolicitud,
         resultado: clasificacion.resultado,
         conteoItems: clasificacion.conteoItems,
         productos: productosActualizadosParaRFQ,
         linkOC: valorLinkOC,
-        notasPedido: valorNotasPedido,
-        fechaPedido: serverTimestamp(),
-        pedidoEmailEnviado: false,
-        tieneAdjuntos: archivosAdjuntos.length > 0,
-      });
-
-      // --- LÓGICA DE CORREO AUTOMÁTICO AL CREAR PEDIDO ---
-      const productosCotizadosCount = rfq.productos.filter(p => Number(p.fob || 0) > 0 || p.precio > 0).length;
-      // El estado posterior a la selección determina el tipo del correo. Así,
-      // al confirmar los últimos ítems el aviso siempre dice pedido completo.
-      const esPedidoParcial = estadoNuevoSolicitud === 'Pedido Parcial';
-
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      
-      const vendedorEmail = auth.currentUser?.email || rfq.vendedorEmail || '';
-      const vendedorNombre = auth.currentUser?.displayName || rfq.vendedorNombre || vendedorEmail.split('@')[0];
-
-      const senderFrom = isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : `${vendedorNombre} <${vendedorEmail}>`;
-      const replyToEmail = isLocal ? 'rvides@hermaco.net' : vendedorEmail;
-      const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : (emailConfig.pedidoGenerado?.to?.filter(Boolean).length ? emailConfig.pedidoGenerado.to : ["compras@hermaco.net"]);
-      const ccEmails = isLocal 
-        ? ["rvides@hermaco.net"]
-        : [
-            vendedorEmail,
-            ...(emailConfig.pedidoGenerado?.cc || ["logisticahco@hermaco.net"])
-          ].filter(email => !["oventura@hermaco.net", "dhernandez@hermaco.net"].includes(email?.toLowerCase()));
-
-      const orderDataForEmail = {
-        correlativoRFQ: rfq.correlativo,
-        cliente: rfq.cliente,
-        vendedorNombre,
-        vendedorEmail,
-        esPedidoParcial,
-        totalItemsCotizacion: productosCotizadosCount,
-        productos: productosActualizadosParaRFQ,
-        linkOC: linkOC || "",
-        notasPedido: notasPedido || "",
+        notasPedido: valorNotasPedido
       };
 
-      const htmlBody = generarPlantillaNuevoPedido(orderDataForEmail);
-      const tipoTag = esPedidoParcial ? 'Parcial' : 'Completo';
-
-      if (archivosAdjuntos.length > 0) {
-        setMensajePedido(`Procesando ${archivosAdjuntos.length} adjunto(s)...`);
-      }
-      const attachments = await prepararAdjuntosParaCorreo();
-
-      setMensajePedido('Enviando correo...');
-      try {
-        const mailRes = await fetch('/.netlify/functions/send-email-notification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: senderFrom,
-            replyTo: replyToEmail,
-            to: destinatarioTo,
-            cc: ccEmails,
-            subject: `Nuevo Pedido ${tipoTag}: ${rfq.correlativo} - ${rfq.cliente}`,
-            bodyHtml: htmlBody,
-            attachments,
-          })
-        });
-
-        if (!mailRes.ok) throw new Error('Fallo al enviar correo de pedido');
-        await updateDoc(doc(db, 'solicitudes', id), { pedidoEmailEnviado: true });
-      } catch (e) {
-        console.error("Error enviando correo de pedido:", e);
+      if (indicesSeleccionados.length > 0) {
+        updatePayload.fechaPedido = serverTimestamp();
+        updatePayload.pedidoEmailEnviado = false;
+        updatePayload.tieneAdjuntos = archivosAdjuntos.length > 0;
       }
 
-      alert("Pedido generado con éxito.");
+      if (indicesVentaPerdida.length > 0 && ultimoMotivoVentaPerdida) {
+        updatePayload.motivoVentaPerdida = ultimoMotivoVentaPerdida;
+      }
+
+      await updateDoc(doc(db, "solicitudes", id), updatePayload);
+
+      // 4. Enviar correo si hubo pedido
+      if (indicesSeleccionados.length > 0) {
+        const productosCotizadosCount = rfq.productos.filter(p => Number(p.fob || 0) > 0 || p.precio > 0).length;
+        const esPedidoParcial = estadoNuevoSolicitud === 'Pedido Parcial';
+
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        const vendedorEmail = auth.currentUser?.email || rfq.vendedorEmail || '';
+        const vendedorNombre = auth.currentUser?.displayName || rfq.vendedorNombre || vendedorEmail.split('@')[0];
+
+        const senderFrom = isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : `${vendedorNombre} <${vendedorEmail}>`;
+        const replyToEmail = isLocal ? 'rvides@hermaco.net' : vendedorEmail;
+        const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : (emailConfig.pedidoGenerado?.to?.filter(Boolean).length ? emailConfig.pedidoGenerado.to : ["compras@hermaco.net"]);
+        const ccEmails = isLocal 
+          ? ["rvides@hermaco.net"]
+          : [
+              vendedorEmail,
+              ...(emailConfig.pedidoGenerado?.cc || ["logisticahco@hermaco.net"])
+            ].filter(email => !["oventura@hermaco.net", "dhernandez@hermaco.net"].includes(email?.toLowerCase()));
+
+        const orderDataForEmail = {
+          correlativoRFQ: rfq.correlativo,
+          cliente: rfq.cliente,
+          vendedorNombre,
+          vendedorEmail,
+          esPedidoParcial,
+          totalItemsCotizacion: productosCotizadosCount,
+          productos: productosActualizadosParaRFQ,
+          linkOC: linkOC || "",
+          notasPedido: notasPedido || "",
+        };
+
+        const htmlBody = generarPlantillaNuevoPedido(orderDataForEmail);
+        const tipoTag = esPedidoParcial ? 'Parcial' : 'Completo';
+
+        if (archivosAdjuntos.length > 0) {
+          setMensajePedido(`Procesando ${archivosAdjuntos.length} adjunto(s)...`);
+        }
+        const attachments = await prepararAdjuntosParaCorreo();
+
+        setMensajePedido('Enviando correo...');
+        try {
+          const mailRes = await fetch('/.netlify/functions/send-email-notification', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: senderFrom,
+              replyTo: replyToEmail,
+              to: destinatarioTo,
+              cc: ccEmails,
+              subject: `Nuevo Pedido ${tipoTag}: ${rfq.correlativo} - ${rfq.cliente}`,
+              bodyHtml: htmlBody,
+              attachments,
+            })
+          });
+
+          if (!mailRes.ok) throw new Error('Fallo al enviar correo de pedido');
+          await updateDoc(doc(db, 'solicitudes', id), { pedidoEmailEnviado: true });
+        } catch (e) {
+          console.error("Error enviando correo de pedido:", e);
+        }
+      }
+
+      alert("Operación completada con éxito.");
       navigate('/vendedor'); 
     } catch (error) {
-      console.error(error);
+      console.error("Error al procesar pedido o ventas perdidas:", error);
       alert("Error al procesar pedido.");
     } finally {
       enviandoPedidoRef.current = false;
@@ -637,6 +881,31 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         </div>
       )}
 
+      {/* Banner Venta Perdida */}
+      {rfq?.estado === 'Venta Perdida' && (
+        <div className="mb-5 border border-slate-300 border-l-4 border-l-slate-700 rounded-r-lg px-5 py-3.5 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-0.5">
+              Cotización cerrada como venta perdida
+            </p>
+            <p className="text-xs font-semibold text-slate-700">
+              {(rfq?.productos || []).filter(p => p.estadoItem === 'Venta Perdida').length > 0
+                ? `${(rfq?.productos || []).filter(p => p.estadoItem === 'Venta Perdida').length} ítems registrados como venta perdida`
+                : 'Todos los ítems cerrados como venta perdida'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => abrirConsultaVentaPerdida(null)}
+            className="inline-flex min-h-6 items-center gap-1 self-start sm:self-center rounded-md border border-slate-200/80 bg-white px-2.5 py-1 font-semibold text-slate-600 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px text-[10px] cursor-pointer"
+            title="Consultar motivos de venta perdida"
+          >
+            <MessageCircleQuestion size={12} />
+            <span>Consulta</span>
+          </button>
+        </div>
+      )}
+
       {/* Banner solo lectura — solo si no es dueño y no está anulado */}
       {!puedeConfirmarPedido && !pedidoYaCreado && !esAnulado && !esPropietarioDeRFQ && (
         <div className="mb-4 md:mb-6 bg-blue-50/80 border border-blue-200/80 text-blue-900 rounded-xl md:rounded-2xl p-3 md:p-4 flex flex-row items-center justify-between gap-3 text-xs">
@@ -661,10 +930,13 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
           const fobVal = Number(p.fob || 0);
           const estaCotizado = fobVal > 0;
           const yaFuePedido = esItemYaPedido(p);
+          const stagedVP = Boolean(ventasPerdidasPendientes[idx]);
+          const fueVentaPerdida = esItemVentaPerdida(p, idx);
+          const fueDenegado = esItemDenegado(p);
+          const estaAnulado = esItemAnulado(p);
           const ventaA = fobVal * (p.factorA || rfq.factorA || 1) * (p.fva || 1.30);
           const ventaM = fobVal * (p.factorM || rfq.factorM || 1.08) * (p.fvm || 1.25);
           const isSelected = Boolean(seleccionados[idx]);
-          const estaAnulado = p.estadoItem === 'Anulado';
 
           return (
             <div
@@ -674,17 +946,33 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                   ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-md'
                   : yaFuePedido
                   ? 'border-emerald-200 shadow-sm'
+                  : stagedVP
+                  ? 'border-rose-300 ring-2 ring-rose-400/20 bg-rose-50/20 shadow-sm'
+                  : (fueVentaPerdida || fueDenegado)
+                  ? 'border-rose-100 bg-rose-50/10'
                   : 'border-slate-100 hover:shadow-md hover:border-slate-200'
-              } ${(!estaCotizado || estaAnulado) ? 'opacity-70' : ''}`}
+              } ${(!estaCotizado || estaAnulado || fueVentaPerdida || fueDenegado) ? 'opacity-70' : ''}`}
             >
               {/* Header: Checkbox (Izq) y Status (Der) */}
-              <div className="flex items-start justify-between mb-1.5">
+              <div className="flex items-start justify-between mb-1.5 gap-2">
                 <div className="flex items-center gap-2">
                   {yaFuePedido ? (
                     <div className="w-6 h-6 rounded bg-emerald-500 text-white flex items-center justify-center shadow-xs" title="Ítem ya pedido">
                       <CheckCircle2 size={14} />
                     </div>
-                  ) : estaCotizado ? (
+                  ) : stagedVP ? (
+                    <div className="w-6 h-6 rounded bg-rose-50 border border-rose-300 text-rose-700 flex items-center justify-center shadow-xs" title="Venta Perdida por enviar">
+                      <TrendingDown size={12} />
+                    </div>
+                  ) : fueVentaPerdida ? (
+                    <div className="w-6 h-6 rounded bg-rose-50 border border-rose-200 text-rose-700 flex items-center justify-center shadow-xs" title="Venta Perdida">
+                      <TrendingDown size={12} />
+                    </div>
+                  ) : fueDenegado ? (
+                    <div className="w-6 h-6 rounded bg-rose-500 text-white flex items-center justify-center shadow-xs" title="Ítem denegado">
+                      <X size={14} />
+                    </div>
+                  ) : estaCotizado && !esVentaPerdida && !estaAnulado ? (
                     <button
                       type="button"
                       onClick={() => {
@@ -707,8 +995,47 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                   )}
                 </div>
 
-                <div className="shrink-0 flex flex-col items-end">
-                  {estaAnulado ? (
+                <div className="shrink-0 flex items-center gap-1.5 flex-wrap justify-end">
+                  {stagedVP ? (
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-sm">
+                        <TrendingDown size={11} />
+                        <span>Por enviar</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => abrirConsultaVentaPerdida(p, idx)}
+                        className="inline-flex min-h-6 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 font-semibold text-slate-600 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px text-[9px] cursor-pointer"
+                        title="Consultar motivo de venta perdida"
+                      >
+                        <MessageCircleQuestion size={11} />
+                        <span>Consulta</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCancelarVentaPerdidaPendiente(idx)}
+                        className="text-[10px] font-bold text-slate-400 hover:text-rose-600 underline cursor-pointer"
+                      >
+                        Deshacer
+                      </button>
+                    </div>
+                  ) : fueVentaPerdida ? (
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-sm">
+                        <TrendingDown size={11} />
+                        <span>Venta Perdida</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => abrirConsultaVentaPerdida(p, idx)}
+                        className="inline-flex min-h-6 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 font-semibold text-slate-600 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px text-[9px] cursor-pointer"
+                        title="Consultar motivo de venta perdida"
+                      >
+                        <MessageCircleQuestion size={11} />
+                        <span>Consulta</span>
+                      </button>
+                    </div>
+                  ) : estaAnulado ? (
                     <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-rose-500">
                       <X size={12} strokeWidth={3} />
                       <span>Anulado</span>
@@ -720,6 +1047,11 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                       <span className={`border-l pl-1.5 flex items-center ${(!p.modalidad || p.modalidad === 'Aéreo') ? 'border-emerald-200/80' : 'border-blue-200/80'}`}>
                         {(!p.modalidad || p.modalidad === 'Aéreo') ? <Plane size={12} /> : <Ship size={12} />}
                       </span>
+                    </span>
+                  ) : fueDenegado ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-sm">
+                      <X size={11} />
+                      <span>Denegado</span>
                     </span>
                   ) : !estaCotizado && (
                     (p.enConsulta || p.estadoItem === 'En consulta') ? (
@@ -734,6 +1066,19 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                       </span>
                     )
                   )}
+
+                  {esVendedorOGerente && !yaFuePedido && !fueDenegado && !fueVentaPerdida && !estaAnulado && !stagedVP && (
+                    <button
+                      type="button"
+                      onClick={() => handleAbrirVentaPerdida([idx])}
+                      className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-1 rounded-md transition-colors shadow-2xs cursor-pointer"
+                      title="Registrar Venta Perdida"
+                    >
+                      <TrendingDown size={11} />
+                      <span>Venta Perdida</span>
+                    </button>
+                  )}
+
                   {estaAnulado && p.motivoAnulacion && (
                     <button
                       type="button"
@@ -743,6 +1088,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                       Ver motivo
                     </button>
                   )}
+
                   {role === 'comprador' && ['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !estaAnulado && (
                     <button
                       type="button"
@@ -891,7 +1237,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                 <th className="p-5 text-center bg-blue-800">Venta Marítimo</th>
                 <th className="p-5 text-center">Elegir Modalidad</th>
                 <th className="p-5">Tiempos y Entrega</th>
-                {role === 'comprador' && <th className="p-5 text-center w-24">Acciones</th>}
+                <th className="p-5 text-center w-24">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-xs">
@@ -899,23 +1245,33 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                 const fobVal = Number(p.fob || 0);
                 const estaCotizado = fobVal > 0;
                 const yaFuePedido = esItemYaPedido(p);
+                const stagedVP = Boolean(ventasPerdidasPendientes[idx]);
+                const fueVentaPerdida = esItemVentaPerdida(p, idx);
                 const fueDenegado = esItemDenegado(p);
+                const estaAnulado = esItemAnulado(p);
                 const ventaA = fobVal * (p.factorA || rfq.factorA || 1) * (p.fva || 1.30);
                 const ventaM = fobVal * (p.factorM || rfq.factorM || 1.08) * (p.fvm || 1.25);
-                const estaAnulado = p.estadoItem === 'Anulado';
 
                 return (
-                  <tr key={idx} className={`${seleccionados[idx] ? 'bg-slate-50' : (yaFuePedido ? 'bg-emerald-50/20' : fueDenegado ? 'bg-rose-50/20' : 'bg-white')} hover:bg-slate-50/50 transition-colors ${(!estaCotizado || fueDenegado || estaAnulado) ? 'opacity-60 bg-slate-50/30' : ''}`}>
+                  <tr key={idx} className={`${seleccionados[idx] ? 'bg-slate-50' : (yaFuePedido ? 'bg-emerald-50/20' : stagedVP ? 'bg-rose-50/30' : (fueVentaPerdida || fueDenegado) ? 'bg-rose-50/20' : 'bg-white')} hover:bg-slate-50/50 transition-colors ${(!estaCotizado || fueDenegado || fueVentaPerdida || estaAnulado) ? 'opacity-60 bg-slate-50/30' : ''}`}>
                     <td className="p-5 text-center">
                       {yaFuePedido ? (
                         <div className="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-sm" title="Ítem ya pedido previamente">
                           <CheckCircle2 size={16} />
                         </div>
+                      ) : stagedVP ? (
+                        <div className="w-7 h-7 rounded-sm bg-rose-50 border border-rose-300 text-rose-700 flex items-center justify-center mx-auto shadow-xs" title="Venta Perdida por enviar">
+                          <TrendingDown size={14} />
+                        </div>
+                      ) : fueVentaPerdida ? (
+                        <div className="w-7 h-7 rounded-sm bg-rose-50 border border-rose-200 text-rose-700 flex items-center justify-center mx-auto shadow-xs" title="Venta Perdida">
+                          <TrendingDown size={14} />
+                        </div>
                       ) : fueDenegado ? (
                         <div className="w-7 h-7 rounded-lg bg-rose-500 text-white flex items-center justify-center mx-auto shadow-sm" title="Ítem denegado por Compras">
                           <X size={16} />
                         </div>
-                      ) : estaCotizado ? (
+                      ) : estaCotizado && !esVentaPerdida && !estaAnulado ? (
                         <button
                           type="button"
                           onClick={() => {
@@ -945,8 +1301,40 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                           <X size={12} strokeWidth={3} />
                           <span>Anulado</span>
                         </span>
+                      ) : stagedVP ? (
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-sm">
+                            <TrendingDown size={10} />
+                            <span>Por enviar</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => abrirConsultaVentaPerdida(p, idx)}
+                            className="inline-flex min-h-6 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 font-semibold text-slate-600 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px text-[9px] cursor-pointer"
+                            title="Consultar motivo de venta perdida"
+                          >
+                            <MessageCircleQuestion size={11} />
+                            <span>Consulta</span>
+                          </button>
+                        </div>
+                      ) : fueVentaPerdida ? (
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-sm">
+                            <TrendingDown size={10} />
+                            <span>Venta Perdida</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => abrirConsultaVentaPerdida(p, idx)}
+                            className="inline-flex min-h-6 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 font-semibold text-slate-600 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px text-[9px] cursor-pointer"
+                            title="Consultar motivo de venta perdida"
+                          >
+                            <MessageCircleQuestion size={11} />
+                            <span>Consulta</span>
+                          </button>
+                        </div>
                       ) : yaFuePedido ? (
-                        <span className={`inline-flex items-center gap-1.5 text-[8px] px-2 py-0.5 rounded-full font-black uppercase mt-2 tracking-widest ${(!p.modalidad || p.modalidad === 'Aéreo') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-blue-50 text-blue-700 border border-blue-200/60'}`}>
+                        <span className={`inline-flex items-center gap-1.5 text-[8px] px-2 py-0.5 rounded-full font-black uppercase mt-2 tracking-widest ${(!p.modalidad || p.modalidad === 'Aéreo') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-blue-50 text-blue-700 border-blue-200/60'}`}>
                           <CheckCircle2 size={10} className={(!p.modalidad || p.modalidad === 'Aéreo') ? 'text-emerald-500' : 'text-blue-500'} />
                           <span>Confirmado</span>
                           <span className={`border-l pl-1.5 flex items-center ${(!p.modalidad || p.modalidad === 'Aéreo') ? 'border-emerald-200/80' : 'border-blue-200/80'}`}>
@@ -1087,29 +1475,59 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                         )
                       ) : '—'}
                     </td>
-                    {role === 'comprador' && (
-                      <td className="p-5 text-center">
-                        {['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !estaAnulado && (
-                          <button
-                            type="button"
-                            title="Anular"
-                            onClick={() => setModalAnulacion({ open: true, index: idx, motivo: '', enviando: false })}
-                            className="text-rose-400 hover:text-rose-600 p-2 hover:bg-rose-50 rounded-full transition-all mx-auto block"
-                          >
-                            <Ban size={16} />
-                          </button>
-                        )}
-                        {estaAnulado && p.motivoAnulacion && (
-                          <button
-                            type="button"
-                            onClick={() => setMotivoAnulacionVisible(p.motivoAnulacion)}
-                            className="text-[9px] font-bold text-slate-500 underline transition-colors hover:text-slate-800"
-                          >
-                            Ver motivo
-                          </button>
-                        )}
-                      </td>
-                    )}
+                    <td className="p-5 text-center">
+                      {role === 'comprador' && (
+                        <>
+                          {['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !estaAnulado && (
+                            <button
+                              type="button"
+                              title="Anular"
+                              onClick={() => setModalAnulacion({ open: true, index: idx, motivo: '', enviando: false })}
+                              className="text-rose-400 hover:text-rose-600 p-2 hover:bg-rose-50 rounded-full transition-all mx-auto block"
+                            >
+                              <Ban size={16} />
+                            </button>
+                          )}
+                          {estaAnulado && p.motivoAnulacion && (
+                            <button
+                              type="button"
+                              onClick={() => setMotivoAnulacionVisible(p.motivoAnulacion)}
+                              className="text-[9px] font-bold text-slate-500 underline transition-colors hover:text-slate-800"
+                            >
+                              Ver motivo
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {esVendedorOGerente && (
+                        <>
+                          {stagedVP ? (
+                            <div className="flex flex-col items-center gap-1">
+                              <span className="text-[10px] font-bold text-rose-600 uppercase">Por enviar</span>
+                              <button
+                                type="button"
+                                onClick={() => handleCancelarVentaPerdidaPendiente(idx)}
+                                className="text-[10px] font-bold text-slate-400 hover:text-rose-600 underline cursor-pointer"
+                              >
+                                Deshacer
+                              </button>
+                            </div>
+                          ) : (
+                            !yaFuePedido && !fueDenegado && !fueVentaPerdida && !estaAnulado && (
+                              <button
+                                type="button"
+                                onClick={() => handleAbrirVentaPerdida([idx])}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[10px] uppercase tracking-wide mx-auto transition-all cursor-pointer shadow-xs"
+                                title="Registrar Venta Perdida"
+                              >
+                                <TrendingDown size={13} />
+                                <span>Venta Perdida</span>
+                              </button>
+                            )
+                          )}
+                        </>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
@@ -1280,27 +1698,63 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
               </div>
             )}
           </div>
-          <button 
-            onClick={handleCrearPedido}
-            disabled={enviandoPedido || !puedeConfirmarPedido}
-            className="w-full mt-8 bg-emerald-500 hover:bg-emerald-600 text-white py-4 sm:py-5 rounded-2xl font-black uppercase tracking-[0.2em] shadow-lg shadow-emerald-900/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ShoppingCart size={20} />
-            {puedeConfirmarPedido
-              ? (enviandoPedido ? (mensajePedido || 'GENERANDO...') : 'CONFIRMAR Y ENVIAR PEDIDO')
-              : (pedidoYaCreado ? 'PEDIDO YA GENERADO' : 'SOLO VISUALIZACION')}
-          </button>
+          <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {debeMostrarBotonVentaPerdida && (
+              <button
+                type="button"
+                onClick={() => handleAbrirVentaPerdida()}
+                disabled={enviandoPedido}
+                className="w-full sm:w-auto px-6 py-4 sm:py-5 rounded-2xl border-2 border-rose-300 bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-sm hover:shadow transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              >
+                <TrendingDown size={18} className="text-rose-600 shrink-0" />
+                <span>
+                  {totalItemsSeleccionados > 0
+                    ? `Venta Perdida (${totalItemsSeleccionados})`
+                    : 'Registrar Venta Perdida'}
+                </span>
+              </button>
+            )}
+
+            <button 
+              onClick={handleCrearPedido}
+              disabled={enviandoPedido || !puedeConfirmarOEnviar}
+              className={`flex-1 py-4 sm:py-5 rounded-2xl font-black uppercase tracking-[0.2em] shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+                totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-900/20'
+                  : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-900/20'
+              }`}
+            >
+              {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0 ? (
+                <TrendingDown size={20} />
+              ) : (
+                <ShoppingCart size={20} />
+              )}
+              {puedeConfirmarOEnviar
+                ? (enviandoPedido
+                    ? (mensajePedido || 'PROCESANDO...')
+                    : totalItemsSeleccionados > 0 && totalVentasPerdidasPendientes > 0
+                      ? `CONFIRMAR (${totalItemsSeleccionados} PEDIDO · ${totalVentasPerdidasPendientes} VTA. PERDIDA)`
+                      : totalVentasPerdidasPendientes > 0
+                        ? `ENVIAR VENTAS PERDIDAS (${totalVentasPerdidasPendientes})`
+                        : 'CONFIRMAR Y ENVIAR PEDIDO'
+                  )
+                : (pedidoYaCreado ? 'PEDIDO YA GENERADO' : 'SOLO VISUALIZACION')}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Barra fija inferior en Móvil para confirmar pedido */}
-      {puedeConfirmarPedido && (
+      {(puedeConfirmarOEnviar || debeMostrarBotonVentaPerdida) && (
         <div className="md:hidden">
           <StickyActionBar
             summary={
               <div>
                 <div className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
-                  {totalItemsSeleccionados} de {totalItemsSeleccionables} seleccionados
+                  {totalItemsSeleccionados > 0 && `${totalItemsSeleccionados} ped.`}
+                  {totalItemsSeleccionados > 0 && totalVentasPerdidasPendientes > 0 && ' · '}
+                  {totalVentasPerdidasPendientes > 0 && `${totalVentasPerdidasPendientes} vta. perd.`}
+                  {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes === 0 && `${totalItemsSeleccionables} cotizados`}
                 </div>
                 <div className="text-base font-black text-slate-900">
                   ${totalPedidoActual.toFixed(2)}
@@ -1308,15 +1762,49 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
               </div>
             }
             primaryAction={
-              <button
-                type="button"
-                onClick={handleCrearPedido}
-                disabled={enviandoPedido || totalItemsSeleccionados === 0}
-                className="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white px-4 py-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-md shadow-emerald-500/20 disabled:opacity-50 whitespace-nowrap"
-              >
-                <ShoppingCart size={16} />
-                <span>{enviandoPedido ? (mensajePedido || 'Generando...') : 'Confirmar'}</span>
-              </button>
+              <div className="flex items-center gap-2">
+                {debeMostrarBotonVentaPerdida && (
+                  <button
+                    type="button"
+                    onClick={() => handleAbrirVentaPerdida()}
+                    disabled={enviandoPedido}
+                    className="border-2 border-rose-300 bg-rose-50 active:bg-rose-100 text-rose-700 px-3 py-3 rounded-xl flex items-center justify-center gap-1.5 active:scale-95 shadow-xs font-black text-xs whitespace-nowrap cursor-pointer disabled:opacity-50"
+                    title={totalItemsSeleccionados > 0 ? `Registrar Venta Perdida (${totalItemsSeleccionados} sel.)` : "Registrar Venta Perdida"}
+                  >
+                    <TrendingDown size={15} className="text-rose-600 shrink-0" />
+                    <span>
+                      {totalItemsSeleccionados > 0
+                        ? `Vta. Perdida (${totalItemsSeleccionados})`
+                        : 'Vta. Perdida'}
+                    </span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleCrearPedido}
+                  disabled={enviandoPedido || !puedeConfirmarOEnviar}
+                  className={`active:scale-95 text-white px-4 py-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-md disabled:opacity-50 whitespace-nowrap ${
+                    totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
+                      ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/20'
+                      : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20'
+                  }`}
+                >
+                  {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0 ? (
+                    <TrendingDown size={16} />
+                  ) : (
+                    <ShoppingCart size={16} />
+                  )}
+                  <span>
+                    {enviandoPedido
+                      ? (mensajePedido || 'Procesando...')
+                      : totalItemsSeleccionados > 0 && totalVentasPerdidasPendientes > 0
+                        ? `Confirmar (${totalItemsSeleccionados} + ${totalVentasPerdidasPendientes} VP)`
+                        : totalVentasPerdidasPendientes > 0
+                          ? `Enviar VP (${totalVentasPerdidasPendientes})`
+                          : 'Confirmar'}
+                  </span>
+                </button>
+              </div>
             }
           />
         </div>
@@ -1329,7 +1817,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
             <div className="bg-slate-900 px-4 sm:px-8 py-3.5 sm:py-5 flex items-center justify-between text-white">
               <div>
                 <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Documento Oficial</p>
-                <h3 className="text-sm sm:text-lg font-black tracking-tight uppercase">Vista Previa de Cotización</h3>
+                <h3 className="text-sm sm:lg font-black tracking-tight uppercase">Vista Previa de Cotización</h3>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
                 <button
@@ -1381,6 +1869,30 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
           </div>
         </div>
       )}
+
+      {/* Modal de Registro de Venta Perdida */}
+      <ModalVentaPerdida
+        isOpen={modalVentaPerdidaOpen}
+        onClose={() => {
+          setModalVentaPerdidaOpen(false);
+          setItemsVentaPerdidaSeleccionados(null);
+        }}
+        solicitud={{ id, ...rfq }}
+        itemsSeleccionados={itemsVentaPerdidaSeleccionados}
+        onConfirmarStaged={handleConfirmarVentaPerdidaStaged}
+        onExito={() => {
+          setSeleccionados({});
+          setItemsVentaPerdidaSeleccionados(null);
+          navigate('/vendedor');
+        }}
+      />
+
+      {/* Modal de Consulta de Motivo de Venta Perdida */}
+      <ModalConsultaVentaPerdida
+        isOpen={consultaVentaPerdidaData !== null}
+        onClose={() => setConsultaVentaPerdidaData(null)}
+        data={consultaVentaPerdidaData}
+      />
     </div>
   );
 };

@@ -1,13 +1,20 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FilePlus, ShoppingCart, ArrowRight } from 'lucide-react';
+import { useCotizacionesEstancadas } from '../../hooks/useCotizacionesEstancadas';
+import { ModalBloqueoCotizaciones } from '../../components/vendedor/ModalBloqueoCotizaciones';
 
-export const NuevaSolicitudGateway = () => {
+export const NuevaSolicitudGateway = ({ role }) => {
   const navigate = useNavigate();
+  const { cotizacionesEstancadas, tieneBloqueo, loading } = useCotizacionesEstancadas({ role });
 
   useEffect(() => {
     (document.querySelector('main') || window).scrollTo({ top: 0, behavior: 'instant' });
   }, []);
+
+  if (!loading && tieneBloqueo) {
+    return <ModalBloqueoCotizaciones cotizaciones={cotizacionesEstancadas} onVolver={() => navigate('/vendedor')} />;
+  }
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 animate-in fade-in zoom-in duration-300">

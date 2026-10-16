@@ -37,6 +37,9 @@ export const BarraNotificar = ({
                   <span className="text-emerald-600">{resumenAcciones?.aprobados || 0} aprobados</span> &bull; 
                   <span className="text-amber-600">{resumenAcciones?.ajustes || 0} {isVendedor ? 'contraofertas' : 'ajustes'}</span> &bull; 
                   <span className="text-rose-600">{resumenAcciones?.denegados || 0} {isVendedor ? 'rechazados' : 'denegados'}</span>
+                  {resumenAcciones?.ventasPerdidas > 0 && (
+                    <> &bull; <span className="text-rose-700 font-black">{resumenAcciones.ventasPerdidas} vta. perdida</span></>
+                  )}
                 </p>
                 <p className="text-xs text-slate-500 text-center mt-3 font-medium">
                   Los ítems que sigan en tu turno se mantendrán pendientes de tu acción.

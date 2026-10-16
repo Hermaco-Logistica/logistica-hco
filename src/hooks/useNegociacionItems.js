@@ -8,6 +8,7 @@ import {
   deshacerUltimoCambio, notificarCambios, reenviarCorreoPendiente,
   derivarNegociacion, ConflictoVersionError
 } from '../services/pedidoManualNegociacionService';
+import { esItemCerrado } from '../utils/decisionItemHelpers';
 
 export const useNegociacionItems = (solicitudId, actor) => {
   const [solicitud, setSolicitud] = useState(null);
@@ -29,7 +30,7 @@ export const useNegociacionItems = (solicitudId, actor) => {
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
-        setSolicitud(data);
+        setSolicitud({ id: docSnap.id, ...data });
         
         const serverProds = (data.productos || []).map((p, idx) => {
           const neg = derivarNegociacion(p);
@@ -114,9 +115,9 @@ export const useNegociacionItems = (solicitudId, actor) => {
     return { aprobados, ajustes, denegados };
   }, [itemsServer, actor.rol]);
 
-  const turnoCompras = itemsServer.filter(p => p.negociacion?.turno === 'compras').length;
-  const turnoVendedor = itemsServer.filter(p => p.negociacion?.turno === 'vendedor').length;
-  const cerrados = itemsServer.filter(p => p.negociacion?.resultado != null).length;
+  const turnoCompras = itemsServer.filter(p => !esItemCerrado(p) && p.negociacion?.turno === 'compras').length;
+  const turnoVendedor = itemsServer.filter(p => !esItemCerrado(p) && p.negociacion?.turno === 'vendedor').length;
+  const cerrados = itemsServer.filter(p => esItemCerrado(p) || p.negociacion?.resultado != null).length;
 
   const notificacionPendienteEmail = solicitud?.notificacionPendienteEmail || false;
   const resumenNegociacion = solicitud?.resumenNegociacion || null;
@@ -180,10 +181,14 @@ export const useNegociacionItems = (solicitudId, actor) => {
   const handleDeshacer = (idx, versionEsperada) => 
     handleAction(deshacerUltimoCambio, { solicitudId, idx, versionEsperada, actor }, 'Cambio deshecho');
 
-  const handleNotificar = async () => {
+  const handleNotificar = async (extraParams = {}) => {
     setIsProcessing(true);
     try {
-      await notificarCambios({ solicitudId, actor });
+      await notificarCambios({
+        solicitudId,
+        actor,
+        ...(typeof extraParams === 'object' && extraParams !== null ? extraParams : {})
+      });
       addToast({ type: 'success', message: 'Cambios notificados correctamente' });
     } catch (error) {
       if (error.message === 'notificacion_fallida') {
@@ -191,6 +196,7 @@ export const useNegociacionItems = (solicitudId, actor) => {
       } else {
         addToast({ type: 'error', message: 'Error al notificar cambios' });
       }
+      throw error;
     } finally {
       setIsProcessing(false);
     }

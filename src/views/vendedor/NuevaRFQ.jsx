@@ -17,9 +17,12 @@ import { buscarProductos, guardarProductoLocal } from '../../services/productosS
 import { generarPlantillaNuevaRFQ } from '../../utils/emailTemplates';
 import { emailConfig } from '../../config/emailConfig';
 import { StickyActionBar } from '../../components/mobile';
+import { useCotizacionesEstancadas } from '../../hooks/useCotizacionesEstancadas';
+import { ModalBloqueoCotizaciones } from '../../components/vendedor/ModalBloqueoCotizaciones';
 
-export const NuevaRFQ = () => {
+export const NuevaRFQ = ({ role }) => {
   const navigate = useNavigate();
+  const { cotizacionesEstancadas, tieneBloqueo, loading: loadingBloqueo } = useCotizacionesEstancadas({ role });
   const [cliente, setCliente] = useState('');
   const [sugerenciasCliente, setSugerenciasCliente] = useState([]);
   const [indiceSugerenciaActiva, setIndiceSugerenciaActiva] = useState(-1);
@@ -526,6 +529,10 @@ export const NuevaRFQ = () => {
       setLoading(false);
     }
   };
+
+  if (!loadingBloqueo && tieneBloqueo) {
+    return <ModalBloqueoCotizaciones cotizaciones={cotizacionesEstancadas} onVolver={() => navigate('/vendedor')} />;
+  }
 
   return (
     <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom-4 duration-500 pb-52 md:pb-12">

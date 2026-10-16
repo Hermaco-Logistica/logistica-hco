@@ -15,10 +15,19 @@ export function derivarNegociacion(item) {
   let resultado = 'pendiente';
   if (estado === 'Pedido' || estado === 'Comprado') resultado = 'acordado';
   else if (estado === 'Denegado') resultado = 'denegado';
-  else if (estado === 'Cancelado' || estado === 'Rechazado') resultado = 'cancelado';
+  else if (estado === 'Cancelado' || estado === 'Rechazado' || estado === 'Venta Perdida') resultado = 'cancelado';
 
   if (item.negociacion) {
-    return { ...item.negociacion, resultado };
+    return {
+      version: 0,
+      turno: null,
+      ronda: 1,
+      sinNotificar: false,
+      ultimoCambio: null,
+      ...item.negociacion,
+      ronda: Number(item.negociacion.ronda) || 1,
+      resultado: item.negociacion.resultado || resultado
+    };
   }
 
   let turno = null;
@@ -81,6 +90,10 @@ export function calcularEstadoGlobal(productos) {
     }
   }
 
+  const noAnulados = productos.filter(p => p.estadoItem !== 'Anulado');
+  const todosVentaPerdida = noAnulados.length > 0 && noAnulados.every(p => p.estadoItem === 'Venta Perdida');
+  if (todosResueltos && todosVentaPerdida && !algunAcordado) return 'Venta Perdida';
+
   if (todosResueltos && todosDenegados) return 'Denegado';
   if (todosResueltos && algunAcordado) return 'Pedido';
   if (!todosResueltos && algunAcordado) return 'Pedido Parcial';
@@ -104,7 +117,7 @@ export function calcularResumenNegociacion(productos) {
     if (neg.resultado === 'denegado' || neg.resultado === 'cancelado') denegados++;
     
     if (neg.sinNotificar && neg.ultimoCambio) {
-      if (neg.ultimoCambio.rol === 'compras') sinNotificarCompras++;
+      if (neg.ultimoCambio.rol === 'compras' || neg.ultimoCambio.rol === 'comprador') sinNotificarCompras++;
       if (neg.ultimoCambio.rol === 'vendedor') sinNotificarVendedor++;
     }
   }
@@ -153,7 +166,11 @@ async function ejecutarMutacion({ solicitudId, idx, versionEsperada, actor, acci
       modalidadAnterior: itemActual.modalidadAnterior,
       motivoEstadoItem: itemActual.motivoEstadoItem,
       motivoDenegacion: itemActual.motivoDenegacion,
-      motivoRechazo: itemActual.motivoRechazo
+      motivoRechazo: itemActual.motivoRechazo,
+      fechaDenegacion: itemActual.fechaDenegacion,
+      fechaRechazo: itemActual.fechaRechazo,
+      denegadoPor: itemActual.denegadoPor,
+      rechazadoPor: itemActual.rechazadoPor
     };
 
     const prevMensajeId = negActual.ofertaVigente?.mensajeId;
@@ -182,10 +199,16 @@ async function ejecutarMutacion({ solicitudId, idx, versionEsperada, actor, acci
       nuevoMensajeId = mensajeRef.id;
     }
 
+    const autorLimpio = {
+      uid: actor?.uid || '',
+      nombre: actor?.nombre || '',
+      rol: actor?.rol || 'vendedor'
+    };
+
     mutacion.negociacion.ultimoCambio = {
-      rol: actor.rol,
-      uid: actor.uid,
-      nombre: actor.nombre,
+      rol: autorLimpio.rol,
+      uid: autorLimpio.uid,
+      nombre: autorLimpio.nombre,
       accion: accionNombre,
       en: Timestamp.now(),
       estadoPrevio: estadoPrevioLimpio,
@@ -203,20 +226,20 @@ async function ejecutarMutacion({ solicitudId, idx, versionEsperada, actor, acci
       if (prevMensajeId) {
         transaction.update(doc(db, `solicitudes/${solicitudId}/mensajes`, prevMensajeId), {
           unnotifiedEstadoPropuesta: 'contraofertada',
-          unnotifiedActorRol: actor.rol
+          unnotifiedActorRol: autorLimpio.rol
         });
       }
       const propuestaInfo = {
         itemId: idx,
         tipo: 'propuesta',
         estadoPropuesta: 'vigente',
-        precioPropuesto: mutacion.oferta.precio,
-        precioAnterior: negActual.ofertaAnterior ? negActual.ofertaAnterior.precio : itemActual.fob,
-        tiempoEntrega: mutacion.oferta.tiempoEntrega,
-        tiempoEntregaAnterior: negActual.ofertaAnterior ? negActual.ofertaAnterior.tiempoEntrega : itemActual.fechaCompromiso,
-        modalidad: mutacion.oferta.modalidad,
-        modalidadAnterior: negActual.ofertaAnterior ? negActual.ofertaAnterior.modalidad : itemActual.modalidad,
-        autor: actor,
+        precioPropuesto: Number(mutacion.oferta?.precio || 0),
+        precioAnterior: negActual.ofertaAnterior ? Number(negActual.ofertaAnterior.precio || 0) : Number(itemActual.fob || 0),
+        tiempoEntrega: String(mutacion.oferta?.tiempoEntrega || ''),
+        tiempoEntregaAnterior: String(negActual.ofertaAnterior ? negActual.ofertaAnterior.tiempoEntrega : (itemActual.fechaCompromiso || '')),
+        modalidad: mutacion.oferta?.modalidad || 'Aéreo',
+        modalidadAnterior: negActual.ofertaAnterior ? negActual.ofertaAnterior.modalidad : (itemActual.modalidad || 'Aéreo'),
+        autor: autorLimpio,
         sinNotificar: true,
         createdAt: Timestamp.now()
       };
@@ -225,20 +248,20 @@ async function ejecutarMutacion({ solicitudId, idx, versionEsperada, actor, acci
       if ((accionNombre === 'aprobar' || accionNombre === 'aceptar') && prevMensajeId) {
         transaction.update(doc(db, `solicitudes/${solicitudId}/mensajes`, prevMensajeId), {
           unnotifiedEstadoPropuesta: 'aceptada',
-          unnotifiedActorRol: actor.rol
+          unnotifiedActorRol: autorLimpio.rol
         });
       } else if ((accionNombre === 'rechazar' || accionNombre === 'denegar') && prevMensajeId) {
         transaction.update(doc(db, `solicitudes/${solicitudId}/mensajes`, prevMensajeId), {
           unnotifiedEstadoPropuesta: 'rechazada',
-          unnotifiedActorRol: actor.rol
+          unnotifiedActorRol: autorLimpio.rol
         });
       }
       const eventoInfo = {
         itemId: idx,
         tipo: 'evento',
         accion: accionNombre,
-        ronda: mutacion.negociacion.ronda,
-        autor: actor,
+        ronda: Number(mutacion.negociacion?.ronda || negActual?.ronda || 1),
+        autor: autorLimpio,
         sinNotificar: true,
         createdAt: Timestamp.now()
       };
@@ -250,7 +273,7 @@ async function ejecutarMutacion({ solicitudId, idx, versionEsperada, actor, acci
       transaction.set(comentarioRef, {
         itemId: idx,
         tipo: 'texto',
-        autor: actor,
+        autor: autorLimpio,
         texto: mutacion.comentario,
         sinNotificar: true,
         createdAt: Timestamp.now()
@@ -289,7 +312,7 @@ export const ajustarItem = ({ solicitudId, idx, versionEsperada, actor, oferta, 
       neg.ofertaAnterior = { ...ofertaVigente };
       neg.ofertaVigente = { ...oferta, autorRol: actor.rol, autorNombre: actor.nombre, autorUid: actor.uid, creadaEn: Timestamp.now() };
       neg.turno = 'vendedor';
-      neg.ronda += 1;
+      neg.ronda = (Number(neg.ronda) || 1) + 1;
       return {
         negociacion: neg,
         itemUpdate: {
@@ -322,7 +345,9 @@ export const denegarItem = ({ solicitudId, idx, versionEsperada, actor, motivo }
         itemUpdate: {
           estadoItem: 'Denegado',
           motivoEstadoItem: motivo,
-          motivoDenegacion: motivo
+          motivoDenegacion: motivo,
+          fechaDenegacion: Timestamp.now(),
+          denegadoPor: actor?.nombre || 'Compras'
         },
         comentario: motivo
       };
@@ -358,7 +383,7 @@ export const contraofertarItem = ({ solicitudId, idx, versionEsperada, actor, of
       neg.ofertaAnterior = { ...ofertaVigente };
       neg.ofertaVigente = { ...oferta, autorRol: actor.rol, autorNombre: actor.nombre, autorUid: actor.uid, creadaEn: Timestamp.now() };
       neg.turno = 'compras';
-      neg.ronda += 1;
+      neg.ronda = (Number(neg.ronda) || 1) + 1;
       return {
         negociacion: neg,
         itemUpdate: {
@@ -392,7 +417,9 @@ export const rechazarOferta = ({ solicitudId, idx, versionEsperada, actor, motiv
         itemUpdate: {
           estadoItem: 'Cancelado',
           motivoEstadoItem: motivo,
-          motivoRechazo: motivo
+          motivoRechazo: motivo,
+          fechaRechazo: Timestamp.now(),
+          rechazadoPor: actor?.nombre || 'Vendedor'
         },
         comentario: motivo
       };
@@ -484,9 +511,11 @@ export const deshacerUltimoCambio = ({ solicitudId, idx, versionEsperada, actor 
   });
 };
 
-export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }) => {
+export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral, ventasPerdidasPendientes = {} }) => {
   const docRef = doc(db, 'solicitudes', solicitudId);
   let payloadParaCorreo = null;
+
+  const actorRolNormalizado = (actor.rol === 'comprador' || actor.rol === 'compras') ? 'compras' : actor.rol;
 
   // 1. Obtener mensajes sin notificar creados por este actor
   const mensajesSnap = await getDocs(collection(db, `solicitudes/${solicitudId}/mensajes`));
@@ -494,10 +523,13 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
   const mensajesAActualizarEstadoRefs = [];
   mensajesSnap.docs.forEach(mDoc => {
     const mData = mDoc.data();
-    if (mData.sinNotificar && mData.autor?.rol === actor.rol) {
+    const autorRolNormalizado = (mData.autor?.rol === 'comprador' || mData.autor?.rol === 'compras') ? 'compras' : mData.autor?.rol;
+    const propRolNormalizado = (mData.unnotifiedActorRol === 'comprador' || mData.unnotifiedActorRol === 'compras') ? 'compras' : mData.unnotifiedActorRol;
+
+    if (mData.sinNotificar && autorRolNormalizado === actorRolNormalizado) {
       mensajesSinNotificarRefs.push(mDoc.ref);
     }
-    if (mData.unnotifiedEstadoPropuesta && mData.unnotifiedActorRol === actor.rol) {
+    if (mData.unnotifiedEstadoPropuesta && propRolNormalizado === actorRolNormalizado) {
       mensajesAActualizarEstadoRefs.push({ ref: mDoc.ref, estado: mData.unnotifiedEstadoPropuesta });
     }
   });
@@ -524,10 +556,13 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
     const productosParaPedido = [];
     const indicesModificados = [];
 
+    // Procesar ítems con cambios de negociación pendientes de notificar
     for (let i = 0; i < productos.length; i++) {
       const p = productos[i];
       const neg = derivarNegociacion(p);
-      if (neg.sinNotificar && neg.ultimoCambio && neg.ultimoCambio.rol === actor.rol) {
+      const cambioRolNormalizado = (neg.ultimoCambio?.rol === 'comprador' || neg.ultimoCambio?.rol === 'compras') ? 'compras' : neg.ultimoCambio?.rol;
+
+      if (neg.sinNotificar && neg.ultimoCambio && cambioRolNormalizado === actorRolNormalizado) {
         neg.sinNotificar = false;
         if (neg.ultimoCambio.estadoPrevio) {
           delete neg.ultimoCambio.estadoPrevio;
@@ -555,6 +590,70 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
       }
     }
 
+    // Procesar ventas perdidas pendientes atómicamente
+    const indicesVentaPerdida = Object.keys(ventasPerdidasPendientes || {}).map(Number);
+    let ultimoMotivoVentaPerdida = null;
+    const ahoraTimestamp = new Date();
+    const vendedorUid = actor.uid || solicitud.vendedorId || 'vendedor';
+
+    for (const idx of indicesVentaPerdida) {
+      const p = productos[idx];
+      const staged = ventasPerdidasPendientes[idx];
+      if (!p || !staged) continue;
+
+      const cant = Number(p.cant || 1);
+      const fob = Number(p.fob || 0);
+      const subtotalItem = fob * cant;
+
+      const registroVP = {
+        solicitudId,
+        motivoCodigo: staged.motivo?.codigo || 'OTRO',
+        comentario: staged.comentario || '',
+        vendedorId: vendedorUid,
+        fecha: serverTimestamp(),
+        tipoSolicitud: solicitud.tipo || 'Pedido Manual',
+        correlativo: solicitud.correlativo || 'N/A',
+        cliente: solicitud.cliente || 'Desconocido',
+        montoAereo: Math.round(subtotalItem * 100) / 100,
+        montoMaritimo: Math.round(subtotalItem * 100) / 100,
+        itemsIds: [p?.id || p?.codigo || String(idx)],
+        motivoNombre: staged.motivo?.nombre || 'Venta Perdida',
+        categoriaMotivo: staged.motivo?.categoria || 'Otros'
+      };
+
+      const vpDocRef = doc(collection(db, 'ventasPerdidas'));
+      transaction.set(vpDocRef, registroVP);
+
+      const infoMotivo = {
+        codigo: staged.motivo?.codigo || 'OTRO',
+        nombre: staged.motivo?.nombre || 'Venta Perdida',
+        categoria: staged.motivo?.categoria || 'Otros',
+        comentario: staged.comentario || '',
+        fecha: Timestamp.fromDate(ahoraTimestamp),
+        registradoPor: actor.nombre || actor.email || ''
+      };
+
+      const negActual = derivarNegociacion(p);
+      productos[idx] = {
+        ...p,
+        estadoItem: 'Venta Perdida',
+        motivoEstadoItem: `Venta Perdida: ${staged.motivo?.nombre || ''}`,
+        motivoVentaPerdida: infoMotivo,
+        negociacion: {
+          ...negActual,
+          resultado: 'cancelado',
+          turno: null,
+          sinNotificar: false
+        }
+      };
+
+      ultimoMotivoVentaPerdida = infoMotivo;
+      if (!indicesModificados.includes(idx)) {
+        indicesModificados.push(idx);
+      }
+      itemsProcesados++;
+    }
+
     if (itemsProcesados === 0 && productosParaPedido.length === 0) return;
 
     if (productosParaPedido.length > 0) {
@@ -572,7 +671,17 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
       });
     }
 
-    const estadoCalculado = calcularEstadoGlobal(productos);
+    const noPedidosNiAnulados = productos.filter(
+      p => p.estadoItem !== 'Pedido' && p.estadoItem !== 'Comprado' && p.estadoItem !== 'Anulado'
+    );
+    const todosEnVentaPerdida = noPedidosNiAnulados.length > 0 && noPedidosNiAnulados.every(p => p.estadoItem === 'Venta Perdida');
+    const hayPedidos = productos.some(p => p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado');
+
+    let estadoCalculado = calcularEstadoGlobal(productos);
+    if (todosEnVentaPerdida && !hayPedidos) {
+      estadoCalculado = 'Venta Perdida';
+    }
+
     const updateData = {
       productos,
       estado: estadoCalculado,
@@ -584,10 +693,27 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
         en: Timestamp.now()
       }
     };
+    if (ultimoMotivoVentaPerdida) {
+      updateData.motivoVentaPerdida = ultimoMotivoVentaPerdida;
+    }
+    if (estadoCalculado === 'Denegado') {
+      const itemDenegado = productos.find(p => p.estadoItem === 'Denegado' && p.motivoDenegacion);
+      if (itemDenegado) {
+        updateData.motivoDenegacion = itemDenegado.motivoDenegacion;
+        updateData.fechaDenegacion = itemDenegado.fechaDenegacion || Timestamp.now();
+        updateData.denegadoPor = itemDenegado.denegadoPor || (actor?.nombre || 'Compras');
+      }
+      const itemRechazado = productos.find(p => (p.estadoItem === 'Cancelado' || p.estadoItem === 'Rechazado') && p.motivoRechazo);
+      if (itemRechazado && !itemDenegado) {
+        updateData.motivoRechazo = itemRechazado.motivoRechazo;
+        updateData.fechaRechazo = itemRechazado.fechaRechazo || Timestamp.now();
+        updateData.rechazadoPor = actor?.nombre || 'Vendedor';
+      }
+    }
     if (estadoCalculado === 'Pedido' || estadoCalculado === 'Pedido Parcial') {
       updateData.fechaPedido = serverTimestamp();
     }
-    if (actor.rol === 'compras' && comentarioGeneral) {
+    if (actorRolNormalizado === 'compras' && comentarioGeneral) {
       updateData.comentariosComprador = comentarioGeneral;
     }
 
@@ -606,7 +732,7 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
         pedido: solicitud,
         items: solicitud.productos,
         indicesModificados,
-        rol: actor.rol,
+        rol: actorRolNormalizado,
         comentarioGeneral
       });
       
@@ -616,7 +742,7 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
       
       let destinatarioTo, ccEmails, senderFrom, replyTo;
       
-      if (actor.rol === 'compras') {
+      if (actorRolNormalizado === 'compras') {
         destinatarioTo = isLocal ? ['rvides@hermaco.net'] : [vendedorEmail];
         ccEmails = isLocal ? [] : ['compras@hermaco.net'];
         senderFrom = 'Compras Hermaco <compras@hermaco.net>';
@@ -628,6 +754,12 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
         ccEmails = [];
       }
 
+      const asunto = actorRolNormalizado === 'compras' 
+        ? `Actualización Pedido Manual: ${solicitud.correlativo} - ${solicitud.cliente}`
+        : ((solicitud.estado === 'Pedido' || solicitud.estado === 'Pedido Parcial')
+          ? `Pedido Manual Confirmado: ${solicitud.correlativo} - ${solicitud.cliente}`
+          : `Actualización Pedido Manual: ${solicitud.correlativo} - ${solicitud.cliente}`);
+
       const res = await fetch('/.netlify/functions/send-email-notification', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -636,9 +768,7 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral }
           replyTo,
           to: destinatarioTo,
           cc: ccEmails,
-          subject: actor.rol === 'compras' 
-            ? `Actualización Pedido Manual: ${solicitud.correlativo} - ${solicitud.cliente}`
-            : `Nuevo Pedido Manual Confirmado: ${solicitud.correlativo} - ${solicitud.cliente}`,
+          subject: asunto,
           bodyHtml: htmlBody
         })
       });
@@ -673,11 +803,14 @@ export const reenviarCorreoPendiente = async ({ solicitudId, actor }) => {
   const { ultimaNotificacion } = solicitud;
   if (!ultimaNotificacion) throw new Error('No hay datos de última notificación');
   
+  const rolNotif = ultimaNotificacion.rol || actor.rol;
+  const rolNormalizado = (rolNotif === 'comprador' || rolNotif === 'compras') ? 'compras' : rolNotif;
+
   const htmlBody = await construirCorreoActualizacion({
     pedido: solicitud,
     items: solicitud.productos,
     indicesModificados: ultimaNotificacion.idxs || [],
-    rol: ultimaNotificacion.rol || actor.rol,
+    rol: rolNormalizado,
     comentarioGeneral: ultimaNotificacion.comentarioGeneral || ''
   });
   
@@ -687,7 +820,7 @@ export const reenviarCorreoPendiente = async ({ solicitudId, actor }) => {
   
   let destinatarioTo, ccEmails, senderFrom, replyTo;
   
-  if ((ultimaNotificacion.rol || actor.rol) === 'compras') {
+  if (rolNormalizado === 'compras') {
     destinatarioTo = isLocal ? ['rvides@hermaco.net'] : [vendedorEmail];
     ccEmails = isLocal ? [] : ['compras@hermaco.net'];
     senderFrom = 'Compras Hermaco <compras@hermaco.net>';
@@ -699,6 +832,12 @@ export const reenviarCorreoPendiente = async ({ solicitudId, actor }) => {
     ccEmails = [];
   }
 
+  const asunto = rolNormalizado === 'compras' 
+    ? `Actualización Pedido Manual: ${solicitud.correlativo} - ${solicitud.cliente}`
+    : ((solicitud.estado === 'Pedido' || solicitud.estado === 'Pedido Parcial')
+      ? `Pedido Manual Confirmado: ${solicitud.correlativo} - ${solicitud.cliente}`
+      : `Actualización Pedido Manual: ${solicitud.correlativo} - ${solicitud.cliente}`);
+
   const res = await fetch('/.netlify/functions/send-email-notification', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -707,9 +846,7 @@ export const reenviarCorreoPendiente = async ({ solicitudId, actor }) => {
       replyTo,
       to: destinatarioTo,
       cc: ccEmails,
-      subject: (ultimaNotificacion.rol || actor.rol) === 'compras' 
-        ? `Actualización Pedido Manual: ${solicitud.correlativo} - ${solicitud.cliente}`
-        : `Nuevo Pedido Manual Confirmado: ${solicitud.correlativo} - ${solicitud.cliente}`,
+      subject: asunto,
       bodyHtml: htmlBody
     })
   });

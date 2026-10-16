@@ -1,5 +1,5 @@
 const ESTADOS_PEDIDO = ['Pedido', 'Comprado'];
-const ESTADOS_DENEGADOS = ['Denegado', 'Rechazado', 'Cancelado'];
+const ESTADOS_DENEGADOS = ['Denegado', 'Rechazado', 'Cancelado', 'Venta Perdida'];
 
 export const RESULTADOS_SOLICITUD = {
   COMPLETO: 'completo',
@@ -9,10 +9,30 @@ export const RESULTADOS_SOLICITUD = {
   COTIZACION_COMPLETA_CON_ANULACIONES: 'cotizacion_completa_con_anulaciones',
   TOTALMENTE_ANULADO: 'totalmente_anulado',
   DENEGADO: 'denegado',
+  VENTA_PERDIDA: 'venta_perdida',
   EN_PROCESO: 'en_proceso'
 };
 
 export const clasificarSolicitud = (productos = [], estadoActual = 'Pendiente') => {
+  if (estadoActual === 'Venta Perdida') {
+    const lista = Array.isArray(productos) ? productos : [];
+    const anulados = lista.filter((p) => p?.estadoItem === 'Anulado');
+    const activos = lista.filter((p) => p?.estadoItem !== 'Anulado');
+    return {
+      estado: 'Venta Perdida',
+      resultado: RESULTADOS_SOLICITUD.VENTA_PERDIDA,
+      conteoItems: {
+        total: lista.length,
+        activos: activos.length,
+        pedidos: 0,
+        cotizados: 0,
+        pendientes: 0,
+        denegados: activos.length,
+        anulados: anulados.length
+      },
+      tieneAnulaciones: anulados.length > 0
+    };
+  }
   const lista = Array.isArray(productos) ? productos : [];
   const anulados = lista.filter((p) => p?.estadoItem === 'Anulado');
   const activos = lista.filter((p) => p?.estadoItem !== 'Anulado');
@@ -49,10 +69,11 @@ export const clasificarSolicitud = (productos = [], estadoActual = 'Pendiente') 
       ? RESULTADOS_SOLICITUD.PARCIAL_CON_ANULACIONES
       : RESULTADOS_SOLICITUD.PARCIAL;
   } else if (denegados.length === activos.length && activos.length > 0) {
-    estado = 'Denegado';
-    resultado = tieneAnulaciones
-      ? RESULTADOS_SOLICITUD.PARCIAL_CON_ANULACIONES
-      : RESULTADOS_SOLICITUD.DENEGADO;
+    const todosVentaPerdida = activos.every(p => p?.estadoItem === 'Venta Perdida');
+    estado = todosVentaPerdida ? 'Venta Perdida' : 'Denegado';
+    resultado = todosVentaPerdida 
+      ? RESULTADOS_SOLICITUD.VENTA_PERDIDA 
+      : (tieneAnulaciones ? RESULTADOS_SOLICITUD.PARCIAL_CON_ANULACIONES : RESULTADOS_SOLICITUD.DENEGADO);
   } else if (pendientes.length > 0) {
     estado = 'Pendiente';
     resultado = tieneAnulaciones
@@ -84,5 +105,6 @@ export const etiquetaResultadoSolicitud = (resultado) => ({
   [RESULTADOS_SOLICITUD.COTIZACION_COMPLETA_CON_ANULACIONES]: 'Cotización con anulaciones',
   [RESULTADOS_SOLICITUD.TOTALMENTE_ANULADO]: 'Totalmente anulado',
   [RESULTADOS_SOLICITUD.DENEGADO]: 'Denegado',
+  [RESULTADOS_SOLICITUD.VENTA_PERDIDA]: 'Venta perdida',
   [RESULTADOS_SOLICITUD.EN_PROCESO]: 'En proceso'
 }[resultado] || 'En proceso');

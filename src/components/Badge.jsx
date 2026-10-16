@@ -18,7 +18,8 @@ export const Badge = ({ estado, roleTheme, className = '' }) => {
       'Parcial': 'bg-blue-100 text-blue-700 border-blue-200',
       'Pedido Parcial': 'bg-sky-100 text-sky-800 border-sky-300',
       'Pedido': 'bg-indigo-100 text-indigo-800 border-indigo-300',
-      'Pendiente': 'bg-rose-100 text-rose-700 border-rose-200'
+      'Pendiente': 'bg-rose-100 text-rose-700 border-rose-200',
+      'Venta Perdida': 'bg-rose-50 text-rose-700 border-rose-200'
     };
     colorClass = styles[estado] || 'bg-slate-100 text-slate-600 border-slate-200';
   }

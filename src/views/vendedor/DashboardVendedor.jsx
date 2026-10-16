@@ -2,11 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/Badge';
 import { 
-  Calendar as CalendarIcon, Trash2, AlertTriangle, Filter, 
+  Calendar as CalendarIcon, Trash2, AlertTriangle, AlertOctagon, AlertCircle, Filter, 
   ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Hash, Package,
-  Inbox, Send
+  Inbox, Send, ArrowRight, MessageCircleQuestion
 } from 'lucide-react';
 import { MobileBadge } from '../../components/mobile';
+import { useCotizacionesEstancadas } from '../../hooks/useCotizacionesEstancadas';
 import { usePersistedState } from '../../hooks/usePersistedState';
 import { auth } from '../../firebase';
 import { normalizarBusqueda } from '../../utils/normalizers';
@@ -15,6 +16,10 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { generarPlantillaNuevaRFQ, generarPlantillaNuevoPedido } from '../../utils/emailTemplates';
 import { emailConfig } from '../../config/emailConfig';
 import { clasificarSolicitud, etiquetaResultadoSolicitud, RESULTADOS_SOLICITUD } from '../../utils/clasificarSolicitud';
+import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
+import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
+import { prepararDatosConsultaVentaPerdida, tieneVentaPerdidaSolicitud } from '../../utils/ventasPerdidasHelpers';
+import { tieneDecisionSolicitud, prepararDatosDecisionSolicitud } from '../../utils/decisionItemHelpers';
 
 // Fecha de corte: documentos creados ANTES de este deploy no pueden garantizar
 // el valor correcto de emailEnviado (pueden ser undefined o false por razones ajenas).
@@ -25,6 +30,7 @@ const FECHA_CORTE_EMAIL = new Date('2026-10-06T00:00:00-06:00');
 export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis Solicitudes', role }) => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
+  const { cotizacionesEstancadas, tieneBloqueo } = useCotizacionesEstancadas({ solicitudes, role });
 
   // Estados de filtros (persistidos en localStorage)
   const [ setFilterAccion] = usePersistedState('dv_filterAccion', '');
@@ -33,6 +39,17 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   const [filterVendedor, setFilterVendedor] = usePersistedState('dv_filterVendedor', '');
   const [searchTerm, setSearchTerm] = usePersistedState('dv_searchTerm', '');
   const [mostrarFiltrosMobile, setMostrarFiltrosMobile] = useState(false);
+
+  const [consultaVentaPerdidaData, setConsultaVentaPerdidaData] = useState(null);
+  const [consultaDecisionData, setConsultaDecisionData] = useState(null);
+
+  const abrirConsultaVentaPerdida = (solicitud) => {
+    setConsultaVentaPerdidaData(prepararDatosConsultaVentaPerdida({ solicitud }));
+  };
+
+  const abrirConsultaDecision = (solicitud) => {
+    setConsultaDecisionData(prepararDatosDecisionSolicitud(solicitud));
+  };
 
   // Estados de Rango de Fecha Popover
   const [fechaInicio, setFechaInicio] = useState(null);
@@ -295,6 +312,37 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           </div>
         )}
       </div>
+
+      {/* BANNER PREVENTIVO: Cotizaciones Estancadas */}
+      {tieneBloqueo && (
+        <div className="mb-5 p-3.5 sm:p-4 rounded-lg bg-amber-50/70 border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-start gap-2.5">
+            <div className="p-1.5 bg-amber-100 text-amber-800 rounded-sm shrink-0 mt-0.5">
+              <AlertCircle size={16} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-amber-950 uppercase tracking-tight text-xs">
+                  Creación bloqueada
+                </span>
+                <span className="px-1.5 py-0.2 rounded-xs bg-amber-200/60 text-amber-900 border border-amber-300 text-[10px] font-mono font-bold">
+                  {cotizacionesEstancadas.length} estancada(s)
+                </span>
+              </div>
+              <p className="text-amber-800 text-[11px] font-medium mt-0.5 leading-snug">
+                Tienes cotizaciones o pedidos parciales con ítems pendientes de seguimiento por más de 5 días hábiles. Debes atenderlos o cerrarlos para habilitar nuevas solicitudes.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/vendedor/nueva')}
+            className="shrink-0 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-[11px] font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+          >
+            <span>Atender</span>
+            <ArrowRight size={13} />
+          </button>
+        </div>
+      )}
 
       {/* BARRA DE FILTROS MÓVIL (visible en < md) */}
       <div className="md:hidden bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs mb-4 space-y-3">
@@ -611,8 +659,55 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <MobileBadge estado={s.estado} size="xs" className="shadow-xs" />
-                    {resultado !== 'En proceso' && (
-                      <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                    {s.estado === 'Venta Perdida' ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[9px] font-black uppercase tracking-wide text-rose-600">VENTA PERDIDA</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            abrirConsultaVentaPerdida(s);
+                          }}
+                          title="Ver motivo de venta perdida"
+                          className="p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                        >
+                          <MessageCircleQuestion size={13} />
+                        </button>
+                      </div>
+                    ) : (
+                      (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
+                        <div className="flex items-center gap-1">
+                          {resultado !== 'En proceso' && (
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                          )}
+                          {tieneDecisionSolicitud(s) && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                abrirConsultaDecision(s);
+                              }}
+                              title="Ver motivo de la decisión (anulación, rechazo o denegación)"
+                              className="p-0.5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+                            >
+                              <MessageCircleQuestion size={13} />
+                            </button>
+                          )}
+                          {s.estado !== 'Venta Perdida' && tieneVentaPerdidaSolicitud(s) && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                abrirConsultaVentaPerdida(s);
+                              }}
+                              title="Ver motivo de venta perdida"
+                              className="p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                            >
+                              <MessageCircleQuestion size={13} />
+                            </button>
+                          )}
+                        </div>
+                      )
                     )}
                   </div>
                 </div>
@@ -791,8 +886,55 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   <td className="p-4 text-center">
                     <div className="flex flex-col items-center gap-1">
                       <Badge estado={s.estado} />
-                      {resultado !== 'En proceso' && (
-                        <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                      {s.estado === 'Venta Perdida' ? (
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9px] font-black uppercase tracking-wide text-rose-600">VENTA PERDIDA</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              abrirConsultaVentaPerdida(s);
+                            }}
+                            title="Ver motivo de venta perdida"
+                            className="p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                          >
+                            <MessageCircleQuestion size={13} />
+                          </button>
+                        </div>
+                      ) : (
+                        (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
+                          <div className="flex items-center gap-1">
+                            {resultado !== 'En proceso' && (
+                              <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                            )}
+                            {tieneDecisionSolicitud(s) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  abrirConsultaDecision(s);
+                                }}
+                                title="Ver motivo de la decisión (anulación, rechazo o denegación)"
+                                className="p-0.5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+                              >
+                                <MessageCircleQuestion size={13} />
+                              </button>
+                            )}
+                            {s.estado !== 'Venta Perdida' && tieneVentaPerdidaSolicitud(s) && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  abrirConsultaVentaPerdida(s);
+                                }}
+                                title="Ver motivo de venta perdida"
+                                className="p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                              >
+                                <MessageCircleQuestion size={13} />
+                              </button>
+                            )}
+                          </div>
+                        )
                       )}
                     </div>
                   </td>
@@ -840,6 +982,20 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           </span>
         </div>
       )}
+
+      {/* Modal Consulta Venta Perdida (Comercial) */}
+      <ModalConsultaVentaPerdida
+        isOpen={consultaVentaPerdidaData !== null}
+        onClose={() => setConsultaVentaPerdidaData(null)}
+        data={consultaVentaPerdidaData}
+      />
+
+      {/* Modal Consulta Decisión (Anulaciones, Rechazos, Denegaciones) */}
+      <ModalConsultaDecisionItem
+        isOpen={consultaDecisionData !== null}
+        onClose={() => setConsultaDecisionData(null)}
+        data={consultaDecisionData}
+      />
     </div>
   );
 };
