@@ -87,29 +87,30 @@ export const ModalVentaPerdida = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-xl border border-slate-200 max-w-4xl w-full max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in duration-150">
         
         {/* Cabecera */}
-        <div className="bg-slate-900 px-5 sm:px-7 py-4 text-white flex items-center justify-between border-b border-slate-800">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="px-1.5 py-0.5 rounded-xs text-[10px] font-mono font-bold uppercase bg-slate-800 border border-slate-700 text-slate-300">
+        <div className="bg-slate-900 px-4 sm:px-6 py-3.5 sm:py-4 text-white flex items-center justify-between border-b border-slate-800 gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase bg-slate-800 border border-slate-700 text-slate-300">
                 {esPorItems ? `Cierre (${cantItems} ítem${cantItems > 1 ? 's' : ''})` : 'Cierre Total'}
               </span>
-              <h2 className="text-base sm:text-lg font-bold uppercase tracking-tight">
+              <h2 className="text-sm sm:text-base md:text-lg font-bold uppercase tracking-tight truncate">
                 Registrar Venta Perdida
               </h2>
             </div>
-            <p className="text-slate-400 text-xs mt-0.5 font-medium">
+            <p className="text-slate-400 text-[11px] sm:text-xs mt-0.5 font-medium truncate">
               Ref: <span className="font-mono text-slate-200 font-bold">{solicitud.correlativo || 'S/N'}</span> • {solicitud.cliente || 'Cliente no especificado'}
-              {esPorItems && <span className="text-amber-400 font-semibold ml-2">({cantItems} producto(s) seleccionado(s))</span>}
+              {esPorItems && <span className="text-amber-400 font-semibold ml-1.5">({cantItems} producto(s))</span>}
             </p>
           </div>
           <button
             onClick={onClose}
             disabled={guardando}
-            className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors cursor-pointer disabled:opacity-50"
+            aria-label="Cerrar modal"
+            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer disabled:opacity-50 shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
           >
             <X size={18} />
           </button>
@@ -153,7 +154,7 @@ export const ModalVentaPerdida = ({
                           <div
                             key={m.codigo}
                             onClick={() => handleSeleccionarMotivo(m)}
-                            className={`p-2.5 rounded-md border text-left cursor-pointer transition-all duration-200 flex items-start gap-2.5 ${
+                            className={`p-3 rounded-xl border text-left cursor-pointer transition-all duration-200 flex items-start gap-2.5 ${
                               esSeleccionado
                                 ? 'bg-slate-900 border-slate-900 text-white shadow-md scale-[1.01] -translate-y-0.5 z-10 ring-1 ring-slate-900'
                                 : hayOtroSeleccionado
@@ -212,7 +213,7 @@ export const ModalVentaPerdida = ({
                     value={comentario}
                     onChange={(e) => setComentario(e.target.value)}
                     placeholder={motivoSeleccionado.placeholderComentario || 'Explica detalladamente la causa de la pérdida (mínimo 15 caracteres)...'}
-                    className={`w-full text-xs font-medium p-3 rounded-md border bg-white transition-all shadow-xs focus:outline-none focus:ring-2 ${
+                    className={`w-full text-xs font-medium p-3 rounded-xl border bg-white transition-all shadow-xs focus:outline-none focus:ring-2 ${
                       longComentario > 0 && !esComentarioValido
                         ? 'border-amber-400 focus:ring-amber-500'
                         : 'border-slate-300 focus:ring-slate-900'
@@ -232,12 +233,12 @@ export const ModalVentaPerdida = ({
         </div>
 
         {/* Footer */}
-        <div className="p-3.5 sm:px-6 bg-white border-t border-slate-200 flex items-center justify-end gap-2.5">
+        <div className="p-3 sm:px-6 bg-white border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5">
           <button
             type="button"
             onClick={onClose}
             disabled={guardando}
-            className="px-3.5 py-2 rounded-md border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 text-center"
           >
             Cancelar
           </button>
@@ -245,7 +246,7 @@ export const ModalVentaPerdida = ({
             type="button"
             onClick={handleGuardar}
             disabled={!puedeGuardar}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 text-white disabled:text-slate-400 text-xs font-semibold uppercase tracking-wider transition-colors shadow-2xs cursor-pointer disabled:cursor-not-allowed"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 text-white disabled:text-slate-400 text-xs font-semibold uppercase tracking-wider transition-colors shadow-2xs cursor-pointer disabled:cursor-not-allowed"
           >
             {guardando ? (
               <>

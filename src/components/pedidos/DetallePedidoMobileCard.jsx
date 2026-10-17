@@ -137,23 +137,23 @@ export const DetallePedidoMobileCard = ({
         </div>
       </div>
 
-      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 mb-4">
-        <div className="flex items-center gap-4 text-sm font-medium text-slate-700">
-          <div className="flex-1 flex flex-col">
+      <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 sm:p-3 mb-4">
+        <div className="grid grid-cols-2 xs:grid-cols-4 gap-2 text-sm font-medium text-slate-700">
+          <div className="flex flex-col">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Cant</span>
             <span className="font-black text-slate-800">{p.cant}</span>
           </div>
-          <div className="flex-1 flex flex-col">
+          <div className="flex flex-col">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Precio</span>
-            <span className="font-bold">${Number(p.fob || 0).toFixed(2)}</span>
+            <span className="font-bold text-slate-800">${Number(p.fob || 0).toFixed(2)}</span>
           </div>
-          <div className="flex-1 flex flex-col">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Días de entrega</span>
-            <span className="font-bold">{tiempoEntrega || 'N/A'}</span>
+          <div className="flex flex-col">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Días entrega</span>
+            <span className="font-bold text-slate-800 truncate">{tiempoEntrega || 'N/A'}</span>
           </div>
-          <div className="flex-1 flex flex-col">
+          <div className="flex flex-col">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Vía</span>
-            <span className="font-bold">{p.modalidad || 'N/A'}</span>
+            <span className="font-bold text-slate-800 truncate">{p.modalidad || 'N/A'}</span>
           </div>
         </div>
       </div>
@@ -188,19 +188,19 @@ export const DetallePedidoMobileCard = ({
         <div className="flex flex-col gap-2.5 pt-2 border-t border-slate-100">
           {/* Bloque de Negociación Activa (cuando es turno del vendedor) */}
           {isMyTurn && puedeResponder && !esCerrado && !stagedVP && (
-            <div className="flex flex-col gap-2 bg-slate-50 border border-slate-200/80 p-2.5 rounded-lg shadow-2xs">
+            <div className="flex flex-col gap-2 bg-slate-50 border border-slate-200/80 p-2.5 rounded-xl shadow-2xs">
               <div className="grid grid-cols-2 gap-2">
                 <button 
                   type="button"
                   onClick={() => actions.aceptar(idx, versionEsperada)} 
-                  className="py-2.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-bold text-xs uppercase tracking-wide transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                  className="py-2.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs uppercase tracking-wide transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer min-h-[38px] active:scale-95"
                 >
                   <Check size={14} /> Aceptar ${Number(currentFob).toFixed(2)}
                 </button>
                 <button 
                   type="button"
                   onClick={() => setShowAdjustForm(true)} 
-                  className="py-2.5 px-2 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-md font-bold text-xs uppercase tracking-wide transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="py-2.5 px-2 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-xl font-bold text-xs uppercase tracking-wide transition-colors flex items-center justify-center gap-1.5 cursor-pointer min-h-[38px] active:scale-95"
                 >
                   <ArrowLeftRight size={14} /> Contraofertar
                 </button>
@@ -219,7 +219,7 @@ export const DetallePedidoMobileCard = ({
                       actions.rechazar(idx, versionEsperada, m.trim()); 
                     }
                   }} 
-                  className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 py-1 px-1.5 rounded-md hover:bg-slate-200/50 transition-colors cursor-pointer"
+                  className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 py-1 px-1.5 rounded-lg hover:bg-slate-200/50 transition-colors cursor-pointer"
                 >
                   <X size={13} className="text-slate-400" />
                   <span>Rechazar oferta de Compras</span>
@@ -229,12 +229,12 @@ export const DetallePedidoMobileCard = ({
           )}
 
           {/* Barra de Herramientas: Mensajes, Deshacer y Venta Perdida */}
-          <div className="flex items-center justify-between gap-2 pt-0.5">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
             <div className="flex items-center gap-2">
               <button 
                 type="button"
                 onClick={() => setHiloAbierto(hiloAbierto === idx ? null : idx)} 
-                className={`relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md font-bold text-[10px] uppercase transition-colors cursor-pointer ${hiloAbierto === idx ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                className={`relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase transition-colors cursor-pointer min-h-[34px] ${hiloAbierto === idx ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
               >
                 <MessageSquare size={13} className={msgCount === 0 ? 'opacity-50' : ''} />
                 <span>Mensajes</span>
@@ -260,7 +260,7 @@ export const DetallePedidoMobileCard = ({
               <button
                 type="button"
                 onClick={onVentaPerdida}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold text-[10px] uppercase tracking-wide transition-colors cursor-pointer shadow-xs ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wide transition-colors cursor-pointer shadow-xs min-h-[34px] active:scale-95 ${
                   esEstancado
                     ? 'bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300'
                     : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200'

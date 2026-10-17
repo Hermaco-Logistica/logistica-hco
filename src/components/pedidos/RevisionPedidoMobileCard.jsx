@@ -89,23 +89,23 @@ export const RevisionPedidoMobileCard = ({
         </div>
       </div>
 
-      <div className="bg-slate-50 border border-slate-100 rounded-xl p-3 mb-4">
-        <div className="flex items-center gap-4 text-sm font-medium text-slate-700">
-          <div className="flex-1 flex flex-col">
+      <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 sm:p-3 mb-4">
+        <div className="grid grid-cols-2 xs:grid-cols-4 gap-2 text-sm font-medium text-slate-700">
+          <div className="flex flex-col">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Cant</span>
             <span className="font-black text-slate-800">{p.cant}</span>
           </div>
-          <div className="flex-1 flex flex-col">
+          <div className="flex flex-col">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Precio</span>
-            <span className="font-bold">${Number(p.fob || 0).toFixed(2)}</span>
+            <span className="font-bold text-slate-800">${Number(p.fob || 0).toFixed(2)}</span>
           </div>
-          <div className="flex-1 flex flex-col">
-            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Días de entrega</span>
-            <span className="font-bold">{tiempoEntrega || 'N/A'}</span>
+          <div className="flex flex-col">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Días entrega</span>
+            <span className="font-bold text-slate-800 truncate">{tiempoEntrega || 'N/A'}</span>
           </div>
-          <div className="flex-1 flex flex-col">
+          <div className="flex flex-col">
             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Vía</span>
-            <span className="font-bold">{p.modalidad || 'N/A'}</span>
+            <span className="font-bold text-slate-800 truncate">{p.modalidad || 'N/A'}</span>
           </div>
         </div>
       </div>
@@ -138,19 +138,19 @@ export const RevisionPedidoMobileCard = ({
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => actions.aprobar(idx, versionEsperada)} 
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl font-black text-[10px] uppercase transition-colors shadow-sm"
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 rounded-xl font-black text-[10px] uppercase transition-colors shadow-sm min-h-[38px] cursor-pointer"
               >
                 <Check size={14} /> Aprobar
               </button>
               <button 
                 onClick={() => setShowAdjustForm(true)} 
-                className="flex-[0.8] flex items-center justify-center gap-1.5 px-3 py-2.5 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded-xl font-black text-[10px] uppercase transition-colors"
+                className="flex-[0.8] flex items-center justify-center gap-1.5 px-3 py-2.5 bg-amber-100 text-amber-700 hover:bg-amber-200 active:scale-95 rounded-xl font-black text-[10px] uppercase transition-colors min-h-[38px] cursor-pointer"
               >
                 <ArrowLeftRight size={14} /> Ajustar
               </button>
               <button 
                 onClick={() => onDenegar ? onDenegar(idx, versionEsperada) : null} 
-                className="w-10 flex items-center justify-center px-0 py-2.5 bg-slate-100 text-slate-400 hover:bg-rose-100 hover:text-rose-700 rounded-xl transition-colors"
+                className="w-10 flex items-center justify-center px-0 py-2.5 bg-slate-100 text-slate-400 hover:bg-rose-100 hover:text-rose-700 active:scale-95 rounded-xl transition-colors min-h-[38px] cursor-pointer"
                 title="Denegar"
               >
                 <X size={14} />

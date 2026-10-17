@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Send, AlertCircle, RefreshCw, X } from 'lucide-react';
+import { BottomActionBar } from '../../mobile/BottomActionBar';
 
 export const BarraNotificar = ({ 
   unnotifiedCount, 
@@ -19,21 +20,72 @@ export const BarraNotificar = ({
     onNotificar();
   };
 
+  const barContent = (
+    <div className={`p-3 sm:p-4 transition-all ${
+      notificacionPendienteEmail ? 'bg-amber-50' : 'bg-white'
+    }`}>
+      <div className="max-w-5xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
+        {notificacionPendienteEmail ? (
+          <>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-xs sm:text-sm font-bold text-amber-800 flex items-center gap-1.5 sm:gap-2 truncate">
+                <AlertCircle size={15} className="shrink-0" /> Correo pendiente
+              </span>
+              <span className="text-[11px] sm:text-xs text-amber-700 truncate">Hubo un problema al enviar la última notificación.</span>
+            </div>
+            <button
+              onClick={onReintentar}
+              disabled={isLoading}
+              className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black uppercase tracking-wider text-xs bg-amber-500 text-white hover:bg-amber-600 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-1.5 sm:gap-2 shrink-0 min-h-[48px] cursor-pointer shadow-sm"
+            >
+              <span>Reintentar</span>
+              <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-xs sm:text-sm font-bold text-slate-800 truncate">
+                Tienes {unnotifiedCount} cambio{unnotifiedCount !== 1 ? 's' : ''} sin enviar
+              </span>
+              <span className="text-[11px] sm:text-xs text-slate-500 hidden xs:block truncate">
+                {isVendedor ? 'Compras' : 'El vendedor'} no verá los cambios hasta que los notifiques.
+              </span>
+            </div>
+            <button
+              onClick={() => setShowSheet(true)}
+              disabled={isLoading}
+              className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black uppercase tracking-wider text-xs sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-sm shrink-0 min-h-[48px] cursor-pointer"
+            >
+              <span className="hidden sm:inline">
+                {isVendedor ? 'Confirmar y notificar a Compras' : 'Notificar al vendedor'}
+              </span>
+              <span className="sm:hidden">
+                Notificar ({unnotifiedCount})
+              </span>
+              <Send size={15} className={isLoading ? 'animate-pulse' : ''} />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <>
       {showSheet && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 shadow-2xl">
-            <div className="p-6">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[70] flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-2xl sm:rounded-3xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 shadow-2xl">
+            <div className="p-5 sm:p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-black text-slate-800 uppercase tracking-tight">Confirmar Notificación</h3>
-                <button onClick={() => setShowSheet(false)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors">
-                  <X size={20} />
+                <h3 className="text-base sm:text-lg font-black text-slate-800 uppercase tracking-tight">Confirmar Notificación</h3>
+                <button onClick={() => setShowSheet(false)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-full transition-colors cursor-pointer">
+                  <X size={18} />
                 </button>
               </div>
               
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-6">
-                <p className="text-sm font-bold text-slate-700 text-center flex flex-wrap justify-center gap-2">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3.5 sm:p-4 mb-5 sm:mb-6">
+                <p className="text-xs sm:text-sm font-bold text-slate-700 text-center flex flex-wrap justify-center gap-1.5 sm:gap-2">
                   <span className="text-emerald-600">{resumenAcciones?.aprobados || 0} aprobados</span> &bull; 
                   <span className="text-amber-600">{resumenAcciones?.ajustes || 0} {isVendedor ? 'contraofertas' : 'ajustes'}</span> &bull; 
                   <span className="text-rose-600">{resumenAcciones?.denegados || 0} {isVendedor ? 'rechazados' : 'denegados'}</span>
@@ -41,24 +93,25 @@ export const BarraNotificar = ({
                     <> &bull; <span className="text-rose-700 font-black">{resumenAcciones.ventasPerdidas} vta. perdida</span></>
                   )}
                 </p>
-                <p className="text-xs text-slate-500 text-center mt-3 font-medium">
+                <p className="text-[11px] sm:text-xs text-slate-500 text-center mt-2.5 font-medium">
                   Los ítems que sigan en tu turno se mantendrán pendientes de tu acción.
                 </p>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-2.5 sm:gap-3">
                 <button 
                   onClick={() => setShowSheet(false)}
-                  className="flex-1 py-3 px-4 rounded-xl font-bold text-sm text-slate-600 hover:bg-slate-100 transition-colors"
+                  className="flex-1 py-3 px-3 sm:px-4 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer min-h-[48px]"
                 >
                   Cancelar
                 </button>
                 <button 
                   onClick={handleConfirm}
                   disabled={isLoading}
-                  className="flex-1 py-3 px-4 rounded-xl font-black uppercase tracking-wider text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-md"
+                  className="flex-1 py-3 px-3 sm:px-4 rounded-xl font-black uppercase tracking-wider text-xs sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1.5 sm:gap-2 shadow-md cursor-pointer active:scale-95 min-h-[48px]"
                 >
-                  Enviar <Send size={16} className={isLoading ? 'animate-pulse' : ''} />
+                  <span>Enviar</span>
+                  <Send size={15} className={isLoading ? 'animate-pulse' : ''} />
                 </button>
               </div>
             </div>
@@ -66,47 +119,21 @@ export const BarraNotificar = ({
         </div>
       )}
 
-      <div className={`fixed bottom-[calc(3.75rem+max(0.5rem,env(safe-area-inset-bottom,0.5rem)))] md:bottom-0 left-0 md:left-72 right-0 p-3 sm:p-4 border-t shadow-[0_-4px_20px_rgba(0,0,0,0.1)] z-50 transition-all ${
-        notificacionPendienteEmail ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-200'
+      {/* Móvil (< md): Registrado en el dock inferior único con hideNav */}
+      <div className="md:hidden">
+        <BottomActionBar hideNav={true}>
+          {barContent}
+        </BottomActionBar>
+      </div>
+
+      {/* Escritorio (>= md): Pegado al fondo de <main> como sticky sin márgenes hardcodeados */}
+      <div className={`hidden md:block sticky bottom-0 z-30 border-t shadow-lg ${
+        notificacionPendienteEmail ? 'bg-amber-50 border-amber-200' : 'bg-white/95 backdrop-blur-md border-slate-200'
       }`}>
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          {notificacionPendienteEmail ? (
-            <>
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-amber-800 flex items-center gap-2">
-                  <AlertCircle size={16} /> Correo pendiente
-                </span>
-                <span className="text-xs text-amber-700">Hubo un problema al enviar la última notificación.</span>
-              </div>
-              <button
-                onClick={onReintentar}
-                disabled={isLoading}
-                className="px-6 py-2.5 rounded-xl font-black uppercase tracking-wider text-xs bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 transition-colors flex items-center gap-2"
-              >
-                Reintentar <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="flex flex-col">
-                <span className="text-sm font-bold text-slate-800">
-                  Tienes {unnotifiedCount} cambio{unnotifiedCount !== 1 ? 's' : ''} sin enviar
-                </span>
-                <span className="text-xs text-slate-500">
-                  {isVendedor ? 'Compras' : 'El vendedor'} no verá los cambios hasta que los notifiques.
-                </span>
-              </div>
-              <button
-                onClick={() => setShowSheet(true)}
-                disabled={isLoading}
-                className="px-6 py-2.5 rounded-xl font-black uppercase tracking-wider text-xs bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center gap-2 shadow-sm"
-              >
-                {isVendedor ? 'Confirmar y notificar a Compras' : 'Notificar al vendedor'} <Send size={16} className={isLoading ? 'animate-pulse' : ''} />
-              </button>
-            </>
-          )}
-        </div>
+        {barContent}
       </div>
     </>
   );
 };
+
+export default BarraNotificar;

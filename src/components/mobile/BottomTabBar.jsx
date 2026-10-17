@@ -71,7 +71,7 @@ export const generateBarPath = (W, H, R, cx, nw, nd) => {
   ].join(' ');
 };
 
-export const BottomTabBar = ({ role, onOpenDrawer, hidden = false }) => {
+export const BottomTabBar = ({ role, onOpenDrawer, hidden = false, isInsideDock = false }) => {
   const location = useLocation();
   const navRef = useRef(null);
   const [barWidth, setBarWidth] = useState(0);
@@ -121,6 +121,7 @@ export const BottomTabBar = ({ role, onOpenDrawer, hidden = false }) => {
 
   useEffect(() => {
     if (!navRef.current) return;
+    if (typeof ResizeObserver === 'undefined') return;
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         if (entry.contentRect.width > 0) {
@@ -219,7 +220,9 @@ export const BottomTabBar = ({ role, onOpenDrawer, hidden = false }) => {
   useEffect(() => {
     if (targetCx <= 0) return;
 
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const prefersReduced = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      : false;
 
     if (isFirstRenderRef.current || animatedCx === null || prefersReduced) {
       setAnimatedCx(targetCx);
@@ -270,11 +273,15 @@ export const BottomTabBar = ({ role, onOpenDrawer, hidden = false }) => {
   return (
     <nav
       style={{
-        paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0.75rem))',
+        paddingBottom: isInsideDock ? '0px' : 'max(0.75rem, env(safe-area-inset-bottom, 0.75rem))',
         transform: isActuallyHidden ? 'translateY(calc(100% + 40px))' : 'translateY(0)'
       }}
       {...(isActuallyHidden ? { inert: '' } : {})}
-      className="fixed bottom-0 inset-x-3 sm:inset-x-6 z-40 md:hidden overflow-visible pointer-events-none select-none transition-transform duration-300 ease-out motion-reduce:transition-none"
+      className={
+        isInsideDock
+          ? "relative inset-x-0 mx-3 sm:mx-6 overflow-visible pointer-events-none select-none transition-transform duration-300 ease-out motion-reduce:transition-none"
+          : "fixed bottom-0 inset-x-3 sm:inset-x-6 z-40 md:hidden overflow-visible pointer-events-none select-none transition-transform duration-300 ease-out motion-reduce:transition-none"
+      }
       aria-label="Navegación principal"
     >
       <div 

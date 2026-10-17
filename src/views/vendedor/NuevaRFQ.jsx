@@ -535,7 +535,7 @@ export const NuevaRFQ = ({ role }) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto animate-in slide-in-from-bottom-4 duration-500 pb-52 md:pb-12">
+    <div className="@container max-w-4xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic">NUEVA SOLICITUD</h1>

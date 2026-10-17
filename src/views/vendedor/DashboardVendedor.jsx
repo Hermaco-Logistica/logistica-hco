@@ -658,10 +658,9 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <MobileBadge estado={s.estado} size="xs" className="shadow-xs" />
-                    {s.estado === 'Venta Perdida' ? (
-                      <div className="flex items-center gap-1">
-                        <span className="text-[9px] font-black uppercase tracking-wide text-rose-600">VENTA PERDIDA</span>
+                    <div className="flex items-center gap-1">
+                      <MobileBadge estado={s.estado} size="xs" className="shadow-xs" />
+                      {s.estado === 'Venta Perdida' && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -673,10 +672,10 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                         >
                           <MessageCircleQuestion size={13} />
                         </button>
-                      </div>
-                    ) : (
-                      (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
-                        <div className="flex items-center gap-1">
+                      )}
+                    </div>
+                    {s.estado !== 'Venta Perdida' && (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
+                      <div className="flex items-center gap-1">
                           {resultado !== 'En proceso' && (
                             <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
                           )}
@@ -707,7 +706,6 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                             </button>
                           )}
                         </div>
-                      )
                     )}
                   </div>
                 </div>
@@ -885,10 +883,9 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   </td>
                   <td className="p-4 text-center">
                     <div className="flex flex-col items-center gap-1">
-                      <Badge estado={s.estado} />
-                      {s.estado === 'Venta Perdida' ? (
-                        <div className="flex items-center gap-1">
-                          <span className="text-[9px] font-black uppercase tracking-wide text-rose-600">VENTA PERDIDA</span>
+                      <div className="flex items-center gap-1">
+                        <Badge estado={s.estado} />
+                        {s.estado === 'Venta Perdida' && (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -900,9 +897,9 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                           >
                             <MessageCircleQuestion size={13} />
                           </button>
-                        </div>
-                      ) : (
-                        (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
+                        )}
+                      </div>
+                      {s.estado !== 'Venta Perdida' && (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
                           <div className="flex items-center gap-1">
                             {resultado !== 'En proceso' && (
                               <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
@@ -934,7 +931,6 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                               </button>
                             )}
                           </div>
-                        )
                       )}
                     </div>
                   </td>

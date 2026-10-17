@@ -6,7 +6,7 @@ import {
   ChevronDown, ChevronUp, ChevronRight, Package, DollarSign, Hash, ClipboardCheck, 
   Activity, Calendar, Clock, Truck, Trash2, Filter
 } from 'lucide-react';
-import { MobileListCard, MobileBadge } from '../../components/mobile';
+import { MobileListCard, MobileBadge, BottomActionBar } from '../../components/mobile';
 import { TrackingModal } from '../../components/TrackingModal';
 import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/trackingStatusService';
 import {
@@ -1553,14 +1553,19 @@ export const DashboardPedidos = ({ role }) => {
       )}
       {/* FAB y Modal Asignador para Mobile */}
       {role === 'comprador' && seleccionados.length > 0 && (
-        <div className="md:hidden fixed bottom-24 left-0 right-0 z-50 px-4 flex justify-center animate-in slide-in-from-bottom-5 pointer-events-none">
-          <button
-            onClick={() => setShowAsignador(true)}
-            className="pointer-events-auto bg-emerald-500 text-white rounded-full px-6 py-3.5 shadow-2xl shadow-emerald-500/30 flex items-center gap-3 font-black text-xs uppercase tracking-widest active:scale-95 transition-transform"
-          >
-            <LinkIcon size={18} />
-            Vincular Selección ({seleccionados.length})
-          </button>
+        <div className="md:hidden">
+          <BottomActionBar hideNav={false}>
+            <div className="p-2 sm:p-3 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setShowAsignador(true)}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full px-6 py-3 shadow-xl shadow-emerald-500/25 flex items-center gap-3 font-black text-xs uppercase tracking-widest active:scale-95 transition-transform min-h-[48px] cursor-pointer"
+              >
+                <LinkIcon size={18} />
+                Vincular Selección ({seleccionados.length})
+              </button>
+            </div>
+          </BottomActionBar>
         </div>
       )}
 

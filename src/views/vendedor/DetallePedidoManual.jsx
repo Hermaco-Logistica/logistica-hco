@@ -151,7 +151,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-[50vh] py-24 items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-4 border-slate-200 border-t-purple-500 rounded-full animate-spin"></div>
           <p className="text-slate-400 font-bold text-sm tracking-widest uppercase">Cargando detalles...</p>
@@ -311,7 +311,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-36 fade-in">
+    <div className="@container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
       {/* Encabezado Superior */}
       <div className="flex flex-row items-center justify-between gap-4 mb-4 md:mb-8">
         <div className="flex items-center gap-2 md:gap-4">

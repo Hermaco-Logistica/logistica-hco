@@ -29,7 +29,11 @@ export const Sidebar = ({
   onCloseMobile = () => {}
 }) => {
   const location = useLocation();
-  const [collapsed, setCollapsed] = usePersistedState('sidebar_collapsed', false);
+  const [collapsed, setCollapsed] = usePersistedState('sidebar_collapsed', () => {
+    if (typeof window === 'undefined') return false;
+    const w = window.innerWidth;
+    return w >= 1024 && w < 1280;
+  });
 
   const roleTheme = {
     comprador: {

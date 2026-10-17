@@ -228,3 +228,130 @@ export function prepararDatosConsultaVentaPerdida({ solicitud, item = null, stag
     items: [normalizarItemVentaPerdida({ item: null, solicitud, fallbackIndex: 0, currentUserEmail })]
   };
 }
+
+/**
+ * Formatea la etiqueta de referencia de un ítem para mostrar en documentos y PDFs.
+ * Ejemplo: "Ítem 1 (P550388)" o "Ítem 2 (Filtro aceite)" o "Ítem 3".
+ *
+ * @param {number} idx - Índice 0-based del ítem en la lista de productos.
+ * @param {Object} [producto] - Datos del producto/ítem.
+ * @returns {string} Etiqueta formateada.
+ */
+export function formatearEtiquetaItem(idx, producto) {
+  const num = idx + 1;
+  const rawCode = (producto?.codigo || producto?.sku || '').toString().trim();
+  const rawDesc = (producto?.descripcion || producto?.desc || producto?.producto || '').toString().trim();
+  const ref = rawCode || rawDesc;
+
+  if (ref && ref !== String(num)) {
+    const shortRef = ref.length > 25 ? `${ref.slice(0, 22)}...` : ref;
+    return `Ítem ${num} (${shortRef})`;
+  }
+  return `Ítem ${num}`;
+}
+
+/**
+ * Extrae y formatea el texto limpio de un motivo de venta perdida (Nombre del motivo + comentario si existe).
+ *
+ * @param {Object} item - Ítem individual o null si es a nivel de solicitud.
+ * @param {Object} solicitud - Documento de la solicitud.
+ * @param {number} [fallbackIndex=0] - Índice por defecto.
+ * @returns {string} Texto completo del motivo.
+ */
+export function obtenerTextoMotivoVentaPerdida(item, solicitud, fallbackIndex = 0) {
+  if (!item && !solicitud) return 'Venta perdida registrada por el vendedor';
+
+  const norm = normalizarItemVentaPerdida({
+    item,
+    solicitud,
+    fallbackIndex
+  });
+
+  const nombre = (norm?.motivoNombre || '').trim();
+  const comentario = (norm?.comentario || '').trim();
+
+  if (nombre && comentario && !nombre.toLowerCase().includes(comentario.toLowerCase())) {
+    return `${nombre} - ${comentario}`;
+  }
+  return nombre || comentario || 'Venta perdida registrada por el vendedor';
+}
+
+/**
+ * Construye las líneas finales para la sección "Motivo de venta perdida:" en PDFs y vistas de cotización.
+ *
+ * Reglas de negocio:
+ * 1. Si un motivo abarca TODOS los ítems de la solicitud, se muestra tal cual (sin prefijo de ítem).
+ * 2. Si un motivo aplica a un subconjunto de ítems (p. ej. 1 ítem específico, o 2 ítems que comparten motivo):
+ *    - Si es 1 solo ítem: "Ítem X (REF): [Motivo]"
+ *    - Si son 2 o más ítems: "Ítem X (REF), Ítem Y (REF): [Motivo]"
+ * 3. Aplica incluso cuando los otros ítems de la solicitud estén en otros estados (Cotizado, Pedido, Ganado, Anulado, etc.).
+ *
+ * @param {Object} cotizacionData - Datos de la solicitud/cotización.
+ * @returns {Array<string>} Lista de líneas de texto a renderizar.
+ */
+export function obtenerLineasMotivoVentaPerdida(cotizacionData) {
+  if (!cotizacionData) return [];
+
+  const productos = Array.isArray(cotizacionData.productos)
+    ? cotizacionData.productos
+    : (Array.isArray(cotizacionData.items) ? cotizacionData.items : []);
+
+  const totalProductos = productos.length;
+
+  // Filtrar productos marcados con Venta Perdida (conservando su índice original 0-based en la solicitud)
+  const itemsVentaPerdida = [];
+  productos.forEach((p, idx) => {
+    if (p?.estadoItem === 'Venta Perdida') {
+      itemsVentaPerdida.push({ idx, producto: p });
+    }
+  });
+
+  // Si no hay ítems individuales marcados con Venta Perdida:
+  // pero la solicitud entera está en 'Venta Perdida' o tiene motivoVentaPerdida global
+  if (itemsVentaPerdida.length === 0) {
+    if (cotizacionData.estado === 'Venta Perdida' || cotizacionData.motivoVentaPerdida) {
+      const textoGlobal = obtenerTextoMotivoVentaPerdida(null, cotizacionData, 0);
+      return [textoGlobal];
+    }
+    return [];
+  }
+
+  // Agrupar los ítems de venta perdida por su texto de motivo
+  const gruposMap = new Map(); // textoMotivo -> Array<{ idx, producto }>
+
+  itemsVentaPerdida.forEach(({ idx, producto }) => {
+    const texto = obtenerTextoMotivoVentaPerdida(producto, cotizacionData, idx);
+    if (!gruposMap.has(texto)) {
+      gruposMap.set(texto, []);
+    }
+    gruposMap.get(texto).push({ idx, producto });
+  });
+
+  const lineas = [];
+
+  gruposMap.forEach((itemsDelMotivo, textoMotivo) => {
+    // Si este motivo abarca todos los ítems de la solicitud completa, dejar igual (sin prefijo de ítem)
+    const abarcaTodos = totalProductos > 0 && itemsDelMotivo.length === totalProductos;
+
+    if (abarcaTodos) {
+      lineas.push(textoMotivo);
+    } else {
+      let prefijo = '';
+      if (itemsDelMotivo.length === 1) {
+        prefijo = formatearEtiquetaItem(itemsDelMotivo[0].idx, itemsDelMotivo[0].producto);
+      } else if (itemsDelMotivo.length === 2) {
+        const tag1 = formatearEtiquetaItem(itemsDelMotivo[0].idx, itemsDelMotivo[0].producto);
+        const tag2 = formatearEtiquetaItem(itemsDelMotivo[1].idx, itemsDelMotivo[1].producto);
+        prefijo = `${tag1}, ${tag2}`;
+      } else if (itemsDelMotivo.length === 3) {
+        const tags = itemsDelMotivo.map(it => formatearEtiquetaItem(it.idx, it.producto));
+        prefijo = tags.join(', ');
+      } else {
+        prefijo = `Ítems ${itemsDelMotivo.map(it => it.idx + 1).join(', ')}`;
+      }
+      lineas.push(`${prefijo}: ${textoMotivo}`);
+    }
+  });
+
+  return lineas;
+}

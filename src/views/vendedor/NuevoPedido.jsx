@@ -558,7 +558,7 @@ export const NuevoPedido = ({ role }) => {
   }
 
   return (
-    <div className="w-full max-w-[1700px] mx-auto px-3 sm:px-4 md:px-6 lg:px-10 animate-in slide-in-from-bottom-4 duration-500 pb-52 md:pb-12">
+    <div className="@container w-full max-w-[1700px] mx-auto px-3 sm:px-4 md:px-6 lg:px-10 animate-in slide-in-from-bottom-4 duration-500">
       <div className="flex justify-between items-center mb-8">
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tighter italic">NUEVO PEDIDO MANUAL</h1>

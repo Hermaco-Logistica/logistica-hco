@@ -5,7 +5,8 @@ import { onAuthStateChanged, signOut, signInWithPopup } from 'firebase/auth';
 import { collection, query, onSnapshot, where, limit, doc, updateDoc, getDoc, setDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
 import { emailConfig } from './config/emailConfig';
 import { Menu, Lightbulb } from 'lucide-react';
-import { BottomTabBar } from './components/mobile';
+import { BottomDock } from './components/mobile';
+import { BottomDockProvider } from './context/BottomDockContext';
 import { useHideOnScroll } from './hooks/useHideOnScroll';
 
 // Componentes y Vistas
@@ -341,6 +342,7 @@ function App() {
     <ToastProvider>
       <GlobalAlertModal />
       <Router>
+        <BottomDockProvider>
       {!user ? (
         <Routes>
           <Route path="/login" element={<Login loginFn={() => signInWithPopup(auth, provider)} />} />
@@ -392,7 +394,13 @@ function App() {
             mobileOpen={mobileDrawerOpen}
             onCloseMobile={() => setMobileDrawerOpen(false)}
           />
-          <main ref={setMainEl} className="flex-1 overflow-y-auto p-3.5 sm:p-5 md:p-6 lg:p-8 pb-[calc(110px+env(safe-area-inset-bottom,0px))] md:pb-8 w-full min-w-0">
+          <main
+            ref={setMainEl}
+            style={{
+              paddingBottom: 'calc(var(--bottom-dock-h, 0px) + 16px)'
+            }}
+            className="flex-1 min-h-0 min-w-0 md:h-full overflow-y-auto overscroll-y-contain p-3.5 sm:p-5 md:p-6 lg:p-8 md:pb-8 w-full @container"
+          >
             <Routes>
               {isComprador ? (
                 <>
@@ -477,14 +485,15 @@ function App() {
               )}
             </Routes>
           </main>
-          {/* BARRA DE NAVEGACIÓN INFERIOR FIJA (MÓVIL < md) */}
-          <BottomTabBar 
+          {/* DOCK INFERIOR ÚNICO (MÓVIL < md) */}
+          <BottomDock 
             role={role} 
             onOpenDrawer={() => setMobileDrawerOpen(true)}
             hidden={isMainHidden}
           />
         </div>
       )}
+        </BottomDockProvider>
       </Router>
     </ToastProvider>
   );

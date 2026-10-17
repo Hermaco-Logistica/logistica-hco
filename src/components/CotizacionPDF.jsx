@@ -1,5 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { obtenerLineasMotivoVentaPerdida } from '../utils/ventasPerdidasHelpers';
 
 const styles = StyleSheet.create({
   page: {
@@ -251,14 +252,9 @@ export default function CotizacionPDF({ cotizacionData }) {
       .map(item => item.motivoAnulacion.toString().trim())
       .filter(Boolean)
   )];
-  const motivosVentaPerdida = [...new Set(
-    (cotizacionData.estado === 'Venta Perdida' && cotizacionData.motivoVentaPerdida ? [cotizacionData.motivoVentaPerdida] : [])
-      .concat(productosVentaPerdida.map(item => item?.motivoVentaPerdida?.motivo || item?.motivoVentaPerdida).filter(Boolean))
-      .map(m => typeof m === 'object' ? `${m.motivo || ''}${m.observaciones ? ` - ${m.observaciones}` : ''}` : String(m).trim())
-      .filter(Boolean)
-  )];
+  const lineasVentaPerdida = obtenerLineasMotivoVentaPerdida(cotizacionData);
   const hayAnulacion = todoAnulado || productosAnulados.length > 0;
-  const hayVentaPerdida = esVentaPerdidaTotal || productosVentaPerdida.length > 0;
+  const hayVentaPerdida = esVentaPerdidaTotal || productosVentaPerdida.length > 0 || lineasVentaPerdida.length > 0;
 
   return (
     <Document>
@@ -400,9 +396,9 @@ export default function CotizacionPDF({ cotizacionData }) {
         {hayVentaPerdida && (
           <View style={styles.motivoAnulacion}>
             <Text style={[styles.motivoAnulacionLabel, { color: '#be123c' }]}>Motivo de venta perdida:</Text>
-            {motivosVentaPerdida.length > 0 ? (
-              motivosVentaPerdida.map((motivo, index) => (
-                <Text key={index} style={{ color: '#222222' }}>{motivo}</Text>
+            {lineasVentaPerdida.length > 0 ? (
+              lineasVentaPerdida.map((linea, index) => (
+                <Text key={index} style={{ color: '#222222' }}>{linea}</Text>
               ))
             ) : (
               <Text style={{ color: '#222222' }}>Venta perdida registrada por el vendedor</Text>

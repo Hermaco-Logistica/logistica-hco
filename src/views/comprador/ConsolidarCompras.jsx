@@ -199,7 +199,7 @@ export const ConsolidarCompras = () => {
     }
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center font-bold text-slate-400 animate-pulse uppercase tracking-[0.3em]">Cargando Consolidación...</div>;
+  if (loading) return <div className="min-h-[50vh] py-24 flex items-center justify-center font-bold text-slate-400 animate-pulse uppercase tracking-[0.3em]">Cargando Consolidación...</div>;
 
   return (
     <div className="max-w-7xl mx-auto animate-in fade-in duration-500 pb-20">

@@ -21,6 +21,19 @@ import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/
 import { prepararDatosConsultaVentaPerdida, tieneVentaPerdidaSolicitud } from '../../utils/ventasPerdidasHelpers';
 import { tieneDecisionSolicitud, prepararDatosDecisionSolicitud } from '../../utils/decisionItemHelpers';
 
+export const esSolicitudDenegada = (solicitud) => {
+  if (!solicitud) return false;
+  if (solicitud.estado === 'Denegado' || solicitud.estado === 'Rechazado') return true;
+  if (solicitud.resultado === RESULTADOS_SOLICITUD?.DENEGADO || solicitud.resultado === 'denegado') return true;
+  if (Array.isArray(solicitud.productos) && solicitud.productos.length > 0) {
+    const activos = solicitud.productos.filter(p => p.estadoItem !== 'Anulado' && p.estadoItem !== 'Venta Perdida');
+    if (activos.length > 0 && activos.every(p => ['Denegado', 'Rechazado', 'Cancelado'].includes(p.estadoItem))) {
+      return true;
+    }
+  }
+  return false;
+};
+
 export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const navigate = useNavigate();
   const [solicitudVista, setSolicitudVista] = useState(null);
@@ -48,6 +61,11 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
   const handleAnularSolicitudGlobal = async () => {
     if (!modalAnulacionGlobal.motivo.trim()) return alert("El motivo es obligatorio");
+    if (modalAnulacionGlobal.rfqData && esSolicitudDenegada(modalAnulacionGlobal.rfqData)) {
+      alert("No se puede anular una solicitud que ya ha sido denegada.");
+      setModalAnulacionGlobal({ open: false, rfqId: null, rfqData: null, motivo: '', enviando: false });
+      return;
+    }
     setModalAnulacionGlobal(prev => ({ ...prev, enviando: true }));
     try {
       const docRef = doc(db, 'solicitudes', modalAnulacionGlobal.rfqId);
@@ -190,6 +208,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
 
     if (estado === 'Anulado') return 'Ver Anulada';
     if (estado === 'Venta Perdida') return 'Ver Venta Perdida';
+    if (estado === 'Denegado' || estado === 'Rechazado' || esSolicitudDenegada(solicitud)) return 'Ver Denegada';
     if (estado === 'Pedido') {
       return tienePendientes ? 'Cotizar Restante' : 'Ver Cotización';
     }
@@ -204,7 +223,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
     const estado = solicitud.estado;
     const tienePendientes = tieneItemsPendientesPorCotizar(solicitud);
 
-    if (estado === 'Anulado') {
+    if (estado === 'Anulado' || estado === 'Denegado' || estado === 'Rechazado' || esSolicitudDenegada(solicitud)) {
       return 'bg-slate-100 text-slate-400 border-slate-200 hover:bg-slate-200 cursor-default';
     }
     if (estado === 'Venta Perdida') {
@@ -703,6 +722,8 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
               fechaResp = s.productos?.find(p => p.fechaAnulacion)?.fechaAnulacion || fechaResp;
             } else if (s.estado === 'Venta Perdida') {
               fechaResp = s.fechaVentaPerdida || s.productos?.find(p => p.fechaVentaPerdida)?.fechaVentaPerdida || fechaResp;
+            } else if (s.estado === 'Denegado' || esSolicitudDenegada(s)) {
+              fechaResp = s.fechaDenegacion || s.productos?.find(p => p.fechaDenegacion)?.fechaDenegacion || fechaResp;
             }
             const esPedidoManualTerminado = s.tipo === 'Pedido Manual' && s.productos && s.productos.length > 0 && s.productos.every(p => ['Pedido', 'Comprado', 'Denegado', 'Cancelado', 'Rechazado'].includes(p.estadoItem));
 
@@ -730,10 +751,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                     </span>
                   </div>
                   <div className="flex flex-col items-end gap-1">
-                    <MobileBadge estado={s.estado} size="xs" className="shadow-xs" />
-                    {s.estado === 'Venta Perdida' ? (
-                      <div className="flex items-center gap-1">
-                        <span className="text-[9px] font-black uppercase tracking-wide text-rose-600">VENTA PERDIDA</span>
+                    <div className="flex items-center gap-1">
+                      <MobileBadge estado={s.estado} size="xs" className="shadow-xs" />
+                      {s.estado === 'Venta Perdida' && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -745,10 +765,10 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                         >
                           <MessageCircleQuestion size={13} />
                         </button>
-                      </div>
-                    ) : (
-                      (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
-                        <div className="flex items-center gap-1">
+                      )}
+                    </div>
+                    {s.estado !== 'Venta Perdida' && (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
+                      <div className="flex items-center gap-1">
                           {resultado !== 'En proceso' && (
                             <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
                           )}
@@ -779,7 +799,6 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                             </button>
                           )}
                         </div>
-                      )
                     )}
                   </div>
                 </div>
@@ -865,12 +884,12 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                             className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border ${
                               s.estado === 'Venta Perdida'
                                 ? 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300'
-                                : esPedidoManualTerminado
+                                : (esPedidoManualTerminado || esSolicitudDenegada(s))
                                 ? 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300'
                                 : 'bg-blue-600 hover:bg-blue-700 text-white border-transparent'
                             }`}
                           >
-                            {s.estado === 'Venta Perdida' ? 'Ver Venta Perdida' : (esPedidoManualTerminado ? 'Ver Pedido' : 'Revisar Pedido')}
+                            {s.estado === 'Venta Perdida' ? 'Ver Venta Perdida' : (esPedidoManualTerminado || esSolicitudDenegada(s) ? 'Ver Pedido' : 'Revisar Pedido')}
                           </button>
                         </>
                       )
@@ -916,7 +935,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                       </>
                     ) : (
                       <>
-                        {(s.estado === 'Anulado' || s.estado === 'Venta Perdida') && (
+                        {(s.estado === 'Anulado' || s.estado === 'Venta Perdida' || s.estado === 'Denegado' || esSolicitudDenegada(s)) && (
                           <button
                             type="button"
                             onClick={() => abrirVistaCotizacion(s)}
@@ -947,7 +966,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                         </button>
                       </>
                     )}
-                    {!readOnly && s.estado !== 'Pedido' && s.estado !== 'Pedido Parcial' && s.estado !== 'Anulado' && s.estado !== 'Venta Perdida' && (
+                    {!readOnly && s.estado !== 'Pedido' && s.estado !== 'Pedido Parcial' && s.estado !== 'Anulado' && s.estado !== 'Venta Perdida' && !esSolicitudDenegada(s) && (
                       <button
                         type="button"
                         onClick={() => setModalAnulacionGlobal({ open: true, rfqId: s.id, rfqData: s, motivo: '', enviando: false })}
@@ -986,13 +1005,15 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
               const totalA = formatearTotal(s, 'A');
               const totalM = formatearTotal(s, 'M');
 
-              let fechaResp = s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en 
-                  ? s.ultimaNotificacion.en 
-                  : (s.fechaCotizacion || s.fechaRespuesta);
+                let fechaResp = s.tipo === 'Pedido Manual' && s.ultimaNotificacion?.en 
+                    ? s.ultimaNotificacion.en 
+                    : (s.fechaCotizacion || s.fechaRespuesta);
                 if (s.estado === 'Anulado') {
                   fechaResp = s.productos?.find(p => p.fechaAnulacion)?.fechaAnulacion || fechaResp;
                 } else if (s.estado === 'Venta Perdida') {
                   fechaResp = s.fechaVentaPerdida || s.productos?.find(p => p.fechaVentaPerdida)?.fechaVentaPerdida || fechaResp;
+                } else if (s.estado === 'Denegado' || esSolicitudDenegada(s)) {
+                  fechaResp = s.fechaDenegacion || s.productos?.find(p => p.fechaDenegacion)?.fechaDenegacion || fechaResp;
                 }
                 
                 const esPedidoManualTerminado = s.tipo === 'Pedido Manual' && s.productos && s.productos.length > 0 && s.productos.every(p => ['Pedido', 'Comprado', 'Denegado', 'Cancelado', 'Rechazado'].includes(p.estadoItem));
@@ -1036,10 +1057,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   </td>
                   <td className="p-4 text-center">
                     <div className="flex flex-col items-center gap-1">
-                      <Badge estado={s.estado} />
-                      {s.estado === 'Venta Perdida' ? (
-                        <div className="flex items-center gap-1">
-                          <span className="text-[9px] font-black uppercase tracking-wide text-rose-600">VENTA PERDIDA</span>
+                      <div className="flex items-center gap-1">
+                        <Badge estado={s.estado} />
+                        {s.estado === 'Venta Perdida' && (
                           <button
                             type="button"
                             onClick={(e) => {
@@ -1051,9 +1071,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                           >
                             <MessageCircleQuestion size={13} />
                           </button>
-                        </div>
-                      ) : (
-                        (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
+                        )}
+                      </div>
+                      {s.estado !== 'Venta Perdida' && (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
                           <div className="flex items-center gap-1">
                             {resultado !== 'En proceso' && (
                               <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
@@ -1085,7 +1105,6 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                               </button>
                             )}
                           </div>
-                        )
                       )}
                     </div>
                   </td>
@@ -1113,12 +1132,12 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                               className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm border ${
                                 s.estado === 'Venta Perdida'
                                   ? 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300'
-                                  : esPedidoManualTerminado
+                                  : (esPedidoManualTerminado || esSolicitudDenegada(s))
                                   ? 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300'
                                   : 'bg-blue-600 hover:bg-blue-700 text-white border-transparent'
                               }`}
                             >
-                              {s.estado === 'Venta Perdida' ? 'Ver Venta Perdida' : (esPedidoManualTerminado ? 'Ver Pedido' : 'Revisar Pedido')}
+                              {s.estado === 'Venta Perdida' ? 'Ver Venta Perdida' : (esPedidoManualTerminado || esSolicitudDenegada(s) ? 'Ver Pedido' : 'Revisar Pedido')}
                             </button>
                           </>
                         )
@@ -1164,7 +1183,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                         </>
                       ) : (
                         <>
-                          {(s.estado === 'Anulado' || s.estado === 'Venta Perdida') && (
+                          {(s.estado === 'Anulado' || s.estado === 'Venta Perdida' || s.estado === 'Denegado' || esSolicitudDenegada(s)) && (
                             <button
                               type="button"
                               onClick={() => abrirVistaCotizacion(s)}
@@ -1195,7 +1214,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                           </button>
                         </>
                       )}
-                      {!readOnly && s.estado !== 'Pedido' && s.estado !== 'Pedido Parcial' && s.estado !== 'Anulado' && s.estado !== 'Venta Perdida' && (
+                      {!readOnly && s.estado !== 'Pedido' && s.estado !== 'Pedido Parcial' && s.estado !== 'Anulado' && s.estado !== 'Venta Perdida' && !esSolicitudDenegada(s) && (
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setModalAnulacionGlobal({ open: true, rfqId: s.id, rfqData: s, motivo: '', enviando: false }); }}
@@ -1291,3 +1310,5 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
     </div>
   );
 };
+
+export default DashboardCompras;

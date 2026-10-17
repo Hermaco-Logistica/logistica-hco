@@ -698,7 +698,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   };
 
   if (loading) return (
-    <div className="h-full flex items-center justify-center font-black text-slate-400 animate-pulse uppercase tracking-widest">
+    <div className="min-h-[50vh] py-24 flex items-center justify-center font-black text-slate-400 animate-pulse uppercase tracking-widest">
       Cargando Detalle de Cotización...
     </div>
   );
@@ -717,7 +717,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   }, 0) || 0;
 
   return (
-    <div className="max-w-7xl mx-auto animate-in fade-in duration-500 pb-52 md:pb-20">
+    <div className="@container max-w-7xl mx-auto animate-in fade-in duration-500">
       {/* Modal Anulación */}
       {modalAnulacion.open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
@@ -1225,7 +1225,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
       </div>
 
       {/* Vista Escritorio (>= md): Tabla tradicional */}
-      <div className="hidden md:block bg-white rounded-4xl shadow-2xl border border-slate-200 overflow-hidden mb-8">
+      <div className="hidden md:block bg-white rounded-3xl lg:rounded-4xl shadow-xl border border-slate-200 overflow-hidden mb-10 lg:mb-12">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -1536,8 +1536,8 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
-        <div className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm sm:shadow-xl overflow-hidden transition-all duration-300 self-start">
+      <div className="grid grid-cols-1 @2xl:grid-cols-2 gap-6 lg:gap-8">
+        <div className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm sm:shadow-xl overflow-hidden transition-all duration-300 self-start w-full">
           <button 
             type="button" 
             onClick={() => setDocumentacionOpen(!documentacionOpen)}
@@ -1613,7 +1613,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
           </div>
         </div>
         
-        <div className={`bg-white p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm sm:shadow-xl flex-col justify-between ${puedeConfirmarPedido ? 'hidden md:flex' : 'flex'} self-start`}>
+        <div className={`bg-white p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm sm:shadow-xl flex-col justify-between ${puedeConfirmarPedido ? 'hidden md:flex' : 'flex'} self-start w-full`}>
           <div className="flex-1">
             {/* Header del Resumen */}
             <div className="flex justify-between items-center mb-6">
@@ -1698,16 +1698,16 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
               </div>
             )}
           </div>
-          <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="mt-8 flex flex-col sm:flex-row items-stretch gap-3 w-full">
             {debeMostrarBotonVentaPerdida && (
               <button
                 type="button"
                 onClick={() => handleAbrirVentaPerdida()}
                 disabled={enviandoPedido}
-                className="w-full sm:w-auto px-6 py-4 sm:py-5 rounded-2xl border-2 border-rose-300 bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-sm hover:shadow transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                className="w-full sm:w-auto px-5 sm:px-6 py-4 rounded-2xl border-2 border-rose-300 bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-sm hover:shadow transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0 min-h-[48px]"
               >
                 <TrendingDown size={18} className="text-rose-600 shrink-0" />
-                <span>
+                <span className="truncate">
                   {totalItemsSeleccionados > 0
                     ? `Venta Perdida (${totalItemsSeleccionados})`
                     : 'Registrar Venta Perdida'}
@@ -1718,27 +1718,29 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
             <button 
               onClick={handleCrearPedido}
               disabled={enviandoPedido || !puedeConfirmarOEnviar}
-              className={`flex-1 py-4 sm:py-5 rounded-2xl font-black uppercase tracking-[0.2em] shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+              className={`w-full sm:flex-1 py-4 px-5 sm:px-6 rounded-2xl font-black uppercase tracking-wider shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[48px] text-xs sm:text-sm ${
                 totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
                   ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-900/20'
                   : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-900/20'
               }`}
             >
               {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0 ? (
-                <TrendingDown size={20} />
+                <TrendingDown size={18} className="shrink-0" />
               ) : (
-                <ShoppingCart size={20} />
+                <ShoppingCart size={18} className="shrink-0" />
               )}
-              {puedeConfirmarOEnviar
-                ? (enviandoPedido
-                    ? (mensajePedido || 'PROCESANDO...')
-                    : totalItemsSeleccionados > 0 && totalVentasPerdidasPendientes > 0
-                      ? `CONFIRMAR (${totalItemsSeleccionados} PEDIDO · ${totalVentasPerdidasPendientes} VTA. PERDIDA)`
-                      : totalVentasPerdidasPendientes > 0
-                        ? `ENVIAR VENTAS PERDIDAS (${totalVentasPerdidasPendientes})`
-                        : 'CONFIRMAR Y ENVIAR PEDIDO'
-                  )
-                : (pedidoYaCreado ? 'PEDIDO YA GENERADO' : 'SOLO VISUALIZACION')}
+              <span className="truncate">
+                {puedeConfirmarOEnviar
+                  ? (enviandoPedido
+                      ? (mensajePedido || 'PROCESANDO...')
+                      : totalItemsSeleccionados > 0 && totalVentasPerdidasPendientes > 0
+                        ? `CONFIRMAR (${totalItemsSeleccionados} PEDIDO · ${totalVentasPerdidasPendientes} VTA. PERDIDA)`
+                        : totalVentasPerdidasPendientes > 0
+                          ? `ENVIAR VENTAS PERDIDAS (${totalVentasPerdidasPendientes})`
+                          : 'CONFIRMAR Y ENVIAR PEDIDO'
+                    )
+                  : (pedidoYaCreado ? 'PEDIDO YA GENERADO' : 'SOLO VISUALIZACION')}
+              </span>
             </button>
           </div>
         </div>
@@ -1762,20 +1764,25 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
               </div>
             }
             primaryAction={
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {debeMostrarBotonVentaPerdida && (
                   <button
                     type="button"
                     onClick={() => handleAbrirVentaPerdida()}
                     disabled={enviandoPedido}
-                    className="border-2 border-rose-300 bg-rose-50 active:bg-rose-100 text-rose-700 px-3 py-3 rounded-xl flex items-center justify-center gap-1.5 active:scale-95 shadow-xs font-black text-xs whitespace-nowrap cursor-pointer disabled:opacity-50"
+                    className="border border-rose-300 bg-rose-50 active:bg-rose-100 text-rose-700 px-2.5 py-2.5 sm:px-3 sm:py-3 rounded-xl flex items-center justify-center gap-1 active:scale-95 shadow-xs font-black text-xs whitespace-nowrap cursor-pointer disabled:opacity-50 shrink-0 min-h-[48px]"
                     title={totalItemsSeleccionados > 0 ? `Registrar Venta Perdida (${totalItemsSeleccionados} sel.)` : "Registrar Venta Perdida"}
                   >
                     <TrendingDown size={15} className="text-rose-600 shrink-0" />
-                    <span>
+                    <span className="hidden xs:inline">
                       {totalItemsSeleccionados > 0
                         ? `Vta. Perdida (${totalItemsSeleccionados})`
                         : 'Vta. Perdida'}
+                    </span>
+                    <span className="xs:hidden">
+                      {totalItemsSeleccionados > 0
+                        ? `Perdida (${totalItemsSeleccionados})`
+                        : 'Perdida'}
                     </span>
                   </button>
                 )}
@@ -1783,7 +1790,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
                   type="button"
                   onClick={handleCrearPedido}
                   disabled={enviandoPedido || !puedeConfirmarOEnviar}
-                  className={`active:scale-95 text-white px-4 py-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-md disabled:opacity-50 whitespace-nowrap ${
+                  className={`active:scale-95 text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 shadow-md disabled:opacity-50 whitespace-nowrap min-h-[48px] ${
                     totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
                       ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/20'
                       : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20'

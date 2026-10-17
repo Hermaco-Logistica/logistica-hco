@@ -10,6 +10,7 @@ import { useDHLCalculator } from '../../hooks/useDHLCalculator';
 import { AlertCircle } from 'lucide-react';
 import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
 import { prepararDatosConsultaVentaPerdida } from '../../utils/ventasPerdidasHelpers';
+import { BottomActionBar } from '../../components/mobile/BottomActionBar';
 
 const injectStyles = () => {
   if (typeof document !== 'undefined' && !document.getElementById('anim-cant-styles')) {
@@ -472,13 +473,13 @@ export const Calculadora = ({ onGuardar }) => {
   };
 
   if (loading) return (
-    <div className="h-full flex items-center justify-center font-black text-slate-400 animate-pulse uppercase tracking-widest">
+    <div className="min-h-[50vh] py-24 flex items-center justify-center font-black text-slate-400 animate-pulse uppercase tracking-widest">
       Cargando Calculadora de Márgenes...
     </div>
   );
 
   return (
-    <div className="max-w-[99%] mx-auto animate-in fade-in duration-500 pb-52 md:pb-28">
+    <div className="@container max-w-[99%] mx-auto animate-in fade-in duration-500">
 
       {modalAnulacion.open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4">
@@ -1809,40 +1810,38 @@ export const Calculadora = ({ onGuardar }) => {
         </div>
       </div>
 
-      {/* ACCIONES INFERIORES RESPONSIVAS */}
-      <div 
-        className="fixed inset-x-0 bottom-[calc(3.75rem+max(0.5rem,env(safe-area-inset-bottom,0.5rem)))] md:bottom-0 bg-white/95 backdrop-blur-md p-2.5 sm:p-3 md:p-4 border-t border-slate-200 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2.5 sm:gap-3 z-30 shadow-[0_-6px_20px_rgba(0,0,0,0.08)] md:pb-[max(0.75rem,env(safe-area-inset-bottom,0.75rem))]"
-      >
-        <div className="flex items-center gap-2 min-w-0">
-          {tienePendientesGlobales && (
-            <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 text-[10px] font-black uppercase truncate">
-              <Info className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span className="truncate">Ítems sin precio: Se guardará COTIZACIÓN PARCIAL.</span>
+      {/* ACCIONES INFERIORES RESPONSIVAS (Móvil vía BottomDock, Escritorio vía sticky en flujo) */}
+      {(() => {
+        const totals = items.reduce((acc, p) => {
+          if (!p.selected || p.estadoItem === 'Anulado') return acc;
+          const currentFob = Number(p.fob || 0);
+          const fA = p.factorA || factorA;
+          const landedA = currentFob * fA;
+          const ventaA = landedA * Number(p.fva || 1.30);
+          
+          const landedM = currentFob * (p.factorM || factorM);
+          const ventaM = landedM * Number(p.fvm || 1.25);
+          
+          acc.aereo += ventaA * Number(p.cant || 0);
+          acc.maritimo += ventaM * Number(p.cant || 0);
+          return acc;
+        }, { aereo: 0, maritimo: 0 });
+
+        const tAconIva = totals.aereo * 1.13;
+        const tMconIva = totals.maritimo * 1.13;
+
+        const barContent = (
+          <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2.5 sm:gap-3 max-w-7xl mx-auto p-2.5 sm:p-3 md:p-0">
+            <div className="flex items-center gap-2 min-w-0">
+              {tienePendientesGlobales && (
+                <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 text-[10px] font-black uppercase truncate">
+                  <Info className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <span className="truncate">Ítems sin precio: Se guardará COTIZACIÓN PARCIAL.</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-6">
-          {(() => {
-            const totals = items.reduce((acc, p) => {
-              if (!p.selected || p.estadoItem === 'Anulado') return acc;
-              const currentFob = Number(p.fob || 0);
-              const fA = p.factorA || factorA;
-              const landedA = currentFob * fA;
-              const ventaA = landedA * Number(p.fva || 1.30);
-              
-              const landedM = currentFob * (p.factorM || factorM);
-              const ventaM = landedM * Number(p.fvm || 1.25);
-              
-              acc.aereo += ventaA * Number(p.cant || 0);
-              acc.maritimo += ventaM * Number(p.cant || 0);
-              return acc;
-            }, { aereo: 0, maritimo: 0 });
-
-            const tAconIva = totals.aereo * 1.13;
-            const tMconIva = totals.maritimo * 1.13;
-
-            return (
+            <div className="flex items-center justify-between md:justify-end gap-3 sm:gap-6">
               <div className="flex gap-3 sm:gap-4 border-r border-slate-200 pr-3 sm:pr-6 text-xs font-bold uppercase text-slate-500">
                 <div className="text-right">
                   <span className="block text-[8px] font-black text-slate-400">Aéreo (+IVA)</span>
@@ -1853,31 +1852,44 @@ export const Calculadora = ({ onGuardar }) => {
                   <span className="text-xs sm:text-sm font-black text-teal-600">${tMconIva.toFixed(2)}</span>
                 </div>
               </div>
-            );
-          })()}
 
-          {esSoloLectura ? (
-            <button 
-              onClick={() => navigate('/compras')} 
-              className="bg-slate-900 hover:bg-slate-700 text-white px-6 sm:px-10 py-2.5 sm:py-3 rounded-xl font-black transition-all text-xs uppercase tracking-wider shadow-lg shrink-0"
-            >
-              {rfq?.tipo === 'Pedido Manual' ? 'Ver Pedido' : 'Ver RFQ'}
-            </button>
-          ) : (
-            <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => navigate('/compras')} className="hidden sm:inline text-slate-400 hover:text-slate-600 font-bold transition-colors text-xs px-2">Descartar</button>
-              <button 
-                onClick={ejecutarGuardado}
-                className={`${
-                  tienePendientesGlobales ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-900 hover:bg-emerald-600'
-                } text-white px-4 sm:px-8 py-2.5 sm:py-3 rounded-xl font-black transition-all flex flex-col items-center justify-center leading-none shadow-lg text-xs uppercase tracking-wide shrink-0`}
-              >
-                <span>{tienePendientesGlobales ? 'Guardar Parcial' : 'Finalizar y Enviar'}</span>
-              </button>
+              {esSoloLectura ? (
+                <button 
+                  onClick={() => navigate('/compras')} 
+                  className="bg-slate-900 hover:bg-slate-700 text-white px-6 sm:px-10 py-2.5 sm:py-3 rounded-xl font-black transition-all text-xs uppercase tracking-wider shadow-lg shrink-0 min-h-[48px] cursor-pointer"
+                >
+                  {rfq?.tipo === 'Pedido Manual' ? 'Ver Pedido' : 'Ver RFQ'}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 shrink-0">
+                  <button onClick={() => navigate('/compras')} className="hidden sm:inline text-slate-400 hover:text-slate-600 font-bold transition-colors text-xs px-2 min-h-[48px] cursor-pointer">Descartar</button>
+                  <button 
+                    onClick={ejecutarGuardado}
+                    className={`${
+                      tienePendientesGlobales ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-900 hover:bg-emerald-600'
+                    } text-white px-4 sm:px-8 py-2.5 sm:py-3 rounded-xl font-black transition-all flex flex-col items-center justify-center leading-none shadow-lg text-xs uppercase tracking-wide shrink-0 min-h-[48px] cursor-pointer`}
+                  >
+                    <span>{tienePendientesGlobales ? 'Guardar Parcial' : 'Finalizar y Enviar'}</span>
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        );
+
+        return (
+          <>
+            <div className="md:hidden">
+              <BottomActionBar hideNav={true}>
+                {barContent}
+              </BottomActionBar>
+            </div>
+            <div className="hidden md:block sticky bottom-0 z-30 bg-white/95 backdrop-blur-md p-3 md:p-4 border-t border-slate-200 shadow-[0_-6px_20px_rgba(0,0,0,0.08)]">
+              {barContent}
+            </div>
+          </>
+        );
+      })()}
 
       {/* Mobile Bottom Sheet: Gastos Adicionales Aéreos */}
       {modalGastosMobile && (

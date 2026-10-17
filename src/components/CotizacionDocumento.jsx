@@ -1,4 +1,5 @@
 import React from 'react';
+import { obtenerLineasMotivoVentaPerdida } from '../utils/ventasPerdidasHelpers';
 
 export default function CotizacionDocumento({ cotizacionData }) {
   if (!cotizacionData) return null;
@@ -119,14 +120,9 @@ export default function CotizacionDocumento({ cotizacionData }) {
       .map(item => item.motivoAnulacion.toString().trim())
       .filter(Boolean)
   )];
-  const motivosVentaPerdida = [...new Set(
-    (cotizacionData.estado === 'Venta Perdida' && cotizacionData.motivoVentaPerdida ? [cotizacionData.motivoVentaPerdida] : [])
-      .concat(productosVentaPerdida.map(item => item?.motivoVentaPerdida?.motivo || item?.motivoVentaPerdida).filter(Boolean))
-      .map(m => typeof m === 'object' ? `${m.motivo || ''}${m.observaciones ? ` - ${m.observaciones}` : ''}` : String(m).trim())
-      .filter(Boolean)
-  )];
+  const lineasVentaPerdida = obtenerLineasMotivoVentaPerdida(cotizacionData);
   const hayAnulacion = todoAnulado || productosAnulados.length > 0;
-  const hayVentaPerdida = esVentaPerdidaTotal || productosVentaPerdida.length > 0;
+  const hayVentaPerdida = esVentaPerdidaTotal || productosVentaPerdida.length > 0 || lineasVentaPerdida.length > 0;
 
   return (
     <div className="w-full overflow-x-auto">
@@ -381,9 +377,9 @@ export default function CotizacionDocumento({ cotizacionData }) {
           color: '#222222'
         }}>
           <div style={{ fontWeight: 'bold', marginBottom: '3px', color: '#be123c' }}>Motivo de venta perdida:</div>
-          {motivosVentaPerdida.length > 0 ? (
-            motivosVentaPerdida.map((motivo, index) => (
-              <div key={index}>{motivo}</div>
+          {lineasVentaPerdida.length > 0 ? (
+            lineasVentaPerdida.map((linea, index) => (
+              <div key={index}>{linea}</div>
             ))
           ) : (
             <div>Venta perdida registrada por el vendedor</div>

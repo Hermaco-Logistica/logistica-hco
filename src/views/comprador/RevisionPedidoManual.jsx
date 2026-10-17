@@ -212,7 +212,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50">
+      <div className="flex min-h-[50vh] py-24 items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-4 border-slate-200 border-t-purple-500 rounded-full animate-spin"></div>
           <p className="text-slate-400 font-bold text-sm tracking-widest uppercase">Cargando detalles...</p>
@@ -237,7 +237,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
   const allClosed = itemsServer.length > 0 && itemsServer.every(p => esItemCerrado(p) && !p.negociacion?.sinNotificar);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mb-36 fade-in">
+    <div className="@container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
       {/* Modal Anulación */}
       {modalAnulacion.open && (
         <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
@@ -271,28 +271,30 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
 
       {/* Modal Denegar */}
       {modalDenegar.open && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
-            <h3 className="text-lg font-black text-slate-800 mb-2">Denegar Ítem</h3>
-            <p className="text-sm text-slate-500 mb-4">Ingresa el motivo de la denegación para notificar al vendedor.</p>
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-5 sm:p-6 animate-in zoom-in-95 duration-150">
+            <h3 className="text-base sm:text-lg font-black text-slate-800 mb-1.5 uppercase tracking-tight">Denegar Ítem</h3>
+            <p className="text-xs sm:text-sm text-slate-500 mb-3.5">Ingresa el motivo de la denegación para notificar al vendedor.</p>
             <textarea
-              className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all resize-none text-sm font-medium h-24 mb-4"
+              className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all resize-none text-xs sm:text-sm font-medium h-24 mb-4 outline-none"
               placeholder="Motivo de la denegación (obligatorio)..."
               value={modalDenegar.motivo}
               onChange={e => setModalDenegar(prev => ({ ...prev, motivo: e.target.value }))}
               autoFocus
             />
-            <div className="flex gap-3">
+            <div className="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-3">
               <button 
+                type="button"
                 onClick={() => setModalDenegar({ open: false, index: null, versionEsperada: null, motivo: '' })}
-                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
+                className="w-full sm:w-auto sm:flex-1 py-2.5 sm:py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-xs sm:text-sm cursor-pointer text-center"
               >
                 Cancelar
               </button>
               <button 
+                type="button"
                 onClick={handleConfirmarDenegar}
                 disabled={!modalDenegar.motivo.trim()}
-                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
+                className="w-full sm:w-auto sm:flex-1 py-2.5 sm:py-3 bg-rose-600 hover:bg-rose-700 active:scale-95 disabled:opacity-50 text-white font-bold rounded-xl transition-all text-xs sm:text-sm cursor-pointer text-center shadow-xs"
               >
                 Confirmar Denegación
               </button>
