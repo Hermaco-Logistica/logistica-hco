@@ -169,12 +169,12 @@ const styles = StyleSheet.create({
     left: '5%',
     width: '90%',
     textAlign: 'center',
-    fontSize: 86,
+    fontSize: 52,
     fontWeight: 'bold',
     color: '#dc2626',
     opacity: 0.12,
     transform: 'rotate(-30deg)',
-    letterSpacing: 4,
+    letterSpacing: 2,
   }
 });
 

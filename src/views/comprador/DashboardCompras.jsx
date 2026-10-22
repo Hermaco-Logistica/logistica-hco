@@ -50,6 +50,14 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const [modalAnulacionGlobal, setModalAnulacionGlobal] = useState({ open: false, rfqId: null, rfqData: null, motivo: '', enviando: false });
   const [consultaVentaPerdidaData, setConsultaVentaPerdidaData] = useState(null);
   const [consultaDecisionData, setConsultaDecisionData] = useState(null);
+  const [consultaAnimacionTick, setConsultaAnimacionTick] = useState(0);
+
+  useEffect(() => {
+    const intervalo = window.setInterval(() => {
+      setConsultaAnimacionTick(prev => prev + 1);
+    }, 5000);
+    return () => window.clearInterval(intervalo);
+  }, []);
 
   const abrirConsultaVentaPerdida = (solicitud) => {
     setConsultaVentaPerdidaData(prepararDatosConsultaVentaPerdida({ solicitud }));
@@ -726,6 +734,11 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
               fechaResp = s.fechaDenegacion || s.productos?.find(p => p.fechaDenegacion)?.fechaDenegacion || fechaResp;
             }
             const esPedidoManualTerminado = s.tipo === 'Pedido Manual' && s.productos && s.productos.length > 0 && s.productos.every(p => ['Pedido', 'Comprado', 'Denegado', 'Cancelado', 'Rechazado'].includes(p.estadoItem));
+            const hayMotivoDecision = tieneDecisionSolicitud(s);
+            const hayMotivoVentaPerdida = s.estado === 'Venta Perdida' || tieneVentaPerdidaSolicitud(s);
+            const indiceConsultaAnimada = hayMotivoDecision && hayMotivoVentaPerdida
+              ? consultaAnimacionTick % 2
+              : 0;
 
             return (
               <div
@@ -761,7 +774,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                             abrirConsultaVentaPerdida(s);
                           }}
                           title="Ver motivo de venta perdida"
-                          className="p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                          className="hidden md:inline-flex p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
                         >
                           <MessageCircleQuestion size={13} />
                         </button>
@@ -780,7 +793,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                                 abrirConsultaDecision(s);
                               }}
                               title="Ver motivo de la decisión (anulación, rechazo o denegación)"
-                              className="p-0.5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+                              className="hidden md:inline-flex p-0.5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
                             >
                               <MessageCircleQuestion size={13} />
                             </button>
@@ -793,7 +806,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                                 abrirConsultaVentaPerdida(s);
                               }}
                               title="Ver motivo de venta perdida"
-                              className="p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                              className="hidden md:inline-flex p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
                             >
                               <MessageCircleQuestion size={13} />
                             </button>
@@ -978,6 +991,37 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                     )}
                   </div>
                 </div>
+                {(s.estado === 'Venta Perdida' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
+                  <div
+                    className="mt-3 flex items-center justify-end gap-2 border-t border-slate-100 pt-3 md:hidden"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {hayMotivoDecision && (
+                      <button
+                        key={`decision-${consultaAnimacionTick}`}
+                        type="button"
+                        onClick={() => abrirConsultaDecision(s)}
+                        aria-label="Consultar motivo de anulación, rechazo o denegación"
+                        title="Consultar motivo de anulación, rechazo o denegación"
+                        className={`flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-600 shadow-sm transition-transform active:scale-95 ${indiceConsultaAnimada === 0 ? 'animate-consulta-motivo' : ''}`}
+                      >
+                        <MessageCircleQuestion size={17} />
+                      </button>
+                    )}
+                    {hayMotivoVentaPerdida && (
+                      <button
+                        key={`venta-perdida-${consultaAnimacionTick}`}
+                        type="button"
+                        onClick={() => abrirConsultaVentaPerdida(s)}
+                        aria-label="Consultar motivo de venta perdida"
+                        title="Consultar motivo de venta perdida"
+                        className={`flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-600 shadow-sm transition-transform active:scale-95 ${indiceConsultaAnimada === (hayMotivoDecision ? 1 : 0) ? 'animate-consulta-motivo' : ''}`}
+                      >
+                        <MessageCircleQuestion size={17} />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })
@@ -1067,7 +1111,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                               abrirConsultaVentaPerdida(s);
                             }}
                             title="Ver motivo de venta perdida"
-                            className="p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                            className="hidden md:inline-flex p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
                           >
                             <MessageCircleQuestion size={13} />
                           </button>
@@ -1086,7 +1130,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                                   abrirConsultaDecision(s);
                                 }}
                                 title="Ver motivo de la decisión (anulación, rechazo o denegación)"
-                                className="p-0.5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+                                className="hidden md:inline-flex p-0.5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
                               >
                                 <MessageCircleQuestion size={13} />
                               </button>
@@ -1099,7 +1143,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                                   abrirConsultaVentaPerdida(s);
                                 }}
                                 title="Ver motivo de venta perdida"
-                                className="p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                                className="hidden md:inline-flex p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
                               >
                                 <MessageCircleQuestion size={13} />
                               </button>

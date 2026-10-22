@@ -1,5 +1,7 @@
 import * as XLSX from 'xlsx';
 import { evaluarEstadoGanada } from '../views/analisis/theme';
+import { obtenerTipoDecisionItem } from './decisionItemHelpers';
+import { normalizarItemVentaPerdida } from './ventasPerdidasHelpers';
 
 const parseDate = (val) => {
   if (!val) return null;
@@ -31,6 +33,67 @@ const sanitizeFileName = (name) => {
     .replace(/[\\/:*?"<>|]/g, '_')
     .replace(/\s+/g, '_');
 };
+
+const obtenerDetalleDecisionExportable = (item = {}, solicitud = {}, indice = 0, { aplicarMotivoGlobal = false } = {}) => {
+  const esVentaPerdida = item.estadoItem === 'Venta Perdida'
+    || Boolean(item.motivoVentaPerdida)
+    || (aplicarMotivoGlobal && (solicitud.estado === 'Venta Perdida' || Boolean(solicitud.motivoVentaPerdida)));
+
+  if (esVentaPerdida) {
+    const motivo = normalizarItemVentaPerdida({ item, solicitud, fallbackIndex: indice });
+    const registradoPor = obtenerNombreRegistrador(
+      item.registradoPorNombre || item.nombreRegistradoPor || motivo.registradoPor,
+      item,
+      solicitud
+    );
+    return {
+      motivo: motivo.motivoNombre || 'Venta perdida',
+      comentario: motivo.comentario || '---',
+      registradoPor
+    };
+  }
+
+  const tipoDecision = obtenerTipoDecisionItem(item);
+  if (!tipoDecision) {
+    return {
+      motivo: '---',
+      comentario: '---',
+      registradoPor: '---'
+    };
+  }
+
+  const motivo = tipoDecision === 'rechazo'
+    ? item.motivoRechazo || item.motivoEstadoItem
+    : tipoDecision === 'denegacion'
+      ? item.motivoDenegacion || item.motivoEstadoItem
+      : item.motivoAnulacion || item.motivoEstadoItem;
+  return {
+    motivo: motivo || 'Sin motivo registrado',
+    comentario: '---',
+    registradoPor: obtenerNombreRegistrador(
+      tipoDecision === 'anulacion' ? item.anuladoPor : item.negociacion?.ultimoCambio?.nombre,
+      item,
+      solicitud
+    )
+  };
+};
+
+function obtenerNombreRegistrador(valor, item = {}, solicitud = {}) {
+  const candidatos = [
+    valor,
+    item.registradoPorNombre,
+    item.nombreRegistradoPor,
+    item.anuladoPorNombre,
+    item.negociacion?.ultimoCambio?.nombre,
+    solicitud.vendedorNombre,
+    solicitud.vendedor
+  ];
+  const nombre = candidatos.find((candidato) => {
+    const texto = String(candidato || '').trim();
+    return texto && !texto.includes('@') && !['Vendedor', 'Compras', 'Usuario'].includes(texto);
+  });
+  return nombre || (valor && !String(valor).includes('@') ? String(valor).trim() : '---');
+}
 
 /**
  * Aplana una lista de solicitudes en movimientos individuales por ítem/producto
@@ -126,6 +189,13 @@ export function extraerTodosLosMovimientos(solicitudes = [], ordenesCompra = [])
       const tienePrecio = Number(p.fob || p.precioUnitario || 0) > 0 || ['Cotizado', 'Cotizado Parcial', 'Pedido', 'Pedido Parcial', 'Comprado'].includes(estadoItem);
       const fechaResp = p.fechaCotizacion || (tienePrecio ? (s.fechaCotizacion || s.fechaS) : null);
       const fechaOC = p.fechaOC || (ocRef ? mapFechasOC[ocRef.toString().trim()] : null);
+      const hayVentaPerdidaPorItem = productosLista.some((producto) => (
+        producto?.estadoItem === 'Venta Perdida' || Boolean(producto?.motivoVentaPerdida)
+      ));
+      const aplicaMotivoGlobal = !hayVentaPerdidaPorItem && (
+        s.estado === 'Venta Perdida' || Boolean(s.motivoVentaPerdida)
+      );
+      const detalleDecision = obtenerDetalleDecisionExportable(p, s, idx, { aplicarMotivoGlobal: aplicaMotivoGlobal });
 
       list.push({
         idMov: `${s.id}-${idx}`,
@@ -146,7 +216,9 @@ export function extraerTodosLosMovimientos(solicitudes = [], ordenesCompra = [])
         totalConIva,
         ocRef,
         estado: estadoItem,
+        idxProducto: idx,
         motivoAnulacion: p.motivoAnulacion || p.motivoEstadoItem || p.motivoDenegacion || p.motivoRechazo || '',
+        detalleDecision,
         // GestionOC muestra ordenesCompra.items[].fobConfirmado.
         // Prioridad: FOB confirmado de la OC, FOB real persistido y FOB cotizado.
         fob: Number(fobConfirmado ?? p.fobReal ?? p.fob ?? 0),
@@ -273,7 +345,9 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
     'Total con IVA ($)',
     'OC Ref',
     'Estado',
-    'Motivo del Estado',
+    'Motivo Predefinido',
+    'Comentario del Vendedor',
+    'Registrado Por',
     'Resultado'
   ];
 
@@ -284,6 +358,20 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
     const totIva = Number(m.totalConIva || 0);
     const unids = Number(m.unidades || 0);
     const res = evaluarEstadoGanada(m);
+    const solicitudOriginal = m.solicitudOriginal || {};
+    const productosOriginales = Array.isArray(solicitudOriginal.productos) ? solicitudOriginal.productos : [];
+    const hayVentaPerdidaPorItem = productosOriginales.some((producto) => (
+      producto?.estadoItem === 'Venta Perdida' || Boolean(producto?.motivoVentaPerdida)
+    ));
+    const aplicaMotivoGlobal = !hayVentaPerdidaPorItem && (
+      solicitudOriginal.estado === 'Venta Perdida' || Boolean(solicitudOriginal.motivoVentaPerdida)
+    );
+    const detalle = m.detalleDecision || obtenerDetalleDecisionExportable(
+      m.itemOriginal || {},
+      solicitudOriginal,
+      m.idxProducto || 0,
+      { aplicarMotivoGlobal: aplicaMotivoGlobal }
+    );
 
     return {
       'RFQ': m.correlativo || 'S/N',
@@ -302,7 +390,9 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
       'Total con IVA ($)': totIva,
       'OC Ref': m.ocRef || '---',
       'Estado': m.estado || '---',
-      'Motivo del Estado': m.motivoAnulacion || m.motivoEstadoItem || m.motivoDenegacion || m.motivoRechazo || '---',
+      'Motivo Predefinido': detalle.motivo,
+      'Comentario del Vendedor': detalle.comentario,
+      'Registrado Por': detalle.registradoPor,
       'Resultado': res?.label || m.estado || '---'
     };
   });
@@ -324,7 +414,9 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
     { wch: 18 }, // Total con IVA ($)
     { wch: 18 }, // OC Ref
     { wch: 16 }, // Estado
-    { wch: 34 }, // Motivo del Estado
+    { wch: 34 }, // Motivo Predefinido
+    { wch: 48 }, // Comentario del Vendedor
+    { wch: 28 }, // Registrado Por
     { wch: 16 }  // Resultado
   ];
 

@@ -350,18 +350,13 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
           {debeMostrarBotonVentaPerdida && (
             <button
               onClick={() => handleAbrirVentaPerdida()}
-              className="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-3 md:px-3.5 py-1.5 md:py-2 rounded-md text-[11px] font-semibold uppercase flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+              className="hidden md:flex bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-md text-[11px] font-semibold uppercase items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
             >
               <TrendingDown size={13} className="text-slate-500" />
-              <span className="hidden md:inline">
+              <span>
                 {totalItemsSeleccionados > 0
                   ? `Registrar Venta Perdida (${totalItemsSeleccionados} sel.)`
                   : 'Registrar Venta Perdida'}
-              </span>
-              <span className="md:hidden">
-                {totalItemsSeleccionados > 0
-                  ? `Venta Perdida (${totalItemsSeleccionados})`
-                  : 'Venta Perdida'}
               </span>
             </button>
           )}
@@ -376,6 +371,22 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
       </div>
 
       {/* Resumen Móvil (< md): Correlativo, estado e info del cliente */}
+      {debeMostrarBotonVentaPerdida && totalItemsSeleccionados > 1 && (
+        <div
+          className="fixed bottom-4 left-1/2 z-40 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 md:hidden"
+        >
+          <button
+            type="button"
+            onClick={() => handleAbrirVentaPerdida()}
+            aria-label={`Registrar ventas perdidas (${totalItemsSeleccionados})`}
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-600 px-4 text-xs font-black uppercase tracking-wide text-white shadow-xl shadow-rose-900/20 transition-transform active:scale-[0.98]"
+          >
+            <TrendingDown size={16} aria-hidden="true" />
+            <span>VP ({totalItemsSeleccionados})</span>
+          </button>
+        </div>
+      )}
+
       <div className="md:hidden bg-white rounded-lg p-3.5 border border-slate-200 shadow-2xs mb-4 space-y-1.5">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono font-bold text-base text-slate-900 tracking-tight">
@@ -830,15 +841,15 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                                 <button
                                   type="button"
                                   onClick={() => handleAbrirVentaPerdida([idx])}
-                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md font-bold text-[10px] uppercase tracking-wide transition-colors cursor-pointer shadow-xs ${
+                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md font-bold text-[9px] uppercase tracking-wide transition-colors cursor-pointer shadow-xs ${
                                     esItemEstancado(p, solicitudBase)
                                       ? 'border border-rose-300 bg-rose-100 hover:bg-rose-200 text-rose-800'
                                       : 'border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700'
                                   }`}
                                   title={esItemEstancado(p, solicitudBase) ? "Registrar Venta Perdida comercial (>5 días hábiles sin cierre)" : "Registrar Venta Perdida de este ítem"}
                                 >
-                                  <TrendingDown size={13} />
-                                  <span>Venta Perdida</span>
+                                  <TrendingDown size={12} />
+                                  <span>VP</span>
                                 </button>
                               )}
                             </>

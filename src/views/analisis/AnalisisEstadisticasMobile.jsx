@@ -730,7 +730,7 @@ export const AnalisisEstadisticasMobile = ({
         onVerPedidos={() => navigate('/analisis/solicitudes/pedidos')}
       />)}
 
-      <MetricasRotativas metricas={metricas} vendedorFilter={vendedorFilter} formatearDinero={formatearDinero} compact />
+      <MetricasRotativas metricas={metricas} vendedorFilter={vendedorFilter} formatearDinero={formatearDinero} compact showChart />
 
       {/* TIEMPOS OPERATIVOS */}
       {mostrarKpisLegacy && <MobileTiemposRow metricas={metricas} />}

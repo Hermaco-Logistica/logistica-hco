@@ -48,6 +48,11 @@
     0% { opacity: 0; transform: translateX(18px); }
     100% { opacity: 1; transform: translateX(0); }
   }
+  @keyframes consulta-motivo-nudge {
+    0%, 100% { transform: translateY(0); }
+    35% { transform: translateY(-3px); }
+    65% { transform: translateY(1px); }
+  }
   .animate-expand-wave {
     animation: expand-wave 0.4s cubic-bezier(0, 0, 0.2, 1) forwards;
   }
@@ -56,6 +61,9 @@
   }
   .animate-metricas-rotativas {
     animation: metricas-rotativas-in 0.5s ease-out both;
+  }
+  .animate-consulta-motivo {
+    animation: consulta-motivo-nudge 0.65s ease-out both;
   }
 }
 

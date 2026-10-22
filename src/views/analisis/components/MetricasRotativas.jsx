@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Gauge, Package, TrendingDown } from 'lucide-react';
+import { GraficoMetricasRotativas } from './GraficoMetricasRotativas';
 
 const MetricValue = ({ icon, iconClass, label, value, unit, detail }) => (
   <div className="rounded-xl border border-slate-200/70 bg-slate-50/70 p-3.5">
@@ -40,24 +41,29 @@ const TiemposOperativosValue = ({ primero, segundo, vendedorFilter }) => (
 
 const ClockIcon = () => <span className="text-slate-500">◷</span>;
 
-export const MetricasRotativas = ({ metricas, vendedorFilter = '', compact = false, formatearDinero = (valor) => `$${Number(valor || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}` }) => {
+export const MetricasRotativas = ({ metricas, vendedorFilter = '', compact = false, showChart = false, formatearDinero = (valor) => `$${Number(valor || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}` }) => {
   const [modo, setModo] = useState('normal');
   const [automatico, setAutomatico] = useState(true);
+  const hayVentasPerdidas = Number(metricas?.ventasPerdidas || 0) > 0;
 
   useEffect(() => {
     if (!automatico) return undefined;
     const timer = window.setInterval(() => {
-      setModo((actual) => actual === 'normal' ? 'ventasPerdidas' : 'normal');
+      setModo((actual) => {
+        if (!hayVentasPerdidas) return 'normal';
+        return actual === 'normal' ? 'ventasPerdidas' : 'normal';
+      });
     }, 30000);
     return () => window.clearInterval(timer);
-  }, [automatico]);
+  }, [automatico, hayVentasPerdidas]);
 
   const cambiarModo = (nuevoModo) => {
     setAutomatico(false);
     setModo(nuevoModo);
   };
 
-  const esVentasPerdidas = modo === 'ventasPerdidas';
+  const modoActivo = hayVentasPerdidas ? modo : 'normal';
+  const esVentasPerdidas = modoActivo === 'ventasPerdidas';
   const titulo = esVentasPerdidas ? 'Métricas de ventas perdidas' : 'Métricas operativas';
   const subtitulo = esVentasPerdidas
     ? 'Seguimiento comercial de oportunidades no concretadas'
@@ -78,16 +84,26 @@ export const MetricasRotativas = ({ metricas, vendedorFilter = '', compact = fal
           <button type="button" onClick={() => cambiarModo('normal')} className={`rounded-lg px-2.5 py-1.5 text-[10px] font-bold transition-colors ${!esVentasPerdidas ? 'bg-slate-900 text-white' : 'text-slate-500 hover:bg-white'}`}>
             Operativas
           </button>
-          <button type="button" onClick={() => cambiarModo('ventasPerdidas')} className={`rounded-lg px-2.5 py-1.5 text-[10px] font-bold transition-colors ${esVentasPerdidas ? 'bg-orange-600 text-white' : 'text-slate-500 hover:bg-white'}`}>
-            Ventas perdidas
-          </button>
+          {hayVentasPerdidas && (
+            <button type="button" onClick={() => cambiarModo('ventasPerdidas')} className={`rounded-lg px-2.5 py-1.5 text-[10px] font-bold transition-colors ${esVentasPerdidas ? 'bg-orange-600 text-white' : 'text-slate-500 hover:bg-white'}`}>
+              Ventas perdidas
+            </button>
+          )}
           <button type="button" aria-pressed={automatico} onClick={() => setAutomatico((actual) => !actual)} className={`ml-1 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold transition-colors ${automatico ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-500'}`}>
             {automatico ? 'Auto 30 s' : 'Manual'}
           </button>
         </div>
       </div>
 
-      <div key={modo} className={`grid grid-cols-2 gap-2.5 p-3.5 ${compact ? 'sm:grid-cols-2' : 'sm:grid-cols-4'} animate-metricas-rotativas`}>
+      {showChart && (
+        <GraficoMetricasRotativas
+          metricas={metricas}
+          modo={modoActivo}
+          formatearDinero={formatearDinero}
+        />
+      )}
+
+      <div key={modoActivo} className={`grid grid-cols-2 gap-2.5 p-3.5 ${compact ? 'sm:grid-cols-2' : 'sm:grid-cols-4'} animate-metricas-rotativas`}>
         {esVentasPerdidas ? (
           <>
             <MetricValue icon={Package} iconClass="text-orange-600" label="Ítems en venta perdida" value={metricas.ventasPerdidas} detail={`${metricas.ventasPerdidasSolicitudes} solicitudes involucradas`} />

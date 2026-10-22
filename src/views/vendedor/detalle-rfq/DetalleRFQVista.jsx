@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   AlertCircle, Ban, Calendar, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft,
-  Clock, FileText, Link as LinkIcon, MessageCircleQuestion, MessageSquare, Minus,
+  Clock, FileText, Link as LinkIcon, MessageCircleQuestion, MessageSquare, Minus, MoreVertical,
   Package, Paperclip, Pencil, Plane, Plus, Printer, Ship, ShoppingCart, Square, Tag,
   Trash2, TrendingDown, X
 } from 'lucide-react';
@@ -96,6 +96,85 @@ export const DetalleRFQVista = ({ viewModel }) => {
     setVerPreview,
   } = viewModel;
 
+  const [accionMovilExpandida, setAccionMovilExpandida] = useState(null);
+  const [opcionesMovilesAbiertas, setOpcionesMovilesAbiertas] = useState(false);
+  const [stickyArrastrando, setStickyArrastrando] = useState(false);
+  const [stickyPosicion, setStickyPosicion] = useState(() => ({
+    x: typeof window === 'undefined' ? 16 : Math.max(8, window.innerWidth - 60),
+    y: typeof window === 'undefined' ? 240 : Math.max(90, window.innerHeight - 180)
+  }));
+  const accionesCabeceraRef = useRef(null);
+  const opcionesMovilesRef = useRef(null);
+  const estadoMovilRef = useRef(null);
+  const stickyDragRef = useRef(null);
+  const bloquearClickStickyRef = useRef(false);
+
+  useEffect(() => {
+    const cerrarAlTocarFuera = (event) => {
+      if (!accionesCabeceraRef.current?.contains(event.target) && !opcionesMovilesRef.current?.contains(event.target) && !estadoMovilRef.current?.contains(event.target)) {
+        setAccionMovilExpandida(null);
+        setOpcionesMovilesAbiertas(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', cerrarAlTocarFuera);
+    return () => document.removeEventListener('pointerdown', cerrarAlTocarFuera);
+  }, []);
+
+  useEffect(() => {
+    const moverSticky = (event) => {
+      if (!stickyDragRef.current) return;
+      const { startX, startY, originX, originY } = stickyDragRef.current;
+      const maxX = Math.max(8, window.innerWidth - 52);
+      const maxY = Math.max(72, window.innerHeight - 60);
+      setStickyPosicion({
+        x: Math.max(8, Math.min(maxX, originX + event.clientX - startX)),
+        y: Math.max(72, Math.min(maxY, originY + event.clientY - startY))
+      });
+      stickyDragRef.current.semovio = Math.abs(event.clientX - startX) > 4 || Math.abs(event.clientY - startY) > 4;
+    };
+
+    const soltarSticky = () => {
+      if (!stickyDragRef.current) return;
+      const { semovio } = stickyDragRef.current;
+      stickyDragRef.current = null;
+      setStickyArrastrando(false);
+      if (semovio) {
+        bloquearClickStickyRef.current = true;
+        setStickyPosicion((actual) => ({
+          ...actual,
+          x: actual.x + 26 < window.innerWidth / 2 ? 8 : Math.max(8, window.innerWidth - 52)
+        }));
+      }
+    };
+
+    document.addEventListener('pointermove', moverSticky);
+    document.addEventListener('pointerup', soltarSticky);
+    return () => {
+      document.removeEventListener('pointermove', moverSticky);
+      document.removeEventListener('pointerup', soltarSticky);
+    };
+  }, []);
+
+  const iniciarArrastreSticky = (event) => {
+    setStickyArrastrando(true);
+    stickyDragRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: stickyPosicion.x,
+      originY: stickyPosicion.y,
+      semovio: false
+    };
+  };
+
+  const opcionesMovilesCount = [
+    rfq?.estado !== 'Pendiente',
+    hayDecisionesEnParcial,
+    hayVentaPerdidaEnParcial
+  ].filter(Boolean).length;
+  const alturaMenuMovil = opcionesMovilesCount * 52 + Math.max(0, opcionesMovilesCount - 1) * 8;
+  const menuHaciaAbajo = stickyPosicion.y < alturaMenuMovil + 24;
+
   return (
     <div className="@container max-w-7xl mx-auto animate-in fade-in duration-500">
       {/* Modal Anulación */}
@@ -161,7 +240,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
         </div>
       )}
 
-      <div className="flex flex-row items-center justify-between gap-4 mb-4 md:mb-8">
+      <div className="mb-4 flex flex-col gap-3 md:mb-8 md:flex-row md:items-center md:justify-between md:gap-4">
         <div className="flex items-center gap-2 md:gap-4">
           <button onClick={handleVolver} className="p-1.5 md:p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600 shrink-0">
             <ChevronLeft size={24} className="hidden md:block" />
@@ -177,39 +256,128 @@ export const DetalleRFQVista = ({ viewModel }) => {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div
+          ref={accionesCabeceraRef}
+          onClickCapture={(event) => {
+            if (window.innerWidth >= 768) return;
+            const control = event.target.closest('button, [title]');
+            if (!control) return;
+            const esBoton = control.tagName === 'BUTTON';
+            const etiqueta = (control.getAttribute('aria-label') || control.getAttribute('title') || '').toLowerCase();
+            const clave = etiqueta.includes('ventas perdidas')
+              ? 'consultaVP'
+              : etiqueta.includes('motivos')
+                ? 'consulta'
+                : etiqueta.includes('cotización parcial')
+                  ? 'parcial'
+                  : etiqueta.includes('pedido ya generado')
+                    ? 'pedidoGenerado'
+                : 'exportar';
+            if (!esBoton) {
+              event.preventDefault();
+              setAccionMovilExpandida((actual) => actual === clave ? null : clave);
+              return;
+            }
+            if (accionMovilExpandida !== clave) {
+              event.preventDefault();
+              event.stopPropagation();
+              setAccionMovilExpandida(clave);
+            } else {
+              setAccionMovilExpandida(null);
+            }
+          }}
+          className="hidden w-full min-w-0 flex-wrap items-center justify-end gap-1.5 md:flex md:w-auto md:flex-nowrap md:gap-2"
+        >
           {rfq?.estado !== 'Pendiente' && (
             <button 
+              data-accion-cabecera="exportar"
               onClick={() => setVerPreview(true)}
-              className="bg-slate-900 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest px-3 md:px-4 py-2 md:py-2.5 rounded-full hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg shadow-slate-900/10 cursor-pointer"
+              aria-label="Ver cotización o imprimir"
+              title="Ver cotización o imprimir"
+              className={`flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-900 py-2 text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 md:min-h-0 md:px-4 md:py-2.5 ${accionMovilExpandida === 'exportar' ? 'min-w-[6rem] px-3' : 'min-w-9 px-2.5'}`}
             >
-              <Printer size={12} /> <span className="hidden md:inline">Ver Cotización / Imprimir</span><span className="md:hidden">Exportar</span>
+              <Printer size={14} /> <span className="hidden md:inline">Ver Cotización / Imprimir</span><span className="sr-only md:hidden">Exportar</span>
+              {accionMovilExpandida === 'exportar' && <span className="md:hidden">Exportar</span>}
             </button>
           )}
           {rfq?.estado?.includes('Parcial') && (
-            <div className="bg-blue-600 text-white px-2 md:px-4 py-1.5 md:py-2 rounded-full text-[10px] font-black uppercase flex items-center gap-1.5">
+            <div title="Cotización parcial" className="flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-blue-600 px-2 py-1.5 text-[10px] font-black uppercase text-white md:min-h-0 md:min-w-0 md:px-4 md:py-2">
               <AlertCircle size={14} /> <span className="hidden md:inline">Cotización Parcial</span>
+              {accionMovilExpandida === 'parcial' && <span className="max-w-32 overflow-hidden whitespace-nowrap text-[9px] transition-all duration-200 md:hidden">Cotización parcial</span>}
             </div>
           )}
           {hayDecisionesEnParcial && (
-            <button type="button" onClick={abrirConsultaDecisionParcial} className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-2 md:px-3 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 cursor-pointer" title="Consultar motivos de los ítems afectados">
-              <MessageCircleQuestion size={13} /> <span>Consulta</span>
+            <button type="button" onClick={abrirConsultaDecisionParcial} aria-label="Consultar motivos de los ítems afectados" className="inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1 rounded-full border border-slate-300 bg-white px-2 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 md:min-h-0 md:min-w-0 md:px-3" title="Consultar motivos de los ítems afectados">
+              <MessageCircleQuestion size={14} /> <span className={`${accionMovilExpandida === 'consulta' ? 'max-w-32 opacity-100' : 'max-w-0 opacity-0'} overflow-hidden whitespace-nowrap transition-all duration-200 md:max-w-none md:opacity-100`}>Consulta</span>
             </button>
           )}
           {hayVentaPerdidaEnParcial && (
-            <button type="button" onClick={() => abrirConsultaVentaPerdida()} className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-2 md:px-3 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 cursor-pointer" title="Consultar motivos de ventas perdidas">
-              <MessageCircleQuestion size={13} /> <span>Consulta VP</span>
+            <button type="button" onClick={() => abrirConsultaVentaPerdida()} aria-label="Consultar motivos de ventas perdidas" className="inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1 rounded-full border border-slate-300 bg-white px-2 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 md:min-h-0 md:min-w-0 md:px-3" title="Consultar motivos de ventas perdidas">
+              <TrendingDown size={14} /> <span className={`${accionMovilExpandida === 'consultaVP' ? 'max-w-32 opacity-100' : 'max-w-0 opacity-0'} overflow-hidden whitespace-nowrap transition-all duration-200 md:max-w-none md:opacity-100`}>Consulta VP</span>
             </button>
           )}
           {pedidoYaCreado && (
-            <div className="bg-emerald-600 text-white px-2 md:px-4 py-1.5 md:py-2 rounded-full text-[10px] font-black uppercase flex items-center gap-1.5">
+            <div title="Pedido ya generado" className="flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-2 py-1.5 text-[10px] font-black uppercase text-white md:min-h-0 md:min-w-0 md:px-4 md:py-2">
               <CheckCircle2 size={14} /> <span className="hidden md:inline">Pedido ya generado</span>
+              {accionMovilExpandida === 'pedidoGenerado' && <span className="max-w-32 overflow-hidden whitespace-nowrap text-[9px] transition-all duration-200 md:hidden">Pedido ya generado</span>}
             </div>
           )}
         </div>
       </div>
 
       {/* Resumen Móvil (< md): Metadatos y Totales Cotizados */}
+      {(rfq?.estado?.includes('Parcial') || pedidoYaCreado) && (
+        <div ref={estadoMovilRef} className="mb-3 flex flex-wrap items-center gap-2 md:hidden">
+          {rfq?.estado?.includes('Parcial') && (
+            <button type="button" onClick={() => setAccionMovilExpandida((actual) => actual === 'parcial' ? null : 'parcial')} className="flex min-h-9 items-center gap-1.5 rounded-full bg-blue-600 px-2.5 py-1.5 text-[10px] font-black uppercase text-white transition-all duration-200">
+              <AlertCircle size={14} />
+              <span className={`${accionMovilExpandida === 'parcial' ? 'max-w-32 opacity-100' : 'max-w-0 opacity-0'} overflow-hidden whitespace-nowrap transition-all duration-200`}>Cotización parcial</span>
+            </button>
+          )}
+          {pedidoYaCreado && (
+            <button type="button" onClick={() => setAccionMovilExpandida((actual) => actual === 'pedidoGenerado' ? null : 'pedidoGenerado')} className="flex min-h-9 items-center gap-1.5 rounded-full bg-emerald-600 px-2.5 py-1.5 text-[10px] font-black uppercase text-white transition-all duration-200">
+              <CheckCircle2 size={14} />
+              <span className={`${accionMovilExpandida === 'pedidoGenerado' ? 'max-w-32 opacity-100' : 'max-w-0 opacity-0'} overflow-hidden whitespace-nowrap transition-all duration-200`}>Pedido ya generado</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      <div ref={opcionesMovilesRef} style={{ left: stickyPosicion.x, top: stickyPosicion.y }} className={`fixed z-40 flex flex-col items-end md:hidden ${stickyArrastrando ? '' : 'transition-[left,top] duration-300 ease-out'}`}>
+        {opcionesMovilesAbiertas && (
+          <div className={`absolute right-0 flex flex-col items-end gap-2 origin-bottom-right [&>button:first-child>span]:hidden animate-in duration-200 ${menuHaciaAbajo ? 'top-[calc(100%+0.75rem)] slide-in-from-top-3' : 'bottom-[calc(100%+0.75rem)] slide-in-from-bottom-3'}`}>
+            {rfq?.estado !== 'Pendiente' && (
+              <button type="button" aria-label="Exportar cotización" title="Exportar cotización" onClick={() => { setOpcionesMovilesAbiertas(false); setVerPreview(true); }} className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-xl shadow-slate-900/15">
+                <span>Exportar cotización</span><Printer size={17} className="text-slate-700" />
+              </button>
+            )}
+            {rfq?.estado?.includes('Parcial') && (
+              <div className="hidden">
+                <span>Cotización parcial</span><AlertCircle size={17} />
+              </div>
+            )}
+            {hayDecisionesEnParcial && (
+              <button type="button" aria-label="Consultar motivos" title="Consultar motivos" onClick={() => { setOpcionesMovilesAbiertas(false); abrirConsultaDecisionParcial(); }} className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-xl shadow-slate-900/15">
+                <MessageCircleQuestion size={18} />
+              </button>
+            )}
+            {hayVentaPerdidaEnParcial && (
+              <button type="button" aria-label="Consultar ventas perdidas" title="Consultar ventas perdidas" onClick={() => { setOpcionesMovilesAbiertas(false); abrirConsultaVentaPerdida(); }} className="flex h-11 w-11 items-center justify-center gap-0.5 rounded-2xl border border-orange-200 bg-white text-orange-700 shadow-xl shadow-orange-900/15">
+                <TrendingDown size={17} /><span className="text-[9px] font-black">VP</span>
+              </button>
+            )}
+            {pedidoYaCreado && (
+              <div className="hidden">
+                <span>Pedido ya generado</span><CheckCircle2 size={17} />
+              </div>
+            )}
+          </div>
+        )}
+        <button type="button" aria-label={opcionesMovilesAbiertas ? 'Cerrar opciones' : 'Abrir opciones'} aria-expanded={opcionesMovilesAbiertas} onPointerDown={iniciarArrastreSticky} onClick={() => { if (bloquearClickStickyRef.current) { bloquearClickStickyRef.current = false; return; } setOpcionesMovilesAbiertas((abiertas) => !abiertas); }} className={`flex h-11 w-11 touch-none items-center justify-center rounded-full text-white shadow-xl shadow-slate-900/25 transition-all duration-200 ${opcionesMovilesAbiertas ? 'rotate-90 bg-slate-700' : 'bg-slate-900'}`}>
+          {opcionesMovilesAbiertas ? <X size={23} /> : <MoreVertical size={23} />}
+        </button>
+      </div>
+
       <div className="md:hidden bg-white rounded-2xl p-4 border border-slate-200/90 shadow-sm mb-4 space-y-3">
         <div>
           <div className="flex items-center justify-between gap-2">
@@ -472,11 +640,11 @@ export const DetalleRFQVista = ({ viewModel }) => {
                     <button
                       type="button"
                       onClick={() => handleAbrirVentaPerdida([idx])}
-                      className="inline-flex items-center gap-1 text-[10px] font-bold uppercase text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-1 rounded-md transition-colors shadow-2xs cursor-pointer"
+                      className="inline-flex items-center gap-1 text-[9px] font-bold uppercase text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-1 rounded-md transition-colors shadow-2xs cursor-pointer"
                       title="Registrar Venta Perdida"
                     >
                       <TrendingDown size={11} />
-                      <span>Venta Perdida</span>
+                      <span>VP</span>
                     </button>
                   )}
 
@@ -929,11 +1097,11 @@ export const DetalleRFQVista = ({ viewModel }) => {
                               <button
                                 type="button"
                                 onClick={() => handleAbrirVentaPerdida([idx])}
-                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[10px] uppercase tracking-wide mx-auto transition-all cursor-pointer shadow-xs"
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[9px] uppercase tracking-wide mx-auto transition-all cursor-pointer shadow-xs"
                                 title="Registrar Venta Perdida"
                               >
-                                <TrendingDown size={13} />
-                                <span>Venta Perdida</span>
+                                <TrendingDown size={12} />
+                                <span>VP</span>
                               </button>
                             )
                           )}
@@ -1341,5 +1509,3 @@ export const DetalleRFQVista = ({ viewModel }) => {
 };
 
 export default DetalleRFQVista;
-
-

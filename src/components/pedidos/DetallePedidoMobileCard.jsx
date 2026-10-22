@@ -260,15 +260,15 @@ export const DetallePedidoMobileCard = ({
               <button
                 type="button"
                 onClick={onVentaPerdida}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-[10px] uppercase tracking-wide transition-colors cursor-pointer shadow-xs min-h-[34px] active:scale-95 ${
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg font-bold text-[9px] uppercase tracking-wide transition-colors cursor-pointer shadow-xs min-h-[32px] active:scale-95 ${
                   esEstancado
                     ? 'bg-rose-100 hover:bg-rose-200 text-rose-800 border border-rose-300'
                     : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200'
                 }`}
                 title={esEstancado ? "Registrar Venta Perdida comercial (>5 días hábiles)" : "Registrar Venta Perdida de este ítem"}
               >
-                <TrendingDown size={13} />
-                <span>Venta Perdida</span>
+                <TrendingDown size={12} />
+                <span>VP</span>
               </button>
             )}
           </div>
