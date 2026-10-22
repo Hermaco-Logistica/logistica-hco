@@ -6,11 +6,11 @@ import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
+import { obtenerDecisionItem } from './utils/decisionMetrics';
+import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
+import { cumpleFiltroPeriodoAnalisis } from './utils/periodoAnalisis';
 import {
   getHoyElSalvador,
-  getAnioActualElSalvador,
-  parseInicioDiaElSalvador,
-  parseFinDiaElSalvador,
   cargarFiltroPeriodoStorage
 } from '../../utils/dateValidation';
 
@@ -24,7 +24,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
   const [resultadoFilter] = useSessionState('analisis_resultado_filter', '');
   const ordenInicial = useMemo(() => {
     const orden = searchParams.get('orden');
-    return orden === 'ganadas' ? 'pedidos' : ['veces', 'unidades', 'pedidos', 'anulaciones'].includes(orden) ? orden : 'veces';
+    return orden === 'ganadas' ? 'pedidos' : ['veces', 'unidades', 'pedidos', 'anulaciones', 'decisiones', 'ventasPerdidas', 'rechazos'].includes(orden) ? orden : 'veces';
   }, [searchParams]);
   const [ordenarPor, setOrdenarPor] = useState(ordenInicial); // 'veces' | 'unidades' | 'pedidos' | 'anulaciones'
   const [currentPage, setCurrentPage] = useState(1);
@@ -83,36 +83,12 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
   // Agrupar productos de todas las solicitudes (filtradas por vendedor / cliente si están activos)
   const todosLosProductos = useMemo(() => {
     const map = {};
-    const { periodo, fechaInicio, fechaFin, anioHistorico } = filtroPeriodo;
     const ahora = new Date();
-    const anioActual = getAnioActualElSalvador();
 
     solicitudes.forEach((s) => {
       // Filtro por fecha (respeta el período seleccionado en el dashboard)
       const fechaSol = parseDate(s.fechaS || s.fechaCreacion);
-      if (fechaSol) {
-        if (periodo === 'custom') {
-          if (!(fechaInicio && fechaFin && fechaInicio > fechaFin)) {
-            if (fechaInicio) {
-              const dInicio = parseInicioDiaElSalvador(fechaInicio);
-              if (dInicio && fechaSol < dInicio) return;
-            }
-            if (fechaFin) {
-              const dFin = parseFinDiaElSalvador(fechaFin);
-              if (dFin && fechaSol > dFin) return;
-            }
-          }
-        } else if (periodo === 'historico') {
-          if (anioHistorico !== 'todos' && fechaSol.getFullYear() !== anioHistorico) return;
-        } else if (periodo !== 'all') {
-          const diffDias = (ahora.getTime() - fechaSol.getTime()) / (1000 * 3600 * 24);
-          if (periodo === '7d' && diffDias > 7) return;
-          if (periodo === '30d' && diffDias > 30) return;
-          if (periodo === '90d' && diffDias > 90) return;
-          if (periodo === 'this_month' && (fechaSol < rangoEsteMes.inicio || fechaSol >= rangoEsteMes.fin)) return;
-          if (periodo === 'this_year' && fechaSol.getFullYear() !== anioActual) return;
-        }
-      }
+      if (!cumpleFiltroPeriodoAnalisis({ fecha: fechaSol, filtroPeriodo, rangoEsteMes, ahora })) return;
 
       if (vendedorFilter && s.vendedorNombre !== vendedorFilter) return;
       if (clienteFilter) {
@@ -144,6 +120,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
             vecesPedido: 0,
             unidadesPedidas: 0,
             anulaciones: 0,
+            ventasPerdidas: 0,
+            rechazos: 0,
             clientes: new Set(),
             rfqIds: new Set()
           };
@@ -154,8 +132,11 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
         if (s.cliente) item.clientes.add(s.cliente.trim());
         if (s.id) item.rfqIds.add(s.id);
 
-        if (p.estadoItem === 'Anulado') {
-          item.anulaciones++;
+        const decision = obtenerDecisionItem(s, p);
+        if (decision === 'Anulado' || decision === 'Venta Perdida' || decision === 'Rechazo') {
+          if (decision === 'Anulado') item.anulaciones++;
+          if (decision === 'Venta Perdida') item.ventasPerdidas++;
+          if (decision === 'Rechazo') item.rechazos++;
           return;
         }
 
@@ -203,6 +184,15 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
       }
       if (ordenarPor === 'anulaciones') {
         return b.anulaciones - a.anulaciones || b.vecesCotizado - a.vecesCotizado;
+      }
+      if (ordenarPor === 'ventasPerdidas') {
+        return b.ventasPerdidas - a.ventasPerdidas || b.vecesCotizado - a.vecesCotizado;
+      }
+      if (ordenarPor === 'rechazos') {
+        return b.rechazos - a.rechazos || b.vecesCotizado - a.vecesCotizado;
+      }
+      if (ordenarPor === 'decisiones') {
+        return (b.ventasPerdidas + b.rechazos + b.anulaciones) - (a.ventasPerdidas + a.rechazos + a.anulaciones) || b.vecesCotizado - a.vecesCotizado;
       }
       // 'veces' por defecto (más veces cotizado)
       return b.vecesCotizado - a.vecesCotizado || b.unidadesCotizadas - a.unidadesCotizadas;
@@ -253,7 +243,10 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
             { id: 'veces', label: 'Más cotizados' },
             { id: 'unidades', label: 'Mayor volumen' },
             { id: 'pedidos', label: 'Más ganados' },
-            { id: 'anulaciones', label: 'Más anulaciones' }
+            { id: 'anulaciones', label: 'Más anulaciones' },
+            { id: 'decisiones', label: 'Más decisiones' },
+            { id: 'ventasPerdidas', label: 'Más ventas perdidas' },
+            { id: 'rechazos', label: 'Más rechazos' },
           ].map((btn) => (
             <button
               key={btn.id}
@@ -404,27 +397,15 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     </div>
                   </div>
                   
+                  <DecisionSummaryMobile
+                    counts={p}
+                    basePath={`/analisis/producto/${encodeURIComponent(p.desc)}`}
+                    navigate={navigate}
+                  />
                   <div className="space-y-1.5 border-t border-slate-100 pt-2 text-[11px]">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Clientes</span>
                       <span className="font-mono font-bold text-slate-800">{p.totalClientes}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500">Anulaciones</span>
-                      {p.anulaciones > 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}/anulados`)}
-                          className="inline-flex items-center min-h-7 px-2 -mr-2 rounded-md bg-white border border-slate-200/80 shadow-sm font-mono font-bold text-rose-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-900 active:translate-y-px active:shadow-inner transition-all cursor-pointer"
-                          title="Ver productos anulados"
-                        >
-                          {p.anulaciones}
-                          <span className="hidden sm:inline text-[9px] font-normal ml-1">anulaciones</span>
-                          <span className="sm:hidden text-[9px] font-normal ml-1">anul.</span>
-                        </button>
-                      ) : (
-                        <span className="font-mono font-bold text-slate-400">0</span>
-                      )}
                     </div>
                   </div>
 
@@ -452,6 +433,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     <th className="py-2.5 px-3.5">Marca</th>
                     <th className="py-2.5 px-3.5 text-center">Veces Cotizado</th>
                     <th className="py-2.5 px-3.5 text-center">Anulaciones</th>
+                    <th className="py-2.5 px-3.5 text-center">Ventas perdidas</th>
+                    <th className="py-2.5 px-3.5 text-center">Rechazos</th>
                     <th className="py-2.5 px-3.5 text-center">Unidades Cotizadas</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Cotizaciones Ganadas</th>
                     <th className="py-2.5 px-3.5 text-center">Unidades Pedidas</th>
@@ -490,19 +473,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                             {p.vecesCotizado} RFQ{p.vecesCotizado > 1 ? 's' : ''}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3.5 text-center">
-                          {p.anulaciones > 0 ? (
-                            <button
-                              type="button"
-                              onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}/anulados`)}
-                              className="font-mono text-xs font-semibold text-rose-700 hover:text-rose-900 underline underline-offset-2 cursor-pointer whitespace-nowrap"
-                            >
-                              {p.anulaciones} anulaciones
-                            </button>
-                          ) : (
-                            <span className="font-mono text-xs font-semibold text-slate-400">0</span>
-                          )}
-                        </td>
+                        <DecisionSummaryColumns counts={p} basePath={`/analisis/producto/${encodeURIComponent(p.desc)}`} navigate={navigate} />
                         <td className="py-2.5 px-3.5 text-center">
                           <span className="inline-block font-mono text-slate-800 font-semibold text-xs">
                             {p.unidadesCotizadas.toLocaleString()}

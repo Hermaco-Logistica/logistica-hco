@@ -6,6 +6,7 @@ import { MotivoAnulacionModal } from '../../components/MotivoAnulacionModal';
 import { Badge } from '../../components/Badge';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, evaluarEstadoGanada } from './theme';
+import { obtenerDecisionItem } from './utils/decisionMetrics';
 import { useSessionState } from '../../hooks/usePersistedState';
 import {
   getHoyElSalvador,
@@ -128,8 +129,10 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
     if (!Array.isArray(s.productos)) return [];
     return [...new Set(
       s.productos
-        .filter((p) => p.estadoItem === 'Anulado')
-        .map((p) => p.motivoAnulacion || p.motivoEstadoItem || p.motivoDenegacion || p.motivoRechazo || '')
+        .filter((p) => tabActual === 'ventas-perdidas'
+          ? ['Venta Perdida', 'Rechazo'].includes(obtenerDecisionItem(s, p))
+          : obtenerDecisionItem(s, p) === 'Anulado')
+        .map((p) => p.motivoVentaPerdida?.nombre || p.motivoVentaPerdida?.motivoNombre || p.motivoAnulacion || p.motivoEstadoItem || p.motivoDenegacion || p.motivoRechazo || '')
         .map((motivo) => motivo.toString().trim())
         .filter(Boolean)
     )];
@@ -138,15 +141,17 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
   const obtenerItemsAnulados = (s) => {
     if (!Array.isArray(s.productos)) return [];
     return s.productos
-      .filter((p) => p.estadoItem === 'Anulado')
+      .filter((p) => tabActual === 'ventas-perdidas'
+        ? ['Venta Perdida', 'Rechazo'].includes(obtenerDecisionItem(s, p))
+        : obtenerDecisionItem(s, p) === 'Anulado')
       .map((p, index) => ({
         idMov: `${s.id}-${index}`,
         correlativo: s.correlativo || 'S/N',
         producto: (p.desc || p.descripcion || 'Sin descripción').trim(),
         marca: (p.marca || '').trim(),
         cliente: s.cliente || 'Consumidor Final',
-        estado: s.estado || 'Anulado',
-        motivoAnulacion: p.motivoAnulacion || p.motivoEstadoItem || p.motivoDenegacion || p.motivoRechazo || ''
+        estado: obtenerDecisionItem(s, p),
+        motivoAnulacion: p.motivoVentaPerdida?.nombre || p.motivoVentaPerdida?.motivoNombre || p.motivoAnulacion || p.motivoEstadoItem || p.motivoDenegacion || p.motivoRechazo || ''
       }));
   };
 
@@ -209,6 +214,9 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
         // Solicitudes donde al menos un ítem está anulado pero la solicitud en sí no es totalmente Anulada
         return est !== 'Anulado' && Array.isArray(s.productos) && s.productos.some(p => p.estadoItem === 'Anulado');
       }
+      if (tabActual === 'ventas-perdidas') {
+        return Array.isArray(s.productos) && s.productos.some(p => obtenerDecisionItem(s, p) === 'Venta Perdida' || obtenerDecisionItem(s, p) === 'Rechazo');
+      }
       return true;
     });
   }, [solicitudes, tabActual, vendedorFilter, clienteFilter, filtroPeriodo, rangoEsteMes]);
@@ -257,8 +265,10 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
     { id: 'pedidos', label: 'Pedidos', dot: theme.flujoEstados?.pedidos?.dot },
     { id: 'parciales', label: 'Pedidos Parciales', dot: 'bg-sky-500' },
     { id: 'anuladas', label: 'Anuladas', dot: 'bg-rose-500' },
-    { id: 'anuladas-parcial', label: 'Con ítems anulados', dot: 'bg-rose-300' }
+    { id: 'anuladas-parcial', label: 'Con ítems anulados', dot: 'bg-rose-300' },
+    { id: 'ventas-perdidas', label: 'Ventas perdidas / rechazos', dot: 'bg-orange-500' }
   ];
+  const esTabDecision = tabActual.startsWith('anuladas') || tabActual === 'ventas-perdidas';
 
   // Bloqueo estricto para rol vendedor
   if (role === 'vendedor') {
@@ -375,7 +385,8 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                 pedidos: 'PEDIDOS GANADOS',
                 parciales: 'PEDIDOS PARCIALES',
                 anuladas: 'SOLICITUDES ANULADAS',
-                'anuladas-parcial': 'SOLICITUDES CON ÍTEMS ANULADOS'
+                'anuladas-parcial': 'SOLICITUDES CON ÍTEMS ANULADOS',
+                'ventas-perdidas': 'VENTAS PERDIDAS Y RECHAZOS'
               };
               const tituloTab = tabTitulos[tabActual] || 'SOLICITUDES';
               const filtrosActivos = [`Pestaña: ${tituloTab}`];
@@ -476,7 +487,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                       </div>
                     </div>
 
-                    {tabActual.startsWith('anuladas') && (
+                    {esTabDecision && (
                       <div className="border-t border-slate-100 pt-2">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Motivo</p>
                         <button
@@ -546,7 +557,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                       <th className="py-2.5 px-3.5 whitespace-nowrap">Vendedor</th>
                       <th className="py-2.5 px-3.5 whitespace-nowrap">Fecha</th>
                       <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ítems</th>
-                      {tabActual.startsWith('anuladas') && <th className="py-2.5 px-3.5 whitespace-nowrap">Motivo</th>}
+                    {esTabDecision && <th className="py-2.5 px-3.5 whitespace-nowrap">Motivo</th>}
                       <th className="py-2.5 px-3.5 whitespace-nowrap">OC Ref</th>
                       <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Estado</th>
                       <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Resultado</th>
@@ -607,7 +618,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                               {cantItems}
                             </span>
                           </td>
-                          {tabActual.startsWith('anuladas') && (
+                          {esTabDecision && (
                             <td className="max-w-[280px] py-2.5 px-3.5 align-top text-xs text-slate-600">
                               <button type="button" onClick={() => setItemsMotivo(itemsAnulados)} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px active:shadow-inner" title="Consultar motivos de anulación">
                                 <MessageCircleQuestion size={13} /> Consulta

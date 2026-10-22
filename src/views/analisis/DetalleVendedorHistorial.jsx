@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Search, 
@@ -24,9 +24,23 @@ import {
 } from 'lucide-react';
 import { exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { Badge } from '../../components/Badge';
-import { MotivoAnulacionModal } from '../../components/MotivoAnulacionModal';
-import { esDecisionItem } from '../../utils/decisionItemHelpers';
+import { obtenerDecisionItem } from './utils/decisionMetrics';
+import { normalizarDecisionFilter, obtenerConfiguracionDecision, obtenerEstadoDecision } from './utils/decisionFilter';
+import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
+import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
+import { DecisionBadge } from './components/DecisionBadge';
+import {
+  prepararDatosConsultaMovimiento,
+  obtenerTextoConsultaMovimiento,
+  tieneMotivoConsultaMovimiento
+} from './utils/consultaMovimiento';
 import { normalizarBusqueda } from '../../utils/normalizers';
+import {
+  normalizarEstadoItemMovimiento,
+  obtenerOcRefMovimiento,
+  obtenerMotivoMovimiento,
+  obtenerOpcionesMovimiento
+} from './utils/normalizarMovimiento';
 import { getRoleTheme, evaluarEstadoGanada } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 import {
@@ -37,7 +51,7 @@ import {
   cargarFiltroPeriodoStorage
 } from '../../utils/dateValidation';
 
-const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGanada, irADetalle, onMostrarMotivo, soloAnulados = false }) => {
+const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGanada, irADetalle, onMostrarMotivo, soloAnulados = false, decisionFilter = 'anulados' }) => {
   const [expanded, setExpanded] = useState(false);
   const esAereo = m.modalidad === 'Aéreo';
   const esMaritimo = m.modalidad === 'Marítimo';
@@ -73,7 +87,7 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
               {!soloAnulados && res.esParcial && (
                 <span className="bg-amber-100 text-amber-800 text-[8px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Parcial</span>
               )}
-              {soloAnulados && <span className="text-[8px] font-semibold text-rose-600 uppercase tracking-wider">Anulado</span>}
+              {soloAnulados && <DecisionBadge decisionFilter={decisionFilter} />}
               {m.solicitudOriginal?.estado !== 'Anulado' && (m.estado === 'Anulado' || m.solicitudOriginal?.productos?.some(p => p.estadoItem === 'Anulado')) && (
                 <span className="inline-flex items-center gap-1 text-[8px] font-semibold text-rose-500 bg-rose-50 px-1 py-0.5 rounded border border-rose-200">
                   <Ban size={8} className="shrink-0" />
@@ -171,10 +185,10 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
                   )}
                 </div>
               )}
-              {(m.motivoAnulacion || esDecisionItem(m.itemOriginal)) && (
+              {tieneMotivoConsultaMovimiento(m) && (
                 <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
                   <span className="text-slate-500">Motivo</span>
-                  <button type="button" onClick={() => onMostrarMotivo(m)} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px active:shadow-inner">
+                  <button type="button" onClick={() => onMostrarMotivo(m)} title={obtenerTextoConsultaMovimiento(m)} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px active:shadow-inner">
                     <MessageCircleQuestion size={13} /> Consulta
                   </button>
                 </div>
@@ -206,6 +220,8 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
 
 export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra = [], soloAnulados = false }) => {
   const { vendedorId } = useParams();
+  const [searchParams] = useSearchParams();
+  const decisionFilter = soloAnulados ? normalizarDecisionFilter(searchParams.get('decision')) : null;
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
 
@@ -221,7 +237,10 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
   const [filterCliente, setFilterCliente] = useSessionState('analisis_vend_hist_cliente', '');
   const [clienteFilter, setClienteFilter] = useSessionState('analisis_cliente_search', '');
   const [currentPage, setCurrentPage] = useState(1);
-  const [movimientoMotivo, setMovimientoMotivo] = useState(null);
+  const [consultaMotivoData, setConsultaMotivoData] = useState(null);
+  const abrirConsultaMotivo = useCallback((movimiento) => {
+    setConsultaMotivoData(prepararDatosConsultaMovimiento(movimiento));
+  }, []);
   const itemsPerPage = 10;
   const filtroPeriodo = useMemo(() => cargarFiltroPeriodoStorage(), []);
   const rangoEsteMes = useMemo(() => {
@@ -388,7 +407,10 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
           ? s.productos 
           : [{ desc: 'Sin productos detallados', cant: 1 }];
         const productosVisibles = soloAnulados
-          ? productosLista.filter((p) => p.estadoItem === 'Anulado')
+          ? productosLista.filter((p) => {
+            const decision = obtenerDecisionItem(s, p);
+            return decision === obtenerEstadoDecision(decisionFilter);
+          })
           : productosLista;
 
         productosVisibles.forEach((p, idx) => {
@@ -436,22 +458,10 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
           const totalConIva = valorNeto > 0 ? valorNeto * (1 + IVA_TASA) : 0;
 
           // OC Referencia
-          const ocRef = p.numOC || p.ocRef || p.numeroOC || s.numeroOC || s.linkOC || '';
+          const ocRef = obtenerOcRefMovimiento(p, s);
 
           // Estado del ítem a nivel individual (ítem por ítem)
-          let estadoItem = p.estadoItem;
-          if (estadoItem === 'Pedido Parcial' || estadoItem === 'Comprado') {
-            estadoItem = 'Pedido';
-          } else if (!estadoItem) {
-            if (s.estado === 'Pedido' || s.estado === 'Comprado') {
-              estadoItem = 'Pedido';
-            } else if (s.estado === 'Pedido Parcial') {
-              const tienePrecio = Number(p.fob || p.precioUnitario || 0) > 0;
-              estadoItem = tienePrecio ? 'Cotizado' : 'Pendiente';
-            } else {
-              estadoItem = s.estado || 'Pendiente';
-            }
-          }
+          const estadoItem = normalizarEstadoItemMovimiento(p, s);
 
           // Fechas:
           // 1. Fecha Solicitud
@@ -485,7 +495,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
             ocRef: ocRef,
             estado: s.estado || 'Pendiente',
             estadoItem: estadoItem,
-            motivoAnulacion: p.motivoAnulacion || p.motivoEstadoItem || p.motivoDenegacion || p.motivoRechazo || '',
+            motivoAnulacion: obtenerMotivoMovimiento(p),
             fob: Number(p.fob || 0),
             itemOriginal: p,
             solicitudOriginal: s
@@ -510,7 +520,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
         totalClientes: clientesMap.size
       },
     };
-  }, [solicitudes, targetKey, decodedSearch, vendedorId, mapFechasOC, clienteFilter, soloAnulados, filtroPeriodo, rangoEsteMes]);
+  }, [solicitudes, targetKey, decodedSearch, vendedorId, mapFechasOC, clienteFilter, soloAnulados, decisionFilter, filtroPeriodo, rangoEsteMes]);
 
   // Opciones del filtro alineadas con los filtros visibles actuales.
   // Se excluye filterCliente para conservar todas las opciones disponibles.
@@ -538,13 +548,9 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
     return Array.from(clientesMap.values()).sort((a, b) => a.localeCompare(b, 'es'));
   }, [movimientos, filterEstado, filterModalidad, searchTerm, soloAnulados]);
 
-  const estadosDisponibles = useMemo(() => {
-    return Array.from(new Set(movimientos.map(m => m.estado).filter(Boolean))).sort();
-  }, [movimientos]);
+  const estadosDisponibles = useMemo(() => obtenerOpcionesMovimiento(movimientos, 'estado'), [movimientos]);
 
-  const modalidadesDisponibles = useMemo(() => {
-    return Array.from(new Set(movimientos.map(m => m.modalidad).filter(Boolean))).sort();
-  }, [movimientos]);
+  const modalidadesDisponibles = useMemo(() => obtenerOpcionesMovimiento(movimientos, 'modalidad'), [movimientos]);
 
   // Filtrado de la tabla según filtros y búsqueda
   const movimientosFiltrados = useMemo(() => {
@@ -659,7 +665,16 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
 
   return (
     <>
-      <MotivoAnulacionModal movimiento={movimientoMotivo} onClose={() => setMovimientoMotivo(null)} />
+      <ModalConsultaVentaPerdida
+        isOpen={consultaMotivoData?.tipo === 'ventaPerdida'}
+        onClose={() => setConsultaMotivoData(null)}
+        data={consultaMotivoData?.data}
+      />
+      <ModalConsultaDecisionItem
+        isOpen={consultaMotivoData?.tipo === 'decision'}
+        onClose={() => setConsultaMotivoData(null)}
+        data={consultaMotivoData?.data}
+      />
       <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
       {/* CABECERA */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -675,7 +690,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-1.5">
               <span className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-sm ${theme.bgBadge}`}>
-                {soloAnulados ? 'Anulaciones de Vendedor' : 'Historial de Vendedor'}
+                {soloAnulados ? `${obtenerConfiguracionDecision(decisionFilter).titulo} de Vendedor` : 'Historial de Vendedor'}
               </span>
             </div>
             
@@ -686,7 +701,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
                 </h1>
                 {soloAnulados && (
                   <p className="text-xs font-medium text-rose-600 mb-2.5">
-                    Vista exclusiva de items anulados
+                    Vista exclusiva de {obtenerConfiguracionDecision(decisionFilter).sustantivo}
                   </p>
                 )}
                 
@@ -934,8 +949,9 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
                   formatMoneda={formatMoneda} 
                   evaluarEstadoGanada={evaluarEstadoGanada} 
                   irADetalle={irADetalle} 
-                  onMostrarMotivo={setMovimientoMotivo}
+                  onMostrarMotivo={abrirConsultaMotivo}
                   soloAnulados={soloAnulados}
+                  decisionFilter={decisionFilter}
                 />
               ))}
             </div>
@@ -1153,8 +1169,8 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
 
                       {/* Acción */}
                       <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                        {(m.motivoAnulacion || esDecisionItem(m.itemOriginal)) ? (
-                          <button type="button" onClick={() => setMovimientoMotivo(m)} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px active:shadow-inner" title="Consultar motivo de anulación">
+                        {tieneMotivoConsultaMovimiento(m) ? (
+                          <button type="button" onClick={() => abrirConsultaMotivo(m)} className="inline-flex min-h-7 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 font-semibold text-slate-600 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px active:shadow-inner" title={obtenerTextoConsultaMovimiento(m)}>
                             <MessageCircleQuestion size={13} /> Consulta
                           </button>
                         ) : <span className="text-slate-300">---</span>}

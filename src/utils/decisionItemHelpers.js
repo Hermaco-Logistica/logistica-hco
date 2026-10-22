@@ -66,7 +66,7 @@ export function esItemCerrado(item) {
   if (['Pedido', 'Comprado', 'Anulado', 'Venta Perdida', 'Cancelado', 'Rechazado', 'Denegado'].includes(estado)) {
     return true;
   }
-  if (Boolean(item.motivoVentaPerdida)) {
+  if (item.motivoVentaPerdida) {
     return true;
   }
   if (item.negociacion?.resultado && item.negociacion.resultado !== 'pendiente') {
@@ -85,7 +85,7 @@ export function esDecisionItem(item) {
   if (!item) return false;
   if (item.estadoItem === 'Cancelado' || item.estadoItem === 'Rechazado' || Boolean(item.motivoRechazo)) return true;
   if (item.estadoItem === 'Denegado' || Boolean(item.motivoDenegacion)) return true;
-  if (item.estadoItem === 'Anulado' && Boolean(item.motivoAnulacion)) return true;
+  if (item.estadoItem === 'Anulado') return true;
   return false;
 }
 

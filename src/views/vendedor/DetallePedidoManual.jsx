@@ -22,7 +22,7 @@ import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsul
 import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
 import { esItemEstancado } from '../../utils/cotizacionesEstancadasHelpers';
 import { prepararDatosConsultaVentaPerdida, tieneMotivoConsultaItem } from '../../utils/ventasPerdidasHelpers';
-import { esDecisionItem, prepararDatosDecisionItem, esItemCerrado } from '../../utils/decisionItemHelpers';
+import { esDecisionItem, prepararDatosDecisionItem, prepararDatosDecisionSolicitud, esItemCerrado } from '../../utils/decisionItemHelpers';
 
 export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   const { id } = useParams();
@@ -99,6 +99,8 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   const esAnulado = solicitudBase?.estado === 'Anulado';
   const esVentaPerdida = solicitudBase?.estado === 'Venta Perdida';
   const puedeResponder = (Boolean(esDuenio) || role === 'gerente' || role === 'administrador') && !esAnulado && !esVentaPerdida;
+  const hayDecisionesEnParcial = Boolean(solicitudBase?.estado?.includes('Parcial') && itemsServer.some((p) => esDecisionItem(p)));
+  const hayVentaPerdidaEnParcial = Boolean(solicitudBase?.estado?.includes('Parcial') && itemsServer.some((p) => p.estadoItem === 'Venta Perdida' || p.motivoVentaPerdida));
   const motivoAnulacion = solicitudBase?.motivoAnulacion
     || solicitudBase?.productos?.find(p => p.motivoAnulacion)?.motivoAnulacion
     || '';
@@ -330,6 +332,21 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {hayDecisionesEnParcial && (
+            <button
+              type="button"
+              onClick={() => setConsultaDecisionData(prepararDatosDecisionSolicitud({ ...solicitudBase, id: solicitudBase?.id || id }))}
+              className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 cursor-pointer"
+              title="Consultar motivos de los ítems afectados"
+            >
+              <MessageCircleQuestion size={13} /> <span className="hidden md:inline">Consultar motivo</span><span className="md:hidden">Consulta</span>
+            </button>
+          )}
+          {hayVentaPerdidaEnParcial && (
+            <button type="button" onClick={() => abrirConsultaVentaPerdida()} className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 cursor-pointer" title="Consultar motivos de ventas perdidas">
+              <MessageCircleQuestion size={13} /> <span className="hidden md:inline">Consultar VP</span><span className="md:hidden">VP</span>
+            </button>
+          )}
           {debeMostrarBotonVentaPerdida && (
             <button
               onClick={() => handleAbrirVentaPerdida()}

@@ -25,6 +25,7 @@ import {
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, formatearTiempoRespuesta, formatearTiempoCierre } from './theme';
+import { contarDecisiones, obtenerDecisionItem } from './utils/decisionMetrics';
 import {
   getHoyElSalvador,
   getAnioActualElSalvador,
@@ -37,6 +38,7 @@ import {
 
 import { useSessionState } from '../../hooks/usePersistedState';
 import { clasificarSolicitud, etiquetaResultadoSolicitud, RESULTADOS_SOLICITUD } from '../../utils/clasificarSolicitud';
+import { MetricasRotativas } from './components/MetricasRotativas';
 
 export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();
@@ -58,7 +60,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
   const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [clienteSearch, setClienteSearch] = useSessionState('analisis_cliente_search', '');
   const [resultadoFilter, setResultadoFilter] = useSessionState('analisis_resultado_filter', '');
-  const [ordenarProductosPor, setOrdenarProductosPor] = useSessionState('analisis_top_prod_orden', 'veces'); // 'veces' | 'ganadas' | 'unidades' | 'anulaciones'
+  const [ordenarProductosPor, setOrdenarProductosPor] = useSessionState('analisis_top_prod_orden', 'veces'); // 'veces' | 'ganadas' | 'unidades' | 'anulaciones' | 'ventasPerdidas' | 'rechazos'
   const [pageVendedores, setPageVendedores] = useState(1);
   const itemsPerPageVendedores = 5;
 
@@ -223,17 +225,26 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     let cotizadasConAnulaciones = 0;
     let anuladas = 0;
     let anuladasParcial = 0; // solicitudes con al menos un ítem anulado pero que no están totalmente anuladas
+    let ventasPerdidas = 0;
+    let rechazos = 0;
     let montoCotizadoTotal = 0;
     let montoPedidoTotal = 0;
     let totalDiasRespuesta = 0;
     let rfqConTiempoRespuesta = 0;
     let totalDiasCierre = 0;
     let pedidosConTiempoCierre = 0;
+    let ventasPerdidasSolicitudes = 0;
+    let totalDiasVentaPerdida = 0;
+    let itemsConTiempoVentaPerdida = 0;
 
     solicitudesFiltradas.forEach((s) => {
       const clasificacion = clasificarSolicitud(s.productos, s.estado);
       const estado = clasificacion.estado;
       const resultado = s.resultado || clasificacion.resultado;
+      const decisiones = contarDecisiones(s);
+      ventasPerdidas += decisiones.ventasPerdidas;
+      rechazos += decisiones.rechazos;
+      if (decisiones.ventasPerdidas > 0) ventasPerdidasSolicitudes++;
       if (estado === 'Pendiente') pendientes++;
       else if (estado === 'Cotizado') cotizadas++;
       else if (estado === 'Cotizado Parcial') cotizadasParcial++;
@@ -276,6 +287,20 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
             (estado === 'Pedido' && p.estadoItem !== 'Cotizado' && p.estadoItem !== 'Pendiente');
           if (esItemPedido && unitario > 0) {
             montoPedidoTotal += unitario * cant;
+          }
+
+          if (obtenerDecisionItem(s, p) === 'Venta Perdida') {
+            const fechaCotizacionItem = parseDate(p.fechaCotizacion || s.fechaCotizacion || s.fechaRespuesta);
+            const fechaVentaPerdida = parseDate(
+              p.fechaVentaPerdida ||
+              p.motivoVentaPerdida?.fecha ||
+              s.fechaVentaPerdida ||
+              s.motivoVentaPerdida?.fecha
+            );
+            if (fechaCotizacionItem && fechaVentaPerdida && fechaVentaPerdida >= fechaCotizacionItem) {
+              totalDiasVentaPerdida += (fechaVentaPerdida.getTime() - fechaCotizacionItem.getTime()) / (1000 * 3600 * 24);
+              itemsConTiempoVentaPerdida++;
+            }
           }
         });
       }
@@ -323,12 +348,22 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       ? (totalDiasCierre / pedidosConTiempoCierre)
       : null;
     const tiempoCierreInfo = formatearTiempoCierre(tiempoCierreDiasRaw);
+    const tiempoVentaPerdidaInfo = formatearTiempoRespuesta(
+      itemsConTiempoVentaPerdida > 0 ? totalDiasVentaPerdida / itemsConTiempoVentaPerdida : null
+    );
+    const tasaVentaPerdida = total > 0
+      ? ((ventasPerdidasSolicitudes / total) * 100).toFixed(1)
+      : 0;
 
     return {
       total,
       pendientes,
       anuladas,
       anuladasParcial,
+      ventasPerdidas,
+      rechazos,
+      ventasPerdidasSolicitudes,
+      tasaVentaPerdida,
       cotizadas: cotizadas + cotizadasParcial,
       cotizadasCompletas: cotizadas,
       cotizadasParciales: cotizadasParcial,
@@ -342,7 +377,8 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       montoPedidoTotal,
       tiempoPromedioDias: tiempoCierreInfo.valor,
       tiempoCierreInfo,
-      tiempoRespuestaInfo
+      tiempoRespuestaInfo,
+      tiempoVentaPerdidaInfo
     };
   }, [solicitudesFiltradas]);
 
@@ -357,10 +393,23 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         const cant = Number(p.cant || 1);
         const marca = (p.marca || '').trim();
         if (!map[key]) {
-          map[key] = { desc, marca, veces: 0, unidades: 0, ganadas: 0, unidadesGanadas: 0, anulaciones: 0 };
+          map[key] = {
+            desc,
+            marca,
+            veces: 0,
+            unidades: 0,
+            ganadas: 0,
+            unidadesGanadas: 0,
+            anulaciones: 0,
+            ventasPerdidas: 0,
+            rechazos: 0
+          };
         }
-        if (p.estadoItem === 'Anulado') {
-          map[key].anulaciones++;
+        const decision = obtenerDecisionItem(s, p);
+        if (decision) {
+          if (decision === 'Anulado') map[key].anulaciones++;
+          if (decision === 'Venta Perdida') map[key].ventasPerdidas++;
+          if (decision === 'Rechazo') map[key].rechazos++;
           if (!map[key].marca && marca) map[key].marca = marca;
           return;
         }
@@ -382,6 +431,8 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
           return b.ganadas - a.ganadas || b.unidadesGanadas - a.unidadesGanadas || b.veces - a.veces;
         }
         if (ordenarProductosPor === 'anulaciones') return b.anulaciones - a.anulaciones || b.veces - a.veces;
+        if (ordenarProductosPor === 'ventasPerdidas') return b.ventasPerdidas - a.ventasPerdidas || b.veces - a.veces;
+        if (ordenarProductosPor === 'rechazos') return b.rechazos - a.rechazos || b.veces - a.veces;
         return b.veces - a.veces || b.unidades - a.unidades;
       })
       .slice(0, 5);
@@ -728,6 +779,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         periodo={periodo}
         setPeriodo={setPeriodo}
         metricas={metricas}
+        vendedorFilter={vendedorFilter}
         statsVendedores={statsVendedores}
         topClientes={topClientes}
         topProductos={topProductos}
@@ -745,6 +797,8 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
   if (role === 'vendedor') {
     return <Navigate to="/vendedor" replace />;
   }
+
+  const mostrarKpisLegacy = false;
 
   return (
     <div className="animate-in fade-in duration-500 max-w-7xl mx-auto space-y-6 pb-12">
@@ -794,6 +848,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       {renderFiltros()}
 
       {/* TARJETAS KPI MINIMALISTAS */}
+      {mostrarKpisLegacy && (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Total Solicitudes */}
         <div 
@@ -959,7 +1014,11 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         </div>
       </div>
 
+      )}
+
       {/* SECCIÓN PRINCIPAL: FLUJO DE ESTADOS Y TOP CLIENTES */}
+      <MetricasRotativas metricas={metricas} vendedorFilter={vendedorFilter} formatearDinero={formatearDinero} />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Embudo de Estados (2 columnas) con enlaces directos */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs">
@@ -1039,6 +1098,21 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 subdetail: metricas.anuladasParcial > 0
                   ? `${metricas.anuladas} completas · ${metricas.anuladasParcial} con ítems anulados`
                   : null
+              },
+              {
+                tipo: 'ventas-perdidas',
+                label: 'Ventas Perdidas / Rechazos',
+                count: metricas.ventasPerdidas + metricas.rechazos,
+                icon: AlertCircle,
+                iconBg: 'bg-orange-50 text-orange-600 border-orange-200/80',
+                barGradient: 'from-orange-400 to-red-500',
+                subGradient: 'from-orange-300 to-red-400',
+                textColor: 'text-orange-700',
+                desc: 'Ítems cotizados que no se concretaron',
+                completas: metricas.ventasPerdidas,
+                parciales: metricas.rechazos,
+                subdetail: `${metricas.ventasPerdidas} ventas perdidas · ${metricas.rechazos} rechazos`,
+                ruta: 'ventas-perdidas'
               }
             ].map((item) => {
               const porcentaje = metricas.total > 0 
@@ -1056,7 +1130,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
               return (
                 <div 
                   key={item.tipo}
-                  onClick={() => navigate(`/analisis/solicitudes/${item.tipo}`)}
+                  onClick={() => navigate(`/analisis/solicitudes/${item.ruta || item.tipo}`)}
                   className="p-4 bg-slate-50/70 hover:bg-white rounded-xl border border-slate-200/70 hover:border-slate-300 hover:shadow-xs transition-all cursor-pointer group"
                 >
                   <div className="flex items-center justify-between mb-2.5">
@@ -1293,6 +1367,28 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
               >
                 Más anulaciones
               </button>
+              <button
+                type="button"
+                onClick={() => setOrdenarProductosPor('ventasPerdidas')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                  ordenarProductosPor === 'ventasPerdidas'
+                    ? 'bg-white text-orange-700 shadow-xs font-semibold'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Más ventas perdidas
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrdenarProductosPor('rechazos')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer ${
+                  ordenarProductosPor === 'rechazos'
+                    ? 'bg-white text-amber-700 shadow-xs font-semibold'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Más rechazos
+              </button>
             </div>
 
             <button
@@ -1385,6 +1481,18 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                     <span className="text-[10px] text-slate-400 font-medium">Anulaciones</span>
                     <span className={`font-mono font-semibold text-xs ${p.anulaciones > 0 ? 'text-rose-700' : 'text-slate-400'}`}>
                       {p.anulaciones}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-400 font-medium">Ventas perdidas</span>
+                    <span className={`font-mono font-semibold text-xs ${p.ventasPerdidas > 0 ? 'text-orange-700' : 'text-slate-400'}`}>
+                      {p.ventasPerdidas}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-slate-400 font-medium">Rechazos</span>
+                    <span className={`font-mono font-semibold text-xs ${p.rechazos > 0 ? 'text-amber-700' : 'text-slate-400'}`}>
+                      {p.rechazos}
                     </span>
                   </div>
                 </div>

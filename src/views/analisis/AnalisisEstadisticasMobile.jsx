@@ -10,8 +10,10 @@ import {
   Truck,
   ArrowUpRight,
   ChevronRight,
-  Ban
+  Ban,
+  AlertCircle
 } from 'lucide-react';
+import { MetricasRotativas } from './components/MetricasRotativas';
 
 /* ============================================================================
    PRIMITIVOS MÓVILES
@@ -345,6 +347,21 @@ function MobileFlujoCard({ theme, metricas, onVerTodas, onVerEstado }) {
       subdetail: metricas.anuladasParcial > 0
         ? `${metricas.anuladas} completas · ${metricas.anuladasParcial} con ítems anulados`
         : null
+    },
+    {
+      tipo: 'ventas-perdidas',
+      label: 'Ventas Perdidas / Rechazos',
+      count: metricas.ventasPerdidas + metricas.rechazos,
+      icon: AlertCircle,
+      iconBg: 'bg-orange-50 text-orange-600 border-orange-200/80',
+      barGradient: 'from-orange-400 to-red-500',
+      subGradient: 'from-orange-300 to-red-400',
+      textColor: 'text-orange-700',
+      desc: 'Ítems cotizados que no se concretaron',
+      completas: metricas.ventasPerdidas,
+      parciales: metricas.rechazos,
+      subdetail: `${metricas.ventasPerdidas} ventas perdidas · ${metricas.rechazos} rechazos`,
+      ruta: 'ventas-perdidas'
     }
   ];
 
@@ -378,7 +395,7 @@ function MobileFlujoCard({ theme, metricas, onVerTodas, onVerEstado }) {
             return (
               <div 
                 key={item.tipo}
-                onClick={() => onVerEstado && onVerEstado(item.tipo)}
+                onClick={() => onVerEstado && onVerEstado(item.ruta || item.tipo)}
                 className="p-3 bg-slate-50/70 active:bg-slate-100 rounded-2xl border border-slate-200/60 transition-all cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-2">
@@ -641,6 +658,7 @@ export const AnalisisEstadisticasMobile = ({
   periodo,
   setPeriodo,
   metricas,
+  vendedorFilter = '',
   statsVendedores = [],
   topClientes = [],
   topProductos = [],
@@ -685,6 +703,8 @@ export const AnalisisEstadisticasMobile = ({
     };
   });
 
+  const mostrarKpisLegacy = false;
+
   return (
     <div className="animate-in fade-in duration-500 pb-12 space-y-4">
       {/* CABECERA (Solo saludo y rol) */}
@@ -703,15 +723,17 @@ export const AnalisisEstadisticasMobile = ({
       {FiltrosComponent && FiltrosComponent}
 
       {/* HERO: CONVERSIÓN */}
-      <MobileHeroCard
+      {mostrarKpisLegacy && (<MobileHeroCard
         theme={theme}
         metricas={metricas}
         formatearDinero={formatearDinero}
         onVerPedidos={() => navigate('/analisis/solicitudes/pedidos')}
-      />
+      />)}
+
+      <MetricasRotativas metricas={metricas} vendedorFilter={vendedorFilter} formatearDinero={formatearDinero} compact />
 
       {/* TIEMPOS OPERATIVOS */}
-      <MobileTiemposRow metricas={metricas} />
+      {mostrarKpisLegacy && <MobileTiemposRow metricas={metricas} />}
 
       {/* FLUJO DE ESTADOS */}
       <MobileFlujoCard theme={theme} metricas={metricas} onVerTodas={() => navigate('/analisis/solicitudes/todas')} onVerEstado={(tipo) => navigate(`/analisis/solicitudes/${tipo}`)} />

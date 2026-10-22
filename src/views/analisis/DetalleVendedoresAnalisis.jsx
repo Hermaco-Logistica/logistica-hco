@@ -4,12 +4,12 @@ import { ArrowLeft, Search, Zap, Clock, Download } from 'lucide-react';
 import { extraerTodosLosMovimientos, exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, formatearTiempoRespuesta, formatearTiempoCierre } from './theme';
+import { contarDecisiones } from './utils/decisionMetrics';
+import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
+import { cumpleFiltroPeriodoAnalisis } from './utils/periodoAnalisis';
 import { useSessionState } from '../../hooks/usePersistedState';
 import {
   getHoyElSalvador,
-  getAnioActualElSalvador,
-  parseInicioDiaElSalvador,
-  parseFinDiaElSalvador,
   cargarFiltroPeriodoStorage
 } from '../../utils/dateValidation';
 
@@ -99,36 +99,12 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
   // Agrupar por vendedor
   const datosVendedores = useMemo(() => {
     const map = {};
-    const { periodo, fechaInicio, fechaFin, anioHistorico } = filtroPeriodo;
     const ahora = new Date();
-    const anioActual = getAnioActualElSalvador();
 
     solicitudes.forEach((s) => {
       // Filtro por fecha (respeta el período seleccionado en el dashboard)
       const fechaSol = parseDate(s.fechaS || s.fechaCreacion);
-      if (fechaSol) {
-        if (periodo === 'custom') {
-          if (!(fechaInicio && fechaFin && fechaInicio > fechaFin)) {
-            if (fechaInicio) {
-              const dInicio = parseInicioDiaElSalvador(fechaInicio);
-              if (dInicio && fechaSol < dInicio) return;
-            }
-            if (fechaFin) {
-              const dFin = parseFinDiaElSalvador(fechaFin);
-              if (dFin && fechaSol > dFin) return;
-            }
-          }
-        } else if (periodo === 'historico') {
-          if (anioHistorico !== 'todos' && fechaSol.getFullYear() !== anioHistorico) return;
-        } else if (periodo !== 'all') {
-          const diffDias = (ahora.getTime() - fechaSol.getTime()) / (1000 * 3600 * 24);
-          if (periodo === '7d' && diffDias > 7) return;
-          if (periodo === '30d' && diffDias > 30) return;
-          if (periodo === '90d' && diffDias > 90) return;
-          if (periodo === 'this_month' && (fechaSol < rangoEsteMes.inicio || fechaSol >= rangoEsteMes.fin)) return;
-          if (periodo === 'this_year' && fechaSol.getFullYear() !== anioActual) return;
-        }
-      }
+      if (!cumpleFiltroPeriodoAnalisis({ fecha: fechaSol, filtroPeriodo, rangoEsteMes, ahora })) return;
 
       const nombre = (s.vendedorNombre || 'Sin asignar').trim();
       const email = (s.vendedorEmail || '').trim();
@@ -142,6 +118,8 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
           pedidos: 0,
           pedidosParciales: 0,
           anulaciones: 0,
+          ventasPerdidas: 0,
+          rechazos: 0,
           pendientes: 0,
           montoCotizado: 0,
           montoPedidos: 0,
@@ -166,7 +144,10 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
 
       // Montos
       if (Array.isArray(s.productos)) {
-        item.anulaciones += s.productos.filter((p) => p.estadoItem === 'Anulado').length;
+        const decisiones = contarDecisiones(s);
+        item.anulaciones += decisiones.anulaciones;
+        item.ventasPerdidas += decisiones.ventasPerdidas;
+        item.rechazos += decisiones.rechazos;
         s.productos.forEach((p) => {
           const cant = Number(p.cant || 1);
           const fob = Number(p.fob || 0);
@@ -243,6 +224,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
         return efB - efA;
       }
       if (criterioOrden === 'monto') return b.montoCotizado - a.montoCotizado;
+      if (criterioOrden === 'decisiones') return (b.ventasPerdidas + b.rechazos + b.anulaciones) - (a.ventasPerdidas + a.rechazos + a.anulaciones) || b.totalRFQs - a.totalRFQs;
       return b.totalRFQs - a.totalRFQs;
     });
   }, [vendedoresFiltrados, criterioOrden]);
@@ -291,7 +273,8 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
             { id: 'total', label: 'Más RFQs' },
             { id: 'pedidos', label: 'Más Pedidos' },
             { id: 'efectividad', label: 'Efectividad' },
-            { id: 'monto', label: 'Mayor Monto' }
+            { id: 'monto', label: 'Mayor Monto' },
+            { id: 'decisiones', label: 'Más ventas perdidas' }
           ].map((ord) => (
             <button
               key={ord.id}
@@ -403,6 +386,11 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                     </div>
                   </div>
                   
+                  <DecisionSummaryMobile
+                    counts={v}
+                    basePath={`/analisis/vendedor/${encodeURIComponent(v.vendedor)}`}
+                    navigate={navigate}
+                  />
                   <div className="space-y-1.5 border-t border-slate-100 pt-2 text-[11px]">
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Monto Cotizado</span>
@@ -415,21 +403,6 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Efectividad</span>
                       <span className="font-mono font-bold text-blue-600">{efPct}%</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-500">Anulaciones</span>
-                      {v.anulaciones > 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => navigate(`/analisis/vendedor/${encodeURIComponent(v.vendedor)}/anulados`)}
-                          className="inline-flex items-center min-h-7 px-2 -mr-2 rounded-md bg-white border border-slate-200/80 shadow-sm font-mono font-bold text-rose-700 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-900 active:translate-y-px active:shadow-inner transition-all cursor-pointer"
-                          title="Ver items anulados"
-                        >
-                          {v.anulaciones}<span className="text-[9px] font-normal ml-1">anul.</span>
-                        </button>
-                      ) : (
-                        <span className="font-mono font-bold text-slate-400">0</span>
-                      )}
                     </div>
                   </div>
 
@@ -466,6 +439,8 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Cotizadas</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ganadas (Pedidos)</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Anulaciones</th>
+                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ventas perdidas</th>
+                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Rechazos</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Efectividad</th>
                   <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Monto Cotizado</th>
                   <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Monto en Pedidos</th>
@@ -534,20 +509,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                           </span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
-                        {v.anulaciones > 0 ? (
-                          <button
-                            type="button"
-                            onClick={() => navigate(`/analisis/vendedor/${encodeURIComponent(v.vendedor)}/anulados`)}
-                            className="font-mono font-semibold text-rose-700 hover:text-rose-900 transition-colors cursor-pointer"
-                            title="Ver items anulados"
-                          >
-                            {v.anulaciones} <span className="text-[10px] font-normal">anulaciones</span>
-                          </button>
-                        ) : (
-                          <span className="font-mono text-slate-400">0</span>
-                        )}
-                      </td>
+                        <DecisionSummaryColumns counts={v} basePath={`/analisis/vendedor/${encodeURIComponent(v.vendedor)}`} navigate={navigate} />
                       <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                         <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold border ${
                           efPct > 50 
