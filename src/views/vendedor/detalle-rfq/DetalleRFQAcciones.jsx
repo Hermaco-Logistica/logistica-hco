@@ -35,6 +35,7 @@ export const DetalleRFQAcciones = ({
 
   const mostrarStickyMovil = (puedeConfirmarOEnviar || debeMostrarBotonVentaPerdida)
     && !accionesPrincipalesVisibles;
+  const hayPedidoYVentaPerdida = totalItemsSeleccionados > 0 && totalVentasPerdidasPendientes > 0;
 
   return (
     <>
@@ -72,18 +73,25 @@ export const DetalleRFQAcciones = ({
           ) : (
             <ShoppingCart size={18} className="shrink-0" />
           )}
-          <span className="truncate">
-            {puedeConfirmarOEnviar
-              ? (enviandoPedido
-                  ? (mensajePedido || 'PROCESANDO...')
-                  : totalItemsSeleccionados > 0 && totalVentasPerdidasPendientes > 0
-                    ? `CONFIRMAR (${totalItemsSeleccionados} PEDIDO · ${totalVentasPerdidasPendientes} VTA. PERDIDA)`
+          {puedeConfirmarOEnviar && !enviandoPedido && hayPedidoYVentaPerdida ? (
+            <span className="flex min-w-0 flex-col items-center justify-center gap-0.5 text-center leading-tight">
+              <span className="shrink-0">CONFIRMAR</span>
+              <span className="text-[10px] font-bold tracking-wide opacity-90">
+                {totalItemsSeleccionados} {totalItemsSeleccionados === 1 ? 'pedido' : 'pedidos'} · {totalVentasPerdidasPendientes} {totalVentasPerdidasPendientes === 1 ? 'venta perdida' : 'ventas perdidas'}
+              </span>
+            </span>
+          ) : (
+            <span className="truncate">
+              {puedeConfirmarOEnviar
+                ? (enviandoPedido
+                    ? (mensajePedido || 'PROCESANDO...')
                     : totalVentasPerdidasPendientes > 0
                       ? `ENVIAR VENTAS PERDIDAS (${totalVentasPerdidasPendientes})`
                       : 'CONFIRMAR Y ENVIAR PEDIDO'
-                )
-              : (pedidoYaCreado ? 'PEDIDO YA GENERADO' : 'SOLO VISUALIZACION')}
-          </span>
+                  )
+                : (pedidoYaCreado ? 'PEDIDO YA GENERADO' : 'SOLO VISUALIZACION')}
+            </span>
+          )}
         </button>
       </div>
 

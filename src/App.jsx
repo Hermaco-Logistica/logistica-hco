@@ -200,7 +200,7 @@ function App() {
           }
 
           if (rfqData.estado === 'Cotizado' || rfqData.estado === 'Pedido') {
-            throw new Error("Esta solicitud ya est� cotizada y no admite una nueva cotizaci�n.");
+            throw new Error("Esta solicitud ya está cotizada y no admite una nueva cotización.");
           }
 
           const productosGuardadosEnBD = rfqData.productos || [];
