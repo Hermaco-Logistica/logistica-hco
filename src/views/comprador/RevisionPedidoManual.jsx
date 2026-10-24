@@ -481,6 +481,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
               )}
               {filteredItems.map(({ item: p, idx }) => {
                 const neg = p.negociacion || {};
+                const versionEsperada = neg.version || 0;
                 const tiempoEntrega = neg.ofertaVigente?.tiempoEntrega || p.tiempoEntrega || p.diasPrometidos || '';
                 const esCerrado = esItemCerrado(p);
                 const isPending = neg.turno === 'compras' && !esCerrado;
@@ -499,7 +500,6 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                 const msgCount = conteos[idx] || 0;
                 const unreadCount = noLeidos[idx] || 0;
                 const estaAnulado = p.estadoItem === 'Anulado';
-                const esVentaPerdidaItem = p.estadoItem === 'Venta Perdida';
 
                 return (
                   <React.Fragment key={idx}>

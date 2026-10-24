@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { useBottomDock } from '../../context/BottomDockContext';
+import { useBottomDock } from '../../context/bottomDockState';
 import { BottomTabBar } from './BottomTabBar';
 
 /**

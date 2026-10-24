@@ -21,7 +21,6 @@ export function derivarNegociacion(item) {
     return {
       version: 0,
       turno: null,
-      ronda: 1,
       sinNotificar: false,
       ultimoCambio: null,
       ...item.negociacion,

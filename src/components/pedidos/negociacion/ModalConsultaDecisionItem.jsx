@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { XCircle, ShieldAlert, Ban, X } from 'lucide-react';
 import { 
   formatearFechaDecision, 
@@ -20,7 +20,7 @@ import {
 export const ModalConsultaDecisionItem = ({ isOpen = true, onClose, data }) => {
   const activo = Boolean(isOpen && data);
   const [itemsResueltos, setItemsResueltos] = useState([]);
-  const [cargandoMotivos, setCargandoMotivos] = useState(false);
+  const [fuenteItemsResueltos, setFuenteItemsResueltos] = useState(null);
 
   useEffect(() => {
     if (!activo) return undefined;
@@ -31,25 +31,26 @@ export const ModalConsultaDecisionItem = ({ isOpen = true, onClose, data }) => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [activo, onClose]);
 
+  const baseItems = useMemo(() => (
+    Array.isArray(data?.items) && data.items.length > 0
+      ? data.items
+      : (data ? [data] : [])
+  ), [data]);
+  const solicitudId = data?.solicitudId || baseItems[0]?.solicitudId;
+  const necesitanBusqueda = useMemo(
+    () => baseItems.some(item => esMotivoGenerico(item.motivo) && (item.solicitudId || solicitudId)),
+    [baseItems, solicitudId]
+  );
+  const cargandoMotivos = Boolean(activo && necesitanBusqueda && fuenteItemsResueltos !== data);
+
   useEffect(() => {
     if (!activo || !data) {
-      setItemsResueltos([]);
       return undefined;
     }
-
-    const baseItems = Array.isArray(data.items) && data.items.length > 0
-      ? data.items
-      : [data];
-
-    setItemsResueltos(baseItems);
-
-    const solicitudId = data.solicitudId || baseItems[0]?.solicitudId;
-    const necesitanBusqueda = baseItems.some(it => esMotivoGenerico(it.motivo) && (it.solicitudId || solicitudId));
 
     if (!necesitanBusqueda) return undefined;
 
     let cancelado = false;
-    setCargandoMotivos(true);
 
     Promise.all(
       baseItems.map(async (item) => {
@@ -82,20 +83,21 @@ export const ModalConsultaDecisionItem = ({ isOpen = true, onClose, data }) => {
     ).then((actualizados) => {
       if (!cancelado) {
         setItemsResueltos(actualizados);
-        setCargandoMotivos(false);
+        setFuenteItemsResueltos(data);
       }
     }).catch(() => {
-      if (!cancelado) setCargandoMotivos(false);
+      if (!cancelado) setFuenteItemsResueltos(data);
     });
 
     return () => {
       cancelado = true;
     };
-  }, [activo, data]);
+  }, [activo, data, necesitanBusqueda, solicitudId, baseItems]);
 
   if (!activo) return null;
 
   const itemsList = itemsResueltos.length > 0
+    && fuenteItemsResueltos === data
     ? itemsResueltos
     : (Array.isArray(data.items) && data.items.length > 0 ? data.items : [data]);
 

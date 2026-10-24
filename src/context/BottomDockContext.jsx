@@ -1,26 +1,6 @@
-import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-
-export const BottomDockContext = createContext({
-  actionSlotEl: null,
-  setActionSlotEl: () => {},
-  actionBar: null,
-  setActionBar: () => {},
-  hideNav: false,
-  setHideNav: () => {},
-  dockHeight: 0,
-  setDockHeight: () => {}
-});
-
-// Rutas de trabajo / enfoque que por especificación ocultan la nav flotante en móvil
-export const FOCUS_ROUTE_PATTERNS = [
-  '/compras/revision-pedido/',
-  '/vendedor/pedido-manual/',
-  '/vendedor/detalle/',
-  '/vendedor/nueva-rfq',
-  '/vendedor/nuevo-pedido',
-  '/calculadora/'
-];
+import { BottomDockContext, FOCUS_ROUTE_PATTERNS } from './bottomDockState';
 
 export const BottomDockProvider = ({ children }) => {
   const [actionSlotEl, setActionSlotElState] = useState(null);
@@ -78,5 +58,4 @@ export const BottomDockProvider = ({ children }) => {
   );
 };
 
-export const useBottomDock = () => useContext(BottomDockContext);
 export default BottomDockProvider;

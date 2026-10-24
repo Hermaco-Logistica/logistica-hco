@@ -70,10 +70,19 @@ const formatFechaHoraEmail = (value) => {
   }).format(dateValue);
 };
 
+const escaparHtmlEmail = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;');
+
 export const generarPlantillaNuevoPedido = (orderData) => {
   const esParcial = orderData.esPedidoParcial;
   const itemsAnulados = orderData.productos.filter(p => p.estadoItem === 'Anulado');
   const tieneAnulaciones = itemsAnulados.length > 0;
+  const itemsVentaPerdida = orderData.productos.filter(p => p.estadoItem === 'Venta Perdida' || p.motivoVentaPerdida);
+  const tieneVentasPerdidas = itemsVentaPerdida.length > 0;
   const tipoTexto = tieneAnulaciones
     ? (esParcial ? 'PEDIDO PARCIAL · CON ANULACIONES' : 'PEDIDO COMPLETO CONFIRMADO · CON ANULACIONES')
     : (esParcial ? 'PEDIDO PARCIAL CONFIRMADO' : 'PEDIDO COMPLETO CONFIRMADO');
@@ -94,7 +103,7 @@ export const generarPlantillaNuevoPedido = (orderData) => {
           RFQ: ${orderData.correlativoRFQ}
         </h1>
         <span style="display: inline-block; background-color: ${badgeBg}; border: 1px solid ${badgeBorder}; color: #ffffff; padding: 5px 16px; border-radius: 20px; font-weight: 900; font-size: 10px; letter-spacing: 1px; text-transform: uppercase;">
-          ${tipoTexto}
+          ${tipoTexto}${tieneVentasPerdidas ? ' · CON VENTAS PERDIDAS' : ''}
         </span>
       </div>
 
@@ -146,6 +155,7 @@ export const generarPlantillaNuevoPedido = (orderData) => {
 
         <!-- Tabla de Productos Confirmados y Estado Global -->
         <h3 style="font-size: 11px; font-weight: 900; color: #475569; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0;">Detalle Completo de la Solicitud y Fechas de Confirmación</h3>
+        ${tieneVentasPerdidas ? `<div style="margin: 0 0 12px; padding: 10px 12px; border: 1px solid #fed7aa; border-left: 4px solid #f97316; border-radius: 6px; background: #fff7ed; color: #9a3412; font-size: 11px;"><strong>${itemsVentaPerdida.length} ${itemsVentaPerdida.length === 1 ? 'ítem marcado como venta perdida' : 'ítems marcados como ventas perdidas'}.</strong> El motivo predefinido y el comentario del vendedor se muestran en cada ítem correspondiente.</div>` : ''}
         <table style="width: 100%; border-collapse: collapse; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
           <thead>
             <tr style="background-color: #0f172a; color: #ffffff; text-align: left;">
@@ -159,12 +169,18 @@ export const generarPlantillaNuevoPedido = (orderData) => {
           <tbody>
             ${orderData.productos.map((p, idx) => {
               const estaAnulado = p.estadoItem === 'Anulado';
+              const esVentaPerdida = p.estadoItem === 'Venta Perdida' || Boolean(p.motivoVentaPerdida);
               const fuePedido = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado';
               const yaEnOC = p.estadoItem === 'Comprado' || !!p.numOC;
               const fechaConfirmStr = fuePedido ? formatFechaHoraEmail(p.fechaConfirmacion) : '';
+              const motivoVP = p.motivoVentaPerdida && typeof p.motivoVentaPerdida === 'object' ? p.motivoVentaPerdida : {};
+              const nombreMotivoVP = motivoVP.nombre || motivoVP.motivoNombre || p.motivoNombre || p.motivoCodigo || 'No especificado';
+              const comentarioVP = motivoVP.comentario || p.comentarioVentaPerdida || '';
+              const registradoPorVP = motivoVP.registradoPor || '';
+              const fechaVP = motivoVP.fecha ? formatFechaHoraEmail(motivoVP.fecha) : '';
 
               return `
-              <tr style="background-color: ${estaAnulado ? '#fff1f2' : yaEnOC ? '#f0fdf4' : (idx % 2 === 0 ? '#ffffff' : '#f8fafc')}; border-bottom: 1px solid #e2e8f0;">
+              <tr style="background-color: ${estaAnulado ? '#fff1f2' : esVentaPerdida ? '#fff7ed' : yaEnOC ? '#f0fdf4' : (idx % 2 === 0 ? '#ffffff' : '#f8fafc')}; border-bottom: 1px solid #e2e8f0;">
                 <td style="padding: 10px 12px; font-size: 11px;">
                   <strong style="color: #0f172a; display: block; font-weight: 800;">${String(p.descripcion || p.desc || '').toUpperCase()}</strong>
                   <span style="font-size: 10px; color: #64748b;">Marca: ${p.marca || 'N/A'}</span>
@@ -173,6 +189,12 @@ export const generarPlantillaNuevoPedido = (orderData) => {
                     <div style="margin-top: 4px; font-size: 9px; font-weight: 900; color: #be123c; padding: 2px 0; display: inline-block; text-transform: uppercase;">
                       Anulado${p.motivoAnulacion ? `: ${String(p.motivoAnulacion).replace(/</g, '&lt;').replace(/>/g, '&gt;')}` : ''}
                     </div>
+                  ` : esVentaPerdida ? `
+                    <div style="margin-top: 5px; font-size: 10px; font-weight: 900; color: #c2410c; background-color: #ffedd5; border: 1px solid #fed7aa; padding: 3px 7px; border-radius: 4px; display: inline-block; text-transform: uppercase;">Venta perdida</div>
+                    <div style="margin-top: 5px; font-size: 10px; color: #7c2d12;"><strong>Motivo predefinido:</strong> ${escaparHtmlEmail(nombreMotivoVP)}</div>
+                    ${comentarioVP ? `<div style="margin-top: 3px; font-size: 10px; color: #7c2d12;"><strong>Comentario del vendedor:</strong> ${escaparHtmlEmail(comentarioVP)}</div>` : ''}
+                    ${registradoPorVP ? `<div style="margin-top: 3px; font-size: 9px; color: #9a3412;"><strong>Registrado por:</strong> ${escaparHtmlEmail(registradoPorVP)}</div>` : ''}
+                    ${fechaVP && fechaVP !== '---' ? `<div style="margin-top: 2px; font-size: 9px; color: #9a3412;"><strong>Fecha:</strong> ${escaparHtmlEmail(fechaVP)}</div>` : ''}
                   ` : yaEnOC ? `
                     <div style="margin-top: 4px; font-size: 9px; font-weight: 900; color: #047857; background-color: #dcfce7; border: 1px solid #bbf7d0; padding: 2px 7px; border-radius: 4px; display: inline-block; text-transform: uppercase; letter-spacing: 0.05em;">
                       ✓ ${p.estadoItem === 'Comprado' && p.numOC ? `OC: ${p.numOC}` : 'Confirmado Anteriormente'}${fechaConfirmStr ? ` · ${fechaConfirmStr}` : ''}
@@ -193,7 +215,7 @@ export const generarPlantillaNuevoPedido = (orderData) => {
                 </td>
                 <td style="padding: 10px 8px; font-size: 11px; text-align: center; font-weight: 700; color: #334155;">${p.cantidad || p.cant}</td>
                 <td style="padding: 12px 8px; text-align: center;">
-                  ${estaAnulado ? '<span style="font-size: 10px; color: #be123c; font-weight: 800;">Anulado</span>' : fuePedido ? `
+                  ${estaAnulado ? '<span style="font-size: 10px; color: #be123c; font-weight: 800;">Anulado</span>' : esVentaPerdida ? '<span style="font-size: 10px; color: #c2410c; font-weight: 800;">Venta perdida</span>' : fuePedido ? `
                     <span style="display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 9px; font-weight: 900; text-transform: uppercase; background-color: ${p.modalidad === 'Aéreo' ? '#eff6ff' : '#f0fdf4'}; color: ${p.modalidad === 'Aéreo' ? '#1d4ed8' : '#047857'}; border: 1px solid ${p.modalidad === 'Aéreo' ? '#bfdbfe' : '#a7f3d0'};">
                       ${p.modalidad}
                     </span>
