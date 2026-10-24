@@ -37,6 +37,7 @@ import { DetalleProductosAnalisis } from './views/analisis/DetalleProductosAnali
 import { DetalleProductoHistorial } from './views/analisis/DetalleProductoHistorial';
 import { ToastProvider } from './components/ui/Toast';
 import { GlobalAlertModal } from './components/ui/GlobalAlertModal';
+import { ReleaseNotesModal } from './components/ui/ReleaseNotesModal';
 import { DetalleClienteHistorial } from './views/analisis/DetalleClienteHistorial';
 import { DetalleLogisticaAnalisis } from './views/analisis/DetalleLogisticaAnalisis';
 import { clasificarSolicitud } from './utils/clasificarSolicitud';
@@ -45,6 +46,16 @@ let NegociacionPreview = null;
 if (import.meta.env.DEV) {
   NegociacionPreview = React.lazy(() => import('./dev/NegociacionPreview').then(m => ({ default: m.NegociacionPreview })));
 }
+
+const RELEASE_NOTES_VERSION = '2026-10-24-ventas-perdidas-v2';
+const debeMostrarNovedades = (uid) => {
+  try {
+    return localStorage.getItem(`logisticahco:release-notes:${RELEASE_NOTES_VERSION}:${uid}`) !== 'seen';
+  } catch (error) {
+    console.warn('No se pudo consultar si ya se mostraron las novedades:', error);
+    return true;
+  }
+};
 
 const resolveRoleFromEmail = (email = '') => {
   const value = email.toLowerCase();
@@ -83,7 +94,20 @@ function App() {
   const [isFindexActive, setIsFindexActive] = useState(true);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [mainEl, setMainEl] = useState(null);
+  const [mostrarNovedades, setMostrarNovedades] = useState(false);
   const isMainHidden = useHideOnScroll(mainEl);
+
+  const confirmarNovedades = () => {
+    if (user?.uid) {
+      const storageKey = `logisticahco:release-notes:${RELEASE_NOTES_VERSION}:${user.uid}`;
+      try {
+        localStorage.setItem(storageKey, 'seen');
+      } catch (error) {
+        console.warn('No se pudo guardar la confirmación de novedades:', error);
+      }
+    }
+    setMostrarNovedades(false);
+  };
 
   useEffect(() => {
     import('./services/apiClient').then(({ apiClient }) => {
@@ -124,12 +148,14 @@ function App() {
               setIsFindexSettingsOpen(true);
             }
 
+            setMostrarNovedades(debeMostrarNovedades(u.uid));
             setUser(u);
             setRole(userRole);
             
           } catch (err) {
             console.error("Error al sincronizar usuario en Firestore:", err);
             // Fallback de seguridad en caso de error de red o permisos
+            setMostrarNovedades(debeMostrarNovedades(u.uid));
             setUser(u);
             setRole(resolveRoleFromEmail(u.email));
           }
@@ -138,10 +164,12 @@ function App() {
           alert("Acceso denegado. Solo se permiten correos de @hermaco.net");
           setUser(null);
           setRole(null);
+          setMostrarNovedades(false);
         }
       } else {
         setUser(null);
         setRole(null);
+        setMostrarNovedades(false);
       }
       setLoading(false);
     });
@@ -349,6 +377,7 @@ function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       ) : (
+        <>
         <div className={`tf-app-shell ${appThemeClass} flex flex-col md:flex-row h-dvh overflow-hidden`}>
           {/* TOP BAR MÓVIL (visible solo en < md) */}
           <header className="sticky top-0 z-30 flex md:hidden items-center justify-between bg-slate-900 px-4 py-3 text-white border-b border-white/10 shadow-md shrink-0 select-none">
@@ -492,6 +521,8 @@ function App() {
             hidden={isMainHidden}
           />
         </div>
+        {mostrarNovedades && <ReleaseNotesModal role={role} onConfirm={confirmarNovedades} />}
+        </>
       )}
         </BottomDockProvider>
       </Router>
