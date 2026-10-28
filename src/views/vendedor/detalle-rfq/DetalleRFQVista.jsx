@@ -10,6 +10,7 @@ import { StickyActionBar } from '../../../components/mobile';
 import { DetalleRFQAcciones } from './DetalleRFQAcciones';
 import { DetalleRFQModales } from './DetalleRFQModales';
 import { crearContextoProducto } from './productoContext';
+import { SeguimientoClienteBanner } from '../../../components/seguimiento/SeguimientoClienteBanner';
 
 export const DetalleRFQVista = ({ viewModel }) => {
   const {
@@ -73,7 +74,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
     hayDecisionesEnParcial,
     hayVentaPerdidaEnParcial,
     abrirConsultaDecisionParcial,
-    esVendedorOGerente,
+    puedeRegistrarVentaPerdida,
     debeMostrarBotonVentaPerdida, accionesPrincipalesRef, mostrarStickyMovil,
     productosDelPedido,
     getTextoModalidad,
@@ -94,6 +95,21 @@ export const DetalleRFQVista = ({ viewModel }) => {
     totalGeneralM,
     role,
     setVerPreview,
+    modalSeguimientoClienteOpen,
+    setModalSeguimientoClienteOpen,
+    itemsSeguimientoCliente,
+    handleAbrirSeguimientoCliente,
+    handleConfirmarSeguimientoCliente,
+    guardandoSeguimientoCliente,
+    diasValidezSeguimiento,
+    puedeMarcarRevisionCliente,
+    puedeGestionarSeguimiento,
+    etiquetaSeguimientoCliente,
+    resumenSeguimientoCliente,
+    itemsProrrogaCliente,
+    handleAbrirSolicitudProrroga,
+    handleConfirmarSolicitudProrroga,
+    guardandoProrrogaCliente,
   } = viewModel;
 
   const [accionMovilExpandida, setAccionMovilExpandida] = useState(null);
@@ -325,6 +341,27 @@ export const DetalleRFQVista = ({ viewModel }) => {
         </div>
       </div>
 
+      <SeguimientoClienteBanner
+        resumen={resumenSeguimientoCliente}
+        solicitud={{ ...rfq, id: rfq?.id || id }}
+        role={role}
+        puedeMarcarRevision={puedeMarcarRevisionCliente}
+        onMarcarRevision={puedeMarcarRevisionCliente ? handleAbrirSeguimientoCliente : handleAbrirSolicitudProrroga}
+        etiquetaAccion={etiquetaSeguimientoCliente}
+        puedeSolicitarProrroga={puedeGestionarSeguimiento && resumenSeguimientoCliente.puedeSolicitarProrroga}
+        prorrogaPendiente={resumenSeguimientoCliente.prorrogaPendiente}
+      />
+      {!puedeConfirmarPedido && !pedidoYaCreado && !esAnulado && !esPropietarioDeRFQ && (
+        <div className="mb-4 md:mb-6 bg-blue-50/80 border border-blue-200/80 text-blue-900 rounded-xl md:rounded-2xl p-3 md:p-4 flex flex-row items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={16} className="text-blue-500 shrink-0" />
+            <span className="hidden md:inline"><strong>Modo de solo lectura:</strong> Esta solicitud pertenece a <u>{rfq?.vendedorNombre || rfq?.vendedorEmail || 'otro vendedor'}</u>. Puedes revisar y auditar la cotización, pero solo el vendedor asignado puede confirmar y enviar el pedido.</span>
+            <span className="md:hidden font-bold uppercase tracking-tight">Modo Solo Lectura</span>
+          </div>
+          <span className="text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-md bg-blue-100 text-blue-800 uppercase tracking-widest shrink-0 font-mono">Auditando</span>
+        </div>
+      )}
+
       {/* Resumen Móvil (< md): Metadatos y Totales Cotizados */}
       {(rfq?.estado?.includes('Parcial') || pedidoYaCreado) && (
         <div ref={estadoMovilRef} className="mb-3 flex flex-wrap items-center gap-2 md:hidden">
@@ -461,24 +498,6 @@ export const DetalleRFQVista = ({ viewModel }) => {
             <MessageCircleQuestion size={12} />
             <span>Consulta</span>
           </button>
-        </div>
-      )}
-
-      {/* Banner solo lectura — solo si no es dueño y no está anulado */}
-      {!puedeConfirmarPedido && !pedidoYaCreado && !esAnulado && !esPropietarioDeRFQ && (
-        <div className="mb-4 md:mb-6 bg-blue-50/80 border border-blue-200/80 text-blue-900 rounded-xl md:rounded-2xl p-3 md:p-4 flex flex-row items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <AlertCircle size={16} className="text-blue-500 shrink-0" />
-            <span className="hidden md:inline">
-              <strong>Modo de solo lectura:</strong> Esta solicitud pertenece a <u>{rfq?.vendedorNombre || rfq?.vendedorEmail || 'otro vendedor'}</u>. Puedes revisar y auditar la cotización, pero solo el vendedor asignado puede confirmar y enviar el pedido.
-            </span>
-            <span className="md:hidden font-bold uppercase tracking-tight">
-              Modo Solo Lectura
-            </span>
-          </div>
-          <span className="text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-md bg-blue-100 text-blue-800 uppercase tracking-widest shrink-0 font-mono">
-            Auditando
-          </span>
         </div>
       )}
 
@@ -636,7 +655,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
                     )
                   )}
 
-                  {esVendedorOGerente && !yaFuePedido && !fueDenegado && !fueVentaPerdida && !estaAnulado && !stagedVP && (
+                  {puedeRegistrarVentaPerdida && !yaFuePedido && !fueDenegado && !fueVentaPerdida && !estaAnulado && !stagedVP && (
                     <button
                       type="button"
                       onClick={() => handleAbrirVentaPerdida([idx])}
@@ -1079,7 +1098,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
                           )}
                         </>
                       )}
-                      {esVendedorOGerente && (
+                      {puedeRegistrarVentaPerdida && (
                         <>
                           {stagedVP ? (
                             <div className="flex flex-col items-center gap-1">
@@ -1118,19 +1137,10 @@ export const DetalleRFQVista = ({ viewModel }) => {
 
       <div className="grid grid-cols-1 @2xl:grid-cols-2 gap-6 lg:gap-8">
         <div className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm sm:shadow-xl overflow-hidden transition-all duration-300 self-start w-full">
-          <button 
-            type="button" 
-            onClick={() => setDocumentacionOpen(!documentacionOpen)}
-            className="w-full p-4 sm:p-8 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors cursor-pointer text-left focus:outline-none"
-          >
-            <h2 className="text-sm font-black text-slate-800 uppercase flex items-center gap-2">
-              <LinkIcon size={18} className="text-emerald-500" /> Documentación Extra
-            </h2>
-            <div className={`transform transition-transform duration-300 text-slate-400 ${documentacionOpen ? 'rotate-180' : ''}`}>
-              <ChevronDown size={20} />
-            </div>
+          <button type="button" onClick={() => setDocumentacionOpen(!documentacionOpen)} className="w-full p-4 sm:p-8 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors cursor-pointer text-left focus:outline-none">
+            <h2 className="text-sm font-black text-slate-800 uppercase flex items-center gap-2"><LinkIcon size={18} className="text-emerald-500" /> Documentación Extra</h2>
+            <div className={`transform transition-transform duration-300 text-slate-400 ${documentacionOpen ? 'rotate-180' : ''}`}><ChevronDown size={20} /></div>
           </button>
-          
           <div className={`grid transition-all duration-300 ease-in-out ${documentacionOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
             <div className="overflow-hidden">
               <div className="p-4 sm:p-8 pt-0 space-y-4 border-t border-slate-100 mt-2">
@@ -1192,7 +1202,6 @@ export const DetalleRFQVista = ({ viewModel }) => {
             </div>
           </div>
         </div>
-        
         <div className={`bg-white p-4 sm:p-8 rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm sm:shadow-xl flex-col justify-between ${puedeConfirmarPedido ? 'hidden md:flex' : 'flex'} self-start w-full`}>
           <div className="flex-1">
             {/* Header del Resumen */}
@@ -1340,8 +1349,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
             </button>
           </div>
           )}
-        </div>
-      </div>
+        </div></div>
 
       {/* Barra fija inferior en Móvil para confirmar pedido */}
       {renderLegacyActions && ((puedeConfirmarOEnviar || debeMostrarBotonVentaPerdida) && (
@@ -1503,6 +1511,17 @@ export const DetalleRFQVista = ({ viewModel }) => {
         setConsultaVentaPerdidaData={setConsultaVentaPerdidaData}
         consultaDecisionData={consultaDecisionData}
         setConsultaDecisionData={setConsultaDecisionData}
+        modalSeguimientoClienteOpen={modalSeguimientoClienteOpen}
+        setModalSeguimientoClienteOpen={setModalSeguimientoClienteOpen}
+        itemsSeguimientoCliente={itemsSeguimientoCliente}
+        handleConfirmarSeguimientoCliente={handleConfirmarSeguimientoCliente}
+        guardandoSeguimientoCliente={guardandoSeguimientoCliente}
+        diasValidezSeguimiento={diasValidezSeguimiento}
+        resumenSeguimientoCliente={resumenSeguimientoCliente}
+        handleAbrirSolicitudProrroga={handleAbrirSolicitudProrroga}
+        itemsProrrogaCliente={itemsProrrogaCliente}
+        handleConfirmarSolicitudProrroga={handleConfirmarSolicitudProrroga}
+        guardandoProrrogaCliente={guardandoProrrogaCliente}
       />
     </div>
   );

@@ -3,7 +3,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { filtrarCotizacionesEstancadas, esRolBloqueable } from '../utils/cotizacionesEstancadasHelpers';
 
-export function useCotizacionesEstancadas({ solicitudes = null, role = null, diasLimite = 5 } = {}) {
+export function useCotizacionesEstancadas({ solicitudes = null, role = null, diasLimite = null } = {}) {
   const [solicitudesDirectas, setSolicitudesDirectas] = useState([]);
   const [loading, setLoading] = useState(!solicitudes);
 

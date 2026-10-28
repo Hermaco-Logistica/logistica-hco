@@ -20,6 +20,8 @@ import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsul
 import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
 import { prepararDatosConsultaVentaPerdida, tieneVentaPerdidaSolicitud } from '../../utils/ventasPerdidasHelpers';
 import { tieneDecisionSolicitud, prepararDatosDecisionSolicitud } from '../../utils/decisionItemHelpers';
+import { ResumenAlertasSeguimiento } from '../../components/seguimiento/ResumenAlertasSeguimiento';
+import { ModalSeguimientoSolicitudes } from '../../components/seguimiento/ModalSeguimientoSolicitudes';
 
 // Fecha de corte: documentos creados ANTES de este deploy no pueden garantizar
 // el valor correcto de emailEnviado (pueden ser undefined o false por razones ajenas).
@@ -37,12 +39,14 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   const [filterEstado, setFilterEstado] = usePersistedState('dv_filterEstado', '');
   const [filterResultado, setFilterResultado] = usePersistedState('dv_filterResultado', '');
   const [filterVendedor, setFilterVendedor] = usePersistedState('dv_filterVendedor', '');
+  const [filterProrroga, setFilterProrroga] = usePersistedState('dv_filterProrroga', '');
   const [searchTerm, setSearchTerm] = usePersistedState('dv_searchTerm', '');
   const [mostrarFiltrosMobile, setMostrarFiltrosMobile] = useState(false);
 
   const [consultaVentaPerdidaData, setConsultaVentaPerdidaData] = useState(null);
   const [consultaDecisionData, setConsultaDecisionData] = useState(null);
   const [consultaAnimacionTick, setConsultaAnimacionTick] = useState(0);
+  const [modalSeguimientoOpen, setModalSeguimientoOpen] = useState(false);
 
   useEffect(() => {
     const intervalo = window.setInterval(() => {
@@ -58,6 +62,14 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   const abrirConsultaDecision = (solicitud) => {
     setConsultaDecisionData(prepararDatosDecisionSolicitud(solicitud));
   };
+
+  const atenderSolicitudDesdeSeguimiento = (solicitud) => {
+    navigate(solicitud.tipo === 'Pedido Manual'
+      ? `/vendedor/pedido-manual/${solicitud.id}`
+      : `/vendedor/detalle/${solicitud.id}`);
+  };
+
+  const abrirModalSeguimiento = () => setModalSeguimientoOpen(true);
 
   // Estados de Rango de Fecha Popover
   const [fechaInicio, setFechaInicio] = useState(null);
@@ -187,6 +199,16 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   const vendedoresDisponibles = Array.from(new Set(solicitudes.map(s => s.vendedorNombre).filter(Boolean)));
   const estadosDisponibles = Array.from(new Set(solicitudes.map(s => s.estado).filter(Boolean)));
   const resultadosDisponibles = Object.values(RESULTADOS_SOLICITUD);
+  const usuarioActualId = auth.currentUser?.uid || '';
+  const usuarioActualEmail = (auth.currentUser?.email || '').toLowerCase();
+
+  const clasificarProrroga = (solicitud) => {
+    const prorroga = solicitud?.prorrogaCliente;
+    if (!prorroga) return 'sin';
+    const esPropia = prorroga.vendedorId === usuarioActualId
+      || String(prorroga.vendedorEmail || solicitud.vendedorEmail || '').toLowerCase() === usuarioActualEmail;
+    return esPropia ? 'propias' : 'otros';
+  };
 
   // Aplicar filtros
   const filteredSolicitudes = solicitudes.filter((s) => {
@@ -194,6 +216,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
     if (filterEstado && s.estado !== filterEstado) return false;
     if (filterResultado && (s.resultado || clasificarSolicitud(s.productos, s.estado).resultado) !== filterResultado) return false;
     if (role !== 'vendedor' && filterVendedor && s.vendedorNombre !== filterVendedor) return false;
+    if (role === 'gerente' && filterProrroga && clasificarProrroga(s) !== filterProrroga) return false;
     
     if (s.fechaS) {
       const fechaSDate = s.fechaS.toDate ? s.fechaS.toDate() : new Date(s.fechaS);
@@ -293,6 +316,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
     filterEstado,
     filterResultado,
     filterVendedor,
+    role === 'gerente' ? filterProrroga : '',
     (fechaInicio || fechaFin)
   ].filter(Boolean).length;
 
@@ -322,6 +346,22 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       </div>
 
       {/* BANNER PREVENTIVO: Cotizaciones Estancadas */}
+      {role === 'vendedor' && (
+        <ResumenAlertasSeguimiento solicitudes={solicitudes} onAtender={abrirModalSeguimiento} />
+      )}
+
+      {role === 'vendedor' && (
+        <ModalSeguimientoSolicitudes
+          solicitudes={solicitudes}
+          isOpen={modalSeguimientoOpen}
+          onClose={() => setModalSeguimientoOpen(false)}
+          onAtender={(solicitud) => {
+            setModalSeguimientoOpen(false);
+            atenderSolicitudDesdeSeguimiento(solicitud);
+          }}
+        />
+      )}
+
       {tieneBloqueo && (
         <div className="mb-5 p-3.5 sm:p-4 rounded-lg bg-amber-50/70 border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-start gap-2.5">
@@ -338,7 +378,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                 </span>
               </div>
               <p className="text-amber-800 text-[11px] font-medium mt-0.5 leading-snug">
-                Tienes cotizaciones o pedidos parciales con ítems pendientes de seguimiento por más de 5 días hábiles. Debes atenderlos o cerrarlos para habilitar nuevas solicitudes.
+                Tienes cotizaciones o pedidos parciales con ítems fuera de su vigencia configurada pendientes de seguimiento. Debes atenderlos o cerrarlos para habilitar nuevas solicitudes.
               </p>
             </div>
           </div>
@@ -384,6 +424,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                 setFilterEstado('');
                 setFilterResultado('');
                 setFilterVendedor('');
+                setFilterProrroga('');
                 setFechaInicio(null);
                 setFechaFin(null);
                 setCurrentPage(1);
@@ -430,6 +471,17 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   {vendedoresDisponibles.map(vend => (
                     <option key={vend} value={vend}>{vend.toUpperCase()}</option>
                   ))}
+                </select>
+              </div>
+            )}
+            {role === 'gerente' && (
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Prórroga</label>
+                <select value={filterProrroga} onChange={(e) => { setFilterProrroga(e.target.value); setCurrentPage(1); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 cursor-pointer">
+                  <option value="">TODAS LAS PRÓRROGAS</option>
+                  <option value="propias">PRÓRROGAS PROPIAS</option>
+                  <option value="otros">PRÓRROGAS DE OTROS</option>
+                  <option value="sin">SIN PRÓRROGA</option>
                 </select>
               </div>
             )}
@@ -528,6 +580,17 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
             </select>
           </div>
         )}
+        {role === 'gerente' && (
+          <div>
+            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Prórroga</label>
+            <select value={filterProrroga} onChange={(e) => { setFilterProrroga(e.target.value); setCurrentPage(1); }} className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer">
+              <option value="">TODAS LAS PRÓRROGAS</option>
+              <option value="propias">PRÓRROGAS PROPIAS</option>
+              <option value="otros">PRÓRROGAS DE OTROS</option>
+              <option value="sin">SIN PRÓRROGA</option>
+            </select>
+          </div>
+        )}
         
         {/* Rango de Fecha Calendario Popover */}
         <div className="relative" ref={refCalendario}>
@@ -590,6 +653,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               setFilterEstado('');
               setFilterResultado('');
               setFilterVendedor('');
+              setFilterProrroga('');
               setFechaInicio(null);
               setFechaFin(null);
               setCurrentPage(1);

@@ -276,7 +276,7 @@ export const BottomTabBar = ({ role, onOpenDrawer, hidden = false, isInsideDock 
         paddingBottom: isInsideDock ? '0px' : 'max(0.75rem, env(safe-area-inset-bottom, 0.75rem))',
         transform: isActuallyHidden ? 'translateY(calc(100% + 40px))' : 'translateY(0)'
       }}
-      {...(isActuallyHidden ? { inert: '' } : {})}
+      {...(isActuallyHidden ? { inert: true } : {})}
       className={
         isInsideDock
           ? "relative inset-x-0 mx-3 sm:mx-6 overflow-visible pointer-events-none select-none transition-transform duration-300 ease-out motion-reduce:transition-none"

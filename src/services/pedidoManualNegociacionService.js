@@ -141,6 +141,14 @@ async function ejecutarMutacion({ solicitudId, idx, versionEsperada, actor, acci
     if (solicitud.tipo !== 'Pedido Manual') {
       throw new Error('Esta operación solo es válida para Pedidos Manuales.');
     }
+    if (actor?.rol === 'vendedor') {
+      const esPropietario = (solicitud.vendedorId && solicitud.vendedorId === actor.uid)
+        || (solicitud.vendedorEmail && actor.email
+          && solicitud.vendedorEmail.toLowerCase() === actor.email.toLowerCase());
+      if (!esPropietario) {
+        throw new Error('Solo el vendedor propietario puede responder la negociación de este pedido.');
+      }
+    }
     const productos = [...solicitud.productos];
     const itemActual = productos[idx];
     

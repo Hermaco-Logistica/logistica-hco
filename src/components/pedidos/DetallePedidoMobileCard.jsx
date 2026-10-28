@@ -21,6 +21,7 @@ export const DetallePedidoMobileCard = ({
   hiloAbierto,
   setHiloAbierto,
   puedeResponder,
+  puedeRegistrarVentaPerdida = false,
   esEstancado = false,
   estaSeleccionado = false,
   stagedVP = false,
@@ -256,7 +257,7 @@ export const DetallePedidoMobileCard = ({
             </div>
 
             {/* Acción Comercial de Cierre: Venta Perdida */}
-            {puedeResponder && !esCerrado && !stagedVP && (
+            {puedeRegistrarVentaPerdida && !esCerrado && !stagedVP && (
               <button
                 type="button"
                 onClick={onVentaPerdida}

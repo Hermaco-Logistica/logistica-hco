@@ -5,7 +5,7 @@ import {
   ChevronLeft, CheckCircle2, MessageSquare, ArrowLeftRight, Check, X,
   ChevronDown, Link as LinkIcon, Save, AlertCircle, TrendingDown, MessageCircleQuestion
 } from 'lucide-react';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, Timestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { HiloComentariosItem } from '../../components/hilos/HiloComentariosItem';
 import { DetallePedidoMobileCard } from '../../components/pedidos/DetallePedidoMobileCard';
@@ -20,7 +20,11 @@ import { getRoleColors } from '../../utils/roleColors';
 import { ModalVentaPerdida } from '../../components/vendedor/ModalVentaPerdida';
 import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
 import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
-import { esItemEstancado } from '../../utils/cotizacionesEstancadasHelpers';
+import { esItemEstancado, obtenerDiasValidez, obtenerFechaLimiteSeguimientoItem } from '../../utils/cotizacionesEstancadasHelpers';
+import { crearSeguimientoEnRevision, obtenerResumenSeguimientoCliente, ESTADOS_SEGUIMIENTO_CLIENTE } from '../../utils/seguimientoCliente';
+import { ModalSeguimientoCliente } from '../../components/seguimiento/ModalSeguimientoCliente';
+import { SeguimientoClienteBanner } from '../../components/seguimiento/SeguimientoClienteBanner';
+import { crearSolicitudProrroga } from '../../utils/prorrogasCliente';
 import { prepararDatosConsultaVentaPerdida, tieneMotivoConsultaItem } from '../../utils/ventasPerdidasHelpers';
 import { esDecisionItem, prepararDatosDecisionItem, prepararDatosDecisionSolicitud, esItemCerrado } from '../../utils/decisionItemHelpers';
 
@@ -35,6 +39,11 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   const [notificandoTodo, setNotificandoTodo] = useState(false);
   const [consultaVentaPerdidaData, setConsultaVentaPerdidaData] = useState(null);
   const [consultaDecisionData, setConsultaDecisionData] = useState(null);
+  const [modalSeguimientoClienteOpen, setModalSeguimientoClienteOpen] = useState(false);
+  const [itemsSeguimientoCliente, setItemsSeguimientoCliente] = useState([]);
+  const [guardandoSeguimientoCliente, setGuardandoSeguimientoCliente] = useState(false);
+  const [itemsProrrogaCliente, setItemsProrrogaCliente] = useState([]);
+  const [guardandoProrrogaCliente, setGuardandoProrrogaCliente] = useState(false);
   const [modalRechazar, setModalRechazar] = useState({ open: false, index: null, versionEsperada: null, motivo: '' });
 
   const handleAbrirModalRechazar = (index, versionEsperada) => {
@@ -42,6 +51,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   };
 
   const handleConfirmarRechazo = () => {
+    if (!puedeResponder) return;
     if (!modalRechazar.motivo.trim()) return;
     const { index, versionEsperada, motivo } = modalRechazar;
     actions.rechazar(index, versionEsperada, motivo.trim());
@@ -98,7 +108,9 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
 
   const esAnulado = solicitudBase?.estado === 'Anulado';
   const esVentaPerdida = solicitudBase?.estado === 'Venta Perdida';
-  const puedeResponder = (Boolean(esDuenio) || role === 'gerente' || role === 'administrador') && !esAnulado && !esVentaPerdida;
+  const puedeResponder = Boolean(esDuenio) && !esAnulado && !esVentaPerdida;
+  const puedeGestionarSeguimiento = Boolean(esDuenio) && !esAnulado && !esVentaPerdida;
+  const puedeRegistrarVentaPerdida = Boolean(esDuenio) && !esAnulado && !esVentaPerdida;
   const hayDecisionesEnParcial = Boolean(solicitudBase?.estado?.includes('Parcial') && itemsServer.some((p) => esDecisionItem(p)));
   const hayVentaPerdidaEnParcial = Boolean(solicitudBase?.estado?.includes('Parcial') && itemsServer.some((p) => p.estadoItem === 'Venta Perdida' || p.motivoVentaPerdida));
   const motivoAnulacion = solicitudBase?.motivoAnulacion
@@ -125,6 +137,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   }, [solicitudBase, loading]);
 
   const handleGuardarDocumentacion = async () => {
+    if (!puedeResponder) return;
     setEditandoDocs(true);
     try {
       await updateDoc(doc(db, 'solicitudes', id), {
@@ -191,8 +204,6 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
     .map(Number);
   const totalItemsSeleccionados = indicesSeleccionados.length;
 
-  const esVendedorOGerente = role === 'vendedor' || role === 'gerente';
-
   const itemsPendientes = itemsServer
     .map((p, idx) => ({ p, idx }))
     .filter(({ p }) => !esItemCerrado(p));
@@ -204,12 +215,13 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
 
   const hayItemsPendientes = itemsPendientes.length > 0;
 
-  const debeMostrarBotonVentaPerdida = esVendedorOGerente && puedeResponder && !esAnulado && solicitudBase?.estado !== 'Venta Perdida' && (
+  const debeMostrarBotonVentaPerdida = puedeRegistrarVentaPerdida && (
     (totalItemsSeleccionados > 0 && tieneItemsSeleccionadosValidos) ||
     (totalItemsSeleccionados === 0 && hayItemsPendientes)
   );
 
   const handleAbrirVentaPerdida = (indices = null) => {
+    if (!puedeRegistrarVentaPerdida) return;
     if (Array.isArray(indices) && indices.length > 0) {
       setItemsVentaPerdidaSeleccionados(indices);
       setModalVentaPerdidaOpen(true);
@@ -232,7 +244,116 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
     alert('Selecciona con la casilla los ítems específicos para registrar venta perdida.');
   };
 
+  const resumenSeguimientoCliente = obtenerResumenSeguimientoCliente(solicitudBase, itemsServer);
+  const indicesEnAlertaCliente = resumenSeguimientoCliente.indicesRevisionDisponible;
+  const puedeMarcarRevisionCliente = puedeGestionarSeguimiento
+    && resumenSeguimientoCliente.puedeMantenerRevision
+    && indicesEnAlertaCliente.length > 0;
+
+  const handleAbrirSeguimientoCliente = () => {
+    if (!puedeGestionarSeguimiento) return;
+    if (resumenSeguimientoCliente.estado === ESTADOS_SEGUIMIENTO_CLIENTE.PRORROGA_DISPONIBLE) {
+      setItemsSeguimientoCliente(resumenSeguimientoCliente.indicesProrrogaDisponible);
+      setItemsProrrogaCliente(resumenSeguimientoCliente.indicesProrrogaDisponible);
+      setModalSeguimientoClienteOpen(true);
+      return;
+    }
+    const indicesFiltrados = indicesSeleccionados
+      .filter(idx => indicesEnAlertaCliente.includes(idx));
+    if (indicesFiltrados.length === 0 && indicesEnAlertaCliente.length > 0) {
+      setItemsSeguimientoCliente(indicesEnAlertaCliente);
+      setModalSeguimientoClienteOpen(true);
+      return;
+    }
+    if (indicesFiltrados.length === 0 && !resumenSeguimientoCliente.puedeMarcarSolicitudCompleta) {
+      alert('Selecciona los ítems vencidos que deseas marcar en revisión.');
+      return;
+    }
+    const indices = indicesFiltrados.length > 0 ? indicesFiltrados : indicesEnAlertaCliente;
+
+    if (indices.length === 0) {
+      alert('No hay ítems vencidos disponibles para registrar revisión.');
+      return;
+    }
+
+    setItemsSeguimientoCliente(indices);
+    setModalSeguimientoClienteOpen(true);
+  };
+
+  const handleConfirmarSeguimientoCliente = async (comentario) => {
+    if (!puedeGestionarSeguimiento) return;
+    setGuardandoSeguimientoCliente(true);
+    try {
+      const productosActualizados = [...itemsServer];
+      itemsSeguimientoCliente.forEach((idx) => {
+        const producto = productosActualizados[idx];
+        if (!producto) return;
+        productosActualizados[idx] = {
+          ...producto,
+          seguimientoCliente: crearSeguimientoEnRevision({
+            comentario,
+            usuarioEmail: auth.currentUser?.email || '',
+            fechaLimiteActual: obtenerFechaLimiteSeguimientoItem(producto, solicitudBase, idx),
+            diasExtension: obtenerDiasValidez(solicitudBase),
+            revisionesPrevias: producto.seguimientoCliente?.cantidadRevisiones,
+            seguimientoPrevio: producto.seguimientoCliente
+          })
+        };
+      });
+
+      await updateDoc(doc(db, 'solicitudes', id), { productos: productosActualizados });
+      setModalSeguimientoClienteOpen(false);
+      setItemsSeguimientoCliente([]);
+      setItemsSeleccionados({});
+    } catch (error) {
+      console.error('Error registrando seguimiento del cliente:', error);
+      alert('No se pudo registrar la revisión del cliente.');
+    } finally {
+      setGuardandoSeguimientoCliente(false);
+    }
+  };
+
+  const handleAbrirSolicitudProrroga = () => {
+    if (!puedeGestionarSeguimiento) return;
+    const seleccionadosActivos = indicesSeleccionados.filter(idx => resumenSeguimientoCliente.indicesProrrogaDisponible.includes(idx));
+    if (seleccionadosActivos.length === 0 && resumenSeguimientoCliente.indicesProrrogaDisponible.length === 0) {
+      alert('Selecciona los ítems para los que necesitas solicitar prórroga.');
+      return;
+    }
+    const indices = seleccionadosActivos.length > 0 ? seleccionadosActivos : resumenSeguimientoCliente.indicesProrrogaDisponible;
+    setItemsSeguimientoCliente(indices);
+    setItemsProrrogaCliente(indices);
+    setModalSeguimientoClienteOpen(true);
+  };
+
+  const handleConfirmarSolicitudProrroga = async ({ diasSolicitados, motivo }) => {
+    if (!puedeGestionarSeguimiento) return;
+    setGuardandoProrrogaCliente(true);
+    try {
+      const prorrogaCliente = crearSolicitudProrroga({
+        solicitud: { ...solicitudBase, id },
+        indicesItems: itemsProrrogaCliente,
+        diasSolicitados,
+        motivo,
+        usuarioEmail: auth.currentUser?.email || '',
+        usuarioUid: auth.currentUser?.uid || '',
+        fechaSolicitud: Timestamp.now(),
+        ronda: Number(solicitudBase?.prorrogaCliente?.ronda || 0) + 1
+      });
+      await updateDoc(doc(db, 'solicitudes', id), { prorrogaCliente });
+      setModalSeguimientoClienteOpen(false);
+      setItemsProrrogaCliente([]);
+      setItemsSeleccionados({});
+    } catch (error) {
+      console.error('Error solicitando prórroga:', error);
+      alert('No se pudo enviar la solicitud de prórroga.');
+    } finally {
+      setGuardandoProrrogaCliente(false);
+    }
+  };
+
   const handleConfirmarVentaPerdidaStaged = ({ motivo, comentario, itemsSeleccionados: itemsParam }) => {
+    if (!puedeRegistrarVentaPerdida) return;
     let indices = itemsParam;
     if (!Array.isArray(indices) || indices.length === 0) {
       indices = itemsPendientes
@@ -275,6 +396,8 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   const totalPendientesNotificar = unnotifiedCount + totalVentasPerdidasPendientes;
 
   const handleNotificarComprasCompleto = async () => {
+    if (!puedeResponder) return;
+    if (Object.keys(ventasPerdidasPendientes).length > 0 && !puedeRegistrarVentaPerdida) return;
     setNotificandoTodo(true);
     try {
       await actions.notificar({
@@ -369,6 +492,17 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
           )}
         </div>
       </div>
+
+      <SeguimientoClienteBanner
+        resumen={resumenSeguimientoCliente}
+        solicitud={{ ...solicitudBase, id: solicitudBase?.id || id }}
+        role={role}
+        puedeMarcarRevision={puedeMarcarRevisionCliente}
+        onMarcarRevision={puedeMarcarRevisionCliente ? handleAbrirSeguimientoCliente : handleAbrirSolicitudProrroga}
+        etiquetaAccion={resumenSeguimientoCliente.etiquetaAccion}
+        puedeSolicitarProrroga={puedeGestionarSeguimiento && resumenSeguimientoCliente.puedeSolicitarProrroga}
+        prorrogaPendiente={resumenSeguimientoCliente.prorrogaPendiente}
+      />
 
       {/* Resumen Móvil (< md): Correlativo, estado e info del cliente */}
       {debeMostrarBotonVentaPerdida && totalItemsSeleccionados > 1 && (
@@ -542,6 +676,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
               hiloAbierto={hiloAbierto}
               setHiloAbierto={setHiloAbierto}
               puedeResponder={puedeResponder}
+              puedeRegistrarVentaPerdida={puedeRegistrarVentaPerdida}
               esEstancado={esItemEstancado(item, solicitudBase)}
               estaSeleccionado={Boolean(itemsSeleccionados[idx])}
               stagedVP={Boolean(ventasPerdidasPendientes[idx])}
@@ -837,7 +972,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                               ) : null}
 
                               {/* Acción Comercial: Venta Perdida */}
-                              {esVendedorOGerente && !esCerrado && puedeResponder && !stagedVP && (
+                              {puedeRegistrarVentaPerdida && !esCerrado && !stagedVP && (
                                 <button
                                   type="button"
                                   onClick={() => handleAbrirVentaPerdida([idx])}
@@ -901,6 +1036,27 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
           resumenAcciones={{ ...resumenAcciones, ventasPerdidas: totalVentasPerdidasPendientes }}
         />
       )}
+
+      {/* Modal de Registro de Venta Perdida */}
+      <ModalSeguimientoCliente
+        key={modalSeguimientoClienteOpen ? 'seguimiento-abierto' : 'seguimiento-cerrado'}
+        isOpen={modalSeguimientoClienteOpen}
+        onClose={() => setModalSeguimientoClienteOpen(false)}
+        onConfirmar={handleConfirmarSeguimientoCliente}
+        onSolicitarProrroga={handleConfirmarSolicitudProrroga}
+        onPrepararProrroga={handleAbrirSolicitudProrroga}
+        cantidadItems={itemsSeguimientoCliente.length}
+        diasValidez={obtenerDiasValidez(solicitudBase)}
+        fechasLimiteRevision={resumenSeguimientoCliente.detalles.filter(({ index }) => itemsSeguimientoCliente.includes(index)).map(({ fechaAlertaInicial }) => fechaAlertaInicial)}
+        fechasLimiteProrroga={resumenSeguimientoCliente.detalles.filter(({ index }) => itemsProrrogaCliente.includes(index)).map(({ fechaAlertaInicial }) => fechaAlertaInicial)}
+        revisionesUsadas={resumenSeguimientoCliente.revisionesUsadas}
+        maxRevisiones={resumenSeguimientoCliente.maxRevisiones}
+        permiteMantenerRevision={resumenSeguimientoCliente.puedeMantenerRevision}
+        mostrarSolicitudProrroga={puedeGestionarSeguimiento && resumenSeguimientoCliente.puedeSolicitarProrroga}
+        pendiente={resumenSeguimientoCliente.prorrogaPendiente}
+        guardando={guardandoSeguimientoCliente}
+        guardandoProrroga={guardandoProrrogaCliente}
+      />
 
       {/* Modal de Registro de Venta Perdida */}
       <ModalVentaPerdida

@@ -11,6 +11,8 @@ import { useHideOnScroll } from './hooks/useHideOnScroll';
 
 // Componentes y Vistas
 import { Sidebar } from './components/Sidebar';
+import { ProrrogasBell } from './components/seguimiento/ProrrogasBell';
+import { ProrrogasPage } from './views/seguimiento/ProrrogasPage';
 import { Login } from './views/auth/Login';
 import { DashboardCompras } from './views/comprador/DashboardCompras';
 import { Calculadora } from './views/comprador/Calculadora';
@@ -341,6 +343,7 @@ function App() {
 
   const isComprador = role === 'comprador';
   const isVendedor = role === 'vendedor';
+  const prorrogasPendientes = solicitudes.filter((solicitud) => solicitud?.prorrogaCliente?.estado === 'pendiente').length;
   const isGerente = role === 'gerente';
   const isAdmin = role === 'administrador';
 
@@ -403,14 +406,17 @@ function App() {
               </button>
             </div>
 
-            <button
+            <div className="flex shrink-0 items-center gap-1">
+              <ProrrogasBell count={prorrogasPendientes} className="text-white/75 hover:bg-white/10 hover:text-white" />
+              <button
               type="button"
               onClick={() => setMobileDrawerOpen(true)}
               className="p-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer shrink-0"
               aria-label="Abrir menú de navegación"
             >
               <Menu size={22} />
-            </button>
+              </button>
+            </div>
           </header>
 
           <Sidebar 
@@ -420,6 +426,7 @@ function App() {
             isFindexSettingsOpen={isFindexSettingsOpen} 
             setIsFindexSettingsOpen={setIsFindexSettingsOpen} 
             isFindexActive={isFindexActive}
+            prorrogasPendientes={prorrogasPendientes}
             mobileOpen={mobileDrawerOpen}
             onCloseMobile={() => setMobileDrawerOpen(false)}
           />
@@ -435,6 +442,7 @@ function App() {
                 <>
                   <Route path="/" element={<Navigate to="/compras" replace />} />
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly={false} />} />
+                  <Route path="/prorrogas" element={<ProrrogasPage solicitudes={solicitudes} role={role} userEmail={user.email} />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   <Route path="/gestion-oc" element={<GestionOC readOnly={false} />} />
                   {ENABLE_RETACEOS && <Route path="/compras/retaceos" element={<RetaceosView role={role} />} />}
@@ -458,6 +466,7 @@ function App() {
                 <>
                   <Route path="/" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate role={role} />} />
+                  <Route path="/prorrogas" element={<ProrrogasPage solicitudes={solicitudes} role={role} userEmail={user.email} />} />
                   <Route path="/vendedor/nueva" element={<NuevaSolicitudGateway role={role} />} />
                   <Route path="/vendedor/nueva-rfq" element={<NuevaRFQ role={role} />} />
                   <Route path="/vendedor/nuevo-pedido" element={<NuevoPedido role={role} />} />
@@ -472,6 +481,7 @@ function App() {
                 <>
                   <Route path="/" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate title="Solicitudes Globales" role={role} />} />
+                  <Route path="/prorrogas" element={<ProrrogasPage solicitudes={solicitudes} role={role} userEmail={user.email} />} />
                   <Route path="/vendedor/nueva" element={<NuevaSolicitudGateway role={role} />} />
                   <Route path="/vendedor/nueva-rfq" element={<NuevaRFQ role={role} />} />
                   <Route path="/vendedor/nuevo-pedido" element={<NuevoPedido role={role} />} />
@@ -486,6 +496,7 @@ function App() {
                 <>
                   <Route path="/" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/vendedor" element={<DashboardVendedor solicitudes={solicitudes} canCreate title="Solicitudes Globales" role={role} />} />
+                  <Route path="/prorrogas" element={<ProrrogasPage solicitudes={solicitudes} role={role} userEmail={user.email} />} />
                   <Route path="/vendedor/nueva" element={<NuevaSolicitudGateway role={role} />} />
                   <Route path="/vendedor/nueva-rfq" element={<NuevaRFQ role={role} />} />
                   <Route path="/vendedor/nuevo-pedido" element={<NuevoPedido role={role} />} />

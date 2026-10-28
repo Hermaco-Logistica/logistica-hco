@@ -13,6 +13,32 @@
     --tf-color-border: #e2e8f0;
     --tf-radius-panel: 1.5rem;
     --tf-shadow-panel: 0 16px 30px rgba(15, 23, 42, 0.08);
+    --detalle-bg: #f5f6f7;
+    --detalle-surface: #ffffff;
+    --detalle-surface-muted: #f8f9fa;
+    --detalle-border: #d9dee5;
+    --detalle-border-strong: #aeb7c2;
+    --detalle-text: #202833;
+    --detalle-text-muted: #586575;
+    --detalle-text-subtle: #697586;
+    --detalle-accent-info: #1d5e87;
+    --detalle-accent-warning: #8a5a00;
+    --detalle-accent-danger: #a42b32;
+    --detalle-accent-success: #176b45;
+    --detalle-bg-warning: #fff7e8;
+    --detalle-bg-danger: #fff0f0;
+    --detalle-bg-success: #eef8f2;
+    --detalle-bg-info: #eff6fa;
+    --detalle-bg-selected: #f0f5f5;
+    --detalle-bg-row-success: #f1f7f3;
+    --detalle-bg-row-danger: #fff5f4;
+    --detalle-shadow-float: 0 -4px 18px rgb(15 23 42 / 12%);
+    --detalle-success-hover: #105b39;
+    --detalle-air: #247a9b;
+    --detalle-sea: #536f9b;
+    --detalle-radius-control: 6px;
+    --detalle-radius-card: 10px;
+    --detalle-control-height: 36px;
   }
 
   html, body, #root {

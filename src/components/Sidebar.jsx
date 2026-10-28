@@ -12,7 +12,8 @@ import {
   PanelLeftClose,
   BarChart3,
   X,
-  Truck
+  Truck,
+  Bell
 } from 'lucide-react';
 import { FindexSettingsModal } from './FindexSettingsModal';
 import { usePersistedState } from '../hooks/usePersistedState';
@@ -25,6 +26,7 @@ export const Sidebar = ({
   isFindexSettingsOpen, 
   setIsFindexSettingsOpen, 
   isFindexActive,
+  prorrogasPendientes = 0,
   mobileOpen = false,
   onCloseMobile = () => {}
 }) => {
@@ -86,6 +88,13 @@ export const Sidebar = ({
       icon: <FilePlus size={18} />,
       path: '/vendedor/nueva',
       show: role === 'vendedor' || role === 'gerente'
+    },
+    {
+      label: 'Prórrogas',
+      icon: <Bell size={18} />,
+      path: '/prorrogas',
+      show: true,
+      badge: prorrogasPendientes
     },
     {
       label: 'Bandeja RFQ',
@@ -205,10 +214,11 @@ export const Sidebar = ({
                     : `text-white/70 hover:bg-white/10 hover:text-white ${collapsed ? '' : 'hover:translate-x-1'}`
                 }`}
               >
-                <span className={`shrink-0 w-8 flex items-center justify-center transition-colors ${
+                <span className={`relative shrink-0 w-8 flex items-center justify-center transition-colors ${
                   location.pathname === item.path ? 'text-white' : 'text-white/60 group-hover:text-white'
                 }`}>
                   {item.icon}
+                  {item.badge > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border border-slate-900 bg-rose-600 px-1 text-[8px] font-black text-white">{item.badge > 99 ? '99+' : item.badge}</span>}
                 </span>
                 <span
                   className={`whitespace-nowrap overflow-hidden font-black text-[10px] uppercase tracking-[0.15em] transition-all duration-300 ease-in-out ${
@@ -355,7 +365,7 @@ export const Sidebar = ({
                   <span className="shrink-0 w-8 flex items-center justify-center">
                     {item.icon}
                   </span>
-                  <span className="ml-3 font-black text-xs uppercase tracking-wider">
+                  <span className="ml-3 flex flex-1 items-center font-black text-xs uppercase tracking-wider">
                     {item.label}
                   </span>
                 </Link>

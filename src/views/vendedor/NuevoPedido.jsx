@@ -22,6 +22,7 @@ import { calcularFechaEstimada } from '../../utils/itemHelpers';
 import { useCotizacionesEstancadas } from '../../hooks/useCotizacionesEstancadas';
 import { ModalBloqueoCotizaciones } from '../../components/vendedor/ModalBloqueoCotizaciones';
 import { NuevoPedidoView } from './nuevo-pedido/NuevoPedidoView';
+import { extraerDiasValidez } from '../../utils/cotizacionesEstancadasHelpers';
 
 export const NuevoPedido = ({ role }) => {
   const navigate = useNavigate();
@@ -408,6 +409,7 @@ export const NuevoPedido = ({ role }) => {
           cliente: clienteNormalizado,
           correlativo,
           validez,
+          diasValidez: extraerDiasValidez(validez, 'Pedido Manual'),
           comentariosVendedor: comentariosVendedor.trim(),
           vendedorId: auth.currentUser.uid,
           vendedorEmail: auth.currentUser.email,

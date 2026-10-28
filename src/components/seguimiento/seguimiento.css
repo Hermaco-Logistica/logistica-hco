@@ -1,0 +1,124 @@
+.seguimiento-plazo {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 9px;
+  background: rgba(15, 23, 42, 0.12);
+}
+
+.seguimiento-plazo__dato {
+  min-width: 0;
+  padding: 9px 11px;
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.seguimiento-plazo__etiqueta {
+  display: block;
+  overflow: hidden;
+  color: rgba(15, 23, 42, 0.58);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.seguimiento-plazo__valor {
+  display: block;
+  margin-top: 4px;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.25;
+}
+
+.seguimiento-prorroga {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.seguimiento-prorroga strong {
+  color: #1e293b;
+  font-weight: 850;
+}
+
+.seguimiento-prorroga--bloque {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 12px;
+  border-top: 1px solid rgba(15, 23, 42, 0.12);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+  padding: 9px 0;
+}
+
+.seguimiento-prorroga--bloque span {
+  padding: 0 10px;
+  border-right: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.seguimiento-prorroga--bloque span:last-child {
+  border-right: 0;
+}
+
+.prorrogas-compras__detalle {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 10px;
+}
+
+.prorrogas-compras__dato {
+  min-width: 0;
+}
+
+.prorrogas-compras__dato span {
+  display: block;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.prorrogas-compras__dato strong {
+  display: block;
+  margin-top: 3px;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .seguimiento-plazo,
+  .seguimiento-prorroga--bloque {
+    grid-template-columns: 1fr;
+  }
+
+  .prorrogas-compras__detalle {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 10px;
+  }
+
+  .seguimiento-prorroga--bloque span {
+    border-right: 0;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+    padding: 7px 0;
+  }
+
+  .seguimiento-prorroga--bloque span:last-child {
+    border-bottom: 0;
+  }
+}

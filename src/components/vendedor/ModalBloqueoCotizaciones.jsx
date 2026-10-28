@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, ArrowRight, ArrowLeft, CalendarDays, Clock, HelpCircle, ListChecks, Package, Plane, Ship, UserRound } from 'lucide-react';
-import { obtenerEscalaRojoTiempo } from '../../utils/cotizacionesEstancadasHelpers';
+import { obtenerDiasValidez, obtenerEscalaRojoTiempo } from '../../utils/cotizacionesEstancadasHelpers';
+import { ESTADOS_SEGUIMIENTO_CLIENTE, obtenerResumenSeguimientoCliente } from '../../utils/seguimientoCliente';
 
 export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null }) => {
   const navigate = useNavigate();
@@ -60,6 +61,23 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
     return null;
   };
 
+  const renderBadgeSeguimiento = (solicitud) => {
+    const resumen = obtenerResumenSeguimientoCliente(solicitud);
+    const esCierre = resumen.estado === ESTADOS_SEGUIMIENTO_CLIENTE.CIERRE_REQUERIDO;
+    const esProrroga = resumen.estado === ESTADOS_SEGUIMIENTO_CLIENTE.PRORROGA_DISPONIBLE;
+    return (
+      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-xs text-[9px] font-sans font-bold uppercase tracking-wider border ${esCierre
+        ? 'bg-rose-50 text-rose-700 border-rose-200'
+        : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
+        {esCierre ? 'Cierre requerido' : esProrroga ? 'Prórroga disponible' : 'Seguimiento requerido'}
+      </span>
+    );
+  };
+
+  const hayCierresRequeridos = cotizaciones.some((solicitud) => (
+    obtenerResumenSeguimientoCliente(solicitud).estado === ESTADOS_SEGUIMIENTO_CLIENTE.CIERRE_REQUERIDO
+  ));
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 md:p-6 overflow-y-auto">
       <div className="bg-white rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-slate-200 max-w-6xl w-full h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in duration-150">
@@ -80,7 +98,7 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
                 </span>
               </div>
               <p className="text-slate-400 text-xs mt-0.5 hidden sm:block truncate">
-                Solicitudes con al menos un ítem cotizado con 5 o más días hábiles (sin contar domingos) sin seguimiento comercial.
+                Solicitudes con al menos un ítem cotizado fuera de su vigencia configurada sin seguimiento comercial.
               </p>
             </div>
           </div>
@@ -130,7 +148,7 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
               <tbody className="divide-y divide-slate-100">
                 {cotizaciones.map((c) => {
                   const esPedido = c.tipo === 'Pedido Manual';
-                  const escalaClase = obtenerEscalaRojoTiempo(c.diasTranscurridos);
+                  const escalaClase = obtenerEscalaRojoTiempo(c.diasTranscurridos, obtenerDiasValidez(c));
                   const itemsEst = c.itemsEstancados || [];
                   const totalAereoEst = c.totalesEstancados?.totalAereo ?? c.totalAereo;
                   const totalMaritimoEst = c.totalesEstancados?.totalMaritimo ?? c.totalMaritimo;
@@ -141,6 +159,7 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
                         <div className="flex flex-col items-start gap-1">
                           <span>{c.correlativo || 'S/N'}</span>
                           {renderBadgeParcial(c)}
+                          {renderBadgeSeguimiento(c)}
                         </div>
                       </td>
                       <td className="py-3.5 px-4 align-top max-w-sm">
@@ -220,7 +239,7 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
           <div className="md:hidden space-y-4">
             {cotizaciones.map((c) => {
               const esPedido = c.tipo === 'Pedido Manual';
-              const escalaClase = obtenerEscalaRojoTiempo(c.diasTranscurridos);
+              const escalaClase = obtenerEscalaRojoTiempo(c.diasTranscurridos, obtenerDiasValidez(c));
               const itemsEst = c.itemsEstancados || [];
               const totalAereoEst = c.totalesEstancados?.totalAereo ?? c.totalAereo;
               const totalMaritimoEst = c.totalesEstancados?.totalMaritimo ?? c.totalMaritimo;
@@ -236,6 +255,7 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
                         {c.correlativo || 'S/N'}
                       </span>
                       {renderBadgeParcial(c)}
+                      {renderBadgeSeguimiento(c)}
                     </div>
                     <span
                       className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-mono font-bold tracking-tight shrink-0 ${escalaClase}`}
@@ -328,7 +348,10 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
         {/* Barra inferior */}
         <div className="p-3.5 sm:px-6 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-slate-500">
           <span>
-            Debe registrar resolución (pedido, contraoferta o venta perdida) para desbloquear nuevas solicitudes. Totales calculados sobre los ítems estancados.
+            {hayCierresRequeridos
+              ? 'Las solicitudes con cierre requerido deben resolverse como pedido o venta perdida para desbloquear nuevas solicitudes.'
+              : 'Debe registrar seguimiento, pedido, contraoferta o venta perdida para desbloquear nuevas solicitudes.'}
+            {' '}Totales calculados sobre los ítems estancados.
           </span>
           <button
             onClick={() => {
