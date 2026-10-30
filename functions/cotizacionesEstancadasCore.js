@@ -1,19 +1,49 @@
 /**
  * LÓGICA COMPARTIDA DE COTIZACIONES ESTANCADAS (Backend Cloud Functions)
- * 
+ *
  * Enlace con frontend: Este archivo replica fielmente la lógica de:
  *   src/utils/cotizacionesEstancadasHelpers.js
+ *   src/utils/diasHabiles.js (copiado en ./diasHabiles.js)
  * Mantener sincronizados ambos archivos ante cualquier cambio en reglas de negocio.
- * 
+ *
  * Criterios:
  *   - Zona horaria: America/El_Salvador (UTC-6)
  *   - Excluye domingos del cómputo
- *   - Umbral: >= 5 días hábiles sin domingos
+ *   - Umbral: validez de cada solicitud (RFQ 5 días, Pedido Manual 10, o el texto `validez`)
+ *   - Extienden el plazo: revisión activa del cliente y prórroga aprobada
  *   - Roles sujetos a bloqueo: 'vendedor', 'gerente'
  */
 
+import { convertirFechaSeguimiento, sumarDiasHabiles } from './diasHabiles.js';
+
 export const ZONA_HORARIA_EL_SALVADOR = 'America/El_Salvador';
 export const ROLES_CON_BLOQUEO = ['vendedor', 'gerente'];
+export const ESTADOS_SOLICITUD_EVALUABLES = ['Cotizado', 'Pedido Parcial', 'Cotizado Parcial'];
+
+export const DIAS_VALIDEZ_DEFAULT_RFQ = 5;
+export const DIAS_VALIDEZ_DEFAULT_PEDIDO_MANUAL = 10;
+
+/**
+ * Dias de validez de una solicitud: diasValidez, luego el texto validez y, finalmente,
+ * el default de su tipo.
+ */
+export function obtenerDiasValidez(solicitud = null) {
+  const valorNumerico = Number(solicitud?.diasValidez);
+  if (Number.isFinite(valorNumerico) && valorNumerico > 0) {
+    return Math.floor(valorNumerico);
+  }
+
+  const texto = String(solicitud?.validez || '');
+  const coincidencia = texto.match(/\d+/);
+  const valorTexto = coincidencia ? Number(coincidencia[0]) : 0;
+  if (Number.isFinite(valorTexto) && valorTexto > 0) {
+    return Math.floor(valorTexto);
+  }
+
+  return solicitud?.tipo === 'Pedido Manual'
+    ? DIAS_VALIDEZ_DEFAULT_PEDIDO_MANUAL
+    : DIAS_VALIDEZ_DEFAULT_RFQ;
+}
 
 export function esRolBloqueable(roleOrUser) {
   if (!roleOrUser) return false;
@@ -66,6 +96,14 @@ export function obtenerFechaRespuestaComprador(solicitud) {
     if (!isNaN(parsed.getTime())) return parsed;
   }
 
+  if (solicitud.ultimaNotificacion?.en) {
+    const un = solicitud.ultimaNotificacion.en;
+    if (typeof un.toDate === 'function') return un.toDate();
+    if (un instanceof Date) return un;
+    const parsed = new Date(un);
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+
   const productos = Array.isArray(solicitud.productos) ? solicitud.productos : [];
   let fechaMasReciente = null;
 
@@ -76,6 +114,9 @@ export function obtenerFechaRespuestaComprador(solicitud) {
     } else if (p?.negociacion?.ultimoCambio?.en) {
       const en = p.negociacion.ultimoCambio.en;
       fItem = typeof en.toDate === 'function' ? en.toDate() : new Date(en);
+    } else if (p?.negociacion?.ofertaVigente?.creadaEn) {
+      const cr = p.negociacion.ofertaVigente.creadaEn;
+      fItem = typeof cr.toDate === 'function' ? cr.toDate() : new Date(cr);
     }
 
     if (fItem && !isNaN(fItem.getTime())) {
@@ -94,6 +135,55 @@ export function obtenerFechaRespuestaComprador(solicitud) {
   }
 
   return null;
+}
+
+function obtenerFechaProrrogaAprobada(solicitud, indice = null) {
+  const prorrogaActual = solicitud?.prorrogaCliente;
+  const historial = Array.isArray(prorrogaActual?.historial) ? prorrogaActual.historial : [];
+  const registros = [prorrogaActual, ...historial.slice().reverse()].filter(Boolean);
+  for (const prorroga of registros) {
+    if (prorroga.estado !== 'aprobada') continue;
+    if (indice !== null && Array.isArray(prorroga.indicesItems) && !prorroga.indicesItems.includes(indice)) continue;
+    const fechas = prorroga.fechasVencimientoAprobadas || {};
+    const individual = convertirFechaSeguimiento(fechas[indice] || fechas[String(indice)]);
+    if (individual) return individual;
+    const general = convertirFechaSeguimiento(prorroga.fechaVencimientoAprobada);
+    if (general) return general;
+    if (indice === null) {
+      const fechasAprobadas = Object.values(fechas).map(convertirFechaSeguimiento).filter(Boolean).sort((a, b) => a - b);
+      if (fechasAprobadas.length) return fechasAprobadas[0];
+    }
+  }
+  return null;
+}
+
+/** Fecha límite efectiva: validez inicial, última revisión o prórroga aprobada. */
+export function obtenerFechaLimiteSeguimientoItem(item, solicitud, indice = null, diasLimite = null) {
+  const revision = item?.seguimientoCliente;
+  let fechaBase = null;
+  if (revision?.estado === 'en_revision') {
+    fechaBase = convertirFechaSeguimiento(revision.fechaInicioRevision)
+      || convertirFechaSeguimiento(revision.fechaRevision);
+  }
+  fechaBase ||= convertirFechaSeguimiento(item?.fechaCotizacion)
+    || convertirFechaSeguimiento(item?.negociacion?.ultimoCambio?.en)
+    || convertirFechaSeguimiento(item?.negociacion?.ofertaVigente?.creadaEn)
+    || convertirFechaSeguimiento(obtenerFechaRespuestaComprador(solicitud));
+  if (!fechaBase) return null;
+
+  const validez = Number(diasLimite) > 0 ? Math.floor(Number(diasLimite)) : obtenerDiasValidez(solicitud);
+  const fechaVencimientoInicial = sumarDiasHabiles(fechaBase, validez);
+  const fechaVencimientoRevision = convertirFechaSeguimiento(revision?.fechaVencimientoRevision)
+    || (revision?.estado === 'en_revision' && revision?.fechaRevision
+      ? sumarDiasHabiles(
+        convertirFechaSeguimiento(revision.fechaInicioRevision) || revision.fechaRevision,
+        validez
+      )
+      : null);
+  const fechaVencimientoProrroga = obtenerFechaProrrogaAprobada(solicitud, indice);
+  return [fechaVencimientoInicial, fechaVencimientoRevision, fechaVencimientoProrroga]
+    .filter(Boolean)
+    .reduce((ultima, fecha) => !ultima || fecha > ultima ? fecha : ultima, null);
 }
 
 export function calcularDiasDesdeRespuesta(fecha, fechaReferencia = new Date()) {
@@ -121,44 +211,55 @@ export function calcularDiasDesdeRespuesta(fecha, fechaReferencia = new Date()) 
   return dias;
 }
 
-export function esItemEstancado(item, solicitud = null, { diasLimite = 5, fechaReferencia = new Date() } = {}) {
+export function esItemEstancado(item, solicitud = null, { diasLimite = null, fechaReferencia = new Date(), indice = null } = {}) {
   if (!item) return false;
 
-  const estadoItem = item.estadoItem || (Number(item.fob || 0) > 0 ? 'Cotizado' : 'Pendiente');
-  if (estadoItem !== 'Cotizado') return false;
-
-  let fechaResp = null;
-  if (item.fechaCotizacion) {
-    fechaResp = typeof item.fechaCotizacion.toDate === 'function' ? item.fechaCotizacion.toDate() : new Date(item.fechaCotizacion);
-  } else if (item.negociacion?.ultimoCambio?.en) {
-    const en = item.negociacion.ultimoCambio.en;
-    fechaResp = typeof en.toDate === 'function' ? en.toDate() : new Date(en);
+  // Si ya fue pedido, comprado, anulado o cerrado, nunca está estancado
+  if (
+    item.estadoItem === 'Pedido' ||
+    item.estadoItem === 'Comprado' ||
+    item.estadoItem === 'En Proceso' ||
+    item.estadoItem === 'Anulado' ||
+    item.estadoItem === 'Denegado' ||
+    item.estadoItem === 'Cancelado' ||
+    item.estadoItem === 'Venta Perdida' ||
+    item.idPedidoRelacionado ||
+    item.pedidoGenerado
+  ) {
+    return false;
   }
 
-  if (!fechaResp || isNaN(fechaResp.getTime())) {
-    fechaResp = obtenerFechaRespuestaComprador(solicitud);
+  const esPedidoManual = solicitud?.tipo === 'Pedido Manual';
+  const tienePrecio = Number(item.fob || item.precio || item.negociacion?.ofertaVigente?.precio || 0) > 0;
+  const estadoItem = item.estadoItem || (tienePrecio ? 'Cotizado' : 'Pendiente');
+
+  if (esPedidoManual) {
+    if (estadoItem !== 'Cotizado' && estadoItem !== 'Pendiente') return false;
+  } else {
+    if (estadoItem !== 'Cotizado') return false;
   }
 
-  if (!fechaResp) return false;
-
-  const dias = calcularDiasDesdeRespuesta(fechaResp, fechaReferencia);
-  return dias >= diasLimite;
+  const fechaLimite = obtenerFechaLimiteSeguimientoItem(item, solicitud, indice, diasLimite);
+  return Boolean(fechaLimite && fechaReferencia >= fechaLimite);
 }
 
-export function esCotizacionEstancada(solicitud, { diasLimite = 5, fechaReferencia = new Date() } = {}) {
+export function esCotizacionEstancada(solicitud, { diasLimite = null, fechaReferencia = new Date() } = {}) {
   if (!solicitud) return false;
 
   const estado = solicitud.estado || solicitud.estadoGlobal;
-  if (estado !== 'Cotizado') return false;
+  if (!ESTADOS_SOLICITUD_EVALUABLES.includes(estado)) return false;
 
   const productos = Array.isArray(solicitud.productos) ? solicitud.productos : [];
+  const limite = Number.isFinite(Number(diasLimite)) && Number(diasLimite) > 0
+    ? Number(diasLimite)
+    : obtenerDiasValidez(solicitud);
   if (productos.length > 0) {
-    return productos.some(p => esItemEstancado(p, solicitud, { diasLimite, fechaReferencia }));
+    return productos.some((p, index) => esItemEstancado(p, solicitud, { diasLimite: limite, fechaReferencia, indice: index }));
   }
 
-  const fechaResp = obtenerFechaRespuestaComprador(solicitud);
-  if (!fechaResp) return false;
+  // Solicitudes sin desglose de productos solo aplican en Cotizado puro
+  if (estado !== 'Cotizado') return false;
 
-  const dias = calcularDiasDesdeRespuesta(fechaResp, fechaReferencia);
-  return dias >= diasLimite;
+  const fechaLimite = obtenerFechaLimiteSeguimientoItem(null, solicitud, null, limite);
+  return Boolean(fechaLimite && fechaReferencia >= fechaLimite);
 }

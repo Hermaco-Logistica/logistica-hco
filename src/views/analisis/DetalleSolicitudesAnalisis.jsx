@@ -8,6 +8,8 @@ import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, evaluarEstadoGanada } from './theme';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
 import { useSessionState } from '../../hooks/usePersistedState';
+import { crearMapaFasesSeguimiento } from '../../utils/faseSeguimiento';
+import { FaseSeguimientoChip } from './components/FaseSeguimientoChip';
 import {
   getHoyElSalvador,
   getAnioActualElSalvador,
@@ -155,6 +157,9 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
       }));
   };
 
+  // Fase de seguimiento (revisión / prórroga) derivada; no se guarda en Firestore
+  const fasesSeguimiento = useMemo(() => crearMapaFasesSeguimiento(solicitudes), [solicitudes]);
+
   // Filtrar según el tab activo y filtros contextuales (vendedor / cliente)
   const solicitudesPorEstado = useMemo(() => {
     const { periodo, fechaInicio, fechaFin, anioHistorico } = filtroPeriodo;
@@ -194,6 +199,8 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
         if (!normalizarBusqueda(s.cliente || '').includes(term)) return false;
       }
 
+      if (tabActual === 'seguimiento') return fasesSeguimiento.has(s.id);
+
       const est = s.estado || 'Pendiente';
       if (tabActual === 'pendiente') {
         return est === 'Pendiente';
@@ -219,7 +226,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
       }
       return true;
     });
-  }, [solicitudes, tabActual, vendedorFilter, clienteFilter, filtroPeriodo, rangoEsteMes]);
+  }, [solicitudes, tabActual, vendedorFilter, clienteFilter, filtroPeriodo, rangoEsteMes, fasesSeguimiento]);
 
   // Filtrar por término de búsqueda
   const solicitudesFiltradas = useMemo(() => {
@@ -264,6 +271,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
     { id: 'cotizadas', label: 'Cotizadas', dot: theme.flujoEstados?.cotizadas?.dot },
     { id: 'pedidos', label: 'Pedidos', dot: theme.flujoEstados?.pedidos?.dot },
     { id: 'parciales', label: 'Pedidos Parciales', dot: 'bg-sky-500' },
+    { id: 'seguimiento', label: 'En seguimiento', dot: 'bg-violet-500' },
     { id: 'anuladas', label: 'Anuladas', dot: 'bg-rose-500' },
     { id: 'anuladas-parcial', label: 'Con ítems anulados', dot: 'bg-rose-300' },
     { id: 'ventas-perdidas', label: 'Ventas perdidas / rechazos', dot: 'bg-orange-500' }
@@ -447,6 +455,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                       </div>
                       <div className="flex flex-col items-end gap-1.5">
                         <Badge estado={s.estado || 'Pendiente'} roleTheme={theme} />
+                        <FaseSeguimientoChip fase={fasesSeguimiento.get(s.id)} />
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${res.esGanada ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80' : 'bg-slate-50 text-slate-600 border-slate-200/80'}`}>
                           {res.esGanada && <CheckCircle2 size={10} className="shrink-0" />}
                           {res.label}
@@ -663,7 +672,10 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                             )}
                           </td>
                           <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
-                            <Badge estado={s.estado || 'Pendiente'} roleTheme={theme} />
+                            <div className="flex flex-col items-center gap-1">
+                              <Badge estado={s.estado || 'Pendiente'} roleTheme={theme} />
+                              <FaseSeguimientoChip fase={fasesSeguimiento.get(s.id)} />
+                            </div>
                           </td>
                           <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                             <div className="flex flex-col items-center gap-1">

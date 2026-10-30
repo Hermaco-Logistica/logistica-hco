@@ -20,6 +20,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import {
   esRolBloqueable,
   esCotizacionEstancada,
+  ESTADOS_SOLICITUD_EVALUABLES,
   ZONA_HORARIA_EL_SALVADOR
 } from './cotizacionesEstancadasCore.js';
 
@@ -63,16 +64,16 @@ export async function recalcularBloqueoUsuario(uid, userData = null) {
   // 2. Para vendedores y gerentes, verificar cotizaciones estancadas en Firestore
   const emailNorm = (uData.email || '').trim().toLowerCase();
 
-  // Buscar solicitudes en estado 'Cotizado' ligadas al vendedor (por vendedorId o vendedorEmail)
+  // Buscar solicitudes cotizadas (total o parcialmente) ligadas al vendedor (por vendedorId o vendedorEmail)
   const [snapPorId, snapPorEmail] = await Promise.all([
     db.collection('solicitudes')
       .where('vendedorId', '==', uid)
-      .where('estado', '==', 'Cotizado')
+      .where('estado', 'in', ESTADOS_SOLICITUD_EVALUABLES)
       .get(),
     emailNorm
       ? db.collection('solicitudes')
           .where('vendedorEmail', '==', uData.email)
-          .where('estado', '==', 'Cotizado')
+          .where('estado', 'in', ESTADOS_SOLICITUD_EVALUABLES)
           .get()
       : { docs: [] }
   ]);

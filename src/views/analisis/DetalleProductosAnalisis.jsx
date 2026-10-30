@@ -8,6 +8,8 @@ import { useSessionState } from '../../hooks/usePersistedState';
 import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
 import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
+import { acumularFaseSeguimiento, obtenerFaseItemCacheada } from '../../utils/faseSeguimiento';
+import { FaseSeguimientoConteo } from './components/FaseSeguimientoConteo';
 import { cumpleFiltroPeriodoAnalisis } from './utils/periodoAnalisis';
 import {
   getHoyElSalvador,
@@ -102,7 +104,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
       }
       if (!Array.isArray(s.productos)) return;
 
-      s.productos.forEach((p) => {
+      s.productos.forEach((p, indiceProducto) => {
         const desc = (p.desc || p.descripcion || '').trim().toUpperCase();
         if (!desc) return;
         const key = desc;
@@ -123,7 +125,9 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
             ventasPerdidas: 0,
             rechazos: 0,
             clientes: new Set(),
-            rfqIds: new Set()
+            rfqIds: new Set(),
+            enSeguimiento: 0,
+            fasesSeguimiento: {}
           };
         }
 
@@ -131,6 +135,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
         if (marca) item.marcas.add(marca);
         if (s.cliente) item.clientes.add(s.cliente.trim());
         if (s.id) item.rfqIds.add(s.id);
+        acumularFaseSeguimiento(item, obtenerFaseItemCacheada(s, indiceProducto));
 
         const decision = obtenerDecisionItem(s, p);
         if (decision === 'Anulado' || decision === 'Venta Perdida' || decision === 'Rechazo') {
@@ -382,6 +387,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-slate-400 font-medium">Cotizados</span>
                       <span className="font-bold font-mono text-slate-700">{p.vecesCotizado} <span className="text-[9px] font-normal">veces</span></span>
+                      <FaseSeguimientoConteo conteo={p.enSeguimiento} porFase={p.fasesSeguimiento} unidad="en seg." className="mt-1" />
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-emerald-600/70 font-medium">Ganados</span>
@@ -472,6 +478,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                           <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-xs font-semibold">
                             {p.vecesCotizado} RFQ{p.vecesCotizado > 1 ? 's' : ''}
                           </span>
+                          <FaseSeguimientoConteo conteo={p.enSeguimiento} porFase={p.fasesSeguimiento} unidad="ítems en seguimiento" className="block mt-0.5 mx-auto w-fit" />
                         </td>
                         <DecisionSummaryColumns counts={p} basePath={`/analisis/producto/${encodeURIComponent(p.desc)}`} navigate={navigate} />
                         <td className="py-2.5 px-3.5 text-center">

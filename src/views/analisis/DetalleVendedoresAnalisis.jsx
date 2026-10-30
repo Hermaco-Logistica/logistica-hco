@@ -6,6 +6,8 @@ import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, formatearTiempoRespuesta, formatearTiempoCierre } from './theme';
 import { contarDecisiones } from './utils/decisionMetrics';
 import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
+import { acumularFaseSeguimiento, obtenerFaseSolicitudCacheada } from '../../utils/faseSeguimiento';
+import { FaseSeguimientoConteo } from './components/FaseSeguimientoConteo';
 import { cumpleFiltroPeriodoAnalisis } from './utils/periodoAnalisis';
 import { useSessionState } from '../../hooks/usePersistedState';
 import {
@@ -126,12 +128,15 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
           totalDiasRespuesta: 0,
           rfqConTiempoRespuesta: 0,
           totalDiasCierre: 0,
-          pedidosConTiempoCierre: 0
+          pedidosConTiempoCierre: 0,
+          enSeguimiento: 0,
+          fasesSeguimiento: {}
         };
       }
 
       const item = map[nombre];
       item.totalRFQs++;
+      acumularFaseSeguimiento(item, obtenerFaseSolicitudCacheada(s)?.fase);
 
       const est = s.estado || 'Pendiente';
       if (est === 'Pendiente') item.pendientes++;
@@ -392,6 +397,12 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                     navigate={navigate}
                   />
                   <div className="space-y-1.5 border-t border-slate-100 pt-2 text-[11px]">
+                    {v.enSeguimiento > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">En seguimiento de cliente</span>
+                        <FaseSeguimientoConteo conteo={v.enSeguimiento} porFase={v.fasesSeguimiento} unidad="solicitudes" />
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Monto Cotizado</span>
                       <span className="font-mono font-bold text-slate-800">{formatearDinero(v.montoCotizado)}</span>
@@ -437,6 +448,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                   <th className="py-2.5 px-3.5 whitespace-nowrap">Vendedor</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Total RFQs</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Cotizadas</th>
+                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap" title="Solicitudes cotizadas en revisión, prórroga o vencidas (ya incluidas en Cotizadas)">En seguimiento</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ganadas (Pedidos)</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Anulaciones</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ventas perdidas</th>
@@ -500,6 +512,11 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                       </td>
                       <td className="py-2.5 px-3.5 text-center font-mono text-slate-600 whitespace-nowrap">
                         {v.cotizadas}
+                      </td>
+                      <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
+                        {v.enSeguimiento > 0
+                          ? <FaseSeguimientoConteo conteo={v.enSeguimiento} porFase={v.fasesSeguimiento} unidad="" />
+                          : <span className="font-mono text-slate-300 text-xs">---</span>}
                       </td>
                       <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
                         <span>{v.pedidos}</span>

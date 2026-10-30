@@ -39,6 +39,7 @@ import {
 import { useSessionState } from '../../hooks/usePersistedState';
 import { clasificarSolicitud, etiquetaResultadoSolicitud, RESULTADOS_SOLICITUD } from '../../utils/clasificarSolicitud';
 import { MetricasRotativas } from './components/MetricasRotativas';
+import { FASES_SEGUIMIENTO, crearMapaFasesSeguimiento, calcularMontoItemsSeguimiento } from '../../utils/faseSeguimiento';
 
 export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();
@@ -60,6 +61,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
   const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [clienteSearch, setClienteSearch] = useSessionState('analisis_cliente_search', '');
   const [resultadoFilter, setResultadoFilter] = useSessionState('analisis_resultado_filter', '');
+  const [seguimientoFilter, setSeguimientoFilter] = useSessionState('analisis_seguimiento_filter', '');
   const [ordenarProductosPor, setOrdenarProductosPor] = useSessionState('analisis_top_prod_orden', 'veces'); // 'veces' | 'ganadas' | 'unidades' | 'anulaciones' | 'ventasPerdidas' | 'rechazos'
   const [pageVendedores, setPageVendedores] = useState(1);
   const itemsPerPageVendedores = 5;
@@ -157,6 +159,9 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     return [...years].sort((a, b) => b - a); // descendente: año más reciente primero
   }, [solicitudes]);
 
+  // Fase de seguimiento (revisión / prórroga) derivada por solicitud; no se guarda en Firestore
+  const fasesSeguimiento = useMemo(() => crearMapaFasesSeguimiento(solicitudes), [solicitudes]);
+
   // Filtrado de solicitudes según período, vendedor y cliente
   const solicitudesFiltradas = useMemo(() => {
     const ahora = new Date();
@@ -209,9 +214,15 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         if (resultado !== resultadoFilter) return false;
       }
 
+      if (seguimientoFilter) {
+        const fase = fasesSeguimiento.get(s.id);
+        if (seguimientoFilter === 'todas') return Boolean(fase);
+        if (fase?.fase !== seguimientoFilter) return false;
+      }
+
       return true;
     });
-  }, [solicitudes, periodo, fechaInicio, fechaFin, anioHistorico, vendedorFilter, clienteSearch, resultadoFilter, validacionRango, anioActualSV, rangoEsteMesSV]);
+  }, [solicitudes, periodo, fechaInicio, fechaFin, anioHistorico, vendedorFilter, clienteSearch, resultadoFilter, seguimientoFilter, fasesSeguimiento, validacionRango, anioActualSV, rangoEsteMesSV]);
 
   // Métricas consolidadas sobre solicitudesFiltradas (reactivas a período, vendedor y cliente)
   const metricas = useMemo(() => {
@@ -236,8 +247,16 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     let ventasPerdidasSolicitudes = 0;
     let totalDiasVentaPerdida = 0;
     let itemsConTiempoVentaPerdida = 0;
+    const enSeguimiento = { solicitudes: 0, items: 0, monto: 0, porFase: {} };
 
     solicitudesFiltradas.forEach((s) => {
+      const faseSeguimiento = fasesSeguimiento.get(s.id);
+      if (faseSeguimiento) {
+        enSeguimiento.solicitudes++;
+        enSeguimiento.items += faseSeguimiento.indicesEnSeguimiento.length;
+        enSeguimiento.monto += calcularMontoItemsSeguimiento(s, faseSeguimiento.indicesEnSeguimiento);
+        enSeguimiento.porFase[faseSeguimiento.fase] = (enSeguimiento.porFase[faseSeguimiento.fase] || 0) + 1;
+      }
       const clasificacion = clasificarSolicitud(s.productos, s.estado);
       const estado = clasificacion.estado;
       const resultado = s.resultado || clasificacion.resultado;
@@ -378,9 +397,10 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       tiempoPromedioDias: tiempoCierreInfo.valor,
       tiempoCierreInfo,
       tiempoRespuestaInfo,
-      tiempoVentaPerdidaInfo
+      tiempoVentaPerdidaInfo,
+      enSeguimiento
     };
-  }, [solicitudesFiltradas]);
+  }, [solicitudesFiltradas, fasesSeguimiento]);
 
   const topProductos = useMemo(() => {
     const map = {};
@@ -678,6 +698,21 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
           </select>
         </div>
 
+        <div className="w-full sm:w-52">
+          <select
+            value={seguimientoFilter}
+            onChange={(e) => { setSeguimientoFilter(e.target.value); setPageVendedores(1); }}
+            className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 sm:py-1.5 text-base sm:text-xs font-medium text-slate-700 outline-none focus:border-slate-400 cursor-pointer"
+            aria-label="Filtrar por seguimiento de cliente"
+          >
+            <option value="">Todo el seguimiento</option>
+            <option value="todas">En seguimiento (todas)</option>
+            {Object.entries(FASES_SEGUIMIENTO).map(([fase, datos]) => (
+              <option key={fase} value={fase}>{datos.etiqueta}</option>
+            ))}
+          </select>
+        </div>
+
         <div className="w-full sm:flex-1 relative">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -689,13 +724,14 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
           />
         </div>
 
-        {(vendedorFilter || clienteSearch || resultadoFilter || (periodo === 'custom' && (fechaInicio || fechaFin))) && (
+        {(vendedorFilter || clienteSearch || resultadoFilter || seguimientoFilter || (periodo === 'custom' && (fechaInicio || fechaFin))) && (
           <button
             type="button"
-            onClick={() => { 
-              setVendedorFilter(''); 
-              setClienteSearch(''); 
+            onClick={() => {
+              setVendedorFilter('');
+              setClienteSearch('');
               setResultadoFilter('');
+              setSeguimientoFilter('');
               setFechaInicio(''); 
               setFechaFin(''); 
               setPageVendedores(1);
@@ -936,6 +972,11 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
               <span>{formatearDinero(metricas.montoPedidoTotal)} en pedidos</span>
               <span className="text-[11px] text-slate-600 font-bold group-hover:text-slate-900 group-hover:underline">Ver catálogo →</span>
             </div>
+            {metricas.enSeguimiento.solicitudes > 0 && (
+              <div className="text-[11px] font-medium text-amber-700 mt-0.5 truncate" title="Monto de los ítems en revisión, prórroga o vencidos dentro del volumen cotizado">
+                {formatearDinero(metricas.enSeguimiento.monto)} en seguimiento
+              </div>
+            )}
           </div>
         </div>
 
@@ -1082,6 +1123,25 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 completas: metricas.pedidosCompletos,
                 parciales: metricas.pedidosParciales + metricas.pedidosConAnulaciones,
                 subdetail: `${metricas.pedidosCompletos} completos · ${metricas.pedidosConAnulaciones} con anulaciones · ${metricas.pedidosParciales} parciales`
+              },
+              {
+                tipo: 'seguimiento',
+                label: 'En seguimiento de cliente',
+                count: metricas.enSeguimiento.solicitudes,
+                icon: Clock,
+                iconBg: 'bg-violet-50 text-violet-600 border-violet-200/80',
+                barGradient: 'from-violet-400 to-violet-600',
+                subGradient: 'from-violet-300 to-violet-500',
+                textColor: 'text-violet-700',
+                desc: 'Solicitudes cotizadas en revisión, prórroga o vencidas (ya incluidas en Cotizadas / Parciales)',
+                completas: metricas.enSeguimiento.solicitudes,
+                parciales: 0,
+                subdetail: metricas.enSeguimiento.solicitudes > 0
+                  ? Object.entries(FASES_SEGUIMIENTO)
+                    .filter(([fase]) => metricas.enSeguimiento.porFase[fase])
+                    .map(([fase, datos]) => `${metricas.enSeguimiento.porFase[fase]} ${datos.etiqueta.toLowerCase()}`)
+                    .join(' · ')
+                  : null
               },
               {
                 tipo: 'anuladas',

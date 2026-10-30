@@ -3,6 +3,8 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Search, Building, Download } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
+import { acumularFaseSeguimiento, obtenerFaseSolicitudCacheada } from '../../utils/faseSeguimiento';
+import { FaseSeguimientoConteo } from './components/FaseSeguimientoConteo';
 import { getRoleTheme } from './theme';
 import { contarDecisiones } from './utils/decisionMetrics';
 import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
@@ -85,6 +87,8 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
           pendientes: 0,
           montoTotal: 0,
           montoPedidos: 0,
+          enSeguimiento: 0,
+          fasesSeguimiento: {},
           solicitudesList: []
         };
       } else {
@@ -97,6 +101,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
       const item = map[key];
       item.totalRFQs++;
       item.solicitudesList.push(s);
+      acumularFaseSeguimiento(item, obtenerFaseSolicitudCacheada(s)?.fase);
 
       const est = s.estado || 'Pendiente';
       if (est === 'Pendiente') item.pendientes++;
@@ -317,6 +322,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                     <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-blue-600/70 font-medium">Cotizadas</span>
                       <span className="font-bold font-mono text-blue-700">{c.cotizadas}</span>
+                      <FaseSeguimientoConteo conteo={c.enSeguimiento} porFase={c.fasesSeguimiento} unidad="en seg." className="mt-1" />
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-emerald-600/70 font-medium">Pedidos</span>
@@ -410,6 +416,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         </td>
                         <td className="py-2.5 px-3.5 text-center font-mono text-slate-600">
                           {c.cotizadas}
+                          <FaseSeguimientoConteo conteo={c.enSeguimiento} porFase={c.fasesSeguimiento} className="block mt-0.5 mx-auto w-fit" />
                         </td>
                         <DecisionSummaryColumns counts={c} basePath={`/analisis/cliente/${encodeURIComponent(c.cliente)}`} navigate={navigate} />
                         <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">

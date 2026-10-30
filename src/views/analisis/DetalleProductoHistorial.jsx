@@ -28,6 +28,7 @@ import { normalizarDecisionFilter, obtenerConfiguracionDecision, obtenerEstadoDe
 import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
 import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
 import { DecisionBadge } from './components/DecisionBadge';
+import { FaseSeguimientoItemChip } from './components/FaseSeguimientoItemChip';
 import {
   prepararDatosConsultaMovimiento,
   obtenerTextoConsultaMovimiento,
@@ -162,7 +163,10 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
               </div>
               {!soloAnulados && <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
                 <span className="text-slate-500">Estado / Sistema</span>
-                <Badge estado={m.estado} roleTheme={theme} className="scale-90 origin-right" />
+                <div className="flex items-center gap-1.5">
+                  <FaseSeguimientoItemChip movimiento={m} />
+                  <Badge estado={m.estado} roleTheme={theme} className="scale-90 origin-right" />
+                </div>
               </div>}
               {m.ocRef && (
                 <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
@@ -1067,7 +1071,10 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
 
                       {/* Estado */}
                       {!soloAnulados && <td className="py-2.5 px-3 text-center whitespace-nowrap">
-                        <Badge estado={m.estado} roleTheme={theme} />
+                        <div className="flex flex-col items-center gap-1">
+                          <Badge estado={m.estado} roleTheme={theme} />
+                          <FaseSeguimientoItemChip movimiento={m} />
+                        </div>
                       </td>}
 
                       {/* Resultado (Ganada / Cotizada / Pendiente) */}

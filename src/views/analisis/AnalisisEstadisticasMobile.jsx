@@ -14,6 +14,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { MetricasRotativas } from './components/MetricasRotativas';
+import { FASES_SEGUIMIENTO } from '../../utils/faseSeguimiento';
 
 /* ============================================================================
    PRIMITIVOS MÓVILES
@@ -271,6 +272,11 @@ function MobileHeroCard({ metricas, formatearDinero, onVerPedidos }) {
             <p className="text-[10px] text-slate-400 font-medium mt-0.5 truncate">
               {formatearDinero(metricas.montoPedidoTotal)} en pedidos
             </p>
+            {metricas.enSeguimiento?.solicitudes > 0 && (
+              <p className="text-[10px] text-amber-700 font-medium truncate">
+                {formatearDinero(metricas.enSeguimiento.monto)} en seguimiento
+              </p>
+            )}
           </div>
         </div>
 
@@ -331,6 +337,25 @@ function MobileFlujoCard({ theme, metricas, onVerTodas, onVerEstado }) {
       completas: metricas.pedidosCompletos,
       parciales: metricas.pedidosParciales + metricas.pedidosConAnulaciones,
       subdetail: `${metricas.pedidosCompletos} completos · ${metricas.pedidosConAnulaciones} con anulaciones · ${metricas.pedidosParciales} parciales`
+    },
+    {
+      tipo: 'seguimiento',
+      label: 'En seguimiento de cliente',
+      count: metricas.enSeguimiento?.solicitudes || 0,
+      icon: Clock,
+      iconBg: 'bg-violet-50 text-violet-600 border-violet-200/80',
+      barGradient: 'from-violet-400 to-violet-600',
+      subGradient: 'from-violet-300 to-violet-500',
+      textColor: 'text-violet-700',
+      desc: 'Cotizadas en revisión, prórroga o vencidas (incluidas en Cotizadas)',
+      completas: metricas.enSeguimiento?.solicitudes || 0,
+      parciales: 0,
+      subdetail: metricas.enSeguimiento?.solicitudes > 0
+        ? Object.entries(FASES_SEGUIMIENTO)
+          .filter(([fase]) => metricas.enSeguimiento.porFase[fase])
+          .map(([fase, datos]) => `${metricas.enSeguimiento.porFase[fase]} ${datos.etiqueta.toLowerCase()}`)
+          .join(' · ')
+        : null
     },
     {
       tipo: 'anuladas',
