@@ -2,7 +2,7 @@ import React from 'react';
 import { ModalVentaPerdida } from '../../../components/vendedor/ModalVentaPerdida';
 import { ModalConsultaVentaPerdida } from '../../../components/vendedor/ModalConsultaVentaPerdida';
 import { ModalConsultaDecisionItem } from '../../../components/pedidos/negociacion/ModalConsultaDecisionItem';
-import { ModalSeguimientoCliente } from '../../../components/seguimiento/ModalSeguimientoCliente';
+import { ModalPlanSeguimientoCliente } from '../../../components/seguimiento/ModalPlanSeguimientoCliente';
 
 export const DetalleRFQModales = ({
   id,
@@ -19,15 +19,10 @@ export const DetalleRFQModales = ({
   setConsultaDecisionData,
   modalSeguimientoClienteOpen,
   setModalSeguimientoClienteOpen,
-  itemsSeguimientoCliente,
-  itemsProrrogaCliente,
-  handleConfirmarSeguimientoCliente,
+  planSeguimientoCliente,
+  handleConfirmarPlanSeguimiento,
   guardandoSeguimientoCliente,
-  diasValidezSeguimiento,
-  resumenSeguimientoCliente,
-  handleAbrirSolicitudProrroga,
-  handleConfirmarSolicitudProrroga,
-  guardandoProrrogaCliente
+  diasValidezSeguimiento
 }) => (
   <>
     <ModalVentaPerdida
@@ -54,24 +49,14 @@ export const DetalleRFQModales = ({
       data={consultaDecisionData}
     />
 
-    <ModalSeguimientoCliente
+    <ModalPlanSeguimientoCliente
       key={modalSeguimientoClienteOpen ? 'seguimiento-abierto' : 'seguimiento-cerrado'}
       isOpen={modalSeguimientoClienteOpen}
       onClose={() => setModalSeguimientoClienteOpen(false)}
-      onConfirmar={handleConfirmarSeguimientoCliente}
-      onSolicitarProrroga={handleConfirmarSolicitudProrroga}
-      onPrepararProrroga={handleAbrirSolicitudProrroga}
-      cantidadItems={itemsSeguimientoCliente.length}
+      onConfirmar={handleConfirmarPlanSeguimiento}
+      plan={planSeguimientoCliente}
       diasValidez={diasValidezSeguimiento}
-      fechasLimiteRevision={resumenSeguimientoCliente.detalles.filter(({ index }) => itemsSeguimientoCliente.includes(index)).map(({ fechaAlertaInicial }) => fechaAlertaInicial)}
-      fechasLimiteProrroga={resumenSeguimientoCliente.detalles.filter(({ index }) => itemsProrrogaCliente.includes(index)).map(({ fechaAlertaInicial }) => fechaAlertaInicial)}
-      revisionesUsadas={resumenSeguimientoCliente.revisionesUsadas}
-      maxRevisiones={resumenSeguimientoCliente.maxRevisiones}
-      permiteMantenerRevision={resumenSeguimientoCliente.puedeMantenerRevision}
-      mostrarSolicitudProrroga={resumenSeguimientoCliente.puedeSolicitarProrroga}
-      pendiente={resumenSeguimientoCliente.prorrogaPendiente}
       guardando={guardandoSeguimientoCliente}
-      guardandoProrroga={guardandoProrrogaCliente}
     />
   </>
 );

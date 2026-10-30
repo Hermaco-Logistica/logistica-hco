@@ -1,4 +1,6 @@
 import React from 'react';
+import { StatusChip } from '../../../components/detalle/StatusChip';
+import { esItemCerrado } from '../../../utils/estadoItem';
 
 const fechaCorta = (fecha) => {
   if (!fecha) return '';
@@ -38,26 +40,46 @@ export const ProrrogaItemsAfectados = ({ solicitud, record }) => {
   const eventos = record.eventos || [record];
 
   return (
-    <div className="grid gap-2">
+    <div className="space-y-2 py-1">
       {productos.map((item, indice) => {
         const eventosItem = eventos.filter((evento) => eventoAfectaItem(evento, indice));
         if (eventosItem.length === 0) return null;
         return (
-          <article key={`${solicitud.id}-item-${indice}`} className="rounded-lg border border-slate-200 bg-white p-3">
+          <article
+            key={`${solicitud.id}-item-${indice}`}
+            className="rounded-[6px] border border-[var(--detalle-border)] bg-[var(--detalle-surface)] p-3"
+          >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="text-xs font-bold text-slate-800">Ítem {indice + 1} · {item.descripcion || item.producto || 'Producto sin descripción'}</p>
-                {item.marca && <p className="mt-0.5 text-[10px] font-medium text-slate-500">Marca: {item.marca}</p>}
+                <p className="text-[13px] font-semibold text-[var(--detalle-text)]">
+                  Ítem {indice + 1} · {item.descripcion || item.producto || 'Producto sin descripción'}
+                </p>
+                {item.marca && (
+                  <p className="mt-0.5 text-[11px] text-[var(--detalle-text-subtle)]">
+                    Marca: {item.marca}
+                  </p>
+                )}
               </div>
-              <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-800">
-                {eventosItem.length} registro{eventosItem.length === 1 ? '' : 's'}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusChip
+                  status={esItemCerrado(item) ? 'resuelta' : 'info'}
+                  label={esItemCerrado(item) ? `Cerrado · ${item.estadoItem || item.estado || 'resuelto'}` : 'Ítem activo'}
+                />
+                <span className="text-[11px] font-medium text-[var(--detalle-text-muted)]">
+                  {eventosItem.length} registro{eventosItem.length === 1 ? '' : 's'}
+                </span>
+              </div>
             </div>
-            <ul className="mt-2 grid gap-1 border-t border-slate-100 pt-2">
+            <ul className="mt-2 space-y-1 border-t border-[var(--detalle-border)] pt-2">
               {eventosItem.map((evento, indiceEvento) => (
-                <li key={`${evento.clave || indiceEvento}-${indiceEvento}`} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[10px] text-slate-600">
+                <li
+                  key={`${evento.clave || indiceEvento}-${indiceEvento}`}
+                  className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[12px] text-[var(--detalle-text-muted)]"
+                >
                   <span>{etiquetaEvento(evento)}</span>
-                  <span className="shrink-0 font-medium text-slate-500">{fechaCorta(evento.fechaEvento)}</span>
+                  <span className="shrink-0 font-medium text-[var(--detalle-text-subtle)] tabular-nums">
+                    {fechaCorta(evento.fechaEvento)}
+                  </span>
                 </li>
               ))}
             </ul>

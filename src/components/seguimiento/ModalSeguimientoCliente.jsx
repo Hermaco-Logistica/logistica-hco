@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CalendarClock, CalendarPlus, X } from 'lucide-react';
 import { analizarDiasSolicitadosProrroga } from '../../utils/prorrogasCliente';
 import { sumarDiasHabiles } from '../../utils/diasHabiles';
@@ -20,10 +20,14 @@ export const ModalSeguimientoCliente = ({
   onConfirmar,
   onSolicitarProrroga,
   onPrepararProrroga,
+  modoInicial = 'revision',
+  modoControlado,
+  onCambiarModo,
   diasValidez = 5,
   fechasLimiteRevision = [],
   fechasLimiteProrroga = [],
   cantidadItems = 1,
+  cantidadItemsProrroga = null,
   revisionesUsadas = 0,
   maxRevisiones = 2,
   permiteMantenerRevision,
@@ -33,7 +37,8 @@ export const ModalSeguimientoCliente = ({
   guardandoProrroga = false
 }) => {
   const puedeMantenerRevision = permiteMantenerRevision ?? revisionesUsadas < maxRevisiones;
-  const [modo, setModo] = useState(puedeMantenerRevision ? 'revision' : 'prorroga');
+  const [modoInterno, setModoInterno] = useState(modoInicial);
+  const modo = modoControlado ?? modoInterno;
   const [comentario, setComentario] = useState('');
   const [dias, setDias] = useState(String(diasValidez));
   const [motivo, setMotivo] = useState('');
@@ -49,6 +54,20 @@ export const ModalSeguimientoCliente = ({
   const fechasMinimasPropuestas = analisisProrroga.fechas
     .map(({ fechaInicio }) => sumarDiasHabiles(fechaInicio, analisisProrroga.diasMinimos));
 
+  useEffect(() => {
+    if (!isOpen) return;
+    console.info('[SeguimientoPedidoManual] modal actualizado', {
+      modoVisible: modo,
+      modoInicial,
+      modoControlado,
+      cantidadRevision: cantidadItems,
+      cantidadProrroga: cantidadItemsProrroga,
+      puedeMantenerRevision,
+      mostrarSolicitudProrroga,
+      pendiente
+    });
+  }, [isOpen, modo, modoInicial, modoControlado, cantidadItems, cantidadItemsProrroga, puedeMantenerRevision, mostrarSolicitudProrroga, pendiente]);
+
   if (!isOpen) return null;
 
   const estaGuardando = guardando || guardandoProrroga;
@@ -57,8 +76,18 @@ export const ModalSeguimientoCliente = ({
     onClose();
   };
 
+  const cambiarModo = (siguienteModo) => {
+    if (modoControlado === undefined) setModoInterno(siguienteModo);
+    onCambiarModo?.(siguienteModo);
+  };
+
   const confirmar = (event) => {
     event.preventDefault();
+    console.info('[SeguimientoPedidoManual] submit del modal', {
+      modoEnviado: modo,
+      cantidadObjetivo: modo === 'revision' ? cantidadItems : cantidadItemsProrroga ?? cantidadItems,
+      enviarA: modo === 'revision' ? 'onConfirmar' : 'onSolicitarProrroga'
+    });
     if (modo === 'revision') {
       if (!comentario.trim() || !puedeMantenerRevision) return;
       onConfirmar(comentario.trim());
@@ -73,7 +102,11 @@ export const ModalSeguimientoCliente = ({
 
   const seleccionarProrroga = () => {
     if (pendiente || estaGuardando || !mostrarSolicitudProrroga) return;
-    setModo('prorroga');
+    console.info('[SeguimientoPedidoManual] selección de pestaña prórroga', {
+      modoAntes: modo,
+      cantidadObjetivo: cantidadItemsProrroga ?? 'no informada'
+    });
+    cambiarModo('prorroga');
     onPrepararProrroga?.();
   };
 
@@ -107,11 +140,11 @@ export const ModalSeguimientoCliente = ({
         <div className="space-y-4 px-5 py-5">
           {mostrarSolicitudProrroga && !pendiente && (
             <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-1">
-              <button type="button" onClick={() => setModo('revision')} disabled={!puedeMantenerRevision || estaGuardando} className={`rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-wide ${modo === 'revision' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-500'} disabled:cursor-not-allowed disabled:opacity-40`}>
+              <button type="button" onClick={() => cambiarModo('revision')} disabled={!puedeMantenerRevision || estaGuardando} className={`rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-wide ${modo === 'revision' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-500'} disabled:cursor-not-allowed disabled:opacity-40`}>
                 Mantener revisión
               </button>
-              <button type="button" onClick={seleccionarProrroga} disabled={estaGuardando} className={`rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-wide ${modo === 'prorroga' ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-500'}`}>
-                Solicitar prórroga
+              <button type="button" onClick={seleccionarProrroga} disabled={estaGuardando || cantidadItemsProrroga === 0} className={`rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-wide ${modo === 'prorroga' ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-500'}`}>
+                Solicitar prórroga{cantidadItemsProrroga === null ? '' : ` (${cantidadItemsProrroga})`}
               </button>
             </div>
           )}

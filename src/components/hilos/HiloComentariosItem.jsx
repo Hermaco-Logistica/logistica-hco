@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Send, X, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import { useHiloItem } from '../../hooks/useHiloItem';
 import { PropuestaPrecioCard } from './PropuestaPrecioCard';
@@ -19,6 +20,9 @@ const getIniciales = (nombre) => {
   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return nombre.substring(0, 2).toUpperCase();
 };
+
+// Debe coincidir con la duración de salida de .hilo-panel en index.css.
+const DURACION_SALIDA_MS = 180;
 
 const formatearHoraMensaje = (c) => {
   if (!c) return '';
@@ -63,6 +67,21 @@ export const HiloComentariosItem = ({
   const scrollRef = useRef(null);
   const startYRef = useRef(null);
 
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  // Cierre con animación de salida; el padre desmonta recién al terminar.
+  const [saliendo, setSaliendo] = useState(false);
+  const cierreRef = useRef(null);
+  const cerrar = useCallback(() => {
+    if (cierreRef.current) return;
+    setSaliendo(true);
+    cierreRef.current = setTimeout(() => onCloseRef.current?.(), DURACION_SALIDA_MS);
+  }, []);
+  useEffect(() => () => clearTimeout(cierreRef.current), []);
+
   const handleTouchStart = (e) => {
     startYRef.current = e.touches[0].clientY;
     setIsDragging(true);
@@ -83,29 +102,22 @@ export const HiloComentariosItem = ({
   const handleTouchEnd = () => {
     setIsDragging(false);
     if (offsetY > 120) {
-      onClose();
+      cerrar();
     } else {
       setOffsetY(0);
     }
     startYRef.current = null;
   };
 
-  const onCloseRef = useRef(onClose);
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
   // Manejo de teclado (Esc)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && onCloseRef.current) {
-        onCloseRef.current();
-      }
+      if (e.key === 'Escape') cerrar();
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [cerrar]);
 
   // Foco al abrir
   useEffect(() => {
@@ -225,16 +237,20 @@ export const HiloComentariosItem = ({
     ? (productoActual.descripcion.length > 35 ? productoActual.descripcion.substring(0, 35) + '...' : productoActual.descripcion)
     : `Ítem #${itemId + 1}`;
 
-  return (
+  // Portal a <body>: el hilo es una capa fixed a pantalla completa y no debe heredar
+  // opacity, grayscale, overflow ni contexto de apilamiento de la tarjeta o fila (p. ej. ítems cerrados).
+  return createPortal(
     <>
       {/* Backdrop para escritorio */}
       <div 
-        className="fixed inset-0 z-90 bg-slate-900/50 backdrop-blur-xs animate-in fade-in hidden md:block" 
-        onClick={onClose} 
+        className="hilo-backdrop fixed inset-0 z-90 bg-slate-900/50 backdrop-blur-xs hidden md:block" 
+        data-saliendo={saliendo}
+        onClick={cerrar} 
       />
       
       <div 
-        className="fixed inset-0 z-100 bg-white flex flex-col animate-in slide-in-from-bottom-4 md:zoom-in-95 fade-in duration-200 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[92%] md:max-w-xl md:h-162.5 md:max-h-[88vh] md:rounded-3xl md:shadow-2xl md:border md:border-slate-200/80 overflow-hidden"
+        className="hilo-panel fixed inset-0 z-100 bg-white flex flex-col md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[92%] md:max-w-xl md:h-162.5 md:max-h-[88vh] md:rounded-3xl md:shadow-2xl md:border md:border-slate-200/80 overflow-hidden"
+        data-saliendo={saliendo}
         style={offsetY > 0 || isDragging ? {
           transform: `translateY(${offsetY}px)`,
           transition: isDragging ? 'none' : 'transform 0.3s ease-out'
@@ -273,7 +289,7 @@ export const HiloComentariosItem = ({
             </div>
 
             <button 
-              onClick={onClose}
+              onClick={cerrar}
               className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
               title="Cerrar (Esc)"
             >
@@ -462,6 +478,7 @@ export const HiloComentariosItem = ({
         )}
 
       </div>
-    </>
+    </>,
+    document.body
   );
 };

@@ -1,5 +1,6 @@
 import { db } from '../firebase';
 import { collection, getDocs } from 'firebase/firestore';
+export { esItemCerrado } from './estadoItem';
 
 /**
  * Helpers para gestión y consulta de decisiones operativas sobre ítems
@@ -53,28 +54,6 @@ export function esMotivoGenerico(motivo) {
   if (m === 'ítem anulado' || m === 'item anulado') return true;
   if (m === 'sin motivo registrado') return true;
   if (m === 'no se registró un motivo.' || m === 'no se registro un motivo.') return true;
-  return false;
-}
-
-/**
- * Determina si un ítem ha concluido su ciclo operativo o comercial y debe considerarse cerrado.
- * (Pedido/Comprado, Anulado, Venta Perdida, Cancelado/Rechazado, Denegado).
- */
-export function esItemCerrado(item) {
-  if (!item) return false;
-  const estado = item.estadoItem || item.estado;
-  if (['Pedido', 'Comprado', 'Anulado', 'Venta Perdida', 'Cancelado', 'Rechazado', 'Denegado'].includes(estado)) {
-    return true;
-  }
-  if (item.motivoVentaPerdida) {
-    return true;
-  }
-  if (item.negociacion?.resultado && item.negociacion.resultado !== 'pendiente') {
-    return true;
-  }
-  if (item.pedidoGenerado || item.idPedidoRelacionado) {
-    return true;
-  }
   return false;
 }
 

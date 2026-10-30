@@ -1,0 +1,118 @@
+/* Umbral 52rem: reserva 20rem para el resumen, 1.5rem de separación y
+   30.5rem para documentación (52rem - 20rem - 1.5rem = 30.5rem). */
+.rfq-detail-lower-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.5rem;
+  min-width: 0;
+}
+
+.rfq-detail-lower-grid > * {
+  min-width: 0;
+}
+
+.rfq-documentation-panel,
+.rfq-summary-panel {
+  min-width: 0;
+}
+
+.rfq-summary-panel {
+  padding: 16px;
+}
+
+/* Mantiene intacto el padding de la vista móvil previa al ajuste. */
+@media (min-width: 640px) and (max-width: 767px) {
+  .rfq-summary-panel {
+    padding: 32px;
+  }
+}
+
+@media (min-width: 768px) {
+  .rfq-summary-panel {
+    padding: clamp(16px, 4cqi, 32px);
+  }
+}
+
+.rfq-summary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.rfq-summary-action {
+  display: inline-flex;
+  flex: 1 1 13rem;
+  min-width: 0;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.15;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.rfq-summary-action--primary {
+  flex: 2 1 16rem;
+}
+
+.rfq-summary-action__label {
+  min-width: 0;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.15;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.rfq-products-mobile,
+.rfq-products-desktop,
+.rfq-products-table-scroll {
+  min-width: 0;
+}
+
+.rfq-products-mobile {
+  display: block;
+}
+
+.rfq-products-desktop {
+  display: none;
+}
+
+.rfq-products-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* Respaldo de scroll: mínimos de columnas suman 65rem (4 + 12 + 5 + 8 + 8 + 10 + 12 + 6). */
+.rfq-products-table {
+  min-width: 65rem;
+  table-layout: fixed;
+}
+
+/* La tabla y la grilla pasan a escritorio cuando el área útil real alcanza 56rem.
+   La tabla conserva scroll horizontal entre ese umbral y sus 65rem mínimos. */
+@container rfq (min-width: 56rem) {
+  .rfq-products-mobile {
+    display: none;
+  }
+
+  .rfq-products-desktop {
+    display: block;
+  }
+}
+
+/* Umbral de grilla: 20rem para resumen + 1.5rem de gap + 30.5rem documentación.
+   Se conserva el layout previo para ventanas móviles menores de 768px. */
+@media (min-width: 768px) {
+  @container rfq (min-width: 52rem) {
+    .rfq-detail-lower-grid {
+      grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+      gap: 1.5rem;
+    }
+  }
+}

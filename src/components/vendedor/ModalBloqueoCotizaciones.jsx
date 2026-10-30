@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, ArrowRight, ArrowLeft, CalendarDays, Clock, HelpCircle, ListChecks, Package, Plane, Ship, UserRound } from 'lucide-react';
-import { obtenerDiasValidez, obtenerEscalaRojoTiempo } from '../../utils/cotizacionesEstancadasHelpers';
+import { ArrowLeft, ArrowRight, Package, Plane, Ship, UserRound } from 'lucide-react';
 import { ESTADOS_SEGUIMIENTO_CLIENTE, obtenerResumenSeguimientoCliente } from '../../utils/seguimientoCliente';
+import { StatusChip } from '../detalle/StatusChip';
+
+const obtenerIntensidadAntiguedad = (dias) => {
+  const diasTranscurridos = Math.max(0, Number(dias) || 0);
+  const progreso = Math.min(diasTranscurridos / 14, 1);
+  return 0.3 + (progreso * 0.7);
+};
 
 export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null }) => {
   const navigate = useNavigate();
+  const [pestana, setPestana] = useState('todas');
 
   const handleIrADetalle = (solicitud) => {
     if (solicitud.tipo === 'Pedido Manual') {
@@ -16,9 +23,10 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
   };
 
   const formatFechaHora = (date) => {
-    if (!date) return '---';
+    if (!date) return '—';
     try {
-      const d = date instanceof Date ? date : new Date(date);
+      const d = date instanceof Date ? date : typeof date.toDate === 'function' ? date.toDate() : new Date(date);
+      if (Number.isNaN(d.getTime())) return '—';
       return new Intl.DateTimeFormat('es-SV', {
         dateStyle: 'short',
         timeStyle: 'short',
@@ -26,347 +34,374 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
         timeZone: 'America/El_Salvador'
       }).format(d);
     } catch {
-      return '---';
+      return '—';
     }
   };
 
   const formatDinero = (val) => {
-    const num = Number(val || 0);
+    if (val === null || val === undefined || val === '' || val === '---') return '—';
+    const num = Number(val);
+    if (Number.isNaN(num) || num <= 0) return '—';
     return `$${num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
-  const renderBadgeParcial = (solicitud) => {
-    const estado = solicitud?.estado || solicitud?.estadoGlobal || '';
-    if (estado === 'Pedido Parcial') {
-      return (
-        <span className="inline-flex items-center px-1.5 py-0.5 rounded-xs text-[9px] font-sans font-bold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200">
-          Pedido Parcial
-        </span>
-      );
-    }
-    if (estado === 'Cotizado Parcial') {
-      return (
-        <span className="inline-flex items-center px-1.5 py-0.5 rounded-xs text-[9px] font-sans font-bold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
-          Cotizado Parcial
-        </span>
-      );
-    }
-    if (estado.toLowerCase().includes('parcial')) {
-      return (
-        <span className="inline-flex items-center px-1.5 py-0.5 rounded-xs text-[9px] font-sans font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200">
-          {estado}
-        </span>
-      );
-    }
-    return null;
-  };
-
-  const renderBadgeSeguimiento = (solicitud) => {
+  const renderChipsEstado = (solicitud) => {
     const resumen = obtenerResumenSeguimientoCliente(solicitud);
     const esCierre = resumen.estado === ESTADOS_SEGUIMIENTO_CLIENTE.CIERRE_REQUERIDO;
     const esProrroga = resumen.estado === ESTADOS_SEGUIMIENTO_CLIENTE.PRORROGA_DISPONIBLE;
+    const estadoGlobal = solicitud?.estado || solicitud?.estadoGlobal || '';
+    const esParcial = estadoGlobal.toLowerCase().includes('parcial');
+
     return (
-      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-xs text-[9px] font-sans font-bold uppercase tracking-wider border ${esCierre
-        ? 'bg-rose-50 text-rose-700 border-rose-200'
-        : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-        {esCierre ? 'Cierre requerido' : esProrroga ? 'Prórroga disponible' : 'Seguimiento requerido'}
-      </span>
+      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+        {esCierre ? (
+          <StatusChip status="cierre_requerido" label="Cierre requerido" />
+        ) : esProrroga ? (
+          <StatusChip status="prorroga_disponible" label="Prórroga disponible" />
+        ) : (
+          <StatusChip status="seguimiento_requerido" label="Seg. requerido" />
+        )}
+        {esParcial && (
+          <StatusChip status="parcial" label={estadoGlobal} />
+        )}
+      </div>
     );
   };
 
-  const hayCierresRequeridos = cotizaciones.some((solicitud) => (
-    obtenerResumenSeguimientoCliente(solicitud).estado === ESTADOS_SEGUIMIENTO_CLIENTE.CIERRE_REQUERIDO
+  const cierresRequeridos = cotizaciones.filter((c) => (
+    obtenerResumenSeguimientoCliente(c).estado === ESTADOS_SEGUIMIENTO_CLIENTE.CIERRE_REQUERIDO
+  ));
+  const pendientesSeguimiento = cotizaciones.filter((c) => (
+    obtenerResumenSeguimientoCliente(c).estado !== ESTADOS_SEGUIMIENTO_CLIENTE.CIERRE_REQUERIDO
   ));
 
+  const cotizacionesVisibles = pestana === 'cierre' ? cierresRequeridos
+    : pestana === 'seguimiento' ? pendientesSeguimiento
+    : cotizaciones;
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-0 sm:p-4 md:p-6 overflow-y-auto">
-      <div className="bg-white rounded-none sm:rounded-2xl shadow-2xl border-0 sm:border border-slate-200 max-w-6xl w-full h-[100dvh] max-h-[100dvh] sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 md:p-6 bg-slate-950/60 backdrop-blur-xs overflow-y-auto">
+      <div className="flex flex-col w-full max-w-6xl h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-white rounded-none sm:rounded-[10px] border-0 sm:border border-[var(--detalle-border)] shadow-2xl overflow-hidden animate-in fade-in duration-150">
         
-        {/* Cabecera Minimalista */}
-        <div className="bg-slate-900 px-4 sm:px-6 py-3.5 sm:py-4 text-white flex items-center justify-between border-b border-slate-800 gap-3">
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-            <div className="p-2 bg-slate-800 rounded-xl text-amber-400 shrink-0">
-              <AlertCircle size={20} />
+        {/* Cabecera con var(--tf-color-sidebar) */}
+        <header
+          style={{ backgroundColor: 'var(--tf-color-sidebar)' }}
+          className="flex items-center justify-between px-5 py-4 text-white border-b border-white/10 gap-4"
+        >
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-[16px] font-semibold text-white tracking-normal m-0 leading-tight">
+                Cotizaciones pendientes de seguimiento
+              </h2>
+              <span className="rounded-[6px] bg-white/15 px-2 py-0.5 text-[12px] font-medium tabular-nums text-slate-200">
+                {cotizaciones.length}
+              </span>
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-sm sm:text-base md:text-lg font-bold tracking-tight uppercase truncate">
-                  Cotizaciones Pendientes de Seguimiento
-                </h2>
-                <span className="px-2 py-0.5 rounded-md bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[11px] font-mono font-bold shrink-0">
-                  {cotizaciones.length}
-                </span>
-              </div>
-              <p className="text-slate-400 text-xs mt-0.5 hidden sm:block truncate">
-                Solicitudes con al menos un ítem cotizado fuera de su vigencia configurada sin seguimiento comercial.
-              </p>
-            </div>
+            <p className="mt-1 text-[13px] text-slate-300 font-normal leading-normal">
+              Solicitudes con al menos un ítem cotizado fuera de su vigencia configurada sin seguimiento comercial.
+            </p>
           </div>
 
           <button
+            type="button"
             onClick={() => {
               if (onVolver) onVolver();
               else navigate('/vendedor');
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer shrink-0 min-h-[36px]"
+            className="inline-flex h-[36px] items-center gap-1.5 rounded-[6px] border border-white/20 bg-white/10 px-3 text-[12px] font-semibold text-white hover:bg-white/20 transition-colors cursor-pointer shrink-0"
           >
             <ArrowLeft size={14} />
-            <span className="hidden sm:inline">Regresar</span>
+            <span>Regresar</span>
           </button>
-        </div>
+        </header>
 
-        {/* Tabla Desktop (>768px) / Cards Móvil (<768px) */}
-        <div className="p-3 sm:p-6 overflow-y-auto flex-1 bg-slate-50/50">
+        {/* Pestañas de filtrado (Todas / Cierre requerido / Seguimiento requerido) */}
+        <nav
+          className="grid grid-cols-3 gap-1.5 border-y border-[var(--detalle-border)] bg-[var(--detalle-surface)] px-2 sm:px-5"
+          aria-label="Filtro de cotizaciones"
+        >
+          {[
+            ['todas', 'Todas', cotizaciones.length],
+            ['cierre', 'Cierre requerido', cierresRequeridos.length],
+            ['seguimiento', 'Seguimiento requerido', pendientesSeguimiento.length]
+          ].map(([valor, etiqueta, total]) => (
+            <button
+              key={valor}
+              type="button"
+              onClick={() => setPestana(valor)}
+              aria-pressed={pestana === valor}
+              className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 border-b-2 px-1 py-2 text-center text-[12px] leading-tight transition-colors cursor-pointer sm:flex-row sm:gap-1.5 sm:py-3 sm:text-[13px] ${
+                pestana === valor
+                  ? 'border-[var(--tf-color-brand)] text-[var(--detalle-text)] font-semibold'
+                  : 'border-transparent text-[var(--detalle-text-muted)] font-medium hover:text-[var(--detalle-text)]'
+              }`}
+            >
+              <span className="min-w-0">{etiqueta}</span>
+              <span className="shrink-0 text-[11px] text-[var(--detalle-text-subtle)] font-normal tabular-nums">({total})</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* Contenido: Tabla Desktop / Cards Móvil */}
+        <div className="flex-1 overflow-y-auto overflow-x-auto bg-[var(--detalle-surface-muted)] p-3 sm:p-6">
           
-          {/* Vista Desktop: Tabla limpia */}
-          <div className="hidden md:block bg-white border border-slate-200 rounded-lg overflow-hidden shadow-2xs">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200 text-[11px]">
-                <tr>
-                  <th className="py-3 px-4">Ref</th>
-                  <th className="py-3 px-4">Cliente / Ítems Afectados</th>
-                  <th className="py-3 px-4">
-                    <div className="inline-flex items-center gap-1.5 cursor-help" title="Fecha de respuesta de Compras">
-                      <span>Fecha Resp.</span>
-                      <HelpCircle size={13} className="text-slate-400 hover:text-slate-600" />
-                    </div>
-                  </th>
-                  <th className="py-3 px-4 text-center">Tiempo</th>
-                  <th className="py-3 px-4 text-right">
-                    <div title="Total de ítems estancados">
-                      <span>Aéreo (Estancado)</span>
-                    </div>
-                  </th>
-                  <th className="py-3 px-4 text-right">
-                    <div title="Total de ítems estancados">
-                      <span>Marítimo (Estancado)</span>
-                    </div>
-                  </th>
-                  <th className="py-3 px-4 text-center w-36">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {cotizaciones.map((c) => {
+          {cotizacionesVisibles.length === 0 ? (
+            <div className="py-12 text-center text-[13px] font-medium text-[var(--detalle-text-muted)]">
+              No hay cotizaciones en esta pestaña.
+            </div>
+          ) : (
+            <>
+              {/* Vista Desktop (≥ 768px): fixed layout sin desborde horizontal en ≥ 1100px */}
+              <div className="hidden md:block rounded-[10px] border border-[var(--detalle-border)] bg-[var(--detalle-surface)] overflow-x-auto">
+                <table className="w-full text-left" style={{ tableLayout: 'fixed', minWidth: '980px' }}>
+                  <colgroup>
+                    <col style={{ width: '18%' }} />
+                    <col style={{ width: '28%' }} />
+                    <col style={{ width: '14%' }} />
+                    <col style={{ width: '11%' }} />
+                    <col style={{ width: '11%' }} />
+                    <col style={{ width: '11%' }} />
+                    <col style={{ width: '11%' }} />
+                  </colgroup>
+                  <thead
+                    style={{ backgroundColor: 'var(--tf-color-sidebar)' }}
+                    className="sticky top-0 z-10 text-[11px] font-semibold uppercase tracking-wider text-slate-200"
+                  >
+                    <tr>
+                      <th className="px-4 py-3">Solicitud</th>
+                      <th className="px-4 py-3">Cliente / Ítems</th>
+                      <th className="px-4 py-3">Fecha resp.</th>
+                      <th className="px-4 py-3">Tiempo</th>
+                      <th className="px-4 py-3 text-right">Aéreo</th>
+                      <th className="px-4 py-3 text-right">Marítimo</th>
+                      <th className="px-4 py-3 text-right">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--detalle-border)] bg-white text-[13px]">
+                    {cotizacionesVisibles.map((c) => {
+                      const esPedido = c.tipo === 'Pedido Manual';
+                      const itemsEst = c.itemsEstancados || [];
+                      const totalAereoEst = c.totalesEstancados?.totalAereo ?? c.totalAereo;
+                      const totalMaritimoEst = c.totalesEstancados?.totalMaritimo ?? c.totalMaritimo;
+
+                      return (
+                        <tr key={c.id} className="hover:bg-[var(--detalle-surface-muted)] transition-colors">
+                          {/* Solicitud: ref mono + chips */}
+                          <td className="px-4 py-3.5 align-top">
+                            <span className="font-mono text-[12px] font-semibold text-[var(--detalle-text)]">
+                              #{c.correlativo || 'S/N'}
+                            </span>
+                            {renderChipsEstado(c)}
+                          </td>
+
+                          {/* Cliente e ítems estancados: máx 2 visibles + N más */}
+                          <td className="px-4 py-3.5 align-top">
+                            <div className="font-semibold text-[var(--detalle-text)] truncate" title={c.cliente || 'No especificado'}>
+                              {c.cliente || 'No especificado'}
+                            </div>
+                            {itemsEst.length > 0 && (
+                              <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                                {itemsEst.slice(0, 2).map((it, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center gap-1 rounded-[4px] border border-[var(--detalle-border)] bg-[var(--detalle-surface-muted)] px-1.5 py-0.5 text-[11px] text-[var(--detalle-text)] max-w-[170px]"
+                                    title={it.descripcion || it.desc}
+                                  >
+                                    <Package size={10} className="text-[var(--detalle-text-subtle)] shrink-0" />
+                                    <span className="truncate">{it.descripcion || it.desc}</span>
+                                    <span className="font-mono text-[10px] text-[var(--detalle-accent-danger)] font-semibold shrink-0">
+                                      ({it._diasItem || c.diasTranscurridos}d)
+                                    </span>
+                                  </span>
+                                ))}
+                                {itemsEst.length > 2 && (
+                                  <span className="text-[11px] font-medium text-[var(--detalle-text-muted)]">
+                                    +{itemsEst.length - 2} más
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Fecha de respuesta */}
+                          <td className="px-4 py-3.5 align-top text-[12px] text-[var(--detalle-text-muted)] tabular-nums whitespace-nowrap">
+                            {formatFechaHora(c.fechaRespuestaCompradorParsed)}
+                          </td>
+
+                          {/* Tiempo: texto con punto en tono vencida, sin bloque rojo sólido */}
+                          <td className="px-4 py-3.5 align-top">
+                            <div className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--detalle-text)] tabular-nums">
+                              <span
+                                className="w-2 h-2 rounded-full bg-[var(--detalle-accent-danger)] shrink-0 transition-opacity"
+                                style={{ opacity: obtenerIntensidadAntiguedad(c.diasTranscurridos) }}
+                                aria-hidden="true"
+                              />
+                              <span>{c.diasTranscurridos}d</span>
+                            </div>
+                          </td>
+
+                          {/* Aéreo: alineado derecha, tabular-nums */}
+                          <td className="px-4 py-3.5 align-top text-right">
+                            <div className="font-mono text-[12px] font-semibold text-[var(--detalle-text)] tabular-nums">
+                              {formatDinero(totalAereoEst)}
+                            </div>
+                          </td>
+
+                          {/* Marítimo: alineado derecha, tabular-nums */}
+                          <td className="px-4 py-3.5 align-top text-right">
+                            <div className="font-mono text-[12px] font-semibold text-[var(--detalle-text)] tabular-nums">
+                              {esPedido ? '—' : formatDinero(totalMaritimoEst)}
+                            </div>
+                          </td>
+
+                          {/* Acción: botón de 32px con var(--tf-color-brand-strong) */}
+                          <td className="px-4 py-3.5 align-top text-right">
+                            <button
+                              type="button"
+                              onClick={() => handleIrADetalle(c)}
+                              style={{ backgroundColor: 'var(--tf-color-brand-strong)' }}
+                              className="inline-flex h-[32px] w-full items-center justify-center gap-1 rounded-[6px] px-2 text-[12px] font-semibold text-white transition-opacity hover:opacity-90 cursor-pointer"
+                            >
+                              <span>Atender</span>
+                              <ArrowRight size={13} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Vista Móvil (< 768px): Tarjetas discretas */}
+              <div className="md:hidden space-y-3">
+                {cotizacionesVisibles.map((c) => {
                   const esPedido = c.tipo === 'Pedido Manual';
-                  const escalaClase = obtenerEscalaRojoTiempo(c.diasTranscurridos, obtenerDiasValidez(c));
                   const itemsEst = c.itemsEstancados || [];
                   const totalAereoEst = c.totalesEstancados?.totalAereo ?? c.totalAereo;
                   const totalMaritimoEst = c.totalesEstancados?.totalMaritimo ?? c.totalMaritimo;
 
                   return (
-                    <tr key={c.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3.5 px-4 font-mono font-bold text-slate-900 text-sm align-top whitespace-nowrap">
-                        <div className="flex flex-col items-start gap-1">
-                          <span>{c.correlativo || 'S/N'}</span>
-                          {renderBadgeParcial(c)}
-                          {renderBadgeSeguimiento(c)}
+                    <article
+                      key={c.id}
+                      className="rounded-[10px] border border-[var(--detalle-border)] bg-[var(--detalle-surface)] p-4 space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3 border-b border-[var(--detalle-border)] pb-2.5">
+                        <div>
+                          <span className="font-mono text-[13px] font-semibold text-[var(--detalle-text)]">
+                            #{c.correlativo || 'S/N'}
+                          </span>
+                          {renderChipsEstado(c)}
                         </div>
-                      </td>
-                      <td className="py-3.5 px-4 align-top max-w-sm">
-                        <div className="font-semibold text-slate-800 truncate">
-                          {c.cliente || 'No especificado'}
+                        <div className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--detalle-text)] tabular-nums">
+                          <span
+                            className="w-2 h-2 rounded-full bg-[var(--detalle-accent-danger)] shrink-0 transition-opacity"
+                            style={{ opacity: obtenerIntensidadAntiguedad(c.diasTranscurridos) }}
+                            aria-hidden="true"
+                          />
+                          <span>{c.diasTranscurridos}d</span>
                         </div>
-                        {itemsEst.length > 0 && (
-                          <div className="mt-1.5 space-y-1">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                              Ítems estancados ({itemsEst.length}):
-                            </span>
-                            <div className="flex flex-wrap gap-1">
-                              {itemsEst.map((it, idx) => (
-                                <span
-                                  key={idx}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-slate-100 text-slate-700 text-[10px] font-medium border border-slate-200"
-                                >
-                                  <Package size={10} className="text-slate-400" />
-                                  <span className="font-bold uppercase max-w-[150px] truncate">
-                                    {it.descripcion || it.desc}
-                                  </span>
-                                  <span className="text-rose-700 font-mono font-bold">
-                                    ({it._diasItem || c.diasTranscurridos}d)
-                                  </span>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-[var(--detalle-text-subtle)] font-medium">
+                          <UserRound size={13} />
+                          <span>Cliente:</span>
+                        </div>
+                        <div className="text-[13px] font-semibold text-[var(--detalle-text)] break-words leading-snug mt-0.5">
+                          {c.cliente || 'Sin cliente'}
+                        </div>
+                      </div>
+
+                      {itemsEst.length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          <span className="text-[11px] font-medium text-[var(--detalle-text-subtle)] block">
+                            Ítems estancados ({itemsEst.length}):
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {itemsEst.slice(0, 2).map((it, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-1 rounded-[4px] border border-[var(--detalle-border)] bg-[var(--detalle-surface-muted)] px-2 py-1 text-[11px] text-[var(--detalle-text)]"
+                              >
+                                <Package size={12} className="text-[var(--detalle-text-subtle)] shrink-0" />
+                                <span className="font-medium truncate max-w-[180px]">
+                                  {it.descripcion || it.desc}
                                 </span>
-                              ))}
-                            </div>
+                                <span className="font-mono text-[10px] font-semibold text-[var(--detalle-accent-danger)] shrink-0">
+                                  ({it._diasItem || c.diasTranscurridos}d)
+                                </span>
+                              </div>
+                            ))}
+                            {itemsEst.length > 2 && (
+                              <span className="text-[11px] font-medium text-[var(--detalle-text-muted)] self-center">
+                                +{itemsEst.length - 2} más
+                              </span>
+                            )}
                           </div>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-slate-600 font-medium whitespace-nowrap align-top">
-                        {formatFechaHora(c.fechaRespuestaCompradorParsed)}
-                      </td>
-                      <td className="py-3.5 px-4 text-center align-top">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-xs border text-[11px] font-mono tracking-tight ${escalaClase}`}>
-                          <Clock size={11} />
-                          {c.diasTranscurridos}d
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-right align-top">
-                        <div className="font-mono font-bold text-slate-900 text-xs">
-                          {formatDinero(totalAereoEst)}
                         </div>
-                        {c.totalAereo > totalAereoEst && (
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            Total cotiz: {formatDinero(c.totalAereo)}
+                      )}
+
+                      <div className="grid grid-cols-2 gap-2 text-[12px] pt-1">
+                        <div className="rounded-[6px] border border-[var(--detalle-border)] bg-[var(--detalle-surface-muted)] p-2">
+                          <div className="flex items-center gap-1 text-[11px] font-medium text-[var(--detalle-text-subtle)]">
+                            <Plane size={13} /> Aéreo
                           </div>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-right align-top">
-                        <div className="font-mono font-bold text-slate-900 text-xs">
-                          {esPedido ? '---' : formatDinero(totalMaritimoEst)}
+                          <div className="font-mono font-semibold text-[var(--detalle-text)] mt-0.5 tabular-nums">
+                            {formatDinero(totalAereoEst)}
+                          </div>
                         </div>
-                        {!esPedido && c.totalMaritimo > totalMaritimoEst && (
-                          <div className="text-[10px] text-slate-400 font-mono">
-                            Total cotiz: {formatDinero(c.totalMaritimo)}
+                        <div className="rounded-[6px] border border-[var(--detalle-border)] bg-[var(--detalle-surface-muted)] p-2">
+                          <div className="flex items-center gap-1 text-[11px] font-medium text-[var(--detalle-text-subtle)]">
+                            <Ship size={13} /> Marítimo
                           </div>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-center align-top">
+                          <div className="font-mono font-semibold text-[var(--detalle-text)] mt-0.5 tabular-nums">
+                            {esPedido ? '—' : formatDinero(totalMaritimoEst)}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2">
                         <button
+                          type="button"
                           onClick={() => handleIrADetalle(c)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-colors cursor-pointer w-full justify-center"
+                          style={{ backgroundColor: 'var(--tf-color-brand-strong)' }}
+                          className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-[6px] px-4 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 cursor-pointer"
                         >
                           <span>Atender</span>
-                          <ArrowRight size={12} />
+                          <ArrowRight size={14} />
                         </button>
-                      </td>
-                    </tr>
+                      </div>
+                    </article>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Vista Móvil: Tarjetas rectangulares */}
-          <div className="md:hidden space-y-4">
-            {cotizaciones.map((c) => {
-              const esPedido = c.tipo === 'Pedido Manual';
-              const escalaClase = obtenerEscalaRojoTiempo(c.diasTranscurridos, obtenerDiasValidez(c));
-              const itemsEst = c.itemsEstancados || [];
-              const totalAereoEst = c.totalesEstancados?.totalAereo ?? c.totalAereo;
-              const totalMaritimoEst = c.totalesEstancados?.totalMaritimo ?? c.totalMaritimo;
-
-              return (
-                <article
-                  key={c.id}
-                  className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4"
-                >
-                  <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2 flex-wrap min-w-0">
-                      <span className="font-mono font-black text-slate-900 text-base">
-                        {c.correlativo || 'S/N'}
-                      </span>
-                      {renderBadgeParcial(c)}
-                      {renderBadgeSeguimiento(c)}
-                    </div>
-                    <span
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-mono font-bold tracking-tight shrink-0 ${escalaClase}`}
-                      title="Días sin seguimiento"
-                    >
-                      <Clock size={14} aria-hidden="true" />
-                      <span>{c.diasTranscurridos} días</span>
-                    </span>
-                  </div>
-
-                  <div className="flex items-start gap-3 rounded-xl bg-slate-50 border border-slate-100 p-3">
-                    <UserRound size={20} className="text-slate-500 shrink-0 mt-0.5" aria-hidden="true" />
-                    <div className="min-w-0">
-                      <div className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Cliente</div>
-                      <div className="font-bold text-slate-800 break-words leading-snug">
-                        {c.cliente || 'Sin cliente'}
-                      </div>
-                    </div>
-                  </div>
-
-                  {itemsEst.length > 0 && (
-                    <div className="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                      <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
-                        <ListChecks size={16} aria-hidden="true" />
-                        <span>Ítems pendientes ({itemsEst.length})</span>
-                      </div>
-                      <div className="space-y-1.5">
-                        {itemsEst.map((it, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-2 min-h-[36px] px-2.5 rounded-lg bg-white text-slate-700 text-xs font-medium border border-slate-200"
-                          >
-                            <Package size={15} className="text-slate-400 shrink-0" aria-hidden="true" />
-                            <span className="font-bold uppercase min-w-0 flex-1 break-words">
-                              {it.descripcion || it.desc}
-                            </span>
-                            <span className="text-rose-700 font-mono font-bold shrink-0">
-                              {it._diasItem || c.diasTranscurridos}d
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3 min-h-[70px]">
-                      <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-[10px] uppercase">
-                        <Plane size={15} aria-hidden="true" /> Aéreo
-                      </div>
-                      <div className="font-mono font-bold text-slate-800 mt-1">
-                        {formatDinero(totalAereoEst)}
-                      </div>
-                    </div>
-                    <div className="rounded-xl bg-blue-50 border border-blue-100 p-3 min-h-[70px]">
-                      <div className="flex items-center gap-1.5 text-blue-700 font-bold text-[10px] uppercase">
-                        <Ship size={15} aria-hidden="true" /> Marítimo
-                      </div>
-                      <div className="font-mono font-bold text-slate-800 mt-1">
-                        {esPedido ? '---' : formatDinero(totalMaritimoEst)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-1">
-                    <div className="flex items-start gap-2 text-[11px] text-slate-500 font-medium min-w-0 flex-1">
-                      <CalendarDays size={18} className="text-slate-400 shrink-0 mt-0.5" aria-hidden="true" />
-                      <div className="min-w-0">
-                        <span className="text-slate-400 text-[10px] block uppercase font-bold">Última respuesta</span>
-                        <span className="break-words block">{formatFechaHora(c.fechaRespuestaCompradorParsed)}</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleIrADetalle(c)}
-                      aria-label={`Atender cotización ${c.correlativo || ''}`}
-                      className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 hover:bg-slate-800 active:scale-95 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors cursor-pointer shrink-0 min-h-[48px]"
-                    >
-                      <span>Atender</span>
-                      <ArrowRight size={16} aria-hidden="true" />
-                    </button>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+              </div>
+            </>
+          )}
 
         </div>
 
-        {/* Barra inferior */}
-        <div className="p-3.5 sm:px-6 bg-white border-t border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-slate-500">
+        {/* Nota del pie con 12px muted y enlace de texto */}
+        <footer className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-t border-[var(--detalle-border)] bg-[var(--detalle-surface-muted)] px-5 py-3 text-[12px] text-[var(--detalle-text-muted)]">
           <span>
-            {hayCierresRequeridos
+            {cierresRequeridos.length > 0
               ? 'Las solicitudes con cierre requerido deben resolverse como pedido o venta perdida para desbloquear nuevas solicitudes.'
               : 'Debe registrar seguimiento, pedido, contraoferta o venta perdida para desbloquear nuevas solicitudes.'}
             {' '}Totales calculados sobre los ítems estancados.
           </span>
           <button
+            type="button"
             onClick={() => {
               if (onVolver) onVolver();
               else navigate('/vendedor');
             }}
-            className="text-slate-700 hover:text-slate-900 font-semibold underline cursor-pointer"
+            className="font-medium text-[var(--detalle-text)] underline hover:text-[var(--tf-color-brand-strong)] transition-colors cursor-pointer shrink-0"
           >
             Ir al listado principal
           </button>
-        </div>
+        </footer>
 
       </div>
     </div>
   );
 };
-
-

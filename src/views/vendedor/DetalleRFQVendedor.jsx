@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, collection, addDoc, serverTimestamp, Timestamp, updateDoc, onSnapshot } from 'firebase/firestore';
+import { doc, collection, addDoc, serverTimestamp, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
 import { 
   ChevronLeft, ChevronDown, Clock, Tag, CheckCircle2, ShoppingCart, Link as LinkIcon, 
@@ -16,9 +16,8 @@ import { DetalleRFQVista } from './detalle-rfq/DetalleRFQVista';
 import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
 import { prepararDatosConsultaVentaPerdida } from '../../utils/ventasPerdidasHelpers';
 import { esDecisionItem, prepararDatosDecisionSolicitud } from '../../utils/decisionItemHelpers';
-import { obtenerDiasValidez, obtenerFechaLimiteSeguimientoItem } from '../../utils/cotizacionesEstancadasHelpers';
-import { crearSeguimientoEnRevision, obtenerResumenSeguimientoCliente, ESTADOS_SEGUIMIENTO_CLIENTE } from '../../utils/seguimientoCliente';
-import { crearSolicitudProrroga } from '../../utils/prorrogasCliente';
+import { obtenerDiasValidez } from '../../utils/cotizacionesEstancadasHelpers';
+import { useSeguimientoSolicitud } from '../../hooks/useSeguimientoSolicitud';
 
 export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPedido = false, role }) => {
   const renderLegacyActions = false;
@@ -50,11 +49,6 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
   const [ventasPerdidasPendientes, setVentasPerdidasPendientes] = useState({});
   const [consultaVentaPerdidaData, setConsultaVentaPerdidaData] = useState(null);
   const [consultaDecisionData, setConsultaDecisionData] = useState(null);
-  const [modalSeguimientoClienteOpen, setModalSeguimientoClienteOpen] = useState(false);
-  const [itemsSeguimientoCliente, setItemsSeguimientoCliente] = useState([]);
-  const [guardandoSeguimientoCliente, setGuardandoSeguimientoCliente] = useState(false);
-  const [itemsProrrogaCliente, setItemsProrrogaCliente] = useState([]);
-  const [guardandoProrrogaCliente, setGuardandoProrrogaCliente] = useState(false);
 
   const handleGuardarCant = async (idx) => {
     try {
@@ -479,117 +473,29 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     });
   };
 
-  const handleAbrirSeguimientoCliente = () => {
-    if (!puedeGestionarSeguimiento) return;
-    const resumenActual = obtenerResumenSeguimientoCliente(rfq, rfq?.productos || []);
-    if (resumenActual.estado === ESTADOS_SEGUIMIENTO_CLIENTE.PRORROGA_DISPONIBLE) {
-      setItemsSeguimientoCliente(resumenActual.indicesProrrogaDisponible);
-      setItemsProrrogaCliente(resumenActual.indicesProrrogaDisponible);
-      setModalSeguimientoClienteOpen(true);
-      return;
-    }
-    const indicesSeleccionados = Object.keys(seleccionados)
-      .filter(idx => seleccionados[idx])
-      .map(Number)
-      .filter(idx => resumenActual.indicesRevisionDisponible.includes(idx));
-    const resumen = resumenActual;
-    if (indicesSeleccionados.length === 0 && resumen.indicesRevisionDisponible.length > 0) {
-      setItemsSeguimientoCliente(resumen.indicesRevisionDisponible);
-      setModalSeguimientoClienteOpen(true);
-      return;
-    }
-    if (indicesSeleccionados.length === 0 && !resumen.puedeMarcarSolicitudCompleta) {
-      alert('Selecciona los ítems vencidos que deseas marcar en revisión.');
-      return;
-    }
-    const indices = indicesSeleccionados.length > 0 ? indicesSeleccionados : resumen.indicesRevisionDisponible;
-
-    if (indices.length === 0) {
-      alert('No hay ítems vencidos disponibles para registrar revisión.');
-      return;
-    }
-
-    setItemsSeguimientoCliente(indices);
-    setModalSeguimientoClienteOpen(true);
-  };
-
-  const handleConfirmarSeguimientoCliente = async (comentario) => {
-    if (!puedeGestionarSeguimiento) return;
-    setGuardandoSeguimientoCliente(true);
-    try {
-      const productosActualizados = [...(rfq.productos || [])];
-      itemsSeguimientoCliente.forEach((idx) => {
-        const producto = productosActualizados[idx];
-        if (!producto) return;
-        productosActualizados[idx] = {
-          ...producto,
-          seguimientoCliente: crearSeguimientoEnRevision({
-            comentario,
-            usuarioEmail: auth.currentUser?.email || '',
-            fechaLimiteActual: obtenerFechaLimiteSeguimientoItem(producto, rfq, idx),
-            diasExtension: obtenerDiasValidez(rfq),
-            revisionesPrevias: producto.seguimientoCliente?.cantidadRevisiones,
-            seguimientoPrevio: producto.seguimientoCliente
-          })
-        };
-      });
-
-      await updateDoc(doc(db, 'solicitudes', id), { productos: productosActualizados });
-      setModalSeguimientoClienteOpen(false);
-      setItemsSeguimientoCliente([]);
-      setSeleccionados({});
-    } catch (error) {
-      console.error('Error registrando seguimiento del cliente:', error);
-      alert('No se pudo registrar la revisión del cliente.');
-    } finally {
-      setGuardandoSeguimientoCliente(false);
-    }
-  };
-
-  const handleAbrirSolicitudProrroga = () => {
-    if (!puedeGestionarSeguimiento) return;
-    const resumen = obtenerResumenSeguimientoCliente(rfq, rfq?.productos || []);
-    const seleccionadosActivos = Object.keys(seleccionados)
-      .filter(idx => seleccionados[idx])
-      .map(Number)
-      .filter(idx => resumen.indicesProrrogaDisponible.includes(idx));
-
-    if (seleccionadosActivos.length === 0 && resumen.indicesProrrogaDisponible.length === 0) {
-      alert('Selecciona los ítems para los que necesitas solicitar prórroga.');
-      return;
-    }
-
-    const indices = seleccionadosActivos.length > 0 ? seleccionadosActivos : resumen.indicesProrrogaDisponible;
-    setItemsSeguimientoCliente(indices);
-    setItemsProrrogaCliente(indices);
-    setModalSeguimientoClienteOpen(true);
-  };
-
-  const handleConfirmarSolicitudProrroga = async ({ diasSolicitados, motivo }) => {
-    if (!puedeGestionarSeguimiento) return;
-    setGuardandoProrrogaCliente(true);
-    try {
-      const prorrogaCliente = crearSolicitudProrroga({
-        solicitud: { ...rfq, id },
-        indicesItems: itemsProrrogaCliente,
-        diasSolicitados,
-        motivo,
-        usuarioEmail: auth.currentUser?.email || '',
-        usuarioUid: auth.currentUser?.uid || '',
-        fechaSolicitud: Timestamp.now(),
-        ronda: Number(rfq?.prorrogaCliente?.ronda || 0) + 1
-      });
-      await updateDoc(doc(db, 'solicitudes', id), { prorrogaCliente });
-      setModalSeguimientoClienteOpen(false);
-      setItemsProrrogaCliente([]);
-      setSeleccionados({});
-    } catch (error) {
-      console.error('Error solicitando prórroga:', error);
-      alert('No se pudo enviar la solicitud de prórroga.');
-    } finally {
-      setGuardandoProrrogaCliente(false);
-    }
-  };
+  const indicesSeleccionadosSeguimiento = Object.keys(seleccionados)
+    .filter((indice) => seleccionados[indice])
+    .map(Number);
+  const indicesVentaPerdidaPendientes = Object.keys(ventasPerdidasPendientes).map(Number);
+  const {
+    modalAbierto: modalSeguimientoClienteOpen,
+    setModalAbierto: setModalSeguimientoClienteOpen,
+    planModal: planSeguimientoCliente,
+    accionBanner: accionSeguimiento,
+    obtenerPropsItem: obtenerPropsSeguimientoItem,
+    guardando: guardandoSeguimientoCliente,
+    resumen: resumenSeguimientoCliente,
+    abrirSeguimiento: handleAbrirSeguimientoCliente,
+    confirmarPlan: handleConfirmarPlanSeguimiento
+  } = useSeguimientoSolicitud({
+    id,
+    solicitud: rfq,
+    productos: rfq?.productos || [],
+    indicesSeleccionados: indicesSeleccionadosSeguimiento,
+    indicesVentaPerdidaPendientes,
+    puedeGestionar: puedeGestionarSeguimiento,
+    setItemsSeleccionados: setSeleccionados
+  });
 
   const abrirConsultaVentaPerdida = (p = null, idx = null) => {
     const staged = idx !== null ? ventasPerdidasPendientes[idx] : null;
@@ -861,8 +767,6 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     return acc + fob * (p.factorM || rfq?.factorM || 1.08) * (p.fvm || 1.25) * Number(p.cant || 1);
   }, 0) || 0;
 
-  const resumenSeguimientoCliente = obtenerResumenSeguimientoCliente(rfq, rfq?.productos || []);
-
   const viewModel = {
     renderLegacyActions, id, navigate, colors, rfq, enviandoPedido, mensajePedido, verPreview,
     seleccionados, setSeleccionados, contraOfertas, setContraOfertas, enviandoContraOferta, modalidades, setModalidades, linkOC,
@@ -872,8 +776,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
     handleGuardarCant, handleAnularItem, enviarContraOferta, esItemYaPedido, esItemVentaPerdida, esItemDenegado, esItemAnulado, totalVentasPerdidasPendientes,
     hayItemsPendientesDePedir, esAnulado, esVentaPerdida, motivoAnulacion, pedidoYaCreado, esPropietarioDeRFQ, puedeConfirmarPedido, totalItemsSeleccionables,
     totalItemsSeleccionados, puedeConfirmarOEnviar, seraParcial, hayDecisionesEnParcial, hayVentaPerdidaEnParcial, abrirConsultaDecisionParcial, puedeRegistrarVentaPerdida, hayItemsElegiblesVentaPerdida, tieneItemsSeleccionadosValidos, debeMostrarBotonVentaPerdida, accionesPrincipalesRef, mostrarStickyMovil, productosDelPedido, getModalidadSeleccionada, getTextoModalidad, getSubtotalItem, desgloseVendedor, totalPedidoActual, obtenerFechaEstimada, handleAdjuntarArchivos, handleEliminarArchivo, prepararAdjuntosParaCorreo, handleAbrirVentaPerdida, handleConfirmarVentaPerdidaStaged, handleCancelarVentaPerdidaPendiente, abrirConsultaVentaPerdida, handleCrearPedido, handleVolver, itemsCotizadosCount, totalProductosCount, totalGeneralA, totalGeneralM, role, setVerPreview, canGenerarPedido, soloPropiasParaPedido,
-    modalSeguimientoClienteOpen, setModalSeguimientoClienteOpen, itemsSeguimientoCliente, handleAbrirSeguimientoCliente, handleConfirmarSeguimientoCliente, guardandoSeguimientoCliente, diasValidezSeguimiento: obtenerDiasValidez(rfq), puedeGestionarSeguimiento, puedeMarcarRevisionCliente: puedeGestionarSeguimiento && resumenSeguimientoCliente.puedeMantenerRevision && resumenSeguimientoCliente.indicesRevisionDisponible.length > 0, etiquetaSeguimientoCliente: 'Mantener en revisión', resumenSeguimientoCliente,
-    itemsProrrogaCliente, handleAbrirSolicitudProrroga, handleConfirmarSolicitudProrroga, guardandoProrrogaCliente
+    modalSeguimientoClienteOpen, setModalSeguimientoClienteOpen, planSeguimientoCliente, handleAbrirSeguimientoCliente, handleConfirmarPlanSeguimiento, guardandoSeguimientoCliente, diasValidezSeguimiento: obtenerDiasValidez(rfq), puedeGestionarSeguimiento, accionSeguimiento, obtenerPropsSeguimientoItem, resumenSeguimientoCliente
   };
 
   return <DetalleRFQVista viewModel={viewModel} />;

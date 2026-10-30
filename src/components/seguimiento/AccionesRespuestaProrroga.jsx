@@ -34,10 +34,10 @@ export const AccionesRespuestaProrroga = ({ solicitud, prorroga, role, compacto 
   return (
     <>
       <div className={`flex flex-wrap gap-2 ${compacto ? '' : 'mt-4'}`}>
-        <button type="button" onClick={() => setAccion('aprobada')} className="detalle-button detalle-button--primary">
+        <button type="button" onClick={() => setAccion('aprobada')} className="detalle-button detalle-button--primary" style={{ borderColor: 'var(--detalle-accent-success)', background: 'var(--detalle-accent-success)', color: 'white' }}>
           <Check size={13} /> Aprobar
         </button>
-        <button type="button" onClick={() => setAccion('rechazada')} className="detalle-button detalle-button--danger">
+        <button type="button" onClick={() => setAccion('rechazada')} className="detalle-button detalle-button--danger" style={{ borderColor: 'var(--detalle-accent-danger)', color: 'var(--detalle-accent-danger)' }}>
           <X size={13} /> Rechazar
         </button>
       </div>

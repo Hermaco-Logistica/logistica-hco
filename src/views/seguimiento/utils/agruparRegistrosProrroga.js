@@ -22,8 +22,18 @@ export function agruparRegistrosProrroga(registros) {
 
   return [...grupos.entries()].map(([solicitudId, eventos]) => {
     const ordenados = [...eventos].sort((a, b) => obtenerTiempo(b.fechaEvento) - obtenerTiempo(a.fechaEvento));
-    const pendiente = ordenados.find((evento) => evento.tipo === 'prorroga' && evento.prorroga?.estado === 'pendiente');
-    const principal = pendiente || ordenados[0];
+    const pendienteActivo = ordenados.find((evento) => (
+      evento.tipo === 'prorroga'
+      && evento.prorroga?.estado === 'pendiente'
+      && !evento.cierre?.cerrado
+    ));
+    const revisionActiva = ordenados.find((evento) => evento.tipo === 'revision' && !evento.cierre?.cerrado);
+    const pendienteCerrado = ordenados.find((evento) => (
+      evento.tipo === 'prorroga'
+      && evento.prorroga?.estado === 'pendiente'
+      && evento.cierre?.cerrado
+    ));
+    const principal = pendienteActivo || revisionActiva || pendienteCerrado || ordenados[0];
     const totalItems = Array.isArray(principal.solicitud.productos) ? principal.solicitud.productos.length : 0;
     const indicesAfectados = new Set(ordenados.flatMap(obtenerIndicesEvento)
       .map(Number)

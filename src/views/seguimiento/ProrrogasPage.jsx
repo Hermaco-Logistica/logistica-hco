@@ -1,12 +1,14 @@
-import React, { useMemo, useState } from 'react';
-import { CalendarClock, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock3, Filter, History, Trash2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock3, Filter, History, Search, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { responderProrrogaCliente } from '../../utils/responderProrrogaCliente';
 import { ModalRespuestaProrroga } from '../../components/seguimiento/ModalRespuestaProrroga';
 import { ProrrogaRegistro } from './components/ProrrogaRegistro';
 import { agruparRegistrosProrroga } from './utils/agruparRegistrosProrroga';
+import { obtenerCierreEventoSeguimiento } from '../../utils/cicloSeguimiento';
 import '../../components/seguimiento/seguimiento.css';
+import './prorrogas.css';
 
 const obtenerFecha = (fecha) => {
   if (!fecha) return null;
@@ -51,33 +53,89 @@ const obtenerHistorialRevisionItem = (seguimiento) => {
   }];
 };
 
+const normalizarBusqueda = (valor) => String(valor || '')
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .trim();
+
+const obtenerTextoSolicitud = (solicitud) => {
+  const productos = Array.isArray(solicitud.productos) ? solicitud.productos : [];
+  const textos = [
+    solicitud.correlativo,
+    solicitud.cliente,
+    solicitud.nombreCliente,
+    solicitud.vendedor,
+    solicitud.vendedorNombre,
+    solicitud.vendedorEmail,
+    solicitud.tipo,
+    solicitud.estado,
+    solicitud.motivoVentaPerdida?.nombre,
+    solicitud.motivoVentaPerdida?.comentario,
+    ...productos.flatMap((item) => [
+      item.descripcion,
+      item.producto,
+      item.nombre,
+      item.marca,
+      item.codigo,
+      item.sku,
+      item.estadoItem,
+      item.motivoEstadoItem,
+      item.seguimientoCliente?.comentario,
+      ...(item.seguimientoCliente?.historial || []).map((evento) => evento.comentario)
+    ]),
+    ...obtenerHistorialSolicitud(solicitud).flatMap((prorroga) => [
+      prorroga.motivo,
+      prorroga.comentario,
+      prorroga.vendedorEmail,
+      prorroga.vendedorNombre
+    ])
+  ];
+  return normalizarBusqueda(textos.filter(Boolean).join(' '));
+};
+
 export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.currentUser?.email || '' }) => {
   const navigate = useNavigate();
   const [pestana, setPestana] = useState('pendientes');
   const [paginacion, setPaginacion] = useState({ clave: '', pagina: 1 });
   const [filtroGerencia, setFiltroGerencia] = useState('todas');
+  const [busqueda, setBusqueda] = useState('');
   const [rangoFecha, setRangoFecha] = useState(rangoMesActual);
   const [mostrarFiltrosMobile, setMostrarFiltrosMobile] = useState(false);
   const [respuesta, setRespuesta] = useState(null);
   const [guardando, setGuardando] = useState(false);
+
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 767px)').matches) return;
+    const tabSeleccionada = document.getElementById(`tab-prorroga-${pestana}`);
+    tabSeleccionada?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }, [pestana]);
+
   const puedeResponder = role === 'comprador';
   const esVendedor = role === 'vendedor';
   const esGerencia = role === 'gerente' || role === 'administrador';
   const emailNorm = String(userEmail || '').trim().toLowerCase();
   const rangoPredeterminado = rangoMesActual();
+
   const filtrosActivosCount = Number(filtroGerencia !== 'todas')
     + Number(rangoFecha.desde !== rangoPredeterminado.desde || rangoFecha.hasta !== rangoPredeterminado.hasta);
+
   const textoRangoFecha = !rangoFecha.desde && !rangoFecha.hasta
     ? 'Todas las fechas'
     : rangoFecha.desde === rangoPredeterminado.desde && rangoFecha.hasta === rangoPredeterminado.hasta
       ? 'Mes actual'
       : `${rangoFecha.desde || 'Inicio'} — ${rangoFecha.hasta || 'Hoy'}`;
 
-  const registros = useMemo(() => solicitudes.flatMap((solicitud) => {
+  const terminoBusqueda = normalizarBusqueda(busqueda);
+
+  const registros = useMemo(() => solicitudes.filter((solicitud) => (
+    !terminoBusqueda || obtenerTextoSolicitud(solicitud).includes(terminoBusqueda)
+  )).flatMap((solicitud) => {
     const prorrogas = obtenerHistorialSolicitud(solicitud).map((prorroga, indice) => ({
       tipo: 'prorroga',
       solicitud,
       prorroga,
+      cierre: obtenerCierreEventoSeguimiento(solicitud, { tipo: 'prorroga', prorroga }),
       fechaEvento: prorroga.fechaSolicitud,
       clave: `prorroga-${solicitud.id}-${prorroga.ronda || indice}-${indice}`
     }));
@@ -88,6 +146,7 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
         revision,
         item,
         indiceItem,
+        cierre: obtenerCierreEventoSeguimiento(solicitud, { tipo: 'revision', indiceItem }),
         fechaEvento: revision.fechaRevision,
         clave: `revision-${solicitud.id}-${indiceItem}-${revision.numero || indiceRevision}-${indiceRevision}`
       }))
@@ -111,16 +170,24 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
   }).sort((a, b) => (
     (obtenerFecha(b.fechaEvento)?.getTime() || 0)
     - (obtenerFecha(a.fechaEvento)?.getTime() || 0)
-  )), [solicitudes, esVendedor, esGerencia, filtroGerencia, emailNorm, rangoFecha]);
+  )), [solicitudes, esVendedor, esGerencia, filtroGerencia, emailNorm, rangoFecha, terminoBusqueda]);
 
-  const pendientes = agruparRegistrosProrroga(registros.filter(({ tipo, prorroga }) => tipo === 'prorroga' && prorroga.estado === 'pendiente'));
-  const revisiones = agruparRegistrosProrroga(registros.filter(({ tipo }) => tipo === 'revision'));
-  const historial = agruparRegistrosProrroga(registros.filter(({ tipo, prorroga }) => tipo === 'prorroga' && prorroga.estado !== 'pendiente'));
+  const pendientes = agruparRegistrosProrroga(registros.filter(({ tipo, prorroga, cierre }) => (
+    tipo === 'prorroga' && prorroga.estado === 'pendiente' && !cierre?.cerrado
+  )));
+  const revisiones = agruparRegistrosProrroga(registros.filter(({ tipo, cierre }) => (
+    tipo === 'revision' && !cierre?.cerrado
+  )));
+  const historial = agruparRegistrosProrroga(registros.filter(({ tipo, prorroga, cierre }) => (
+    (tipo === 'prorroga' && (prorroga.estado !== 'pendiente' || cierre?.cerrado))
+    || (tipo === 'revision' && cierre?.cerrado)
+  )));
   const todasLasSolicitudes = agruparRegistrosProrroga(registros);
   const visibles = pestana === 'pendientes' ? pendientes
     : pestana === 'revisiones' ? revisiones
       : pestana === 'historial' ? historial : todasLasSolicitudes;
-  const claveFiltros = `${pestana}|${filtroGerencia}|${rangoFecha.desde}|${rangoFecha.hasta}`;
+
+  const claveFiltros = `${pestana}|${filtroGerencia}|${rangoFecha.desde}|${rangoFecha.hasta}|${terminoBusqueda}`;
   const paginaActual = paginacion.clave === claveFiltros ? paginacion.pagina : 1;
   const elementosPorPagina = 10;
   const totalPaginas = Math.max(1, Math.ceil(visibles.length / elementosPorPagina));
@@ -128,11 +195,13 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
   const inicioPagina = (paginaSegura - 1) * elementosPorPagina;
   const prorrogasPagina = visibles.slice(inicioPagina, inicioPagina + elementosPorPagina);
 
-  const abrirSolicitud = (solicitud) => navigate(
-    solicitud.tipo === 'Pedido Manual'
-      ? `/vendedor/pedido-manual/${solicitud.id}`
-      : `/vendedor/detalle/${solicitud.id}`
-  );
+  const abrirSolicitud = (solicitud) => {
+    if (solicitud.tipo !== 'Pedido Manual') return navigate(`/vendedor/detalle/${solicitud.id}`);
+    // Compras evalúa la prórroga en su propia vista de revisión del pedido.
+    return navigate(role === 'comprador'
+      ? `/compras/revision-pedido/${solicitud.id}`
+      : `/vendedor/pedido-manual/${solicitud.id}`);
+  };
 
   const responderProrroga = async (comentario) => {
     if (!respuesta) return;
@@ -149,192 +218,362 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
       setRespuesta(null);
     } catch (error) {
       console.error('Error respondiendo prórroga:', error);
-      alert('No se pudo registrar la respuesta a la prórroga.');
+      alert(error.message || 'No se pudo registrar la respuesta a la prórroga.');
     } finally {
       setGuardando(false);
     }
   };
 
   return (
-    <div className="animate-in fade-in duration-500 mx-auto max-w-7xl space-y-5 pb-8">
-      <header className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-3xl font-black italic uppercase tracking-tighter text-slate-800 sm:text-4xl">Prórrogas <span className="text-emerald-500">.</span></h1>
-          <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 sm:text-[11px]">
+    <div className="prorrogas-page animate-in fade-in duration-500 mx-auto max-w-7xl space-y-5 pb-8">
+      {/* Cabecera y KPIs (A) */}
+      <header className="prorrogas-header">
+        <div className="prorrogas-header__intro">
+          <h1 className="prorrogas-title">
+            Prórrogas<span className="prorrogas-title__dot">.</span>
+          </h1>
+          <p className="prorrogas-subtitle">
             Prórrogas pendientes, decisiones atendidas y constancia de las solicitudes mantenidas en revisión.
           </p>
         </div>
-        <div className="grid w-full grid-cols-3 gap-2 sm:w-auto sm:min-w-[27rem]">
-          <div className="rounded-xl border border-slate-200 border-t-2 border-t-sky-600 bg-white px-3 py-2.5 shadow-xs">
-            <span className="block text-[9px] font-black uppercase tracking-wider text-slate-500">Por atender</span>
-            <strong className="mt-0.5 block text-xl font-black leading-none text-slate-800 tabular-nums">{pendientes.length}</strong>
+
+        {/* Tarjeta única con 3 celdas */}
+        <div className="prorrogas-kpis">
+          <div className="prorrogas-kpi-cell">
+            <span className="prorrogas-kpi-label">
+              <span className="prorrogas-kpi-dot prorrogas-kpi-dot--amber" aria-hidden="true" />
+              Por atender
+            </span>
+            <strong className="prorrogas-kpi-value">{pendientes.length}</strong>
           </div>
-          <div className="rounded-xl border border-slate-200 border-t-2 border-t-amber-500 bg-white px-3 py-2.5 shadow-xs">
-            <span className="block text-[9px] font-black uppercase tracking-wider text-slate-500">Revisiones</span>
-            <strong className="mt-0.5 block text-xl font-black leading-none text-slate-800 tabular-nums">{revisiones.length}</strong>
+          <div className="prorrogas-kpi-cell">
+            <span className="prorrogas-kpi-label">
+              <span className="prorrogas-kpi-dot prorrogas-kpi-dot--blue" aria-hidden="true" />
+              Revisiones
+            </span>
+            <strong className="prorrogas-kpi-value">{revisiones.length}</strong>
           </div>
-          <div className="rounded-xl border border-slate-200 border-t-2 border-t-emerald-600 bg-white px-3 py-2.5 shadow-xs">
-            <span className="block text-[9px] font-black uppercase tracking-wider text-slate-500">Prórrogas atendidas</span>
-            <strong className="mt-0.5 block text-xl font-black leading-none text-slate-800 tabular-nums">{historial.length}</strong>
+          <div className="prorrogas-kpi-cell">
+            <span className="prorrogas-kpi-label">
+              <span className="prorrogas-kpi-dot prorrogas-kpi-dot--green" aria-hidden="true" />
+              Atendidas
+            </span>
+            <strong className="prorrogas-kpi-value">{historial.length}</strong>
           </div>
         </div>
       </header>
 
-      <section className="md:hidden rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs" aria-label="Filtros móviles de prórrogas">
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <span className="block text-[9px] font-black uppercase tracking-widest text-slate-400">Fecha de actividad</span>
-            <span className="mt-0.5 block truncate text-xs font-bold text-slate-700">{textoRangoFecha}</span>
+      {/* Un solo contenedor para Filtros + Tabs + Tabla (B) */}
+      <div className="@container/prorrogas prorrogas-box w-full min-w-0">
+        {/* Sección 1: Barra de Filtros */}
+        <div className="prorrogas-filters">
+          {/* Versión móvil (< 768px) */}
+          <div className="md:hidden">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <span className="block text-[11px] font-semibold text-[var(--detalle-text-subtle)]">Fecha de actividad</span>
+                <span className="mt-0.5 block truncate text-[12px] font-bold text-[var(--detalle-text)]">{textoRangoFecha}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMostrarFiltrosMobile((visible) => !visible)}
+                className={`prorrogas-btn-secondary ${filtrosActivosCount > 0 ? 'border-[var(--detalle-accent-info)] text-[var(--detalle-accent-info)]' : ''}`}
+              >
+                <Filter size={13} /> Filtros{filtrosActivosCount > 0 ? ` (${filtrosActivosCount})` : ''}
+                {mostrarFiltrosMobile ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+              </button>
+              {filtrosActivosCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setRangoFecha(rangoMesActual()); setFiltroGerencia('todas'); }}
+                  aria-label="Restablecer filtros"
+                  className="prorrogas-btn-secondary !w-9 !px-0"
+                >
+                  <Trash2 size={13} />
+                </button>
+              )}
+            </div>
+
+            {mostrarFiltrosMobile && (
+              <div className="mt-3 grid gap-2.5 border-t border-[var(--detalle-border)] pt-3 animate-in fade-in duration-200">
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="prorrogas-filter-field">
+                    <span className="prorrogas-filter-label">Desde</span>
+                    <input
+                      type="date"
+                      value={rangoFecha.desde}
+                      max={rangoFecha.hasta || undefined}
+                      onChange={(event) => setRangoFecha((actual) => ({ ...actual, desde: event.target.value }))}
+                      className="prorrogas-input"
+                    />
+                  </label>
+                  <label className="prorrogas-filter-field">
+                    <span className="prorrogas-filter-label">Hasta</span>
+                    <input
+                      type="date"
+                      value={rangoFecha.hasta}
+                      min={rangoFecha.desde || undefined}
+                      onChange={(event) => setRangoFecha((actual) => ({ ...actual, hasta: event.target.value }))}
+                      className="prorrogas-input"
+                    />
+                  </label>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRangoFecha(rangoMesActual())}
+                    className="prorrogas-btn-secondary flex-1"
+                  >
+                    Mes actual
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRangoFecha({ desde: '', hasta: '' })}
+                    className="prorrogas-btn-secondary flex-1"
+                  >
+                    Todas las fechas
+                  </button>
+                </div>
+                {esGerencia && (
+                  <div className="border-t border-[var(--detalle-border)] pt-2">
+                    <span className="mb-1.5 block text-[11px] font-semibold text-[var(--detalle-text-subtle)]">Vendedor</span>
+                    <div className="grid grid-cols-3 gap-1">
+                      {[
+                        ['todas', 'Todos'],
+                        ['propias', 'Propias'],
+                        ['otros', 'Otros']
+                      ].map(([valor, etiqueta]) => (
+                        <button
+                          key={valor}
+                          type="button"
+                          onClick={() => setFiltroGerencia(valor)}
+                          className={`prorrogas-segmented-btn ${filtroGerencia === valor ? 'prorrogas-segmented-btn--active' : ''}`}
+                        >
+                          {etiqueta}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <button type="button" onClick={() => setMostrarFiltrosMobile((visible) => !visible)} className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-3 text-xs font-bold transition-colors ${filtrosActivosCount > 0 ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>
-            <Filter size={14} /> Filtros{filtrosActivosCount > 0 ? ` (${filtrosActivosCount})` : ''}
-            {mostrarFiltrosMobile ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-          {filtrosActivosCount > 0 && (
-            <button type="button" onClick={() => { setRangoFecha(rangoMesActual()); setFiltroGerencia('todas'); }} aria-label="Restablecer filtros" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600">
-              <Trash2 size={14} />
-            </button>
-          )}
-        </div>
-        {mostrarFiltrosMobile && (
-          <div className="mt-3 grid animate-in gap-2.5 border-t border-slate-100 pt-3 fade-in duration-200">
-            <div className="grid grid-cols-2 gap-2">
-              <label className="grid gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400">Desde
-                <input type="date" value={rangoFecha.desde} max={rangoFecha.hasta || undefined} onChange={(event) => setRangoFecha((actual) => ({ ...actual, desde: event.target.value }))} className="min-h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-2 text-xs font-bold text-slate-700 outline-none focus:border-slate-400" />
+
+          {/* Versión desktop (>= 768px) */}
+          <div className="hidden md:flex flex-wrap items-end justify-between gap-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="prorrogas-filter-field">
+                <span className="prorrogas-filter-label">Fecha desde</span>
+                <input
+                  type="date"
+                  value={rangoFecha.desde}
+                  max={rangoFecha.hasta || undefined}
+                  onChange={(event) => setRangoFecha((actual) => ({ ...actual, desde: event.target.value }))}
+                  className="prorrogas-input"
+                />
               </label>
-              <label className="grid gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400">Hasta
-                <input type="date" value={rangoFecha.hasta} min={rangoFecha.desde || undefined} onChange={(event) => setRangoFecha((actual) => ({ ...actual, hasta: event.target.value }))} className="min-h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-2 text-xs font-bold text-slate-700 outline-none focus:border-slate-400" />
+
+              <label className="prorrogas-filter-field">
+                <span className="prorrogas-filter-label">Fecha hasta</span>
+                <input
+                  type="date"
+                  value={rangoFecha.hasta}
+                  min={rangoFecha.desde || undefined}
+                  onChange={(event) => setRangoFecha((actual) => ({ ...actual, hasta: event.target.value }))}
+                  className="prorrogas-input"
+                />
               </label>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setRangoFecha(rangoMesActual())}
+                  className="prorrogas-btn-secondary"
+                >
+                  Mes actual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRangoFecha({ desde: '', hasta: '' })}
+                  className="prorrogas-btn-secondary"
+                >
+                  Todas las fechas
+                </button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setRangoFecha(rangoMesActual())} className="min-h-10 flex-1 rounded-xl bg-slate-900 px-3 text-[10px] font-black uppercase tracking-wide text-white">Mes actual</button>
-              <button type="button" onClick={() => setRangoFecha({ desde: '', hasta: '' })} className="min-h-10 flex-1 rounded-xl border border-slate-200 bg-white px-3 text-[10px] font-black uppercase tracking-wide text-slate-600">Todas las fechas</button>
-            </div>
+
             {esGerencia && (
-              <div className="border-t border-slate-100 pt-2">
-                <span className="mb-2 block text-[9px] font-black uppercase tracking-widest text-slate-400">Vendedor</span>
-                <div className="grid grid-cols-3 gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="prorrogas-filter-label">Vendedor:</span>
+                <div className="prorrogas-segmented">
                   {[
                     ['todas', 'Todos'],
                     ['propias', 'Propias'],
                     ['otros', 'Otros']
                   ].map(([valor, etiqueta]) => (
-                    <button key={valor} type="button" onClick={() => setFiltroGerencia(valor)} className={`min-h-9 rounded-lg border px-2 text-[9px] font-black uppercase tracking-wide ${filtroGerencia === valor ? 'border-slate-800 bg-slate-800 text-white' : 'border-slate-200 bg-slate-50 text-slate-600'}`}>{etiqueta}</button>
+                    <button
+                      key={valor}
+                      type="button"
+                      onClick={() => setFiltroGerencia(valor)}
+                      className={`prorrogas-segmented-btn ${filtroGerencia === valor ? 'prorrogas-segmented-btn--active' : ''}`}
+                    >
+                      {etiqueta}
+                    </button>
                   ))}
                 </div>
               </div>
             )}
           </div>
-        )}
-      </section>
+        </div>
 
-      <section className="hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-xs md:block" aria-label="Filtros de prórrogas">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
-          <label className="grid gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400">
-            Fecha desde
-            <input type="date" value={rangoFecha.desde} max={rangoFecha.hasta || undefined} onChange={(event) => setRangoFecha((actual) => ({ ...actual, desde: event.target.value }))} className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-700 outline-none transition-colors focus:border-slate-400 focus:bg-white" />
+        <div className="prorrogas-search-section">
+          <label className="prorrogas-search-label" htmlFor="prorrogas-search-input">
+            Buscar solicitudes e ítems
           </label>
-          <label className="grid gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400">
-            Fecha hasta
-            <input type="date" value={rangoFecha.hasta} min={rangoFecha.desde || undefined} onChange={(event) => setRangoFecha((actual) => ({ ...actual, hasta: event.target.value }))} className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-700 outline-none transition-colors focus:border-slate-400 focus:bg-white" />
-          </label>
-          <div className="flex flex-wrap gap-2 sm:col-span-2 lg:col-span-1">
-            <button type="button" onClick={() => setRangoFecha(rangoMesActual())} className="min-h-10 flex-1 rounded-xl bg-slate-900 px-4 text-[10px] font-black uppercase tracking-wider text-white transition-colors hover:bg-slate-800 sm:flex-none">Mes actual</button>
-            <button type="button" onClick={() => setRangoFecha({ desde: '', hasta: '' })} className="min-h-10 flex-1 rounded-xl border border-slate-200 bg-white px-4 text-[10px] font-black uppercase tracking-wider text-slate-600 transition-colors hover:bg-slate-50 sm:flex-none">Todas las fechas</button>
+          <div className="prorrogas-search">
+            <Search size={17} aria-hidden="true" />
+            <input
+              id="prorrogas-search-input"
+              type="search"
+              value={busqueda}
+              onChange={(event) => setBusqueda(event.target.value)}
+              placeholder="Correlativo, cliente, vendedor, ítem o marca"
+              aria-label="Buscar por correlativo, cliente, vendedor o ítem"
+            />
+            {busqueda && (
+              <button type="button" onClick={() => setBusqueda('')} aria-label="Limpiar búsqueda">
+                <X size={16} />
+              </button>
+            )}
           </div>
         </div>
-        {esGerencia && (
-          <div className="mt-3 hidden flex-wrap items-center gap-2 border-t border-slate-100 pt-3 md:flex">
-            <span className="mr-1 text-[9px] font-black uppercase tracking-widest text-slate-400">Vendedor</span>
+
+        {/* Sección 2: Tabs estilo subrayado */}
+        <div className="prorrogas-tabs-container">
+          <nav className="prorrogas-tabs" aria-label="Vista de prórrogas" tabIndex={0}>
             {[
-              ['todas', 'Todos'],
-              ['propias', 'Propias'],
-              ['otros', 'Otros vendedores']
-            ].map(([valor, etiqueta]) => (
-              <button key={valor} type="button" onClick={() => setFiltroGerencia(valor)} className={`min-h-9 rounded-lg border px-3 text-[10px] font-black uppercase tracking-wide transition-colors ${filtroGerencia === valor ? 'border-slate-800 bg-slate-800 text-white' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
-                {etiqueta}
+              ['pendientes', 'Pendientes', pendientes.length],
+              ['revisiones', 'Mantener en revisión', revisiones.length],
+              ['historial', 'Historial atendido', historial.length],
+              ['todas', 'Todas', registros.length]
+            ].map(([valor, etiqueta, total]) => (
+              <button
+                key={valor}
+                id={`tab-prorroga-${valor}`}
+                type="button"
+                onClick={() => setPestana(valor)}
+                className={`prorrogas-tab ${pestana === valor ? 'prorrogas-tab--active' : ''}`}
+              >
+                <span>{etiqueta}</span>
+                <span className="prorrogas-tab-count">({total})</span>
               </button>
             ))}
-          </div>
-        )}
-      </section>
-
-      <nav className="flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xs" aria-label="Vista de prórrogas">
-        {[
-          ['pendientes', 'Pendientes', pendientes.length],
-          ['revisiones', 'Mantener en revisión', revisiones.length],
-          ['historial', 'Historial atendido', historial.length],
-          ['todas', 'Todas', registros.length]
-        ].map(([valor, etiqueta, total]) => (
-          <button key={valor} type="button" onClick={() => setPestana(valor)} className={`flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-3 text-[9px] font-black uppercase tracking-wide transition-colors sm:px-4 sm:text-[10px] ${pestana === valor ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'}`}>
-            {etiqueta} <span className={`rounded-md px-1.5 py-0.5 text-[9px] tabular-nums ${pestana === valor ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-600'}`}>{total}</span>
-          </button>
-        ))}
-      </nav>
-
-      {visibles.length === 0 ? (
-        <div className="rounded-2xl border border-slate-200 bg-white px-6 py-14 text-center shadow-xs">
-          {pestana === 'pendientes' ? <Clock3 size={22} className="mx-auto text-slate-300" /> : <History size={22} className="mx-auto text-slate-300" />}
-          <p className="mt-3 text-sm font-bold text-slate-600">
-            {pestana === 'pendientes' ? 'No hay prórrogas pendientes.'
-              : pestana === 'revisiones' ? 'No hay registros de solicitudes mantenidas en revisión en este período.'
-                : 'Todavía no hay prórrogas en el historial.'}
-          </p>
+          </nav>
         </div>
-      ) : (
-        <>
-          <div className="space-y-3.5 md:hidden">
-            {prorrogasPagina.map((record) => <ProrrogaRegistro key={record.clave} record={record} view="mobile" puedeResponder={puedeResponder} onAtender={abrirSolicitud} onResponder={(solicitud, prorroga, accion) => setRespuesta({ solicitud, prorroga, accion })} />)}
-          </div>
-          <div className="tf-surface-panel hidden overflow-x-auto rounded-2xl border border-slate-200 shadow-xs md:block">
-            <table className="w-full min-w-[980px] border-collapse text-left">
-              <thead className="tf-table-head-dark text-[9px] font-black uppercase tracking-widest">
-                <tr>
-                  <th className="px-4 py-3">Referencia / Cliente</th>
-                  <th className="px-4 py-3">Vendedor / Tipo</th>
-                  <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3">Motivo / Ítem</th>
-                  <th className="px-4 py-3">Plazo / Fecha</th>
-                  <th className="px-4 py-3">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 bg-white">
-                {prorrogasPagina.map((record) => <ProrrogaRegistro key={record.clave} record={record} view="desktop" puedeResponder={puedeResponder} onAtender={abrirSolicitud} onResponder={(solicitud, prorroga, accion) => setRespuesta({ solicitud, prorroga, accion })} />)}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
 
+        {/* Sección 3: Contenido / Tabla */}
+        {visibles.length === 0 ? (
+          <div className="px-6 py-14 text-center">
+            {pestana === 'pendientes' ? (
+              <Clock3 size={24} className="mx-auto text-[var(--detalle-border-strong)]" />
+            ) : (
+              <History size={24} className="mx-auto text-[var(--detalle-border-strong)]" />
+            )}
+            <p className="mt-3 text-[13px] font-semibold text-[var(--detalle-text-muted)]">
+              {terminoBusqueda
+                ? `No hay registros que coincidan con “${busqueda.trim()}”.`
+                : pestana === 'pendientes'
+                ? 'No hay prórrogas pendientes.'
+                : pestana === 'revisiones'
+                  ? 'No hay registros de solicitudes mantenidas en revisión en este período.'
+                  : 'Todavía no hay prórrogas en el historial.'}
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Móvil: Tarjetas */}
+            <div className="prorrogas-mobile-list">
+              {prorrogasPagina.map((record) => (
+                <ProrrogaRegistro
+                  key={record.clave}
+                  record={record}
+                  view="mobile"
+                  puedeResponder={puedeResponder}
+                  onAtender={abrirSolicitud}
+                  onResponder={(solicitud, prorroga, accion) => setRespuesta({ solicitud, prorroga, accion })}
+                />
+              ))}
+            </div>
+
+            {/* Desktop: Tabla 5 columnas fijas */}
+            {/* 57rem (912px): los mínimos de columnas suman 910px (190 + 140 + 180 + 200 + 200). */}
+            <div className="prorrogas-desktop-table overflow-x-auto">
+              <table className="prorrogas-table">
+                <thead className="prorrogas-thead">
+                  <tr>
+                    <th style={{ width: '22%' }}>Solicitud</th>
+                    <th style={{ width: '15%' }}>Estado</th>
+                    <th style={{ width: '24%' }}>Motivo</th>
+                    <th style={{ width: '22%' }}>Plazo</th>
+                    <th style={{ width: '17%', textAlign: 'right' }}>Acción</th>
+                  </tr>
+                </thead>
+                <tbody className="prorrogas-tbody">
+                  {prorrogasPagina.map((record) => (
+                    <ProrrogaRegistro
+                      key={record.clave}
+                      record={record}
+                      view="desktop"
+                      puedeResponder={puedeResponder}
+                      onAtender={abrirSolicitud}
+                      onResponder={(solicitud, prorroga, accion) => setRespuesta({ solicitud, prorroga, accion })}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Paginación Sobria (D) */}
       {totalPaginas > 1 && (
-        <nav className="flex flex-col items-center gap-3 rounded-2xl bg-slate-900 p-4 text-white shadow-sm sm:flex-row sm:justify-between sm:px-6" aria-label="Paginación de prórrogas">
-          <p className="text-center text-[10px] font-bold uppercase tracking-widest text-slate-300 sm:order-2">
+        <nav className="prorrogas-pagination" aria-label="Paginación de prórrogas">
+          <p className="prorrogas-pagination-text">
             Página {paginaSegura} de {totalPaginas} · {inicioPagina + 1}–{Math.min(inicioPagina + elementosPorPagina, visibles.length)} de {visibles.length} registros
           </p>
-          <div className="flex w-full items-center justify-between gap-3 sm:order-1 sm:w-auto">
+          <div className="prorrogas-pagination-controls">
             <button
               type="button"
               onClick={() => setPaginacion({ clave: claveFiltros, pagina: Math.max(1, paginaSegura - 1) })}
               disabled={paginaSegura === 1}
-              className="inline-flex min-h-10 flex-1 items-center justify-center gap-1 rounded-xl bg-slate-800 px-4 text-[10px] font-black uppercase tracking-wider transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
+              className="prorrogas-pagination-btn"
               aria-label="Página anterior"
             >
-              <ChevronLeft size={16} /> Anterior
+              <ChevronLeft size={14} /> Anterior
             </button>
             <button
               type="button"
               onClick={() => setPaginacion({ clave: claveFiltros, pagina: Math.min(totalPaginas, paginaSegura + 1) })}
               disabled={paginaSegura === totalPaginas}
-              className="inline-flex min-h-10 flex-1 items-center justify-center gap-1 rounded-xl bg-slate-800 px-4 text-[10px] font-black uppercase tracking-wider transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
+              className="prorrogas-pagination-btn"
               aria-label="Página siguiente"
             >
-              Siguiente <ChevronRight size={16} />
+              Siguiente <ChevronRight size={14} />
             </button>
           </div>
         </nav>
       )}
 
-      <ModalRespuestaProrroga key={respuesta ? `${respuesta.solicitud.id}-${respuesta.prorroga.ronda}-${respuesta.accion}` : 'sin-respuesta'} solicitud={respuesta?.prorroga} solicitudBase={respuesta?.solicitud} accion={respuesta?.accion} guardando={guardando} onClose={() => setRespuesta(null)} onConfirmar={responderProrroga} />
+      <ModalRespuestaProrroga
+        key={respuesta ? `${respuesta.solicitud.id}-${respuesta.prorroga.ronda}-${respuesta.accion}` : 'sin-respuesta'}
+        solicitud={respuesta?.prorroga}
+        solicitudBase={respuesta?.solicitud}
+        accion={respuesta?.accion}
+        guardando={guardando}
+        onClose={() => setRespuesta(null)}
+        onConfirmar={responderProrroga}
+      />
     </div>
   );
 };

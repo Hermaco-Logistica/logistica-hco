@@ -43,6 +43,7 @@ import { ReleaseNotesModal } from './components/ui/ReleaseNotesModal';
 import { DetalleClienteHistorial } from './views/analisis/DetalleClienteHistorial';
 import { DetalleLogisticaAnalisis } from './views/analisis/DetalleLogisticaAnalisis';
 import { clasificarSolicitud } from './utils/clasificarSolicitud';
+import { obtenerCierreEventoSeguimiento } from './utils/cicloSeguimiento';
 
 let NegociacionPreview = null;
 if (import.meta.env.DEV) {
@@ -343,7 +344,11 @@ function App() {
 
   const isComprador = role === 'comprador';
   const isVendedor = role === 'vendedor';
-  const prorrogasPendientes = solicitudes.filter((solicitud) => solicitud?.prorrogaCliente?.estado === 'pendiente').length;
+  const prorrogasPendientes = solicitudes.filter((solicitud) => {
+    const prorroga = solicitud?.prorrogaCliente;
+    return prorroga?.estado === 'pendiente'
+      && !obtenerCierreEventoSeguimiento(solicitud, { tipo: 'prorroga', prorroga }).cerrado;
+  }).length;
   const isGerente = role === 'gerente';
   const isAdmin = role === 'administrador';
 
@@ -435,7 +440,7 @@ function App() {
             style={{
               paddingBottom: 'calc(var(--bottom-dock-h, 0px) + 16px)'
             }}
-            className="flex-1 min-h-0 min-w-0 md:h-full overflow-y-auto overscroll-y-contain p-3.5 sm:p-5 md:p-6 lg:p-8 md:pb-8 w-full @container"
+            className="flex-1 min-h-0 min-w-0 md:h-full overflow-y-auto overscroll-y-contain p-3.5 sm:p-5 md:p-6 lg:p-8 md:pb-8 w-full @container/main"
           >
             <Routes>
               {isComprador ? (

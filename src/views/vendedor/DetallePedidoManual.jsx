@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { 
   ChevronLeft, CheckCircle2, MessageSquare, ArrowLeftRight, Check, X,
-  ChevronDown, Link as LinkIcon, Save, AlertCircle, TrendingDown, MessageCircleQuestion
+  ChevronDown, Link as LinkIcon, Save, AlertCircle, TrendingDown, MessageCircleQuestion, Undo2, RotateCcw
 } from 'lucide-react';
-import { doc, Timestamp, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { HiloComentariosItem } from '../../components/hilos/HiloComentariosItem';
 import { DetallePedidoMobileCard } from '../../components/pedidos/DetallePedidoMobileCard';
@@ -14,19 +14,21 @@ import { useNegociacionItems } from '../../hooks/useNegociacionItems';
 import { EstadoItemChip } from '../../components/pedidos/negociacion/EstadoItemChip';
 import { OfertaDiff } from '../../components/pedidos/negociacion/OfertaDiff';
 import { FormularioOferta } from '../../components/pedidos/negociacion/FormularioOferta';
+import { AccionItemButton, AccionesItemInteractiva } from '../../components/pedidos/negociacion/AccionesItemInteractiva';
 import { ResumenTurnos } from '../../components/pedidos/negociacion/ResumenTurnos';
 import { BarraNotificar } from '../../components/pedidos/negociacion/BarraNotificar';
 import { getRoleColors } from '../../utils/roleColors';
-import { ModalVentaPerdida } from '../../components/vendedor/ModalVentaPerdida';
-import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
-import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
-import { esItemEstancado, obtenerDiasValidez, obtenerFechaLimiteSeguimientoItem } from '../../utils/cotizacionesEstancadasHelpers';
-import { crearSeguimientoEnRevision, obtenerResumenSeguimientoCliente, ESTADOS_SEGUIMIENTO_CLIENTE } from '../../utils/seguimientoCliente';
-import { ModalSeguimientoCliente } from '../../components/seguimiento/ModalSeguimientoCliente';
+import { esItemEstancado } from '../../utils/cotizacionesEstancadasHelpers';
 import { SeguimientoClienteBanner } from '../../components/seguimiento/SeguimientoClienteBanner';
-import { crearSolicitudProrroga } from '../../utils/prorrogasCliente';
+import { SeguimientoItemCondicion } from '../../components/seguimiento/SeguimientoItemCondicion';
 import { prepararDatosConsultaVentaPerdida, tieneMotivoConsultaItem } from '../../utils/ventasPerdidasHelpers';
 import { esDecisionItem, prepararDatosDecisionItem, prepararDatosDecisionSolicitud, esItemCerrado } from '../../utils/decisionItemHelpers';
+import { ContextBar } from '../../components/detalle/ContextBar';
+import { DetallePedidoManualModales } from './pedido-manual/components/DetallePedidoManualModales';
+import { useRechazarOferta } from './pedido-manual/hooks/useRechazarOferta';
+import { useSeguimientoSolicitud } from '../../hooks/useSeguimientoSolicitud';
+import { useSolicitudScopedMap } from './pedido-manual/hooks/useSolicitudScopedMap';
+import './pedido-manual/detallePedidoManual.css';
 
 export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   const { id } = useParams();
@@ -34,36 +36,11 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   const [hiloAbierto, setHiloAbierto] = useState(null);
   const [modalVentaPerdidaOpen, setModalVentaPerdidaOpen] = useState(false);
   const [itemsVentaPerdidaSeleccionados, setItemsVentaPerdidaSeleccionados] = useState(null);
-  const [itemsSeleccionados, setItemsSeleccionados] = useState({});
-  const [ventasPerdidasPendientes, setVentasPerdidasPendientes] = useState({});
+  const [itemsSeleccionados, setItemsSeleccionados] = useSolicitudScopedMap(id);
+  const [ventasPerdidasPendientes, setVentasPerdidasPendientes] = useSolicitudScopedMap(id);
   const [notificandoTodo, setNotificandoTodo] = useState(false);
   const [consultaVentaPerdidaData, setConsultaVentaPerdidaData] = useState(null);
   const [consultaDecisionData, setConsultaDecisionData] = useState(null);
-  const [modalSeguimientoClienteOpen, setModalSeguimientoClienteOpen] = useState(false);
-  const [itemsSeguimientoCliente, setItemsSeguimientoCliente] = useState([]);
-  const [guardandoSeguimientoCliente, setGuardandoSeguimientoCliente] = useState(false);
-  const [itemsProrrogaCliente, setItemsProrrogaCliente] = useState([]);
-  const [guardandoProrrogaCliente, setGuardandoProrrogaCliente] = useState(false);
-  const [modalRechazar, setModalRechazar] = useState({ open: false, index: null, versionEsperada: null, motivo: '' });
-
-  const handleAbrirModalRechazar = (index, versionEsperada) => {
-    setModalRechazar({ open: true, index, versionEsperada, motivo: '' });
-  };
-
-  const handleConfirmarRechazo = () => {
-    if (!puedeResponder) return;
-    if (!modalRechazar.motivo.trim()) return;
-    const { index, versionEsperada, motivo } = modalRechazar;
-    actions.rechazar(index, versionEsperada, motivo.trim());
-    if (index !== null) {
-      setItemsSeleccionados(prev => {
-        const next = { ...prev };
-        delete next[index];
-        return next;
-      });
-    }
-    setModalRechazar({ open: false, index: null, versionEsperada: null, motivo: '' });
-  };
   const colors = getRoleColors(role);
   const [filtroTurno, setFiltroTurno] = useState(null);
   const [linkOC, setLinkOC] = useState('');
@@ -109,7 +86,37 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   const esAnulado = solicitudBase?.estado === 'Anulado';
   const esVentaPerdida = solicitudBase?.estado === 'Venta Perdida';
   const puedeResponder = Boolean(esDuenio) && !esAnulado && !esVentaPerdida;
+  const { modalRechazar, setModalRechazar, handleAbrirModalRechazar, handleConfirmarRechazo } = useRechazarOferta({
+    puedeResponder,
+    actions,
+    setItemsSeleccionados
+  });
   const puedeGestionarSeguimiento = Boolean(esDuenio) && !esAnulado && !esVentaPerdida;
+  const indicesSeleccionados = Object.keys(itemsSeleccionados)
+    .filter((indice) => itemsSeleccionados[indice])
+    .map(Number);
+  const indicesVentaPerdidaPendientes = Object.keys(ventasPerdidasPendientes)
+    .filter((indice) => ventasPerdidasPendientes[indice])
+    .map(Number);
+  const {
+    modalAbierto: modalSeguimientoClienteOpen,
+    setModalAbierto: setModalSeguimientoClienteOpen,
+    planModal: planSeguimientoCliente,
+    accionBanner: accionSeguimiento,
+    obtenerPropsItem: obtenerPropsSeguimientoItem,
+    guardando: guardandoSeguimientoCliente,
+    resumen: resumenSeguimientoCliente,
+    abrirSeguimiento: handleAbrirSeguimientoCliente,
+    confirmarPlan: handleConfirmarPlanSeguimiento
+  } = useSeguimientoSolicitud({
+    id,
+    solicitud: solicitudBase,
+    productos: itemsServer,
+    indicesSeleccionados,
+    indicesVentaPerdidaPendientes,
+    puedeGestionar: puedeGestionarSeguimiento,
+    setItemsSeleccionados
+  });
   const puedeRegistrarVentaPerdida = Boolean(esDuenio) && !esAnulado && !esVentaPerdida;
   const hayDecisionesEnParcial = Boolean(solicitudBase?.estado?.includes('Parcial') && itemsServer.some((p) => esDecisionItem(p)));
   const hayVentaPerdidaEnParcial = Boolean(solicitudBase?.estado?.includes('Parcial') && itemsServer.some((p) => p.estadoItem === 'Venta Perdida' || p.motivoVentaPerdida));
@@ -188,20 +195,37 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
     return true;
   });
 
+  const mostrarColumnaAcciones = filteredItems.some(({ item, idx }) => {
+    const negociacion = item.negociacion || {};
+    const cerrado = esItemCerrado(item);
+    const ventaPerdidaPendiente = Boolean(ventasPerdidasPendientes[idx]);
+    const borrador = borradores[idx];
+
+    return ventaPerdidaPendiente
+      || (negociacion.turno === 'vendedor' && puedeResponder && !cerrado && !ventaPerdidaPendiente)
+      || (negociacion.sinNotificar && negociacion.ultimoCambio?.rol === currentUser.rol && !borrador)
+      || (puedeRegistrarVentaPerdida && !cerrado && !ventaPerdidaPendiente);
+  });
+
   const allClosed = itemsServer.length > 0 && itemsServer.every(p => esItemCerrado(p) && !p.negociacion?.sinNotificar);
 
   const toggleSeleccionItem = (idx) => {
     const item = itemsServer[idx];
     if (esItemCerrado(item)) return;
+    const quedaraSeleccionado = !itemsSeleccionados[idx];
+    console.info('[SeguimientoPedidoManual] cambio de selección de ítem', {
+      solicitudId: id,
+      indice: idx,
+      seleccionado: quedaraSeleccionado,
+      elegibleRevision: resumenSeguimientoCliente.indicesRevisionDisponible.includes(idx),
+      elegibleProrroga: resumenSeguimientoCliente.indicesProrrogaDisponible.includes(idx)
+    });
     setItemsSeleccionados(prev => ({
       ...prev,
       [idx]: !prev[idx]
     }));
   };
 
-  const indicesSeleccionados = Object.keys(itemsSeleccionados)
-    .filter(idx => itemsSeleccionados[idx])
-    .map(Number);
   const totalItemsSeleccionados = indicesSeleccionados.length;
 
   const itemsPendientes = itemsServer
@@ -242,114 +266,6 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
     }
 
     alert('Selecciona con la casilla los ítems específicos para registrar venta perdida.');
-  };
-
-  const resumenSeguimientoCliente = obtenerResumenSeguimientoCliente(solicitudBase, itemsServer);
-  const indicesEnAlertaCliente = resumenSeguimientoCliente.indicesRevisionDisponible;
-  const puedeMarcarRevisionCliente = puedeGestionarSeguimiento
-    && resumenSeguimientoCliente.puedeMantenerRevision
-    && indicesEnAlertaCliente.length > 0;
-
-  const handleAbrirSeguimientoCliente = () => {
-    if (!puedeGestionarSeguimiento) return;
-    if (resumenSeguimientoCliente.estado === ESTADOS_SEGUIMIENTO_CLIENTE.PRORROGA_DISPONIBLE) {
-      setItemsSeguimientoCliente(resumenSeguimientoCliente.indicesProrrogaDisponible);
-      setItemsProrrogaCliente(resumenSeguimientoCliente.indicesProrrogaDisponible);
-      setModalSeguimientoClienteOpen(true);
-      return;
-    }
-    const indicesFiltrados = indicesSeleccionados
-      .filter(idx => indicesEnAlertaCliente.includes(idx));
-    if (indicesFiltrados.length === 0 && indicesEnAlertaCliente.length > 0) {
-      setItemsSeguimientoCliente(indicesEnAlertaCliente);
-      setModalSeguimientoClienteOpen(true);
-      return;
-    }
-    if (indicesFiltrados.length === 0 && !resumenSeguimientoCliente.puedeMarcarSolicitudCompleta) {
-      alert('Selecciona los ítems vencidos que deseas marcar en revisión.');
-      return;
-    }
-    const indices = indicesFiltrados.length > 0 ? indicesFiltrados : indicesEnAlertaCliente;
-
-    if (indices.length === 0) {
-      alert('No hay ítems vencidos disponibles para registrar revisión.');
-      return;
-    }
-
-    setItemsSeguimientoCliente(indices);
-    setModalSeguimientoClienteOpen(true);
-  };
-
-  const handleConfirmarSeguimientoCliente = async (comentario) => {
-    if (!puedeGestionarSeguimiento) return;
-    setGuardandoSeguimientoCliente(true);
-    try {
-      const productosActualizados = [...itemsServer];
-      itemsSeguimientoCliente.forEach((idx) => {
-        const producto = productosActualizados[idx];
-        if (!producto) return;
-        productosActualizados[idx] = {
-          ...producto,
-          seguimientoCliente: crearSeguimientoEnRevision({
-            comentario,
-            usuarioEmail: auth.currentUser?.email || '',
-            fechaLimiteActual: obtenerFechaLimiteSeguimientoItem(producto, solicitudBase, idx),
-            diasExtension: obtenerDiasValidez(solicitudBase),
-            revisionesPrevias: producto.seguimientoCliente?.cantidadRevisiones,
-            seguimientoPrevio: producto.seguimientoCliente
-          })
-        };
-      });
-
-      await updateDoc(doc(db, 'solicitudes', id), { productos: productosActualizados });
-      setModalSeguimientoClienteOpen(false);
-      setItemsSeguimientoCliente([]);
-      setItemsSeleccionados({});
-    } catch (error) {
-      console.error('Error registrando seguimiento del cliente:', error);
-      alert('No se pudo registrar la revisión del cliente.');
-    } finally {
-      setGuardandoSeguimientoCliente(false);
-    }
-  };
-
-  const handleAbrirSolicitudProrroga = () => {
-    if (!puedeGestionarSeguimiento) return;
-    const seleccionadosActivos = indicesSeleccionados.filter(idx => resumenSeguimientoCliente.indicesProrrogaDisponible.includes(idx));
-    if (seleccionadosActivos.length === 0 && resumenSeguimientoCliente.indicesProrrogaDisponible.length === 0) {
-      alert('Selecciona los ítems para los que necesitas solicitar prórroga.');
-      return;
-    }
-    const indices = seleccionadosActivos.length > 0 ? seleccionadosActivos : resumenSeguimientoCliente.indicesProrrogaDisponible;
-    setItemsSeguimientoCliente(indices);
-    setItemsProrrogaCliente(indices);
-    setModalSeguimientoClienteOpen(true);
-  };
-
-  const handleConfirmarSolicitudProrroga = async ({ diasSolicitados, motivo }) => {
-    if (!puedeGestionarSeguimiento) return;
-    setGuardandoProrrogaCliente(true);
-    try {
-      const prorrogaCliente = crearSolicitudProrroga({
-        solicitud: { ...solicitudBase, id },
-        indicesItems: itemsProrrogaCliente,
-        diasSolicitados,
-        motivo,
-        usuarioEmail: auth.currentUser?.email || '',
-        usuarioUid: auth.currentUser?.uid || '',
-        fechaSolicitud: Timestamp.now(),
-        ronda: Number(solicitudBase?.prorrogaCliente?.ronda || 0) + 1
-      });
-      await updateDoc(doc(db, 'solicitudes', id), { prorrogaCliente });
-      setModalSeguimientoClienteOpen(false);
-      setItemsProrrogaCliente([]);
-      setItemsSeleccionados({});
-    } catch (error) {
-      console.error('Error solicitando prórroga:', error);
-      alert('No se pudo enviar la solicitud de prórroga.');
-    } finally {
-      setGuardandoProrrogaCliente(false);
-    }
   };
 
   const handleConfirmarVentaPerdidaStaged = ({ motivo, comentario, itemsSeleccionados: itemsParam }) => {
@@ -438,23 +354,23 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   return (
     <div className="@container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
       {/* Encabezado Superior */}
-      <div className="flex flex-row items-center justify-between gap-4 mb-4 md:mb-8">
-        <div className="flex items-center gap-2 md:gap-4">
+      <div className="pedido-detail-header flex flex-wrap items-start justify-between gap-3 mb-4 md:mb-8">
+        <div className="pedido-detail-heading flex min-w-0 flex-[1_1_24rem] items-center gap-2 md:gap-4">
           <button onClick={() => navigate(-1)} className="p-1.5 md:p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600 shrink-0">
             <ChevronLeft size={24} className="hidden md:block" />
             <ChevronLeft size={20} className="md:hidden" />
           </button>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-xl md:text-3xl font-black text-slate-800 italic uppercase tracking-tighter leading-none md:leading-normal">
               <span className="hidden md:inline">Detalle de Pedido</span>
               <span className="md:hidden">Pedido Manual</span>
             </h1>
-            <p className="text-slate-500 font-bold text-[10px] md:text-xs uppercase tracking-widest hidden md:block">
+            <p className="pedido-detail-reference text-slate-500 font-bold text-[10px] md:text-xs uppercase tracking-widest hidden md:block">
               Ref: {solicitudBase.correlativo} — Cliente: {solicitudBase.cliente}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="pedido-detail-actions flex flex-wrap items-center gap-2">
           {hayDecisionesEnParcial && (
             <button
               type="button"
@@ -473,7 +389,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
           {debeMostrarBotonVentaPerdida && (
             <button
               onClick={() => handleAbrirVentaPerdida()}
-              className="hidden md:flex bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-md text-[11px] font-semibold uppercase items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+              className="pedido-loss-button hidden md:flex bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-md text-[11px] font-semibold uppercase items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
             >
               <TrendingDown size={13} className="text-slate-500" />
               <span>
@@ -497,10 +413,10 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
         resumen={resumenSeguimientoCliente}
         solicitud={{ ...solicitudBase, id: solicitudBase?.id || id }}
         role={role}
-        puedeMarcarRevision={puedeMarcarRevisionCliente}
-        onMarcarRevision={puedeMarcarRevisionCliente ? handleAbrirSeguimientoCliente : handleAbrirSolicitudProrroga}
-        etiquetaAccion={resumenSeguimientoCliente.etiquetaAccion}
-        puedeSolicitarProrroga={puedeGestionarSeguimiento && resumenSeguimientoCliente.puedeSolicitarProrroga}
+        puedeMarcarRevision={accionSeguimiento.disponible}
+        onMarcarRevision={handleAbrirSeguimientoCliente}
+        etiquetaAccion={accionSeguimiento.etiqueta}
+        cantidadItemsAccion={accionSeguimiento.cantidad}
         prorrogaPendiente={resumenSeguimientoCliente.prorrogaPendiente}
       />
 
@@ -654,13 +570,13 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
         onFiltrar={setFiltroTurno}
       />
 
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+      <div className="@container/pedido pedido-items-container w-full min-w-0 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-6">
         <div className="p-4 bg-slate-900 flex justify-between items-center">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Listado de Ítems</span>
         </div>
 
-        {/* Vista móvil/tablet (lg: 1024px) */}
-        <div className="lg:hidden divide-y divide-slate-100">
+        {/* La presentación cambia según los 55rem útiles del contenedor, no el ancho de ventana. */}
+        <div className="pedido-items-mobile">
           {filteredItems.map(({ item, idx }) => (
             <DetallePedidoMobileCard
               key={idx}
@@ -685,6 +601,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
               onConsultaVentaPerdida={() => handleAbrirConsultaItem(item, idx)}
               onDeshacerVentaPerdida={() => handleCancelarVentaPerdidaPendiente(idx)}
               onRechazar={(index, vEsperada) => handleAbrirModalRechazar(index, vEsperada)}
+              seguimiento={obtenerPropsSeguimientoItem(item, idx)}
             />
           ))}
           {filteredItems.length === 0 && (
@@ -692,23 +609,30 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
           )}
         </div>
 
-        {/* Vista escritorio (>1024px) */}
-        <div className="hidden lg:block">
-          <table className="w-full text-left">
+        {/* Mínimos de columnas principales: Sel. 3rem + Producto 18rem + Mensajes 7rem + Estado 10rem + Acciones 18rem = 56rem. */}
+        <div className="pedido-items-desktop">
+          <div className="pedido-items-table-scroll">
+          <table className="pedido-items-table w-full text-left">
+            <colgroup>
+              <col className="w-12" />
+              <col className="w-72" />
+              <col className="w-28" />
+              <col className="w-40" />
+              {mostrarColumnaAcciones && <col className="w-72" />}
+            </colgroup>
             <thead className="text-[10px] uppercase font-black tracking-widest text-slate-400 border-b border-slate-100">
               <tr>
-                <th className="p-4 w-12 text-center">Sel.</th>
-                <th className="p-4 w-[22%]">Producto</th>
-                <th className="p-4 w-[28%]">Condiciones</th>
-                <th className="p-4 w-24 text-center">Mensajes</th>
-                <th className="p-4 w-36 text-center">Estado</th>
-                <th className="p-4 w-[30%] text-right">Acciones</th>
+                <th className="p-4 text-center">Sel. ítem</th>
+                <th className="p-4">Producto</th>
+                <th className="p-4 text-center">Mensajes</th>
+                <th className="p-4 text-center">Estado</th>
+                {mostrarColumnaAcciones && <th className="p-4 text-right">Acciones</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredItems.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500 text-sm font-medium">No hay ítems en esta vista.</td>
+                  <td colSpan={mostrarColumnaAcciones ? 5 : 4} className="p-8 text-center text-slate-500 text-sm font-medium">No hay ítems en esta vista.</td>
                 </tr>
               )}
               {filteredItems.map(({ item: p, idx }) => {
@@ -733,7 +657,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
 
                 return (
                   <React.Fragment key={idx}>
-                    <tr className={`transition-colors ${esCerrado ? 'opacity-60 bg-slate-50/50' : isMyTurn ? 'bg-amber-50/20' : stagedVP ? 'bg-rose-50/20' : 'hover:bg-slate-50'}`}>
+                    <tr className={`pedido-item-main transition-colors ${esCerrado ? 'opacity-60 bg-slate-50/50' : isMyTurn ? 'bg-amber-50/20' : stagedVP ? 'bg-rose-50/20' : 'hover:bg-slate-50'}`}>
                       <td className="p-4 text-center align-top">
                         {stagedVP ? (
                           <div className="w-6 h-6 rounded-md bg-rose-50 border border-rose-300 text-rose-700 flex items-center justify-center mx-auto shadow-xs" title="Venta Perdida por enviar">
@@ -748,7 +672,8 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                                 ? 'bg-slate-900 border-slate-900 text-white shadow-xs'
                                 : 'border-slate-300 text-transparent hover:border-slate-400 bg-white'
                             }`}
-                            title={itemsSeleccionados[idx] ? "Deseleccionar ítem" : "Seleccionar ítem para venta perdida"}
+                            aria-label={itemsSeleccionados[idx] ? "Deseleccionar ítem" : "Seleccionar ítem para seguimiento o venta perdida"}
+                            title={itemsSeleccionados[idx] ? "Deseleccionar ítem" : "Seleccionar ítem para seguimiento o venta perdida"}
                           >
                             <Check size={14} strokeWidth={3} />
                           </button>
@@ -759,61 +684,6 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                       <td className="p-4 align-top">
                         <div className="font-bold text-sm uppercase text-slate-700 leading-tight pr-4">{p.descripcion}</div>
                         <div className="text-[10px] font-bold text-slate-400 uppercase mt-1">Marca: {p.marca}</div>
-                      </td>
-                      
-                      <td className="p-4 align-top">
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 bg-slate-50 border border-slate-100 p-3 rounded-xl max-w-xl">
-                          <div>
-                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Cant</span>
-                            <span className="font-black text-slate-800 text-sm">{p.cant}</span>
-                          </div>
-                          <div>
-                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Precio (OC)</span>
-                            {draft && isMyTurn ? (
-                              <div className="relative">
-                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-xs">$</span>
-                                <input 
-                                  type="number" 
-                                  min="0.01" step="0.01"
-                                  value={draft.precio !== undefined ? draft.precio : ''} 
-                                  onChange={(e) => updateBorrador(idx, { ...draft, precio: e.target.value })} 
-                                  className="w-full pl-6 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500 font-bold text-slate-700 text-sm" 
-                                />
-                              </div>
-                            ) : (
-                              <span className="font-bold text-slate-700 text-sm">${Number(p.fob || 0).toFixed(2)}</span>
-                            )}
-                          </div>
-                          <div>
-                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Días de entrega</span>
-                            {draft && isMyTurn ? (
-                              <input 
-                                type="text" 
-                                value={draft.tiempoEntrega || ''} 
-                                onChange={(e) => updateBorrador(idx, { ...draft, tiempoEntrega: e.target.value })} 
-                                placeholder="Ej: 5 días" 
-                                className="w-full max-w-40 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500 font-bold text-slate-700 text-sm" 
-                              />
-                            ) : (
-                              <span className="font-bold text-slate-700 text-sm">{tiempoEntrega || 'No definido'}</span>
-                            )}
-                          </div>
-                          <div>
-                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Modalidad</span>
-                            {draft && isMyTurn ? (
-                              <select 
-                                value={draft.modalidad || 'Aéreo'} 
-                                onChange={(e) => updateBorrador(idx, { ...draft, modalidad: e.target.value })} 
-                                className="w-full max-w-40 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-amber-500 font-bold text-slate-700 text-sm cursor-pointer"
-                              >
-                                <option value="Aéreo">Aéreo</option>
-                                <option value="Marítimo">Marítimo</option>
-                              </select>
-                            ) : (
-                              <span className="font-bold text-slate-700 text-sm">{p.modalidad || 'Aéreo'}</span>
-                            )}
-                          </div>
-                        </div>
                       </td>
                       
                       <td className="p-4 text-center align-top">
@@ -857,7 +727,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                             </>
                           ) : (
                             <>
-                              <EstadoItemChip estado={p.estadoItem} pendingRole={p.estadoItem === 'Anulado' ? null : neg.turno} />
+                              <EstadoItemChip estado={p.estadoItem} pendingRole={p.estadoItem === 'Anulado' ? null : neg.turno} stacked />
                               {p.estadoItem === 'Anulado' && p.motivoAnulacion && (
                                 <span className="text-[9px] text-slate-400 italic text-center max-w-[130px] leading-tight mt-0.5" title={p.motivoAnulacion}>
                                   {p.motivoAnulacion.length > 40 ? p.motivoAnulacion.slice(0, 40) + '…' : p.motivoAnulacion}
@@ -879,123 +749,98 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                       </td>
                       
                       {/* Columna dedicada: Acciones */}
-                      <td className="p-4 align-top">
-                        <div className="flex flex-col items-end gap-2">
+                      {mostrarColumnaAcciones && <td className="p-4 align-top">
+                        {(stagedVP
+                          || (isMyTurn && puedeResponder && !esCerrado && !stagedVP)
+                          || (neg.sinNotificar && neg.ultimoCambio?.rol === currentUser.rol && !draft)
+                        || (puedeRegistrarVentaPerdida && !esCerrado && !stagedVP)) && <AccionesItemInteractiva className="justify-center">
                           {stagedVP ? (
-                            <div className="flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-2">
                               <span className="text-[10px] font-bold text-rose-600 uppercase">Venta Perdida pendiente</span>
-                              <button
-                                type="button"
-                                onClick={() => handleCancelarVentaPerdidaPendiente(idx)}
-                                className="text-[10px] font-bold text-slate-400 hover:text-rose-600 underline cursor-pointer"
-                              >
-                                Deshacer
-                              </button>
+                              <AccionItemButton id="cancelar-vp" label="Deshacer venta perdida pendiente" text="Deshacer VP" icon={<Undo2 size={14} />} className="border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-rose-700" onConfirm={() => handleCancelarVentaPerdidaPendiente(idx)} />
                             </div>
                           ) : (
                             <>
                               {/* Bloque de Negociación */}
                               {isMyTurn && puedeResponder && !esCerrado && !stagedVP ? (
-                                <div className="flex flex-col gap-2 w-full bg-slate-50 border border-slate-200/80 p-2.5 rounded-lg shadow-2xs">
+                                <div className="flex min-w-0 flex-row items-center gap-1.5">
                                   {!draft ? (
                                     <>
                                       {/* Acciones Principales: Aceptar y Contraofertar */}
-                                      <div className="grid grid-cols-2 gap-2">
-                                        <button 
-                                          type="button"
-                                          onClick={() => actions.aceptar(idx, versionEsperada)} 
-                                          className="py-2.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-bold text-xs uppercase tracking-wide transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
-                                        >
-                                          <Check size={14} /> Aceptar ${Number(currentFob).toFixed(2)}
-                                        </button>
-                                        <button 
-                                          type="button"
-                                          onClick={() => {
-                                            updateBorrador(idx, {
-                                              precio: currentFob,
-                                              tiempoEntrega,
-                                              modalidad: neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo'
-                                            });
-                                          }} 
-                                          className="py-2.5 px-2 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-md font-bold text-xs uppercase tracking-wide transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                                        >
-                                          <ArrowLeftRight size={14} /> Contraofertar
-                                        </button>
+                                      <div className="pedido-item-action-buttons">
+                                        <AccionItemButton id="aceptar" label={`Aceptar oferta vigente de $${Number(currentFob).toFixed(2)}`} text="Aceptar" icon={<Check size={14} />} className="border-emerald-700 bg-emerald-600 text-white hover:bg-emerald-700" onConfirm={() => actions.aceptar(idx, versionEsperada)} />
+                                        <AccionItemButton id="contraofertar" label="Contraofertar" text="Contraofertar" icon={<ArrowLeftRight size={14} />} className="border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200" onConfirm={() => updateBorrador(idx, { precio: currentFob, tiempoEntrega, modalidad: neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo' })} />
                                       </div>
 
                                       {/* Rechazar oferta de Compras (negociación interna) */}
-                                      <div className="flex justify-end pt-0.5">
-                                        <button 
-                                          type="button"
-                                          onClick={() => handleAbrirModalRechazar(idx, versionEsperada)} 
-                                          className="text-[11px] font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 py-1 px-1.5 rounded-md hover:bg-slate-200/50 transition-colors cursor-pointer"
-                                          title="Rechazar la oferta interna enviada por Compras"
-                                        >
-                                          <X size={13} className="text-slate-400" />
-                                          <span>Rechazar oferta de Compras</span>
-                                        </button>
+                                      <div className="flex justify-center pt-0.5">
+                                        <AccionItemButton id="rechazar" label="Rechazar oferta de Compras" text="Rechazar" icon={<X size={13} />} className="border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200" onConfirm={() => handleAbrirModalRechazar(idx, versionEsperada)} />
                                       </div>
                                     </>
                                   ) : (
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <button 
-                                        type="button"
-                                        onClick={() => {
-                                          actions.contraofertar(idx, versionEsperada, draft);
-                                          clearBorrador(idx);
-                                        }} 
-                                        disabled={!draft.precio || isUnchanged}
-                                        className="py-2 px-2 bg-amber-500 text-white hover:bg-amber-600 rounded-md font-bold text-[10px] uppercase tracking-wide transition-colors flex items-center justify-center gap-1 shadow-xs disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                                      >
-                                        <Check size={13} /> Enviar
-                                      </button>
-                                      <button 
-                                        type="button"
-                                        onClick={() => clearBorrador(idx)} 
-                                        className="py-2 px-2 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-md font-bold text-[10px] uppercase tracking-wide transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                                      >
-                                        <X size={13} /> Cancelar
-                                      </button>
+                                    <div className="pedido-item-action-buttons">
+                                      <AccionItemButton id="enviar-contraoferta" label="Enviar contraoferta" text="Enviar" icon={<Check size={13} />} className="border-amber-600 bg-amber-500 text-white hover:bg-amber-600" disabled={!draft.precio || isUnchanged} onConfirm={() => { actions.contraofertar(idx, versionEsperada, draft); clearBorrador(idx); }} />
+                                      <AccionItemButton id="cancelar-borrador" label="Cancelar borrador de contraoferta" text="Cancelar" icon={<RotateCcw size={13} />} className="border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200" onConfirm={() => clearBorrador(idx)} />
                                     </div>
                                   )}
                                 </div>
                               ) : neg.sinNotificar && neg.ultimoCambio?.rol === currentUser.rol && !draft ? (
-                                <div className="flex justify-end">
-                                  <button 
-                                    type="button"
-                                    onClick={() => actions.deshacer(idx, versionEsperada)} 
-                                    className="text-[10px] text-slate-400 hover:text-slate-700 underline font-bold px-1 py-1 cursor-pointer"
-                                  >
-                                    Deshacer cambios
-                                  </button>
+                                <div className="flex justify-center">
+                                  <AccionItemButton id="deshacer" label="Deshacer cambios" text="Deshacer" icon={<Undo2 size={14} />} className="border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200" onConfirm={() => actions.deshacer(idx, versionEsperada)} />
                                 </div>
                               ) : null}
 
                               {/* Acción Comercial: Venta Perdida */}
                               {puedeRegistrarVentaPerdida && !esCerrado && !stagedVP && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleAbrirVentaPerdida([idx])}
-                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-md font-bold text-[9px] uppercase tracking-wide transition-colors cursor-pointer shadow-xs ${
-                                    esItemEstancado(p, solicitudBase)
-                                      ? 'border border-rose-300 bg-rose-100 hover:bg-rose-200 text-rose-800'
-                                      : 'border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700'
-                                  }`}
-                                  title={esItemEstancado(p, solicitudBase) ? "Registrar Venta Perdida comercial (>5 días hábiles sin cierre)" : "Registrar Venta Perdida de este ítem"}
-                                >
-                                  <TrendingDown size={12} />
-                                  <span>VP</span>
-                                </button>
+                                <AccionItemButton id="venta-perdida" label={esItemEstancado(p, solicitudBase) ? 'Registrar Venta Perdida comercial (>5 días hábiles sin cierre)' : 'Registrar Venta Perdida de este ítem'} text="Venta perdida" icon={<TrendingDown size={12} />} className="border-rose-700 bg-rose-600 text-white hover:border-rose-800 hover:bg-rose-700" onConfirm={() => handleAbrirVentaPerdida([idx])} />
                               )}
                             </>
                           )}
-                        </div>
+                        </AccionesItemInteractiva>}
+                      </td>}
+                    </tr>
+
+                    <tr className="pedido-item-conditions-row bg-slate-50/40">
+                      <td colSpan={mostrarColumnaAcciones ? 5 : 4} className="px-4 pb-3 pt-0">
+                        <section className="pedido-item-conditions bg-slate-50 border border-slate-200/80 p-3 rounded-lg" aria-label={`Condiciones de ${p.descripcion || `ítem ${idx + 1}`}`}>
+                          <h3 className="pedido-item-conditions__heading">Condiciones</h3>
+                          <div>
+                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Cant.</span>
+                            <span className="pedido-condition-value font-black text-slate-800 text-sm">{p.cant}</span>
+                          </div>
+                          <div>
+                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Oferta vigente</span>
+                            {draft && isMyTurn ? (
+                              <input type="number" min="0.01" step="0.01" value={draft.precio !== undefined ? draft.precio : ''} onChange={(event) => updateBorrador(idx, { ...draft, precio: event.target.value })} className="w-full min-w-0 max-w-40 rounded-md border border-slate-200 bg-white p-1.5 text-sm font-semibold text-slate-700 outline-none focus:border-amber-500" aria-label="Precio de contraoferta" />
+                            ) : (
+                              <>
+                                <span className="pedido-condition-value font-bold text-slate-700 text-sm">${Number(currentFob).toFixed(2)}</span>
+                                {Number(p.fob || 0) !== Number(currentFob) && <span className="mt-0.5 block text-[9px] font-medium text-slate-500">Precio base OC: ${Number(p.fob || 0).toFixed(2)}</span>}
+                              </>
+                            )}
+                          </div>
+                          <div>
+                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Entrega</span>
+                            {draft && isMyTurn ? (
+                              <input type="text" value={draft.tiempoEntrega || ''} onChange={(event) => updateBorrador(idx, { ...draft, tiempoEntrega: event.target.value })} placeholder="Ej: 5 días" className="w-full min-w-0 max-w-40 rounded-md border border-slate-200 bg-white p-1.5 text-sm font-semibold text-slate-700 outline-none focus:border-amber-500" aria-label="Tiempo de entrega de contraoferta" />
+                            ) : <span className="pedido-condition-value font-bold text-slate-700 text-sm">{tiempoEntrega || 'No definido'}</span>}
+                          </div>
+                          <div>
+                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Modalidad</span>
+                            {draft && isMyTurn ? (
+                              <select value={draft.modalidad || 'Aéreo'} onChange={(event) => updateBorrador(idx, { ...draft, modalidad: event.target.value })} className="w-full min-w-0 max-w-40 rounded-md border border-slate-200 bg-white p-1.5 text-sm font-semibold text-slate-700 outline-none focus:border-amber-500">
+                                <option value="Aéreo">Aéreo</option><option value="Marítimo">Marítimo</option>
+                              </select>
+                            ) : <span className="pedido-condition-value font-bold text-slate-700 text-sm">{p.modalidad || 'Aéreo'}</span>}
+                          </div>
+                          <SeguimientoItemCondicion {...obtenerPropsSeguimientoItem(p, idx)} />
+                        </section>
                       </td>
                     </tr>
 
                     {(neg.ofertaVigente && neg.ofertaAnterior) && (
                       <tr className={p.estadoItem === 'Anulado' ? 'opacity-50 bg-slate-50/40' : 'bg-slate-50/40'}>
-                        <td colSpan={6} className="px-5 pt-3 pb-5">
+                        <td colSpan={mostrarColumnaAcciones ? 5 : 4} className="px-5 pt-3 pb-5">
                           <OfertaDiff actual={neg.ofertaVigente} anterior={neg.ofertaAnterior} label="Ajuste de Compras" />
                         </td>
                       </tr>
@@ -1003,7 +848,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
 
                     {hiloAbierto === idx && (
                       <tr className="bg-slate-50">
-                        <td colSpan={6} className="p-0 border-t border-slate-100">
+                        <td colSpan={mostrarColumnaAcciones ? 5 : 4} className="p-0 border-t border-slate-100">
                           <HiloComentariosItem
                             solicitudId={id}
                             itemId={idx}
@@ -1022,6 +867,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 
@@ -1037,95 +883,29 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
         />
       )}
 
-      {/* Modal de Registro de Venta Perdida */}
-      <ModalSeguimientoCliente
-        key={modalSeguimientoClienteOpen ? 'seguimiento-abierto' : 'seguimiento-cerrado'}
-        isOpen={modalSeguimientoClienteOpen}
-        onClose={() => setModalSeguimientoClienteOpen(false)}
-        onConfirmar={handleConfirmarSeguimientoCliente}
-        onSolicitarProrroga={handleConfirmarSolicitudProrroga}
-        onPrepararProrroga={handleAbrirSolicitudProrroga}
-        cantidadItems={itemsSeguimientoCliente.length}
-        diasValidez={obtenerDiasValidez(solicitudBase)}
-        fechasLimiteRevision={resumenSeguimientoCliente.detalles.filter(({ index }) => itemsSeguimientoCliente.includes(index)).map(({ fechaAlertaInicial }) => fechaAlertaInicial)}
-        fechasLimiteProrroga={resumenSeguimientoCliente.detalles.filter(({ index }) => itemsProrrogaCliente.includes(index)).map(({ fechaAlertaInicial }) => fechaAlertaInicial)}
-        revisionesUsadas={resumenSeguimientoCliente.revisionesUsadas}
-        maxRevisiones={resumenSeguimientoCliente.maxRevisiones}
-        permiteMantenerRevision={resumenSeguimientoCliente.puedeMantenerRevision}
-        mostrarSolicitudProrroga={puedeGestionarSeguimiento && resumenSeguimientoCliente.puedeSolicitarProrroga}
-        pendiente={resumenSeguimientoCliente.prorrogaPendiente}
-        guardando={guardandoSeguimientoCliente}
-        guardandoProrroga={guardandoProrrogaCliente}
+      <DetallePedidoManualModales
+        id={id}
+        navigate={navigate}
+        modalVentaPerdidaOpen={modalVentaPerdidaOpen}
+        setModalVentaPerdidaOpen={setModalVentaPerdidaOpen}
+        itemsVentaPerdidaSeleccionados={itemsVentaPerdidaSeleccionados}
+        setItemsVentaPerdidaSeleccionados={setItemsVentaPerdidaSeleccionados}
+        setItemsSeleccionados={setItemsSeleccionados}
+        consultaVentaPerdidaData={consultaVentaPerdidaData}
+        setConsultaVentaPerdidaData={setConsultaVentaPerdidaData}
+        consultaDecisionData={consultaDecisionData}
+        setConsultaDecisionData={setConsultaDecisionData}
+        modalSeguimientoClienteOpen={modalSeguimientoClienteOpen}
+        setModalSeguimientoClienteOpen={setModalSeguimientoClienteOpen}
+        planSeguimientoCliente={planSeguimientoCliente}
+        guardandoSeguimientoCliente={guardandoSeguimientoCliente}
+        modalRechazar={modalRechazar}
+        setModalRechazar={setModalRechazar}
+        handleConfirmarRechazo={handleConfirmarRechazo}
+        solicitudBase={solicitudBase}
+        handleConfirmarPlanSeguimiento={handleConfirmarPlanSeguimiento}
+        handleConfirmarVentaPerdidaStaged={handleConfirmarVentaPerdidaStaged}
       />
-
-      {/* Modal de Registro de Venta Perdida */}
-      <ModalVentaPerdida
-        isOpen={modalVentaPerdidaOpen}
-        onClose={() => {
-          setModalVentaPerdidaOpen(false);
-          setItemsVentaPerdidaSeleccionados(null);
-          setItemsSeleccionados({});
-        }}
-        solicitud={{ id, ...solicitudBase }}
-        itemsSeleccionados={itemsVentaPerdidaSeleccionados}
-        onConfirmarStaged={handleConfirmarVentaPerdidaStaged}
-        onExito={() => {
-          setModalVentaPerdidaOpen(false);
-          setItemsVentaPerdidaSeleccionados(null);
-          setItemsSeleccionados({});
-          navigate('/vendedor');
-        }}
-      />
-
-      {/* Modal de Consulta de Motivo de Venta Perdida (Comercial) */}
-      <ModalConsultaVentaPerdida
-        isOpen={consultaVentaPerdidaData !== null}
-        onClose={() => setConsultaVentaPerdidaData(null)}
-        data={consultaVentaPerdidaData}
-      />
-
-      {/* Modal de Consulta de Decisión de Ítem (Rechazo, Denegación, Anulación) */}
-      <ModalConsultaDecisionItem
-        isOpen={consultaDecisionData !== null}
-        onClose={() => setConsultaDecisionData(null)}
-        data={consultaDecisionData}
-      />
-
-      {/* Modal Rechazar Oferta de Compras */}
-      {modalRechazar.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6 border border-slate-100">
-            <h3 className="text-lg font-black text-slate-800 mb-2">Rechazar Oferta de Compras</h3>
-            <p className="text-sm text-slate-500 mb-4 leading-snug">
-              Ingresa el motivo del rechazo de la oferta de Compras. Esta información quedará registrada en el historial de negociación.
-            </p>
-            <textarea
-              className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all resize-none text-sm font-medium h-24 mb-4 outline-none"
-              placeholder="Motivo del rechazo (obligatorio)..."
-              value={modalRechazar.motivo}
-              onChange={e => setModalRechazar(prev => ({ ...prev, motivo: e.target.value }))}
-              autoFocus
-            />
-            <div className="flex gap-3">
-              <button 
-                type="button"
-                onClick={() => setModalRechazar({ open: false, index: null, versionEsperada: null, motivo: '' })}
-                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button 
-                type="button"
-                onClick={handleConfirmarRechazo}
-                disabled={!modalRechazar.motivo.trim()}
-                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm cursor-pointer shadow-sm"
-              >
-                Confirmar Rechazo
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -6,6 +6,8 @@ import {
   obtenerFechaLimiteSeguimientoItem
 } from './cotizacionesEstancadasHelpers';
 import { calcularDiasHabilesEntre, convertirFechaSeguimiento, sumarDiasHabiles } from './diasHabiles';
+import { esItemCerrado } from './estadoItem';
+import { esSolicitudCerrada, obtenerIndicesAlcanceProrroga, obtenerIndicesItemsActivos } from './cicloSeguimiento';
 
 export const ESTADOS_SEGUIMIENTO_CLIENTE = {
   VIGENTE: 'vigente',
@@ -17,24 +19,6 @@ export const ESTADOS_SEGUIMIENTO_CLIENTE = {
 };
 
 export const MAX_REVISIONES_CLIENTE = 2;
-
-const ESTADOS_CERRADOS = [
-  'Pedido',
-  'Comprado',
-  'Anulado',
-  'Anulada',
-  'Denegado',
-  'Cancelado',
-  'Cancelada',
-  'Rechazado',
-  'Rechazada',
-  'Venta Perdida'
-];
-
-const ESTADOS_SOLICITUD_CERRADOS = new Set([
-  'pedido', 'comprado', 'anulado', 'anulada', 'denegado', 'cancelado',
-  'cancelada', 'rechazado', 'rechazada', 'venta perdida'
-]);
 
 function obtenerFechaBaseItem(item, solicitud) {
   const seguimiento = item?.seguimientoCliente;
@@ -53,9 +37,7 @@ function obtenerFechaBaseItem(item, solicitud) {
 
 function esItemActivoParaSeguimiento(item) {
   return Boolean(item)
-    && !ESTADOS_CERRADOS.includes(item.estadoItem)
-    && !item.idPedidoRelacionado
-    && !item.pedidoGenerado;
+    && !esItemCerrado(item);
 }
 
 function obtenerProrrogaAplicable(solicitud, index) {
@@ -88,7 +70,7 @@ export function obtenerClaveGrupoSeguimiento(item, solicitud, index = null) {
 
 export function obtenerEstadoSeguimientoItem(item, solicitud, fechaReferencia = new Date(), index = null) {
   if (!item) return ESTADOS_SEGUIMIENTO_CLIENTE.CERRADO;
-  if (ESTADOS_CERRADOS.includes(item.estadoItem) || item.idPedidoRelacionado || item.pedidoGenerado) {
+  if (esItemCerrado(item)) {
     return ESTADOS_SEGUIMIENTO_CLIENTE.CERRADO;
   }
 
@@ -141,6 +123,141 @@ export function obtenerDetalleSeguimientoItem(item, solicitud, fechaReferencia =
   };
 }
 
+/** Línea de tiempo de plazos de un ítem: vigencia original, revisiones y prórrogas formales. */
+export function obtenerHistorialPlazosItem(item, solicitud, index = null) {
+  if (!item) return [];
+  const plazos = [];
+  const fechaOriginal = convertirFechaSeguimiento(item.fechaCotizacion)
+    || convertirFechaSeguimiento(item.negociacion?.ofertaVigente?.creadaEn)
+    || convertirFechaSeguimiento(obtenerFechaRespuestaComprador(solicitud));
+  if (fechaOriginal) {
+    plazos.push({
+      tipo: 'original',
+      etiqueta: 'Vigencia original',
+      desde: fechaOriginal,
+      hasta: sumarDiasHabiles(fechaOriginal, obtenerDiasValidez(solicitud))
+    });
+  }
+
+  const revisiones = Array.isArray(item.seguimientoCliente?.historial)
+    ? item.seguimientoCliente.historial
+    : item.seguimientoCliente?.fechaRevision ? [item.seguimientoCliente] : [];
+  revisiones.forEach((revision, posicion) => {
+    plazos.push({
+      tipo: 'revision',
+      etiqueta: `Revisión ${revision.numero || posicion + 1}`,
+      desde: convertirFechaSeguimiento(revision.fechaInicioRevision) || convertirFechaSeguimiento(revision.fechaRevision),
+      hasta: convertirFechaSeguimiento(revision.fechaVencimientoRevision),
+      comentario: revision.comentario || ''
+    });
+  });
+
+  const prorrogaActual = solicitud?.prorrogaCliente;
+  const registrosProrroga = Array.isArray(prorrogaActual?.historial) && prorrogaActual.historial.length
+    ? prorrogaActual.historial
+    : [prorrogaActual].filter(Boolean);
+  registrosProrroga
+    .filter((prorroga) => Array.isArray(prorroga.indicesItems) && prorroga.indicesItems.includes(index))
+    .forEach((prorroga, posicion) => {
+      const fechasAprobadas = prorroga.fechasVencimientoAprobadas || {};
+      const fechasOriginales = prorroga.fechasVencimientoOriginales || {};
+      plazos.push({
+        tipo: 'prorroga',
+        etiqueta: `Prórroga ${prorroga.ronda || posicion + 1}`,
+        estado: prorroga.estado || 'pendiente',
+        desde: convertirFechaSeguimiento(fechasOriginales[index] || fechasOriginales[String(index)])
+          || convertirFechaSeguimiento(prorroga.fechaVencimientoOriginal),
+        hasta: convertirFechaSeguimiento(fechasAprobadas[index] || fechasAprobadas[String(index)])
+          || convertirFechaSeguimiento(prorroga.fechaVencimientoAprobada),
+        dias: Number(prorroga.diasAprobados || prorroga.diasSolicitados || 0)
+      });
+    });
+
+  return plazos;
+}
+
+/** Props de SeguimientoItemCondicion para un ítem, derivadas del resumen de la solicitud. */
+export function crearPropsSeguimientoItem(resumen, solicitud, item, indice) {
+  const indicesProrrogaPendiente = resumen.prorrogaPendiente ? (solicitud?.prorrogaCliente?.indicesItems || []) : [];
+  return {
+    item,
+    solicitud,
+    index: indice,
+    detalle: resumen.detalles.find((detalle) => detalle.index === indice),
+    maxRevisiones: resumen.maxRevisiones,
+    elegibleRevision: resumen.indicesRevisionDisponible.includes(indice),
+    elegibleProrroga: resumen.indicesProrrogaDisponible.includes(indice),
+    prorrogaPendiente: indicesProrrogaPendiente.includes(indice)
+  };
+}
+
+/** Etiqueta corta para identificar un ítem en avisos: número, marca y descripción recortada. */
+export function obtenerEtiquetaItemSeguimiento(item, index) {
+  const descripcion = String(item?.descripcion || '').trim();
+  const recortada = descripcion.length > 40 ? `${descripcion.slice(0, 40)}…` : descripcion;
+  return [`Ítem ${index + 1}`, item?.marca, recortada].filter(Boolean).join(' · ');
+}
+
+/** Explica por qué un ítem no entra en la acción indicada; null si sí es elegible. */
+export function obtenerMotivoNoElegibleSeguimiento(detalle, modo = 'revision') {
+  if (!detalle) return 'Ítem cerrado';
+  if (detalle.estado === ESTADOS_SEGUIMIENTO_CLIENTE.CIERRE_REQUERIDO) return 'Prórroga vencida, requiere cierre';
+  if (modo === 'ambos') {
+    if (detalle.tieneProrrogaFormal && !detalle.vencida) return 'Ya tiene una prórroga aprobada vigente';
+    if (!detalle.vencida && detalle.diasRestantes > 2) return `Aún vigente (${detalle.diasRestantes} días hábiles)`;
+    return 'No disponible para revisión ni prórroga';
+  }
+  if (modo === 'revision') {
+    if (detalle.cantidadRevisiones >= MAX_REVISIONES_CLIENTE) return `Ya usó ${detalle.cantidadRevisiones}/${MAX_REVISIONES_CLIENTE} revisiones`;
+    if (detalle.tieneProrrogaFormal) return 'Tiene prórroga formal aprobada';
+  }
+  if (!detalle.vencida && detalle.diasRestantes > 2) return `Aún vigente (${detalle.diasRestantes} días hábiles)`;
+  return 'No disponible para esta acción';
+}
+
+/**
+ * Reparte los ítems objetivo en dos grupos excluyentes: revisión (primera opción) y solo prórroga.
+ * Sin selección aplica a todos los elegibles; con selección, los que no entran quedan en `excluidos`.
+ */
+export function calcularPlanSeguimiento(resumen, indicesSeleccionados = []) {
+  const revisionDisponible = resumen.indicesRevisionDisponible;
+  const prorrogaDisponible = resumen.prorrogaPendiente ? [] : resumen.indicesProrrogaDisponible;
+  const hayEleccion = indicesSeleccionados.length > 0;
+  const objetivo = (hayEleccion
+    ? indicesSeleccionados
+    : [...new Set([...revisionDisponible, ...prorrogaDisponible])]
+  ).slice().sort((a, b) => a - b);
+  const revision = objetivo.filter((indice) => revisionDisponible.includes(indice));
+  const prorroga = objetivo.filter((indice) => !revisionDisponible.includes(indice) && prorrogaDisponible.includes(indice));
+  const excluidos = objetivo.filter((indice) => !revision.includes(indice) && !prorroga.includes(indice));
+  return { revision, prorroga, excluidos, hayEleccion };
+}
+
+/** Convierte un plan de índices en filas legibles para el modal (etiqueta, estado breve y fecha límite). */
+export function describirPlanSeguimiento(plan, productos = [], detalles = []) {
+  const describir = (indice) => {
+    const detalle = detalles.find((d) => d.index === indice);
+    const plazo = !detalle ? '' : detalle.vencida
+      ? `Vencido hace ${detalle.diasVencidos} d. háb.`
+      : `Vence en ${detalle.diasRestantes} d. háb.`;
+    return {
+      indice,
+      etiqueta: obtenerEtiquetaItemSeguimiento(productos[indice], indice),
+      nota: detalle ? `${plazo} · Rev. ${detalle.cantidadRevisiones}/${MAX_REVISIONES_CLIENTE}` : '',
+      fechaLimite: detalle?.fechaAlertaInicial || null
+    };
+  };
+  return {
+    revision: plan.revision.map(describir),
+    prorroga: plan.prorroga.map(describir),
+    excluidos: plan.excluidos.map((indice) => ({
+      indice,
+      etiqueta: obtenerEtiquetaItemSeguimiento(productos[indice], indice),
+      motivo: obtenerMotivoNoElegibleSeguimiento(detalles.find((d) => d.index === indice), 'ambos')
+    }))
+  };
+}
+
 export function obtenerIndicesEnAlertaCliente(solicitud, items = solicitud?.productos || [], fechaReferencia = new Date()) {
   return items
     .map((item, index) => ({ item, index }))
@@ -181,9 +298,7 @@ export function obtenerResumenSeguimientoCliente(solicitud, items = solicitud?.p
     : solicitud?.prorrogaCliente
       ? (solicitud.prorrogaCliente.estado === 'aprobada' ? 1 : 0)
       : 0;
-  const estadoSolicitud = String(solicitud?.estado || '').trim().toLowerCase();
-  const solicitudCerrada = ESTADOS_SOLICITUD_CERRADOS.has(estadoSolicitud)
-    || (items.length > 0 && activos.length === 0);
+  const solicitudCerrada = esSolicitudCerrada(solicitud);
   const detallePrioritario = [...detalles]
     .sort((a, b) => (a.diasRestantes - b.diasRestantes) || (b.diasVencidos - a.diasVencidos))[0] || null;
   const cantidadProrrogas = detalles.reduce((maximo, detalle) => Math.max(maximo, detalle.cantidadProrrogas || 0), 0);
@@ -209,11 +324,20 @@ export function obtenerResumenSeguimientoCliente(solicitud, items = solicitud?.p
   const detalleAviso = [...detalles]
     .filter((detalle) => detalle.estado !== ESTADOS_SEGUIMIENTO_CLIENTE.CERRADO)
     .sort((a, b) => (a.horasHastaVencimiento ?? Number.MAX_SAFE_INTEGER) - (b.horasHastaVencimiento ?? Number.MAX_SAFE_INTEGER))[0] || null;
-  const prorrogaPendiente = solicitud?.prorrogaCliente?.estado === 'pendiente';
+  const indicesProrrogaActivos = obtenerIndicesItemsActivos(
+    solicitud,
+    obtenerIndicesAlcanceProrroga(solicitud, solicitud?.prorrogaCliente)
+  );
+  const prorrogaPendiente = solicitud?.prorrogaCliente?.estado === 'pendiente'
+    && !solicitudCerrada
+    && indicesProrrogaActivos.length > 0;
+  const estadoProrrogaEfectivo = solicitud?.prorrogaCliente?.estado === 'pendiente' && !prorrogaPendiente
+    ? 'sin_efecto'
+    : (solicitud?.prorrogaCliente?.estado || null);
   const prorrogaAprobadaVigente = detalles.length > 0
     && detalles.every((detalle) => detalle.esProrroga && detalle.estado === ESTADOS_SEGUIMIENTO_CLIENTE.VIGENTE)
     && !detalles.some((detalle) => detalle.diasRestantes <= 2);
-  const nivelAviso = prorrogaAprobadaVigente
+  const nivelAviso = solicitudCerrada || prorrogaAprobadaVigente
     ? null
     : estado === ESTADOS_SEGUIMIENTO_CLIENTE.CIERRE_REQUERIDO
     ? 'cierre_requerido'
@@ -267,7 +391,7 @@ export function obtenerResumenSeguimientoCliente(solicitud, items = solicitud?.p
     puedeMantenerRevision: indicesRevisionDisponible.length > 0,
     puedeSolicitarProrroga: indicesProrrogaDisponible.length > 0 && !prorrogaPendiente,
     cantidadProrrogas,
-    estadoProrroga: solicitud?.prorrogaCliente?.estado || null,
+    estadoProrroga: estadoProrrogaEfectivo,
     diasProrrogaSolicitados: Number(solicitud?.prorrogaCliente?.diasSolicitados || 0),
     diasProrrogaAprobados: Number(solicitud?.prorrogaCliente?.diasAprobados || 0),
     respuestaProrroga: solicitud?.prorrogaCliente?.respuestaComprador || '',

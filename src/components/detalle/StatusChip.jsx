@@ -1,22 +1,42 @@
 import React from 'react';
-import { AlertCircle, CheckCircle2, Clock3, Eye, Info, XCircle } from 'lucide-react';
 
+/**
+ * Chip de estado discreto: punto de color + texto, sin borde, fondo tenue.
+ * API: status (string), label (string override), className (string).
+ * Nunca comunica estado solo por color: punto + texto siempre presentes.
+ */
 const ESTADOS = {
-  pendiente: { label: 'Pendiente', icon: Clock3 },
-  vencida: { label: 'Vencida', icon: AlertCircle },
-  aprobada: { label: 'Aprobada', icon: CheckCircle2 },
-  rechazada: { label: 'Rechazada', icon: XCircle },
-  en_revision: { label: 'En revisión', icon: Clock3 },
-  solo_lectura: { label: 'Solo lectura', icon: Eye },
-  info: { label: 'Información', icon: Info },
-  resuelta: { label: 'Resuelta', icon: CheckCircle2 },
-  success: { label: 'Correcto', icon: CheckCircle2 },
-  error: { label: 'Error', icon: AlertCircle }
+  // Prórrogas
+  pendiente:    { label: 'Pendiente' },
+  vencida:      { label: 'Vencida' },
+  aprobada:     { label: 'Aprobada' },
+  rechazada:    { label: 'Rechazada' },
+  en_revision:  { label: 'En revisión' },
+  resuelta:     { label: 'Resuelta' },
+  solo_lectura: { label: 'Auditando' },
+
+  // Seguimiento de ítems
+  parcial:                { label: 'Parcial' },
+  completa:               { label: 'Completa' },
+  reprogramada:           { label: 'Reprogramada' },
+  plazo_vencido:          { label: 'Plazo vencido' },
+  cierre_requerido:       { label: 'Cierre requerido' },
+  seguimiento_requerido:  { label: 'Seg. requerido' },
+  prorroga_disponible:    { label: 'Prórroga disponible' },
+
+  // Genéricos
+  success: { label: 'Correcto' },
+  error:   { label: 'Error' },
+  info:    { label: 'Información' },
+  neutral: { label: 'Neutral' },
 };
 
-/** Etiqueta de estado semántica con texto e icono, no dependiente solo del color. */
 export const StatusChip = ({ status = 'info', label, className = '' }) => {
   const config = ESTADOS[status] || ESTADOS.info;
-  const Icon = config.icon;
-  return <span className={`detalle-status ${className}`} data-status={status}><Icon size={13} aria-hidden="true" />{label || config.label}</span>;
+  return (
+    <span className={`detalle-status ${className}`} data-status={status}>
+      <span className="detalle-status__dot" aria-hidden="true" />
+      {label || config.label}
+    </span>
+  );
 };

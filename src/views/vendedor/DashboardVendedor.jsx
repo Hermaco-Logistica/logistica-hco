@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+﻿import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../../components/Badge';
 import { 
@@ -10,7 +10,6 @@ import { MobileBadge } from '../../components/mobile';
 import { useCotizacionesEstancadas } from '../../hooks/useCotizacionesEstancadas';
 import { usePersistedState } from '../../hooks/usePersistedState';
 import { auth } from '../../firebase';
-import { normalizarBusqueda } from '../../utils/normalizers';
 import { db } from '../../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { generarPlantillaNuevaRFQ, generarPlantillaNuevoPedido } from '../../utils/emailTemplates';
@@ -20,8 +19,14 @@ import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsul
 import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
 import { prepararDatosConsultaVentaPerdida, tieneVentaPerdidaSolicitud } from '../../utils/ventasPerdidasHelpers';
 import { tieneDecisionSolicitud, prepararDatosDecisionSolicitud } from '../../utils/decisionItemHelpers';
-import { ResumenAlertasSeguimiento } from '../../components/seguimiento/ResumenAlertasSeguimiento';
-import { ModalSeguimientoSolicitudes } from '../../components/seguimiento/ModalSeguimientoSolicitudes';
+import { ModalBloqueoCotizaciones } from '../../components/vendedor/ModalBloqueoCotizaciones';
+import {
+  filtrarSolicitudesDashboard,
+  formatFechaHora,
+  formatearRangoFechas,
+  obtenerDiasDelMes,
+  ordenarSolicitudesPorFecha
+} from './dashboard/utils/dashboardVendedorHelpers';
 
 // Fecha de corte: documentos creados ANTES de este deploy no pueden garantizar
 // el valor correcto de emailEnviado (pueden ser undefined o false por razones ajenas).
@@ -35,7 +40,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   const { cotizacionesEstancadas, tieneBloqueo } = useCotizacionesEstancadas({ solicitudes, role });
 
   // Estados de filtros (persistidos en localStorage)
-  const [ setFilterAccion] = usePersistedState('dv_filterAccion', '');
+  const [, setFilterAccion] = usePersistedState('dv_filterAccion', '');
   const [filterEstado, setFilterEstado] = usePersistedState('dv_filterEstado', '');
   const [filterResultado, setFilterResultado] = usePersistedState('dv_filterResultado', '');
   const [filterVendedor, setFilterVendedor] = usePersistedState('dv_filterVendedor', '');
@@ -46,7 +51,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   const [consultaVentaPerdidaData, setConsultaVentaPerdidaData] = useState(null);
   const [consultaDecisionData, setConsultaDecisionData] = useState(null);
   const [consultaAnimacionTick, setConsultaAnimacionTick] = useState(0);
-  const [modalSeguimientoOpen, setModalSeguimientoOpen] = useState(false);
+  const [modalBloqueoOpen, setModalBloqueoOpen] = useState(false);
 
   useEffect(() => {
     const intervalo = window.setInterval(() => {
@@ -63,13 +68,6 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
     setConsultaDecisionData(prepararDatosDecisionSolicitud(solicitud));
   };
 
-  const atenderSolicitudDesdeSeguimiento = (solicitud) => {
-    navigate(solicitud.tipo === 'Pedido Manual'
-      ? `/vendedor/pedido-manual/${solicitud.id}`
-      : `/vendedor/detalle/${solicitud.id}`);
-  };
-
-  const abrirModalSeguimiento = () => setModalSeguimientoOpen(true);
 
   // Estados de Rango de Fecha Popover
   const [fechaInicio, setFechaInicio] = useState(null);
@@ -89,17 +87,6 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
     document.addEventListener('mousedown', clickFuera);
     return () => document.removeEventListener('mousedown', clickFuera);
   }, []);
-
-  const formatFechaHora = (timestamp) => {
-    if (!timestamp?.toDate) return '---';
-    const dateValue = timestamp.toDate();
-    return new Intl.DateTimeFormat('es-SV', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-      hour12: false,
-      timeZone: 'America/El_Salvador'
-    }).format(dateValue);
-  };
 
   const [reenviandoId, setReenviandoId] = useState(null);
   const [reenviandoPedidoId, setReenviandoPedidoId] = useState(null);
@@ -202,77 +189,27 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   const usuarioActualId = auth.currentUser?.uid || '';
   const usuarioActualEmail = (auth.currentUser?.email || '').toLowerCase();
 
-  const clasificarProrroga = (solicitud) => {
-    const prorroga = solicitud?.prorrogaCliente;
-    if (!prorroga) return 'sin';
-    const esPropia = prorroga.vendedorId === usuarioActualId
-      || String(prorroga.vendedorEmail || solicitud.vendedorEmail || '').toLowerCase() === usuarioActualEmail;
-    return esPropia ? 'propias' : 'otros';
-  };
-
-  // Aplicar filtros
-  const filteredSolicitudes = solicitudes.filter((s) => {
-    if (role === 'vendedor' && s.vendedorId !== auth.currentUser?.uid) return false;
-    if (filterEstado && s.estado !== filterEstado) return false;
-    if (filterResultado && (s.resultado || clasificarSolicitud(s.productos, s.estado).resultado) !== filterResultado) return false;
-    if (role !== 'vendedor' && filterVendedor && s.vendedorNombre !== filterVendedor) return false;
-    if (role === 'gerente' && filterProrroga && clasificarProrroga(s) !== filterProrroga) return false;
-    
-    if (s.fechaS) {
-      const fechaSDate = s.fechaS.toDate ? s.fechaS.toDate() : new Date(s.fechaS);
-      const dComp = new Date(fechaSDate.getFullYear(), fechaSDate.getMonth(), fechaSDate.getDate());
-      
-      if (fechaInicio) {
-        const dIni = new Date(fechaInicio.getFullYear(), fechaInicio.getMonth(), fechaInicio.getDate());
-        if (dComp < dIni) return false;
-      }
-      if (fechaFin) {
-        const dFin = new Date(fechaFin.getFullYear(), fechaFin.getMonth(), fechaFin.getDate());
-        if (dComp > dFin) return false;
-      }
-    } else if (fechaInicio || fechaFin) {
-      return false;
-    }
-
-    if (searchTerm) {
-      const termNormalized = normalizarBusqueda(searchTerm);
-      if (termNormalized) {
-        const matchCorrelativo = normalizarBusqueda(s.correlativo).includes(termNormalized);
-        const matchCliente = normalizarBusqueda(s.cliente).includes(termNormalized);
-        const matchProducto = s.productos?.some(p => 
-          normalizarBusqueda(p.desc).includes(termNormalized) || 
-          normalizarBusqueda(p.marca).includes(termNormalized)
-        );
-        if (!matchCorrelativo && !matchCliente && !matchProducto) return false;
-      }
-    }
-    return true;
+  const filteredSolicitudes = filtrarSolicitudesDashboard({
+    solicitudes,
+    role,
+    usuarioActualId,
+    usuarioActualEmail,
+    filterEstado,
+    filterResultado,
+    filterVendedor,
+    filterProrroga,
+    fechaInicio,
+    fechaFin,
+    searchTerm
   });
-
-  // Ordenar de más reciente a más antigua
-  const sortedSolicitudes = [...filteredSolicitudes].sort((a, b) => {
-    const getMs = (val) => {
-      if (!val) return 0;
-      if (typeof val === 'object') {
-        if (typeof val.toDate === 'function') {
-          try { return val.toDate().getTime(); } catch { return 0; }
-        }
-        if (typeof val.seconds === 'number') {
-          return val.seconds * 1000;
-        }
-      }
-      const ms = Date.parse(val);
-      return isNaN(ms) ? 0 : ms;
-    };
-    return getMs(b.fechaS) - getMs(a.fechaS);
-  });
+  const sortedSolicitudes = ordenarSolicitudesPorFecha(filteredSolicitudes);
 
   const itemsPerPage = 10;
   const totalPages = Math.max(1, Math.ceil(sortedSolicitudes.length / itemsPerPage));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const paginatedSolicitudes = sortedSolicitudes.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
 
-  // Lógica del Calendario
+  // Lógica del calendario
   const handleSelectDia = (diaDate) => {
     setCurrentPage(1);
     if (!fechaInicio || (fechaInicio && fechaFin)) {
@@ -288,29 +225,11 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
     }
   };
 
-  const getDiasDelMes = () => {
-    const año = mesActual.getFullYear();
-    const mes = mesActual.getMonth();
-    const primerDiaSemana = new Date(año, mes, 1).getDay();
-    const totalDias = new Date(año, mes + 1, 0).getDate();
-    
-    const dias = [];
-    for (let i = 0; i < primerDiaSemana; i++) dias.push(null);
-    for (let i = 1; i <= totalDias; i++) dias.push(new Date(año, mes, i));
-    return dias;
-  };
-
   const cambiarMes = (offset) => {
     setMesActual(new Date(mesActual.getFullYear(), mesActual.getMonth() + offset, 1));
   };
 
-  const formattedRangoText = () => {
-    if (!fechaInicio) return 'Elegir Rango / Día';
-    const opt = { day: '2-digit', month: 'short' };
-    const iniStr = fechaInicio.toLocaleDateString('es-ES', opt);
-    if (!fechaFin) return iniStr;
-    return `${iniStr} - ${fechaFin.toLocaleDateString('es-ES', opt)}`;
-  };
+  const formattedRangoText = formatearRangoFechas(fechaInicio, fechaFin);
 
   const filtrosActivosCount = [
     filterEstado,
@@ -345,51 +264,44 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
         )}
       </div>
 
-      {/* BANNER PREVENTIVO: Cotizaciones Estancadas */}
-      {role === 'vendedor' && (
-        <ResumenAlertasSeguimiento solicitudes={solicitudes} onAtender={abrirModalSeguimiento} />
-      )}
-
-      {role === 'vendedor' && (
-        <ModalSeguimientoSolicitudes
-          solicitudes={solicitudes}
-          isOpen={modalSeguimientoOpen}
-          onClose={() => setModalSeguimientoOpen(false)}
-          onAtender={(solicitud) => {
-            setModalSeguimientoOpen(false);
-            atenderSolicitudDesdeSeguimiento(solicitud);
-          }}
-        />
-      )}
-
+      {/* Banner único de bloqueo para solicitudes estancadas */}
       {tieneBloqueo && (
-        <div className="mb-5 p-3.5 sm:p-4 rounded-lg bg-amber-50/70 border border-amber-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-start gap-2.5">
-            <div className="p-1.5 bg-amber-100 text-amber-800 rounded-sm shrink-0 mt-0.5">
-              <AlertCircle size={16} />
+        <div className="mb-5 rounded-[10px] border border-[var(--detalle-border)] bg-[var(--detalle-surface)] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[13px]">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="inline-flex w-8 h-8 items-center justify-center rounded-[6px] bg-[var(--detalle-bg-warning)] text-[var(--detalle-accent-warning)] shrink-0 mt-0.5">
+              <AlertCircle size={16} aria-hidden="true" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-amber-950 uppercase tracking-tight text-xs">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-[var(--detalle-text)]">
                   Creación bloqueada
                 </span>
-                <span className="px-1.5 py-0.2 rounded-xs bg-amber-200/60 text-amber-900 border border-amber-300 text-[10px] font-mono font-bold">
+                <span className="rounded-[4px] bg-[var(--detalle-bg-warning)] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[var(--detalle-accent-warning)] tabular-nums">
                   {cotizacionesEstancadas.length} estancada(s)
                 </span>
               </div>
-              <p className="text-amber-800 text-[11px] font-medium mt-0.5 leading-snug">
+              <p className="text-[12px] text-[var(--detalle-text-muted)] mt-0.5 leading-normal">
                 Tienes cotizaciones o pedidos parciales con ítems fuera de su vigencia configurada pendientes de seguimiento. Debes atenderlos o cerrarlos para habilitar nuevas solicitudes.
               </p>
             </div>
           </div>
           <button
-            onClick={() => navigate('/vendedor/nueva')}
-            className="shrink-0 w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-[11px] font-semibold uppercase tracking-wider transition-colors cursor-pointer"
+            type="button"
+            onClick={() => setModalBloqueoOpen(true)}
+            style={{ backgroundColor: 'var(--tf-color-brand-strong)' }}
+            className="shrink-0 w-full sm:w-auto inline-flex h-[32px] items-center justify-center gap-1.5 px-3 text-[12px] font-semibold text-white rounded-[6px] transition-opacity hover:opacity-90 cursor-pointer"
           >
             <span>Atender</span>
             <ArrowRight size={13} />
           </button>
         </div>
+      )}
+
+      {modalBloqueoOpen && (
+        <ModalBloqueoCotizaciones
+          cotizaciones={cotizacionesEstancadas}
+          onVolver={() => setModalBloqueoOpen(false)}
+        />
       )}
 
       {/* BARRA DE FILTROS MÓVIL (visible en < md) */}
@@ -492,7 +404,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                 onClick={() => setMostrarCalendario(!mostrarCalendario)}
               >
                 <CalendarIcon size={14} className="text-slate-400 shrink-0" />
-                <span className="truncate flex-1 select-none">{formattedRangoText()}</span>
+                <span className="truncate flex-1 select-none">{formattedRangoText}</span>
                 {(fechaInicio || fechaFin) && (
                   <button onClick={(e) => { e.stopPropagation(); setFechaInicio(null); setFechaFin(null); setCurrentPage(1); }} className="hover:text-red-500 font-bold p-0.5">&times;</button>
                 )}
@@ -510,7 +422,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                     <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
                   </div>
                   <div className="grid grid-cols-7 gap-1">
-                    {getDiasDelMes().map((dia, idx) => {
+                    {obtenerDiasDelMes(mesActual).map((dia, idx) => {
                       if (!dia) return <div key={`empty-mobile-${idx}`} />;
                       const timestampDia = dia.getTime();
                       const isInicio = fechaInicio && timestampDia === fechaInicio.getTime();
@@ -597,7 +509,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Fecha</label>
           <div className="flex items-center gap-1 bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold cursor-pointer text-slate-700" onClick={() => setMostrarCalendario(!mostrarCalendario)}>
             <CalendarIcon size={14} className="text-slate-400 shrink-0" />
-            <span className="truncate flex-1 select-none">{formattedRangoText()}</span>
+            <span className="truncate flex-1 select-none">{formattedRangoText}</span>
             {(fechaInicio || fechaFin) && (
               <button onClick={(e) => { e.stopPropagation(); setFechaInicio(null); setFechaFin(null); setCurrentPage(1); }} className="hover:text-red-500 font-bold p-0.5">&times;</button>
             )}
@@ -618,7 +530,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               </div>
 
               <div className="grid grid-cols-7 gap-1">
-                {getDiasDelMes().map((dia, idx) => {
+                {obtenerDiasDelMes(mesActual).map((dia, idx) => {
                   if (!dia) return <div key={`empty-${idx}`} />;
                   const timestampDia = dia.getTime();
                   const isInicio = fechaInicio && timestampDia === fechaInicio.getTime();

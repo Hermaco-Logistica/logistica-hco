@@ -34,6 +34,8 @@
     --detalle-bg-row-danger: #fff5f4;
     --detalle-shadow-float: 0 -4px 18px rgb(15 23 42 / 12%);
     --detalle-success-hover: #105b39;
+    --detalle-accent-neutral: #4b5566;
+    --detalle-bg-neutral: #f0f2f5;
     --detalle-air: #247a9b;
     --detalle-sea: #536f9b;
     --detalle-radius-control: 6px;
@@ -90,6 +92,54 @@
   }
   .animate-consulta-motivo {
     animation: consulta-motivo-nudge 0.65s ease-out both;
+  }
+
+  /* Hilo de mensajes: hoja que sube en móvil y burbuja que crece desde abajo en escritorio.
+     La entrada usa fill-mode backwards para no pisar el transform inline del arrastre. */
+  @keyframes hilo-backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes hilo-backdrop-out { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes hilo-sheet-in {
+    from { opacity: 0; transform: translateY(32px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes hilo-sheet-out {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(32px); }
+  }
+  @keyframes hilo-pop-in {
+    from { opacity: 0; transform: translateY(14px) scale(0.94); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes hilo-pop-out {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(10px) scale(0.96); }
+  }
+  .hilo-backdrop {
+    animation: hilo-backdrop-in 0.2s ease-out backwards;
+  }
+  .hilo-backdrop[data-saliendo='true'] {
+    animation: hilo-backdrop-out 0.18s ease-in forwards;
+  }
+  .hilo-panel {
+    transform-origin: 50% 100%;
+    animation: hilo-sheet-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  .hilo-panel[data-saliendo='true'] {
+    animation: hilo-sheet-out 0.18s ease-in forwards;
+  }
+  @media (min-width: 768px) {
+    .hilo-panel {
+      animation: hilo-pop-in 0.26s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    }
+    .hilo-panel[data-saliendo='true'] {
+      animation: hilo-pop-out 0.18s ease-in forwards;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hilo-backdrop,
+    .hilo-panel {
+      animation-duration: 0.01ms !important;
+    }
   }
 }
 

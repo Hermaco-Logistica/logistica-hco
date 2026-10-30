@@ -19,7 +19,7 @@ export const NuevoPedidoView = ({ viewModel }) => {
         </button>
       </div>
 
-      <form onSubmit={guardarRFQ} className="space-y-6">
+      <form id="form-nuevo-pedido" onSubmit={guardarRFQ} className="space-y-6">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
         {/* Card Cliente */}
         <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl border border-slate-200 shadow-xl shadow-slate-100">
@@ -410,6 +410,7 @@ export const NuevoPedidoView = ({ viewModel }) => {
           primaryAction={
             <button 
               type="submit" 
+              form="form-nuevo-pedido"
               disabled={loading}
               className={`w-full py-4 sm:py-5 px-6 rounded-2xl sm:rounded-3xl font-black text-white uppercase tracking-[0.2em] shadow-2xl transition-all transform active:scale-[0.98] ${
                 loading 

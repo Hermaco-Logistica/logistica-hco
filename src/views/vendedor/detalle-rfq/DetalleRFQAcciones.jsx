@@ -41,17 +41,17 @@ export const DetalleRFQAcciones = ({
     <>
       <div
         ref={accionesPrincipalesRef}
-        className="mt-8 flex flex-col sm:flex-row items-stretch gap-3 w-full"
+        className="rfq-summary-actions mt-8"
       >
         {debeMostrarBotonVentaPerdida && (
           <button
             type="button"
             onClick={() => handleAbrirVentaPerdida()}
             disabled={enviandoPedido}
-            className="w-full sm:w-auto px-5 sm:px-6 py-4 rounded-2xl border-2 border-rose-300 bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-sm hover:shadow transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0 min-h-[48px]"
+            className="rfq-summary-action rfq-summary-action--secondary px-5 sm:px-6 py-4 rounded-2xl border-2 border-rose-300 bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-700 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-sm hover:shadow transition-all active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px]"
           >
             <TrendingDown size={18} className="text-rose-600 shrink-0" />
-            <span className="truncate">
+            <span className="rfq-summary-action__label">
               {totalItemsSeleccionados > 0
                 ? `Venta Perdida (${totalItemsSeleccionados})`
                 : 'Registrar Venta Perdida'}
@@ -62,7 +62,7 @@ export const DetalleRFQAcciones = ({
         <button
           onClick={handleCrearPedido}
           disabled={enviandoPedido || !puedeConfirmarOEnviar}
-          className={`w-full sm:flex-1 py-4 px-5 sm:px-6 rounded-2xl font-black uppercase tracking-wider shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[48px] text-xs sm:text-sm ${
+          className={`rfq-summary-action rfq-summary-action--primary py-4 px-5 sm:px-6 rounded-2xl font-black uppercase tracking-wider shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[48px] text-xs sm:text-sm ${
             totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
               ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-900/20'
               : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-900/20'
@@ -74,14 +74,14 @@ export const DetalleRFQAcciones = ({
             <ShoppingCart size={18} className="shrink-0" />
           )}
           {puedeConfirmarOEnviar && !enviandoPedido && hayPedidoYVentaPerdida ? (
-            <span className="flex min-w-0 flex-col items-center justify-center gap-0.5 text-center leading-tight">
+            <span className="rfq-summary-action__label flex min-w-0 flex-col items-center justify-center gap-0.5 text-center leading-tight">
               <span className="shrink-0">CONFIRMAR</span>
               <span className="text-[10px] font-bold tracking-wide opacity-90">
                 {totalItemsSeleccionados} {totalItemsSeleccionados === 1 ? 'pedido' : 'pedidos'} · {totalVentasPerdidasPendientes} {totalVentasPerdidasPendientes === 1 ? 'venta perdida' : 'ventas perdidas'}
               </span>
             </span>
           ) : (
-            <span className="truncate">
+            <span className="rfq-summary-action__label">
               {puedeConfirmarOEnviar
                 ? (enviandoPedido
                     ? (mensajePedido || 'PROCESANDO...')

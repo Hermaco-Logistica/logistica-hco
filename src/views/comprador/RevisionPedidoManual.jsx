@@ -21,6 +21,10 @@ import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsul
 import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
 import { prepararDatosConsultaVentaPerdida, tieneMotivoConsultaItem } from '../../utils/ventasPerdidasHelpers';
 import { esDecisionItem, prepararDatosDecisionItem, esItemCerrado } from '../../utils/decisionItemHelpers';
+import { SeguimientoClienteBanner } from '../../components/seguimiento/SeguimientoClienteBanner';
+import { PanelCriteriosProrroga } from '../../components/seguimiento/PanelCriteriosProrroga';
+import { SeguimientoItemCondicion } from '../../components/seguimiento/SeguimientoItemCondicion';
+import { crearPropsSeguimientoItem, obtenerResumenSeguimientoCliente } from '../../utils/seguimientoCliente';
 
 export const RevisionPedidoManual = ({ role = 'comprador' }) => {
   const { id } = useParams();
@@ -234,7 +238,28 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
     return true;
   });
 
+  const mostrarColumnaAcciones = filteredItems.some(({ item }) => {
+    const negociacion = item.negociacion || {};
+    const cerrado = esItemCerrado(item);
+    const puedeAnular = role === 'comprador'
+      && ['Cotizado', 'Pedido'].includes(item.estadoItem)
+      && !item.numOC
+      && !cerrado
+      && unnotifiedCount === 0;
+
+    return (negociacion.turno === 'compras' && !cerrado)
+      || (negociacion.sinNotificar && negociacion.ultimoCambio?.rol === 'comprador')
+      || puedeAnular;
+  });
+
   const allClosed = itemsServer.length > 0 && itemsServer.every(p => esItemCerrado(p) && !p.negociacion?.sinNotificar);
+  const solicitudSeguimiento = { ...solicitudBase, id: solicitudBase.id || id };
+  const resumenSeguimiento = obtenerResumenSeguimientoCliente(solicitudSeguimiento, itemsServer);
+  // Solo los ítems con vigencia calculada (abiertos) llevan bloque de seguimiento.
+  const obtenerSeguimientoItem = (item, idx) => {
+    const props = crearPropsSeguimientoItem(resumenSeguimiento, solicitudSeguimiento, item, idx);
+    return props.detalle ? props : null;
+  };
 
   return (
     <div className="@container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
@@ -372,6 +397,13 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
         </div>
       )}
 
+      <SeguimientoClienteBanner
+        resumen={resumenSeguimiento}
+        solicitud={solicitudSeguimiento}
+        role={role}
+      />
+      <PanelCriteriosProrroga solicitud={solicitudSeguimiento} resumen={resumenSeguimiento} />
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex flex-col justify-center">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Detalles del Vendedor</h3>
@@ -455,6 +487,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
               onConsultaVentaPerdida={() => handleAbrirConsultaItem(item, idx)}
               estaAnulado={item.estadoItem === 'Anulado'}
               role={role}
+              seguimiento={obtenerSeguimientoItem(item, idx)}
             />
           ))}
           {filteredItems.length === 0 && (
@@ -470,15 +503,17 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                 <th className="p-4 w-[25%]">Producto</th>
                 <th className="p-4 w-[40%]">Condiciones</th>
                 <th className="p-4 w-28 text-center">Mensajes</th>
-                <th className="p-4 w-[20%] text-right">Estado y Acciones</th>
+                <th className="p-4 w-[20%] text-center">Estado</th>
+                {mostrarColumnaAcciones && <th className="p-4 text-right">Acciones</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredItems.length === 0 && (
+            {filteredItems.length === 0 && (
+              <tbody>
                 <tr>
-                  <td colSpan={4} className="p-8 text-center text-slate-500 text-sm font-medium">No hay ítems en esta vista.</td>
+                  <td colSpan={mostrarColumnaAcciones ? 5 : 4} className="p-8 text-center text-slate-500 text-sm font-medium">No hay ítems en esta vista.</td>
                 </tr>
-              )}
+              </tbody>
+            )}
               {filteredItems.map(({ item: p, idx }) => {
                 const neg = p.negociacion || {};
                 const versionEsperada = neg.version || 0;
@@ -500,9 +535,10 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                 const msgCount = conteos[idx] || 0;
                 const unreadCount = noLeidos[idx] || 0;
                 const estaAnulado = p.estadoItem === 'Anulado';
+                const seguimiento = obtenerSeguimientoItem(p, idx);
 
                 return (
-                  <React.Fragment key={idx}>
+                  <tbody key={idx} className="border-b border-slate-100 last:border-b-0">
                     <tr className={`transition-colors ${esCerrado ? 'opacity-60 bg-slate-50/50' : isPending ? 'bg-white' : 'hover:bg-slate-50'}`}>
                       <td className="p-4 align-top">
                         <div className="font-bold text-sm uppercase text-slate-700 leading-tight pr-4">{p.descripcion}</div>
@@ -576,37 +612,39 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                         </button>
                       </td>
                       
-                      <td className="p-4 align-top">
+                      <td className="p-4 align-top text-center">
+                        <div className="flex flex-col items-center gap-2">
+                          <EstadoItemChip estado={p.estadoItem} pendingRole={neg.turno} />
+                          {tieneMotivoConsultaItem(p) && (
+                            <button
+                              type="button"
+                              onClick={() => handleAbrirConsultaItem(p, idx)}
+                              className="inline-flex min-h-6 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 font-semibold text-slate-600 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px text-[9px] cursor-pointer"
+                              title="Consultar motivo de la decisión"
+                            >
+                              <MessageCircleQuestion size={11} /> Consulta
+                            </button>
+                          )}
+                          {estaAnulado && p.motivoAnulacion && (
+                            <span className="text-[9px] text-slate-400 italic max-w-30 truncate" title={p.motivoAnulacion}>
+                              {p.motivoAnulacion}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {mostrarColumnaAcciones && <td className="p-4 align-top">
                         <div className="flex flex-col items-end gap-3">
-                          <div className="flex items-center gap-2">
-                            <EstadoItemChip estado={p.estadoItem} pendingRole={neg.turno} />
-                            {tieneMotivoConsultaItem(p) && (
-                              <button
-                                type="button"
-                                onClick={() => handleAbrirConsultaItem(p, idx)}
-                                className="inline-flex min-h-6 items-center gap-1 rounded-md border border-slate-200/80 bg-white px-2 py-0.5 font-semibold text-slate-600 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 active:translate-y-px text-[9px] cursor-pointer"
-                                title="Consultar motivo de la decisión"
-                              >
-                                <MessageCircleQuestion size={11} /> Consulta
-                              </button>
-                            )}
-                            {role === 'comprador' && ['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !esCerrado && unnotifiedCount === 0 && (
-                              <button
-                                type="button"
-                                title="Anular"
-                                onClick={() => setModalAnulacion({ open: true, index: idx, motivo: '', enviando: false })}
-                                className="text-rose-400 hover:text-rose-600 p-1 hover:bg-rose-50 rounded-full transition-all"
-                              >
-                                <Ban size={16} />
-                              </button>
-                            )}
-                            {estaAnulado && p.motivoAnulacion && (
-                              <span className="text-[9px] text-slate-400 italic max-w-30 truncate" title={p.motivoAnulacion}>
-                                {p.motivoAnulacion}
-                              </span>
-                            )}
-                          </div>
-                          
+                          {role === 'comprador' && ['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !esCerrado && unnotifiedCount === 0 && (
+                            <button
+                              type="button"
+                              title="Anular"
+                              onClick={() => setModalAnulacion({ open: true, index: idx, motivo: '', enviando: false })}
+                              className="text-rose-400 hover:text-rose-600 p-1 hover:bg-rose-50 rounded-full transition-all"
+                            >
+                              <Ban size={16} />
+                            </button>
+                          )}
                           {isPending ? (
                             <div className="flex flex-wrap justify-end gap-1.5 w-full mt-2">
                               {!isUnchanged ? (
@@ -654,12 +692,22 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                             )
                           )}
                         </div>
-                      </td>
+                      </td>}
                     </tr>
+
+                    {seguimiento && (
+                      <tr className={esCerrado ? 'opacity-60 bg-slate-50/50' : 'bg-white'}>
+                        <td colSpan={mostrarColumnaAcciones ? 5 : 4} className="px-4 pb-3 pt-0">
+                          <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                            <SeguimientoItemCondicion {...seguimiento} className="pedido-item-seguimiento--plano" />
+                          </div>
+                        </td>
+                      </tr>
+                    )}
 
                     {hasCounterOffer && (
                       <tr className="bg-amber-50/20">
-                        <td colSpan={4} className="p-4 border-l-4 border-amber-300">
+                        <td colSpan={mostrarColumnaAcciones ? 5 : 4} className="p-4 border-l-4 border-amber-300">
                           <OfertaDiff 
                             actual={neg.ofertaVigente} 
                             anterior={neg.ofertaAnterior} 
@@ -671,7 +719,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
 
                     {hiloAbierto === idx && (
                       <tr className="bg-slate-50">
-                        <td colSpan={4} className="p-0 border-t border-slate-100">
+                        <td colSpan={mostrarColumnaAcciones ? 5 : 4} className="p-0 border-t border-slate-100">
                           <HiloComentariosItem
                             solicitudId={id}
                             itemId={idx}
@@ -685,10 +733,9 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                         </td>
                       </tr>
                     )}
-                  </React.Fragment>
+                  </tbody>
                 );
               })}
-            </tbody>
           </table>
         </div>
       </div>

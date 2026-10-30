@@ -28,7 +28,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Estados de filtros (persistidos en localStorage)
-  const [ setFilterAccion] = usePersistedState('dc_filterAccion', '');
+  const [, setFilterAccion] = usePersistedState('dc_filterAccion', '');
   const [filterEstado, setFilterEstado] = usePersistedState('dc_filterEstado', '');
   const [filterResultado, setFilterResultado] = usePersistedState('dc_filterResultado', '');
   const [filterVendedor, setFilterVendedor] = usePersistedState('dc_filterVendedor', '');

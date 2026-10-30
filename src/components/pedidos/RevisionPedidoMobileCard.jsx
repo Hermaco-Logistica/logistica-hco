@@ -7,6 +7,7 @@ import { FormularioOferta } from './negociacion/FormularioOferta';
 import { OfertaDiff } from './negociacion/OfertaDiff';
 import { tieneMotivoConsultaItem } from '../../utils/ventasPerdidasHelpers';
 import { esItemCerrado } from '../../utils/decisionItemHelpers';
+import { SeguimientoItemCondicion } from '../seguimiento/SeguimientoItemCondicion';
 
 export const RevisionPedidoMobileCard = ({
   idx,
@@ -25,7 +26,8 @@ export const RevisionPedidoMobileCard = ({
   onConsulta,
   onConsultaVentaPerdida,
   estaAnulado,
-  role
+  role,
+  seguimiento = null
 }) => {
   const [showAdjustForm, setShowAdjustForm] = useState(false);
 
@@ -108,6 +110,7 @@ export const RevisionPedidoMobileCard = ({
             <span className="font-bold text-slate-800 truncate">{p.modalidad || 'N/A'}</span>
           </div>
         </div>
+        {seguimiento && <SeguimientoItemCondicion {...seguimiento} className="mt-2.5" />}
       </div>
 
       {/* Historial de ajuste — visible aunque esté anulado, pero atenuado */}

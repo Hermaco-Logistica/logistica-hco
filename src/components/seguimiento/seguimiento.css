@@ -122,3 +122,28 @@
     border-bottom: 0;
   }
 }
+
+/* Vigencia y extensiones: ocupa toda la fila bajo las condiciones comerciales. */
+.pedido-item-seguimiento {
+  grid-column: 1 / -1;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+  text-align: left;
+}
+
+.pedido-item-seguimiento__resumen {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 20px;
+}
+
+.pedido-item-seguimiento__plazos {
+  margin-top: 8px;
+}
+
+/* Cuando el bloque ya vive dentro de su propia caja no necesita separador superior. */
+.pedido-item-seguimiento--plano {
+  padding-top: 0;
+  border-top: 0;
+}
