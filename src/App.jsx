@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-ro
 import { auth, db, provider } from './firebase'; 
 import { onAuthStateChanged, signOut, signInWithPopup } from 'firebase/auth';
 import { collection, query, onSnapshot, where, limit, doc, updateDoc, getDoc, setDoc, serverTimestamp, runTransaction } from 'firebase/firestore';
-import { emailConfig } from './config/emailConfig';
+import { enviarCotizacionConPdf } from './emails';
 import { Menu, Lightbulb } from 'lucide-react';
 import { BottomDock } from './components/mobile';
 import { BottomDockProvider } from './context/BottomDockContext';
@@ -33,6 +33,7 @@ import { DashboardPedidos } from './views/pedidos/DashboardPedidos';
 import { ToastProvider } from './components/ui/Toast';
 import { GlobalAlertModal } from './components/ui/GlobalAlertModal';
 import { ReleaseNotesModal } from './components/ui/ReleaseNotesModal';
+import { IrASolicitud } from './views/IrASolicitud';
 import { clasificarSolicitud } from './utils/clasificarSolicitud';
 
 import { obtenerCierreEventoSeguimiento } from './utils/cicloSeguimiento';
@@ -218,12 +219,11 @@ function App() {
       
       const rfqDocRef = doc(db, "solicitudes", rfqId);
       
-      let correlativo = "N/A";
       let cliente = "N/A"; void cliente;
-      let vendedorNombre = "Vendedor";
-      let vendedorEmail = "";
       let estadoFinal = 'Cotizado';
       let tieneItemsCotizados = false;
+      let solicitudCotizada = null;
+      let resumenCotizacion = { itemsCotizados: 0, totalItems: 0 };
 
       try {
         await runTransaction(db, async (transaction) => {
@@ -231,10 +231,7 @@ function App() {
           let rfqData = {};
           if (rfqSnap.exists()) {
             rfqData = rfqSnap.data();
-            correlativo = rfqData.correlativo || "N/A";
             cliente = rfqData.cliente || "N/A";
-            vendedorNombre = rfqData.vendedorNombre || "Vendedor";
-            vendedorEmail = rfqData.vendedorEmail || "";
           }
 
           if (rfqData.estado === 'Cotizado' || rfqData.estado === 'Pedido') {
@@ -263,6 +260,11 @@ function App() {
           const clasificacion = clasificarSolicitud(productosProcesados, rfqData.estado);
           estadoFinal = clasificacion.estado;
           tieneItemsCotizados = clasificacion.conteoItems.cotizados > 0 || clasificacion.conteoItems.pedidos > 0;
+          solicitudCotizada = { ...rfqData, id: rfqId, estado: estadoFinal };
+          resumenCotizacion = {
+            itemsCotizados: clasificacion.conteoItems.cotizados + clasificacion.conteoItems.pedidos,
+            totalItems: clasificacion.conteoItems.activos
+          };
           
           const updatePayload = {
             productos: productosProcesados, 
@@ -302,39 +304,16 @@ function App() {
         throw txError;
       }
       
-      // Enviar correo automático con PDF adjunto SOLO si hay ítems cotizados con precio
-      const mailConfig = emailConfig.cotizacionFinalizada;
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      
-      // En local/sandbox (desarrollo): destinatarios y CC van ÚNICAMENTE a rvides@hermaco.net.
-      // En producción: TO va al vendedor asignado y CC a la lista corporativa (compras, chernandez, fsalinas, oventura).
-      const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : (vendedorEmail ? [vendedorEmail] : (mailConfig.to || []));
-      const ccEmails = isLocal ? ["rvides@hermaco.net"] : (mailConfig.cc || []);
-      
-      const senderFrom = isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : 'compras@hermaco.net <compras@hermaco.net>';
-
-      if (tieneItemsCotizados && destinatarioTo.length && pdfBase64) {
-        const subject = `Cotización #${correlativo}`;
-        const bodyHtml = `
-          <p>Estimado ${vendedorNombre},</p>
-          <p>Adjunto encontrará su cotización.</p>
-          <p>Saludos cordiales.</p>
-        `;
-        // Fire-and-forget: no esperamos respuesta. La función corre en background
-        // (hasta 15 min) sin riesgo de timeout ni bloquear al usuario.
-        fetch('/.netlify/functions/send-quotation-background', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            pdf: pdfBase64,
-            from: senderFrom,
-            to: destinatarioTo,
-            cc: ccEmails,
-            subject,
-            filename: `cotizacion_${correlativo}.pdf`,
-            bodyHtml
-          })
-        }).catch(err => console.error('[send-quotation] fire-and-forget error:', err));
+      // Cotización al vendedor con el PDF adjunto, solo si hay ítems cotizados con precio (ver src/emails).
+      // Va en segundo plano: no bloquea al usuario ni corre riesgo de timeout.
+      if (tieneItemsCotizados && solicitudCotizada && pdfBase64) {
+        enviarCotizacionConPdf({
+          solicitud: solicitudCotizada,
+          pdfBase64,
+          nombreArchivo: `cotizacion_${solicitudCotizada.correlativo || rfqId}.pdf`,
+          esParcial: estadoFinal === 'Cotizado Parcial' || estadoFinal === 'Pedido Parcial',
+          ...resumenCotizacion
+        });
       }
 
       const esParcial = estadoFinal === 'Cotizado Parcial' || estadoFinal === 'Pedido Parcial';
@@ -388,8 +367,8 @@ function App() {
         <BottomDockProvider>
       {!user ? (
         <Routes>
-          <Route path="/login" element={<Login loginFn={() => signInWithPopup(auth, provider)} />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          {/* El login se muestra en cualquier ruta sin redirigir: así un enlace de correo (/ir/solicitud/:id) sigue vigente al iniciar sesión. */}
+          <Route path="*" element={<Login loginFn={() => signInWithPopup(auth, provider)} />} />
         </Routes>
       ) : (
         <>
@@ -472,6 +451,7 @@ function App() {
                   <Route path="/compras/revision-pedido/:id" element={<RevisionPedidoManual role={role} />} />
                   <Route path="/vendedor/detalle/:id" element={<DetalleRFQVendedor canGenerarPedido={false} role={role} />} />
                   <Route path="/vendedor/pedido-manual/:id" element={<DetallePedidoManual canGenerarPedido={false} role={role} />} />
+                  <Route path="/ir/solicitud/:id" element={<IrASolicitud role={role} />} />
                   <Route path="*" element={<Navigate to="/compras" replace />} />
                 </>
               ) : isVendedor ? (
@@ -487,6 +467,7 @@ function App() {
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   <Route path="/analisis" element={<Navigate to="/vendedor" replace />} />
                   <Route path="/analisis/*" element={<Navigate to="/vendedor" replace />} />
+                  <Route path="/ir/solicitud/:id" element={<IrASolicitud role={role} />} />
                   <Route path="*" element={<Navigate to="/vendedor" replace />} />
                 </>
               ) : isGerente ? (
@@ -502,6 +483,7 @@ function App() {
                   <Route path="/compras" element={<DashboardCompras solicitudes={solicitudes} readOnly />} />
                   <Route path="/pedidos" element={<DashboardPedidos role={role} />} />
                   {rutasAnalisis}
+                  <Route path="/ir/solicitud/:id" element={<IrASolicitud role={role} />} />
                   <Route path="*" element={<Navigate to="/vendedor" replace />} />
                 </>
               ) : isAdmin ? (
@@ -520,6 +502,7 @@ function App() {
                   <Route path="/gestion-oc" element={<GestionOC readOnly />} />
                   {ENABLE_RETACEOS && <Route path="/compras/retaceos" element={<RetaceosView role={role} />} />}
                   {rutasAnalisis}
+                  <Route path="/ir/solicitud/:id" element={<IrASolicitud role={role} />} />
                   <Route path="*" element={<Navigate to="/vendedor" replace />} />
                 </>
               ) : (

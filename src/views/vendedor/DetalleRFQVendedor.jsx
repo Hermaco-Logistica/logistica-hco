@@ -9,8 +9,7 @@ import {
   MessageCircleQuestion
 } from 'lucide-react';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
-import { generarPlantillaNuevoPedido } from '../../utils/emailTemplates';
-import { emailConfig } from '../../config/emailConfig';
+import { enviarEvento } from '../../emails';
 import { getRoleColors } from '../../utils/roleColors';
 import { DetalleRFQVista } from './detalle-rfq/DetalleRFQVista';
 import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
@@ -669,40 +668,22 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
 
       await updateDoc(doc(db, "solicitudes", id), updatePayload);
 
-      // 4. Enviar correo si hubo pedido
+      // 4. Avisar a Compras (ver src/emails)
       if (indicesSeleccionados.length > 0) {
-        const productosCotizadosCount = rfq.productos.filter(p => Number(p.fob || 0) > 0 || p.precio > 0).length;
         const esPedidoParcial = estadoNuevoSolicitud === 'Pedido Parcial';
-
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        
         const vendedorEmail = auth.currentUser?.email || rfq.vendedorEmail || '';
-        const vendedorNombre = auth.currentUser?.displayName || rfq.vendedorNombre || vendedorEmail.split('@')[0];
-
-        const senderFrom = isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : `${vendedorNombre} <${vendedorEmail}>`;
-        const replyToEmail = isLocal ? 'rvides@hermaco.net' : vendedorEmail;
-        const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : (emailConfig.pedidoGenerado?.to?.filter(Boolean).length ? emailConfig.pedidoGenerado.to : ["compras@hermaco.net"]);
-        const ccEmails = isLocal 
-          ? ["rvides@hermaco.net"]
-          : [
-              vendedorEmail,
-              ...(emailConfig.pedidoGenerado?.cc || ["logisticahco@hermaco.net"])
-            ].filter(email => !["oventura@hermaco.net", "dhernandez@hermaco.net"].includes(email?.toLowerCase()));
-
-        const orderDataForEmail = {
+        const pedido = {
+          solicitudId: id,
           correlativoRFQ: rfq.correlativo,
+          tipoSolicitud: rfq.tipo,
           cliente: rfq.cliente,
-          vendedorNombre,
+          vendedorNombre: auth.currentUser?.displayName || rfq.vendedorNombre || vendedorEmail.split('@')[0],
           vendedorEmail,
           esPedidoParcial,
-          totalItemsCotizacion: productosCotizadosCount,
           productos: productosActualizadosParaRFQ,
-          linkOC: linkOC || "",
-          notasPedido: notasPedido || "",
+          linkOC: linkOC || '',
+          notasPedido: notasPedido || ''
         };
-
-        const htmlBody = generarPlantillaNuevoPedido(orderDataForEmail);
-        const tipoTag = esPedidoParcial ? 'Parcial' : 'Completo';
 
         if (archivosAdjuntos.length > 0) {
           setMensajePedido(`Procesando ${archivosAdjuntos.length} adjunto(s)...`);
@@ -710,26 +691,16 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         const attachments = await prepararAdjuntosParaCorreo();
 
         setMensajePedido('Enviando correo...');
-        try {
-          const mailRes = await fetch('/.netlify/functions/send-email-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              from: senderFrom,
-              replyTo: replyToEmail,
-              to: destinatarioTo,
-              cc: ccEmails,
-              subject: `Nuevo Pedido ${tipoTag}: ${rfq.correlativo} - ${rfq.cliente}`,
-              bodyHtml: htmlBody,
-              attachments,
-            })
-          });
-
-          if (!mailRes.ok) throw new Error('Fallo al enviar correo de pedido');
-          await updateDoc(doc(db, 'solicitudes', id), { pedidoEmailEnviado: true });
-        } catch (e) {
-          console.error("Error enviando correo de pedido:", e);
-        }
+        const { ok } = await enviarEvento('pedido_confirmado', { pedido, solicitud: { ...rfq, id } }, { attachments });
+        if (ok) await updateDoc(doc(db, 'solicitudes', id), { pedidoEmailEnviado: true });
+      } else if (indicesVentaPerdida.length > 0) {
+        // Solo ventas perdidas (sin pedido): Compras también debe enterarse.
+        setMensajePedido('Enviando correo...');
+        await enviarEvento('venta_perdida', {
+          solicitud: { ...rfq, id },
+          items: indicesVentaPerdida.map((idx) => productosActualizadosParaRFQ[idx]),
+          registradoPor: auth.currentUser?.email || ''
+        });
       }
 
       alert("Operación completada con éxito.");

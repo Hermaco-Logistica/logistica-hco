@@ -2,6 +2,7 @@ import { doc, runTransaction, Timestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { completarAnclasProrroga, obtenerFechaVencimientoProrroga, obtenerFechasVencimientoProrroga } from './prorrogasCliente';
 import { esSolicitudCerrada, obtenerIndicesAlcanceProrroga, obtenerIndicesItemsActivos } from './cicloSeguimiento';
+import { enviarEvento } from '../emails';
 
 const obtenerHistorial = (solicitud) => {
   const historial = solicitud?.prorrogaCliente?.historial;
@@ -18,6 +19,7 @@ export async function responderProrrogaCliente({ solicitud, prorroga, accion, co
   }
 
   const solicitudRef = doc(db, 'solicitudes', solicitud.id);
+  let resumen = null;
   await runTransaction(db, async (transaction) => {
     const snapshot = await transaction.get(solicitudRef);
     if (!snapshot.exists()) throw new Error('La solicitud ya no existe.');
@@ -69,8 +71,21 @@ export async function responderProrrogaCliente({ solicitud, prorroga, accion, co
         : entrada
     ));
 
-    transaction.update(solicitudRef, {
-      prorrogaCliente: { ...prorrogaActual, ...respuesta, historial: historialActualizado }
-    });
+    const prorrogaFinal = { ...prorrogaActual, ...respuesta, historial: historialActualizado };
+    transaction.update(solicitudRef, { prorrogaCliente: prorrogaFinal });
+    resumen = { solicitudActual, prorrogaFinal, indicesActivos, fechasAprobadas: fechasAprobadas || {} };
   });
+
+  // Aviso al vendedor (ver src/emails). No bloquea ni falla la respuesta si el correo no sale.
+  if (resumen) {
+    enviarEvento('prorroga_respondida', {
+      solicitud: resumen.solicitudActual,
+      prorroga: resumen.prorrogaFinal,
+      accion,
+      comentario: comentario.trim(),
+      respondidoPor,
+      items: resumen.indicesActivos.map((indice) => ({ item: resumen.solicitudActual.productos?.[indice], indice })),
+      fechasAprobadas: resumen.fechasAprobadas
+    });
+  }
 }

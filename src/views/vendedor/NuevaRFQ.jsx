@@ -14,8 +14,7 @@ import {
   normalizarNombreMarca,
 } from '../../services/marcasService';
 import { buscarProductos, guardarProductoLocal } from '../../services/productosSearchService';
-import { generarPlantillaNuevaRFQ } from '../../utils/emailTemplates';
-import { emailConfig } from '../../config/emailConfig';
+import { enviarEvento } from '../../emails';
 import { StickyActionBar } from '../../components/mobile';
 import { useCotizacionesEstancadas } from '../../hooks/useCotizacionesEstancadas';
 import { ModalBloqueoCotizaciones } from '../../components/vendedor/ModalBloqueoCotizaciones';
@@ -422,42 +421,9 @@ export const NuevaRFQ = ({ role }) => {
       // A partir de aquí, si hay un error NO se permite reintentar para evitar duplicados.
       transaccionCompletada = true;
 
-      // --- Envío de correo automático ---
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : (emailConfig.nuevaRFQ.to || []);
-      const ccEmails = isLocal 
-        ? [auth.currentUser.email]
-        : [
-            auth.currentUser.email,
-            ...(emailConfig.nuevaRFQ.cc || [])
-          ].filter(email => !["oventura@hermaco.net", "dhernandez@hermaco.net"].includes(email?.toLowerCase()));
-      
-      const htmlBody = generarPlantillaNuevaRFQ(savedData);
-      
-      let emailExitoso = false;
-      try {
-        const mailRes = await fetch('/.netlify/functions/send-email-notification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: `${auth.currentUser.displayName || auth.currentUser.email.split('@')[0]} <${auth.currentUser.email}>`,
-            replyTo: auth.currentUser.email,
-            to: destinatarioTo,
-            cc: ccEmails,
-            subject: `Nueva RFQ: ${savedData.correlativo} - ${savedData.cliente}`,
-            bodyHtml: htmlBody
-          })
-        });
-        if (mailRes.ok) {
-          emailExitoso = true;
-        } else {
-          const resBody = await mailRes.json().catch(() => ({}));
-          console.warn('[NuevaRFQ] Correo no enviado:', mailRes.status, resBody);
-        }
-      } catch (e) {
-        console.error("Error enviando correo de notificación:", e);
-      }
-      
+      // --- Aviso a Compras (ver src/emails) ---
+      const emailExitoso = (await enviarEvento('solicitud_creada', { solicitud: savedData })).ok;
+
       // Actualizamos la solicitud con el estado del correo (importar updateDoc)
       const { updateDoc } = await import('firebase/firestore');
       await updateDoc(doc(db, 'solicitudes', savedData.id), { emailEnviado: emailExitoso });

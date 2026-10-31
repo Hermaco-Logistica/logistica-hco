@@ -70,6 +70,28 @@ export const TEXTO_TONO = {
 };
 
 /**
+ * Mismos tonos en hexadecimal para los correos (el correo no admite clases de Tailwind).
+ * Debe mantenerse alineado con TONOS: fondo pastel y texto oscuro de la misma familia.
+ */
+export const PALETA_CORREO = {
+  neutral: { fondo: '#f1f5f9', texto: '#475569' },
+  suave: { fondo: '#f8fafc', texto: '#64748b' },
+  apagado: { fondo: '#f1f5f9', texto: '#64748b' },
+  oscuro: { fondo: '#1e293b', texto: '#cbd5e1' },
+  exito: { fondo: '#d1fae5', texto: '#065f46' },
+  info: { fondo: '#e0f2fe', texto: '#0369a1' },
+  azul: { fondo: '#dbeafe', texto: '#1d4ed8' },
+  indigo: { fondo: '#e0e7ff', texto: '#4338ca' },
+  aviso: { fondo: '#fef3c7', texto: '#92400e' },
+  peligro: { fondo: '#ffe4e6', texto: '#be123c' },
+  naranja: { fondo: '#ffedd5', texto: '#c2410c' },
+  violeta: { fondo: '#ede9fe', texto: '#6d28d9' },
+  morado: { fondo: '#f3e8ff', texto: '#7e22ce' },
+  turquesa: { fondo: '#ccfbf1', texto: '#115e59' },
+  amarillo: { fondo: '#fef9c3', texto: '#854d0e' }
+};
+
+/**
  * Tres densidades con el mismo lenguaje visual:
  * compacta (celdas de tabla), normal (tarjetas y listas), grande (cabeceras de detalle).
  * `icono` es el tamaño en px del ícono dentro de la etiqueta.

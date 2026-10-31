@@ -12,7 +12,7 @@ import { MobileBadge } from '../../components/mobile';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
 import { usePersistedState } from '../../hooks/usePersistedState';
 import { normalizarBusqueda } from '../../utils/normalizers';
-import { generarPlantillaAnulacion } from '../../utils/emailTemplates';
+import { enviarEvento } from '../../emails';
 import { pdf } from '@react-pdf/renderer';
 import CotizacionPDF from '../../components/CotizacionPDF';
 import { clasificarSolicitud, etiquetaResultadoSolicitud, RESULTADOS_SOLICITUD } from '../../utils/clasificarSolicitud';
@@ -84,16 +84,6 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       // --- Enviar correo de anulación al vendedor ---
       const rfqData = modalAnulacionGlobal.rfqData;
       if (rfqData.vendedorEmail) {
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : [rfqData.vendedorEmail];
-        const ccEmails = isLocal 
-          ? ["rvides@hermaco.net"] 
-          : [auth.currentUser.email, "logisticahco@hermaco.net"].filter(e => e && !["oventura@hermaco.net", "dhernandez@hermaco.net"].includes(e.toLowerCase()));
-        
-        const senderFrom = isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : `${auth.currentUser.displayName || auth.currentUser.email?.split('@')[0]} <${auth.currentUser.email}>`;
-        
-        const bodyHtml = generarPlantillaAnulacion(rfqData, modalAnulacionGlobal.motivo.trim(), auth.currentUser.email, false);
-        
         let pdfBase64 = null;
         try {
           const pdfDoc = <CotizacionPDF cotizacionData={{ ...rfqData, estado: 'Anulado', productos: updatedProductos }} />;
@@ -110,27 +100,12 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
           console.error("Error generando PDF para anulación:", err);
         }
 
-        try {
-          const payload = {
-            from: senderFrom,
-            replyTo: auth.currentUser.email,
-            to: destinatarioTo,
-            cc: ccEmails,
-            subject: `Anulación: ${rfqData.correlativo} - ${rfqData.cliente}`,
-            bodyHtml
-          };
-          if (pdfBase64) {
-            payload.attachments = [{ content: pdfBase64, nombre: `Anulacion_${rfqData.correlativo}.pdf` }];
-          }
-
-          await fetch('/.netlify/functions/send-email-notification', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-        } catch (e) {
-          console.error("Error enviando correo de anulación:", e);
-        }
+        await enviarEvento('anulacion', {
+          solicitud: rfqData,
+          motivo: modalAnulacionGlobal.motivo.trim(),
+          anuladoPor: auth.currentUser.email,
+          esParcial: false,
+        }, { attachments: pdfBase64 ? [{ content: pdfBase64, nombre: `Anulacion_${rfqData.correlativo}.pdf` }] : undefined });
       }
 
       alert('Solicitud anulada correctamente');

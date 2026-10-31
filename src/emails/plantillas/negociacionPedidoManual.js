@@ -1,8 +1,15 @@
-import { db } from '../firebase';
+import { db } from '../../firebase';
 import { collection, query, orderBy, getDocs } from 'firebase/firestore';
-import { sintetizarMensajesLegados } from '../hooks/useHiloItem';
+import { sintetizarMensajesLegados } from '../../hooks/useHiloItem';
+import { boton, cita, etiquetaCorreo, layout, subtitulo } from '../html/bloques';
+import { urlSolicitud } from '../html/enlaces';
+import { esc, escMultilinea } from '../html/texto';
 
-export const construirCorreoActualizacion = async ({ pedido, items, indicesModificados, rol, comentarioGeneral }) => {
+/** Tono de la etiqueta de cada ítem según su estado en la negociación. */
+const TONO_ESTADO_ITEM = { APROBADO: 'exito', 'NUEVA OFERTA': 'aviso', DENEGADO: 'peligro', RECHAZADO: 'peligro', 'VENTA PERDIDA': 'naranja', MODIFICADO: 'neutral' };
+
+/** Correo de la negociación de un Pedido Manual: ítems modificados con su historial de correspondencia. */
+export const negociacionPedidoManual = async ({ pedido, items, indicesModificados, rol, comentarioGeneral }) => {
   const qMensajes = query(collection(db, `solicitudes/${pedido.id || pedido.idCotizacion}/mensajes`), orderBy("createdAt", "asc"));
   const snapMensajes = await getDocs(qMensajes);
   const todosMensajesDB = snapMensajes.docs.map(d => d.data());
@@ -57,10 +64,10 @@ export const construirCorreoActualizacion = async ({ pedido, items, indicesModif
           historialHtml += `
             <div style="margin-bottom: 10px; background-color: #f8fafc; border-left: 3px solid #cbd5e1; padding: 10px 14px; border-radius: 0 4px 4px 0;">
               <div style="font-size: 11px; color: #64748b; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #edf2f7;">
-                <strong style="color: #1e293b;">De:</strong> ${autorNombre}${rolTexto}${fechaStr ? ` &nbsp;|&nbsp; <span>${fechaStr}</span>` : ''}
+                <strong style="color: #1e293b;">De:</strong> ${esc(autorNombre)}${esc(rolTexto)}${fechaStr ? ` &nbsp;|&nbsp; <span>${fechaStr}</span>` : ''}
               </div>
               <div style="font-size: 12px; color: #334155; line-height: 1.5;">
-                ${m.texto}
+                ${escMultilinea(m.texto)}
               </div>
             </div>
           `;
@@ -78,7 +85,7 @@ export const construirCorreoActualizacion = async ({ pedido, items, indicesModif
           historialHtml += `
             <div style="margin-bottom: 10px; background-color: #f8fafc; border-left: 3px solid #94a3b8; padding: 10px 14px; border-radius: 0 4px 4px 0;">
               <div style="font-size: 11px; color: #64748b; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #edf2f7;">
-                <strong style="color: #1e293b;">De:</strong> ${autorNombre}${rolTexto}${fechaStr ? ` &nbsp;|&nbsp; <span>${fechaStr}</span>` : ''}
+                <strong style="color: #1e293b;">De:</strong> ${esc(autorNombre)}${esc(rolTexto)}${fechaStr ? ` &nbsp;|&nbsp; <span>${fechaStr}</span>` : ''}
                 <span style="float: right; font-size: 10px; text-transform: uppercase; color: #475569; letter-spacing: 0.5px; font-weight: 600;">Propuesta de ajuste</span>
               </div>
               <div style="font-size: 12px; color: #334155; line-height: 1.5;">
@@ -109,20 +116,20 @@ export const construirCorreoActualizacion = async ({ pedido, items, indicesModif
                     </td>
                   </tr>` : ''}
                 </table>
-                ${m.texto ? `<div style="margin-top: 6px; font-size: 12px; color: #475569; font-style: italic;">"${m.texto}"</div>` : ''}
+                ${m.texto ? `<div style="margin-top: 6px; font-size: 12px; color: #475569; font-style: italic;">"${escMultilinea(m.texto)}"</div>` : ''}
               </div>
             </div>
           `;
         } else if (m.tipo === 'aceptacion' || m.tipo === 'evento') {
-          let textoEvento = m.texto || '';
+          let textoEvento = escMultilinea(m.texto || '');
           if (m.tipo === 'evento') {
             const acc = { 'aprobar': 'aprobó el ítem', 'ajustar': 'envió una propuesta de ajuste', 'aceptar': 'aceptó los términos', 'contraofertar': 'envió una contraoferta', 'denegar': 'denegó el ítem', 'rechazar': 'rechazó el ítem', 'deshacer': 'deshizo su último cambio' }[m.accion] || m.accion;
-            textoEvento = `<strong>${autorNombre}</strong> ${acc}.`;
+            textoEvento = `<strong>${esc(autorNombre)}</strong> ${esc(acc)}.`;
           }
           historialHtml += `
             <div style="margin-bottom: 10px; background-color: #f8fafc; border-left: 3px solid #64748b; padding: 10px 14px; border-radius: 0 4px 4px 0;">
               <div style="font-size: 11px; color: #64748b; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #edf2f7;">
-                <strong style="color: #1e293b;">De:</strong> ${autorNombre}${rolTexto}${fechaStr ? ` &nbsp;|&nbsp; <span>${fechaStr}</span>` : ''}
+                <strong style="color: #1e293b;">De:</strong> ${esc(autorNombre)}${esc(rolTexto)}${fechaStr ? ` &nbsp;|&nbsp; <span>${fechaStr}</span>` : ''}
               </div>
               <div style="font-size: 12px; color: #1e293b; line-height: 1.5;">
                 ✓ <strong>Aviso:</strong> ${textoEvento}
@@ -149,8 +156,8 @@ export const construirCorreoActualizacion = async ({ pedido, items, indicesModif
       infoRechazoHtml = `
         <div style="margin-top: 10px; background-color: #fef2f2; border: 1px solid #fecaca; border-left: 3px solid #ef4444; padding: 10px 14px; border-radius: 0 4px 4px 0;">
           <div style="font-size: 11px; font-weight: bold; color: #991b1b; text-transform: uppercase; margin-bottom: 2px;">Venta Perdida</div>
-          <div style="font-size: 12px; color: #b91c1c;"><strong>Motivo:</strong> ${motivoNombre}</div>
-          ${comentario ? `<div style="font-size: 12px; color: #475569; font-style: italic; margin-top: 4px;">"${comentario}"</div>` : ''}
+          <div style="font-size: 12px; color: #b91c1c;"><strong>Motivo:</strong> ${esc(motivoNombre)}</div>
+          ${comentario ? `<div style="font-size: 12px; color: #475569; font-style: italic; margin-top: 4px;">"${escMultilinea(comentario)}"</div>` : ''}
         </div>
       `;
     } else if (p.estadoItem === 'Cancelado' || p.estadoItem === 'Rechazado' || p.estadoItem === 'Denegado') {
@@ -159,7 +166,7 @@ export const construirCorreoActualizacion = async ({ pedido, items, indicesModif
         infoRechazoHtml = `
           <div style="margin-top: 10px; background-color: #fff1f2; border: 1px solid #ffe4e6; border-left: 3px solid #e11d48; padding: 10px 14px; border-radius: 0 4px 4px 0;">
             <div style="font-size: 11px; font-weight: bold; color: #9f1239; text-transform: uppercase; margin-bottom: 2px;">Motivo de ${p.estadoItem === 'Denegado' ? 'Denegación' : 'Rechazo'}</div>
-            <div style="font-size: 12px; color: #be123c;">${motivo}</div>
+            <div style="font-size: 12px; color: #be123c;">${escMultilinea(motivo)}</div>
           </div>
         `;
       }
@@ -169,9 +176,9 @@ export const construirCorreoActualizacion = async ({ pedido, items, indicesModif
       <div style="margin-bottom: 15px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background-color: #ffffff;">
         <table style="width: 100%; background-color: #f8fafc; border-bottom: 1px solid #e2e8f0; padding: 12px 15px; border-collapse: collapse;">
           <tr>
-            <td style="font-size: 13px; font-weight: bold; color: #0f172a;">${p.descripcion || p.desc} (x${p.cant})</td>
+            <td style="font-size: 13px; font-weight: bold; color: #0f172a;">${esc(p.descripcion || p.desc)} (x${esc(p.cant)})</td>
             <td style="text-align: right;">
-              <span style="color: #475569; border: 1px solid #cbd5e1; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; letter-spacing: 0.5px;">${estadoLabel}</span>
+              ${etiquetaCorreo(estadoLabel, TONO_ESTADO_ITEM[estadoLabel] || 'neutral')}
             </td>
           </tr>
         </table>
@@ -213,27 +220,19 @@ export const construirCorreoActualizacion = async ({ pedido, items, indicesModif
 
   const esRolCompras = rol === 'compras' || rol === 'comprador';
   const hayPedidos = pedido.estado === 'Pedido' || pedido.estado === 'Pedido Parcial';
-  const tituloHeader = esRolCompras 
-    ? 'Actualización de Pedido Manual' 
+  const titulo = esRolCompras
+    ? 'Actualización de Pedido Manual'
     : (hayPedidos ? 'Pedido Manual Confirmado' : 'Actualización de Pedido Manual');
 
-  return `
-    <div style="font-family: Arial, sans-serif; color: #334155; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; background-color: #ffffff;">
-      <div style="padding: 20px; text-align: center; border-bottom: 1px solid #e2e8f0; background-color: #f8fafc;">
-        ${rol === 'vendedor' ? '<p style="margin: 0; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #64748b; letter-spacing: 1px;">Sistema Logística Hermaco</p>' : ''}
-        <h2 style="color: #0f172a; margin: ${rol === 'vendedor' ? '8px 0 0' : '0'}; font-size: 18px; font-weight: bold; letter-spacing: -0.5px;">${tituloHeader}</h2>
-      </div>
-      <div style="padding: 20px;">
-        ${rol === 'vendedor' ? `<p style="margin: 4px 0; font-size: 14px;"><strong>Vendedor:</strong> ${pedido.vendedorNombre}</p>` : ''}
-        <p style="margin: 4px 0; font-size: 14px;"><strong>Correlativo:</strong> ${pedido.correlativo}</p>
-        <p style="margin: 4px 0; font-size: 14px;"><strong>Cliente:</strong> ${pedido.cliente}</p>
-        ${comentarioGeneral ? `<div style="margin-top: 16px; padding: 12px 16px; border-left: 3px solid #cbd5e1; background:#f8fafc; color:#334155; font-size: 13px;"><strong>Comentarios:</strong><br/><span style="color:#475569;">${comentarioGeneral}</span></div>` : ''}
-        
-        <h3 style="margin-top: 24px; font-size: 12px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; font-weight: bold; letter-spacing: 0.5px;">Detalle de Modificaciones</h3>
-        <div style="margin-top: 16px;">
-          ${detallesHtml}
-        </div>
-      </div>
-    </div>
-  `;
+  return layout({
+    categoria: esRolCompras ? 'Respuesta de Compras' : `Vendedor: ${pedido.vendedorNombre || pedido.vendedorEmail || ''}`,
+    titulo: `${titulo} · ${pedido.correlativo}`,
+    acento: hayPedidos ? 'exito' : 'info',
+    etiquetas: [etiquetaCorreo(pedido.cliente || 'Cliente', 'neutral')],
+    cuerpo: `
+      ${cita({ titulo: 'Comentarios', texto: comentarioGeneral })}
+      ${subtitulo('Detalle de modificaciones')}
+      ${detallesHtml}
+      ${boton({ texto: 'Ir al sitio', url: urlSolicitud(pedido) })}`
+  });
 };

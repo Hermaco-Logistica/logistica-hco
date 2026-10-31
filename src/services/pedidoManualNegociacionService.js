@@ -1,6 +1,6 @@
 import { db } from '../firebase';
 import { runTransaction, doc, collection, serverTimestamp, Timestamp, updateDoc, getDoc, getDocs } from 'firebase/firestore';
-import { construirCorreoActualizacion } from '../utils/emailNegociacion';
+import { enviarEvento } from '../emails';
 import { calcularFechaEstimada } from '../utils/itemHelpers';
 
 export class ConflictoVersionError extends Error {
@@ -735,55 +735,19 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral, 
   if (payloadParaCorreo) {
     try {
       const { solicitud, indicesModificados } = payloadParaCorreo;
-      const htmlBody = await construirCorreoActualizacion({
+      const evento = actorRolNormalizado === 'compras' ? 'negociacion_compras' : 'negociacion_vendedor';
+      const { ok } = await enviarEvento(evento, {
         pedido: solicitud,
         items: solicitud.productos,
         indicesModificados,
         rol: actorRolNormalizado,
-        comentarioGeneral
+        comentarioGeneral,
+        actor: { email: solicitud.vendedorEmail || '', nombre: solicitud.vendedorNombre }
       });
-      
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const vendedorEmail = solicitud.vendedorEmail || '';
-      const vendedorNombre = solicitud.vendedorNombre || vendedorEmail.split('@')[0] || '';
-      
-      let destinatarioTo, ccEmails, senderFrom, replyTo;
-      
-      if (actorRolNormalizado === 'compras') {
-        destinatarioTo = isLocal ? ['rvides@hermaco.net'] : [vendedorEmail];
-        ccEmails = isLocal ? [] : ['compras@hermaco.net'];
-        senderFrom = 'Compras Hermaco <compras@hermaco.net>';
-        replyTo = 'compras@hermaco.net';
-      } else {
-        senderFrom = isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : `${vendedorNombre} <${vendedorEmail}>`;
-        replyTo = vendedorEmail;
-        destinatarioTo = isLocal ? ["rvides@hermaco.net"] : ["compras@hermaco.net"];
-        ccEmails = [];
-      }
-
-      const asunto = actorRolNormalizado === 'compras' 
-        ? `Actualización Pedido Manual: ${solicitud.correlativo} - ${solicitud.cliente}`
-        : ((solicitud.estado === 'Pedido' || solicitud.estado === 'Pedido Parcial')
-          ? `Pedido Manual Confirmado: ${solicitud.correlativo} - ${solicitud.cliente}`
-          : `Actualización Pedido Manual: ${solicitud.correlativo} - ${solicitud.cliente}`);
-
-      const res = await fetch('/.netlify/functions/send-email-notification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: senderFrom,
-          replyTo,
-          to: destinatarioTo,
-          cc: ccEmails,
-          subject: asunto,
-          bodyHtml: htmlBody
-        })
-      });
-      
-      if (!res.ok) {
+      if (!ok) {
         throw new Error('No se pudo enviar el correo');
       }
-      
+
       if (solicitud.notificacionPendienteEmail) {
         // Clear flag if it previously failed but now succeeded
         await updateDoc(docRef, { notificacionPendienteEmail: false }).catch(() => {});
@@ -813,54 +777,18 @@ export const reenviarCorreoPendiente = async ({ solicitudId, actor }) => {
   const rolNotif = ultimaNotificacion.rol || actor.rol;
   const rolNormalizado = (rolNotif === 'comprador' || rolNotif === 'compras') ? 'compras' : rolNotif;
 
-  const htmlBody = await construirCorreoActualizacion({
+  const evento = rolNormalizado === 'compras' ? 'negociacion_compras' : 'negociacion_vendedor';
+  const { ok } = await enviarEvento(evento, {
     pedido: solicitud,
     items: solicitud.productos,
     indicesModificados: ultimaNotificacion.idxs || [],
     rol: rolNormalizado,
-    comentarioGeneral: ultimaNotificacion.comentarioGeneral || ''
+    comentarioGeneral: ultimaNotificacion.comentarioGeneral || '',
+    actor: { email: solicitud.vendedorEmail || '', nombre: solicitud.vendedorNombre }
   });
-  
-  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const vendedorEmail = solicitud.vendedorEmail || '';
-  const vendedorNombre = solicitud.vendedorNombre || vendedorEmail.split('@')[0] || '';
-  
-  let destinatarioTo, ccEmails, senderFrom, replyTo;
-  
-  if (rolNormalizado === 'compras') {
-    destinatarioTo = isLocal ? ['rvides@hermaco.net'] : [vendedorEmail];
-    ccEmails = isLocal ? [] : ['compras@hermaco.net'];
-    senderFrom = 'Compras Hermaco <compras@hermaco.net>';
-    replyTo = 'compras@hermaco.net';
-  } else {
-    senderFrom = isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : `${vendedorNombre} <${vendedorEmail}>`;
-    replyTo = vendedorEmail;
-    destinatarioTo = isLocal ? ["rvides@hermaco.net"] : ["compras@hermaco.net"];
-    ccEmails = [];
-  }
-
-  const asunto = rolNormalizado === 'compras' 
-    ? `Actualización Pedido Manual: ${solicitud.correlativo} - ${solicitud.cliente}`
-    : ((solicitud.estado === 'Pedido' || solicitud.estado === 'Pedido Parcial')
-      ? `Pedido Manual Confirmado: ${solicitud.correlativo} - ${solicitud.cliente}`
-      : `Actualización Pedido Manual: ${solicitud.correlativo} - ${solicitud.cliente}`);
-
-  const res = await fetch('/.netlify/functions/send-email-notification', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      from: senderFrom,
-      replyTo,
-      to: destinatarioTo,
-      cc: ccEmails,
-      subject: asunto,
-      bodyHtml: htmlBody
-    })
-  });
-  
-  if (!res.ok) {
+  if (!ok) {
     throw new Error('No se pudo reenviar el correo');
   }
-  
+
   await updateDoc(docRef, { notificacionPendienteEmail: false });
 };

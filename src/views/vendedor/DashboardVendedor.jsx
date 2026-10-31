@@ -12,8 +12,7 @@ import { usePersistedState } from '../../hooks/usePersistedState';
 import { auth } from '../../firebase';
 import { db } from '../../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { generarPlantillaNuevaRFQ, generarPlantillaNuevoPedido } from '../../utils/emailTemplates';
-import { emailConfig } from '../../config/emailConfig';
+import { enviarEvento } from '../../emails';
 import { clasificarSolicitud, etiquetaResultadoSolicitud, RESULTADOS_SOLICITUD } from '../../utils/clasificarSolicitud';
 import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
 import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
@@ -92,38 +91,14 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   const [reenviandoPedidoId, setReenviandoPedidoId] = useState(null);
 
   const handleReenviarCorreo = async (s) => {
+    setReenviandoId(s.id);
     try {
-      setReenviandoId(s.id);
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const destinatarioTo = isLocal ? ["rvides@hermaco.net"] : (emailConfig.nuevaRFQ.to || []);
-      const ccEmails = isLocal 
-        ? [s.vendedorEmail]
-        : [
-            s.vendedorEmail,
-            ...(emailConfig.nuevaRFQ.cc || [])
-          ].filter(email => !["oventura@hermaco.net", "dhernandez@hermaco.net"].includes(email?.toLowerCase()));
-      
-      const htmlBody = generarPlantillaNuevaRFQ(s);
-      
-      const mailRes = await fetch('/.netlify/functions/send-email-notification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: `${s.vendedorNombre || s.vendedorEmail.split('@')[0]} <${s.vendedorEmail}>`,
-          replyTo: s.vendedorEmail,
-          to: destinatarioTo,
-          cc: ccEmails,
-          subject: `Nueva RFQ: ${s.correlativo} - ${s.cliente}`,
-          bodyHtml: htmlBody
-        })
-      });
-
-      if (!mailRes.ok) throw new Error("Fallo al enviar correo");
-      
+      const { ok } = await enviarEvento('solicitud_creada', { solicitud: s });
+      if (!ok) throw new Error('Fallo al enviar correo');
       await updateDoc(doc(db, 'solicitudes', s.id), { emailEnviado: true });
-      alert("Correo reenviado exitosamente");
+      alert('Correo reenviado exitosamente');
     } catch (e) {
-      alert("No se pudo reenviar el correo. Intenta de nuevo.");
+      alert('No se pudo reenviar el correo. Intenta de nuevo.');
       console.error(e);
     } finally {
       setReenviandoId(null);
@@ -131,45 +106,23 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   };
 
   const handleReenviarCorreoPedido = async (s) => {
+    setReenviandoPedidoId(s.id);
     try {
-      setReenviandoPedidoId(s.id);
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
       const vendedorEmail = auth.currentUser?.email || s.vendedorEmail || '';
-      const vendedorNombre = auth.currentUser?.displayName || s.vendedorNombre || vendedorEmail.split('@')[0];
-      const esPedidoParcial = s.estado === 'Pedido Parcial';
-      const destinatarioTo = isLocal
-        ? ['rvides@hermaco.net']
-        : (emailConfig.pedidoGenerado?.to?.filter(Boolean).length ? emailConfig.pedidoGenerado.to : ['compras@hermaco.net']);
-      const ccEmails = isLocal
-        ? ['rvides@hermaco.net']
-        : [vendedorEmail, ...(emailConfig.pedidoGenerado?.cc || [])].filter(Boolean).filter(email => !["oventura@hermaco.net", "dhernandez@hermaco.net"].includes(email?.toLowerCase()));
-      const htmlBody = generarPlantillaNuevoPedido({
+      const pedido = {
+        solicitudId: s.id,
         correlativoRFQ: s.correlativo,
+        tipoSolicitud: s.tipo,
         cliente: s.cliente,
-        vendedorNombre,
+        vendedorNombre: auth.currentUser?.displayName || s.vendedorNombre || vendedorEmail.split('@')[0],
         vendedorEmail,
-        esPedidoParcial,
-        totalItemsCotizacion: s.productos?.filter((p) => Number(p.fob || 0) > 0 || Number(p.precio || 0) > 0).length || 0,
+        esPedidoParcial: s.estado === 'Pedido Parcial',
         productos: s.productos || [],
         linkOC: s.linkOC || '',
-        notasPedido: s.notasPedido || '',
-        archivoAdjunto: s.archivoAdjunto || null,
-      });
-      const tipoTag = esPedidoParcial ? 'Parcial' : 'Completo';
-      const mailRes = await fetch('/.netlify/functions/send-email-notification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : `${vendedorNombre} <${vendedorEmail}>`,
-          replyTo: isLocal ? 'rvides@hermaco.net' : vendedorEmail,
-          to: destinatarioTo,
-          cc: ccEmails,
-          subject: `Nuevo Pedido ${tipoTag}: ${s.correlativo} - ${s.cliente}`,
-          bodyHtml: htmlBody,
-        })
-      });
-
-      if (!mailRes.ok) throw new Error('Fallo al enviar correo de pedido');
+        notasPedido: s.notasPedido || ''
+      };
+      const { ok } = await enviarEvento('pedido_confirmado', { pedido, solicitud: s });
+      if (!ok) throw new Error('Fallo al enviar correo de pedido');
       await updateDoc(doc(db, 'solicitudes', s.id), { pedidoEmailEnviado: true });
       alert('Correo de pedido reenviado exitosamente');
     } catch (e) {
@@ -179,8 +132,6 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       setReenviandoPedidoId(null);
     }
   };
-
-
 
   // Obtener listas únicas de vendedores y estados para los filtros selectores
   const vendedoresDisponibles = Array.from(new Set(solicitudes.map(s => s.vendedorNombre).filter(Boolean)));

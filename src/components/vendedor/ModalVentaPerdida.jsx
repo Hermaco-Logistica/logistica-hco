@@ -8,6 +8,7 @@ import {
 } from '../../constants/motivosVentaPerdidaData';
 import { auth } from '../../firebase';
 import { Etiqueta } from '../../components/Etiqueta';
+import { enviarEvento } from '../../emails';
 
 export const ModalVentaPerdida = ({
   isOpen,
@@ -67,12 +68,22 @@ export const ModalVentaPerdida = ({
       setErrorMsg('');
 
       const usuarioActual = auth.currentUser;
-      await registrarVentaPerdida({
+      const resultado = await registrarVentaPerdida({
         solicitud,
         motivo: motivoSeleccionado,
         comentario,
         usuario: usuarioActual,
         itemsSeleccionados: esPorItems ? itemsSeleccionados : null
+      });
+
+      // Aviso a Compras (ver src/emails). No bloquea ni falla el registro si el correo no sale.
+      enviarEvento('venta_perdida', {
+        solicitud,
+        items: (resultado.indicesAfectados || []).map((indice) => ({
+          ...solicitud.productos?.[indice],
+          motivoVentaPerdida: { nombre: motivoSeleccionado.nombre, comentario: comentario.trim() }
+        })),
+        registradoPor: usuarioActual?.email || ''
       });
 
       if (onExito) {

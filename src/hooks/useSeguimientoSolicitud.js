@@ -13,6 +13,7 @@ import {
   obtenerResumenSeguimientoCliente
 } from '../utils/seguimientoCliente';
 import { crearSolicitudProrroga } from '../utils/prorrogasCliente';
+import { enviarEvento } from '../emails';
 
 const PLAN_VACIO = { revision: [], prorroga: [], excluidos: [], hayEleccion: false };
 
@@ -76,12 +77,13 @@ export const useSeguimientoSolicitud = ({
     setGuardando(true);
     try {
       const cambios = {};
+      const itemsRevision = [];
       if (planModal.revision.length > 0) {
         const productosActualizados = [...productos];
         planModal.revision.forEach((indice) => {
           const producto = productosActualizados[indice];
           if (!producto) return;
-          productosActualizados[indice] = {
+          const actualizado = {
             ...producto,
             seguimientoCliente: crearSeguimientoEnRevision({
               comentario,
@@ -92,6 +94,13 @@ export const useSeguimientoSolicitud = ({
               seguimientoPrevio: producto.seguimientoCliente
             })
           };
+          productosActualizados[indice] = actualizado;
+          itemsRevision.push({
+            item: actualizado,
+            indice,
+            numero: actualizado.seguimientoCliente?.cantidadRevisiones,
+            hasta: actualizado.seguimientoCliente?.fechaVencimientoRevision
+          });
         });
         cambios.productos = productosActualizados;
       }
@@ -115,6 +124,28 @@ export const useSeguimientoSolicitud = ({
         prorroga: planModal.prorroga
       });
       await updateDoc(doc(db, 'solicitudes', id), cambios);
+
+      // Avisos a Compras (ver src/emails). No bloquean ni fallan el registro si el correo no sale.
+      const solicitudCorreo = { ...solicitud, id };
+      if (itemsRevision.length > 0) {
+        enviarEvento('revision_registrada', {
+          solicitud: solicitudCorreo,
+          items: itemsRevision,
+          comentario,
+          registradoPor: auth.currentUser?.email || ''
+        });
+      }
+      if (cambios.prorrogaCliente) {
+        enviarEvento('prorroga_solicitada', {
+          solicitud: solicitudCorreo,
+          prorroga: cambios.prorrogaCliente,
+          items: planModal.prorroga.map((indice) => ({
+            item: productos[indice],
+            indice,
+            vence: obtenerFechaLimiteSeguimientoItem(productos[indice], solicitud, indice)
+          }))
+        });
+      }
       setModalAbierto(false);
       setPlanModal(PLAN_VACIO);
       setItemsSeleccionados({});

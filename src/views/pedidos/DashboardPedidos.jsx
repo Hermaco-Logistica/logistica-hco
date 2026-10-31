@@ -17,7 +17,7 @@ import {
 import { itemPedidoConfirmado } from '../../utils/itemHelpers';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { usePersistedState } from '../../hooks/usePersistedState';
-import { generarPlantillaOCAsignada } from '../../utils/emailTemplates';
+import { enviarEvento } from '../../emails';
 import { interpretarEstadoLogistico } from '../../utils/interpretarEstadoLogistico';
 import { Etiqueta } from '../../components/Etiqueta';
 
@@ -678,10 +678,7 @@ export const DashboardPedidos = ({ role }) => {
         console.log(`[DashboardPedidos] Solicitud ${rfqId} actualizada correctamente`);
       }
 
-      // ── Correos por vendedor ──────────────────────────────────────────────
-      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      const CC_FIJOS = ['logisticahco@hermaco.net'];
-
+      // ── Correos por vendedor (ver src/emails) ─────────────────────────────
       // Agrupar items por vendedorEmail
       const porVendedor = itemsAProcesar.reduce((acc, item) => {
         const email = item.vendedorEmail || 'sin-email';
@@ -691,27 +688,13 @@ export const DashboardPedidos = ({ role }) => {
       }, {});
 
       await Promise.allSettled(
-        Object.entries(porVendedor).map(async ([vendEmail, { items: itemsV }]) => {
-          const to = isLocal ? ['rvides@hermaco.net'] : [vendEmail].filter(Boolean);
-          const cc = isLocal ? ['rvides@hermaco.net'] : CC_FIJOS;
-          if (!to.length || to[0] === 'sin-email') return;
-
-          try {
-            await fetch('/.netlify/functions/send-email-notification', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                from: isLocal ? 'rvides@hermaco.net <rvides@hermaco.net>' : 'compras@hermaco.net <compras@hermaco.net>',
-                to,
-                cc,
-                subject: `OC Asignada ${numOC} — Tus productos ya tienen orden de compra`,
-                bodyHtml: generarPlantillaOCAsignada({ numOC, itemsVendedor: itemsV }),
-              }),
-            });
-          } catch (e) {
-            console.error(`Error enviando correo a ${vendEmail}:`, e);
-          }
-        })
+        Object.entries(porVendedor)
+          .filter(([vendEmail]) => vendEmail !== 'sin-email')
+          .map(([vendEmail, { nombre, items: itemsV }]) => enviarEvento('oc_asignada', {
+            solicitud: { vendedorEmail: vendEmail, vendedorNombre: nombre },
+            numOC,
+            itemsVendedor: itemsV
+          }))
       );
       // ─────────────────────────────────────────────────────────────────────
 
