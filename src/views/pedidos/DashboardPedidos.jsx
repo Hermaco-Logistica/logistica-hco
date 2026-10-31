@@ -1291,14 +1291,8 @@ export const DashboardPedidos = ({ role }) => {
 
                 {/* Resumen de venta y cantidades */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
-                    <Package size={13} className="text-slate-500" />
-                    <span className="font-mono font-black text-[11px] text-slate-700">{item.cantidad || item.cant} {((item.cantidad || item.cant) === 1) ? 'ud' : 'uds'}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-emerald-50/50 px-2 py-1 rounded-md border border-emerald-100/50">
-                    <DollarSign size={13} className="text-emerald-500" />
-                    <span className="font-mono font-black text-[11px] text-emerald-900">${ventaTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
+                  <Etiqueta tono="neutral" tamano="normal" mono icono={Package}>{item.cantidad || item.cant} {((item.cantidad || item.cant) === 1) ? 'ud' : 'uds'}</Etiqueta>
+                  <Etiqueta tono="exito" tamano="normal" mono icono={DollarSign}>${ventaTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Etiqueta>
                 </div>
 
                 {/* Footer: OC y Countdown */}

@@ -734,7 +734,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                     {s.estado !== 'Venta Perdida' && (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
                       <div className="flex items-center gap-1">
                           {resultado !== 'En proceso' && (
-                            <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                            <Etiqueta tono="apagado" sinIcono>{resultado}</Etiqueta>
                           )}
                           {tieneDecisionSolicitud(s) && (
                             <button
@@ -780,20 +780,12 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                 {/* Resumen minimalista: Totales */}
                 {s.tipo === 'Pedido Manual' ? (
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="flex items-center gap-1.5 bg-yellow-50/50 px-2 py-1 rounded-md border border-yellow-100/50">
-                      <span className="font-mono font-black text-[11px] text-yellow-900">Total: {formatearTotal(s)}</span>
-                    </div>
+                    <Etiqueta tono="amarillo" tamano="normal" mono>Total: {formatearTotal(s)}</Etiqueta>
                   </div>
                 ) : itemsConPrecio.length > 0 ? (
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="flex items-center gap-1.5 bg-emerald-50/50 px-2 py-1 rounded-md border border-emerald-100/50">
-                      <Plane size={13} className="text-emerald-500" />
-                      <span className="font-mono font-black text-[11px] text-emerald-900">{totalA}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-blue-50/50 px-2 py-1 rounded-md border border-blue-100/50">
-                      <Ship size={13} className="text-blue-500" />
-                      <span className="font-mono font-black text-[11px] text-blue-900">{totalM}</span>
-                    </div>
+                    <Etiqueta tono="exito" tamano="normal" mono icono={Plane}>{totalA}</Etiqueta>
+                    <Etiqueta tono="azul" tamano="normal" mono icono={Ship}>{totalM}</Etiqueta>
                   </div>
                 ) : (
                   <div className="mb-4 text-[10px] font-bold text-slate-400 italic flex items-center gap-1">
@@ -1071,7 +1063,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                       {s.estado !== 'Venta Perdida' && (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
                           <div className="flex items-center gap-1">
                             {resultado !== 'En proceso' && (
-                              <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                              <Etiqueta tono="apagado" sinIcono>{resultado}</Etiqueta>
                             )}
                             {tieneDecisionSolicitud(s) && (
                               <button

@@ -617,7 +617,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                     {s.estado !== 'Venta Perdida' && (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
                       <div className="flex items-center gap-1">
                           {resultado !== 'En proceso' && (
-                            <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                            <Etiqueta tono="apagado" sinIcono>{resultado}</Etiqueta>
                           )}
                           {tieneDecisionSolicitud(s) && (
                             <button
@@ -664,21 +664,13 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
 
                 {/* Resumen minimalista */}
                 {esPedidoManual ? (
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="flex items-center gap-1.5 bg-yellow-50/50 px-2 py-1 rounded-md border border-yellow-100/50">
-                      <span className="font-mono font-black text-[11px] text-yellow-900">Total: ${totalManual.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <Etiqueta tono="amarillo" tamano="normal" mono>Total: ${totalManual.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Etiqueta>
                   </div>
                 ) : totalA > 0 ? (
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="flex items-center gap-1.5 bg-emerald-50/50 px-2 py-1 rounded-md border border-emerald-100/50">
-                      <Plane size={13} className="text-emerald-500" />
-                      <span className="font-mono font-black text-[11px] text-emerald-900">${totalA.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 bg-blue-50/50 px-2 py-1 rounded-md border border-blue-100/50">
-                      <Ship size={13} className="text-blue-500" />
-                      <span className="font-mono font-black text-[11px] text-blue-900">${totalM.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    </div>
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <Etiqueta tono="exito" tamano="normal" mono icono={Plane}>${totalA.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Etiqueta>
+                    <Etiqueta tono="azul" tamano="normal" mono icono={Ship}>${totalM.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Etiqueta>
                   </div>
                 ) : (
                   <div className="mb-4 text-[10px] font-bold text-slate-400 italic flex items-center gap-1">
@@ -873,7 +865,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                       {s.estado !== 'Venta Perdida' && (resultado !== 'En proceso' || tieneDecisionSolicitud(s) || tieneVentaPerdidaSolicitud(s)) && (
                           <div className="flex items-center gap-1">
                             {resultado !== 'En proceso' && (
-                              <span className="text-[9px] font-bold uppercase tracking-wide text-slate-500">{resultado}</span>
+                              <Etiqueta tono="apagado" sinIcono>{resultado}</Etiqueta>
                             )}
                             {tieneDecisionSolicitud(s) && (
                               <button
