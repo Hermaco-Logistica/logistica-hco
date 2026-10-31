@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { Truck, Calendar, Hash, Save, Search, Filter } from 'lucide-react';
+import { Etiqueta } from '../../components/Etiqueta';
 
 export const RetaceosView = ({ role }) => {
   const [retaceos, setRetaceos] = useState([]);
@@ -178,9 +179,9 @@ export const RetaceosView = ({ role }) => {
                   )}
                 </td>
                 <td className="p-4">
-                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-xs font-black text-slate-700 font-mono">
+                  <Etiqueta tono="neutral" tamano="normal" mono>
                     {r.numOC}
-                  </span>
+                  </Etiqueta>
                 </td>
                 <td className="p-4">
                   <span className="text-xs font-black text-slate-700 uppercase">{r.proveedor}</span>

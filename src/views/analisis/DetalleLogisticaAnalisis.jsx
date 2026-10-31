@@ -5,6 +5,7 @@ import { exportarLogisticaExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
+import { Etiqueta } from '../../components/Etiqueta';
 
 export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
   const { filtro } = useParams();
@@ -154,8 +155,8 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
 
   return (
     <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
-      {/* CABECERA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* CABECERA: título arriba y filtro de estado debajo */}
+      <div className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -167,9 +168,9 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
           </button>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className={`text-[10px] font-semibold tracking-wider px-2.5 py-0.5 rounded-full ${theme.bgBadge}`}>
+              <Etiqueta dominio="rol" valor={theme.key}>
                 Logística
-              </span>
+              </Etiqueta>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
               Monitoreo Logístico de OCs
@@ -262,18 +263,9 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
             <div className="md:hidden space-y-3">
               {paginatedOrdenes.map((oc) => {
                 const est = (oc.estado || 'Pendiente');
-                const estLower = est.toLowerCase();
                 const cantItems = oc.items?.length || 0;
                 const numOC = oc.numeroOC || oc.numero || oc.ocRef || 'S/N';
                 
-                const badgeClass = estLower.includes('entregad') || estLower.includes('delivered')
-                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
-                  : estLower.includes('aduana')
-                  ? 'bg-sky-50 text-sky-700 border-sky-200/60'
-                  : estLower.includes('transito') || estLower.includes('tránsito')
-                  ? 'bg-amber-50 text-amber-700 border-amber-200/60'
-                  : 'bg-slate-100 text-slate-600 border-slate-200/60';
-
                 return (
                   <div key={oc.id} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 relative">
                     <div className="flex justify-between items-start">
@@ -284,9 +276,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
                           <span>{formatFecha(oc.fechaCreacion)}</span>
                         </div>
                       </div>
-                      <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold border ${badgeClass}`}>
-                        {est}
-                      </span>
+                      <Etiqueta dominio="estadoOC" valor={est} />
                     </div>
 
                     <div className="space-y-1.5 pt-1">
@@ -295,9 +285,9 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
                       </div>
                       
                       {oc.tracking ? (
-                        <span className="inline-flex items-center gap-1 font-mono text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/60 w-max">
+                        <Etiqueta tono="neutral" tamano="normal" mono className="w-max">
                           <Globe size={11} className="text-slate-400" /> {oc.tracking}
-                        </span>
+                        </Etiqueta>
                       ) : (
                         <span className="text-slate-400 text-[11px] block">Sin tracking</span>
                       )}
@@ -347,7 +337,6 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
                   <tbody className="divide-y divide-slate-100 text-slate-700">
                     {paginatedOrdenes.map((oc) => {
                       const est = (oc.estado || 'Pendiente');
-                      const estLower = est.toLowerCase();
                       const cantItems = oc.items?.length || 0;
                       const numOC = oc.numeroOC || oc.numero || oc.ocRef || 'S/N';
 
@@ -363,25 +352,15 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
                           </td>
                           <td className="py-2.5 px-3.5 whitespace-nowrap">
                             {oc.tracking ? (
-                              <span className="inline-flex items-center gap-1 font-mono text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/60">
+                              <Etiqueta tono="neutral" tamano="normal" mono>
                                 <Globe size={11} className="text-slate-400" /> {oc.tracking}
-                              </span>
+                              </Etiqueta>
                             ) : (
                               <span className="text-slate-400 text-[11px]">Sin tracking</span>
                             )}
                           </td>
                           <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
-                            <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-semibold border ${
-                              estLower.includes('entregad') || estLower.includes('delivered')
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
-                                : estLower.includes('aduana')
-                                ? 'bg-sky-50 text-sky-700 border-sky-200/60'
-                                : estLower.includes('transito') || estLower.includes('tránsito')
-                                ? 'bg-amber-50 text-amber-700 border-amber-200/60'
-                                : 'bg-slate-100 text-slate-600 border-slate-200/60'
-                            }`}>
-                              {est}
-                            </span>
+                            <Etiqueta dominio="estadoOC" valor={est} />
                           </td>
                           <td className="py-2.5 px-3.5 text-slate-500 whitespace-nowrap font-mono text-[11px]">
                             <div className="flex items-center gap-1.5">

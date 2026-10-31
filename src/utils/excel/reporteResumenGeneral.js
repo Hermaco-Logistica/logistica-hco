@@ -1,6 +1,5 @@
-import * as XLSX from 'xlsx';
 import { FASES_SEGUIMIENTO } from '../faseSeguimiento';
-import { crearHojaHermaco, descargarLibro } from './comun';
+import { crearHojaHermaco, descargarLibro, cargarXLSX } from './comun';
 
 /** Filas de KPI del seguimiento de cliente: totales y desglose por fase. */
 function crearFilasSeguimiento(enSeguimiento) {
@@ -19,7 +18,8 @@ function crearFilasSeguimiento(enSeguimiento) {
 /**
  * Exporta el resumen general de análisis y estadísticas
  */
-export function exportarResumenGeneralExcel({ metricas, topProductos, statsVendedores, topClientes, periodoLabel = '' }, nombreArchivo = 'analisis_estadisticas') {
+export async function exportarResumenGeneralExcel({ metricas, topProductos, statsVendedores, topClientes, periodoLabel = '' }, nombreArchivo = 'analisis_estadisticas') {
+  const XLSX = await cargarXLSX();
   const wb = XLSX.utils.book_new();
 
   // Hoja 1: KPIs
@@ -42,6 +42,7 @@ export function exportarResumenGeneralExcel({ metricas, topProductos, statsVende
       ...crearFilasSeguimiento(metricas.enSeguimiento)
     ];
     const wsKpis = crearHojaHermaco({
+    XLSX,
       titulo: 'CONTROL DE LOGÍSTICA - RESUMEN DE KPIS',
       periodoLabel,
       headers: ['Métrica', 'Valor'],
@@ -63,6 +64,7 @@ export function exportarResumenGeneralExcel({ metricas, topProductos, statsVende
       'Unidades Ganadas': Number(p.unidadesGanadas || 0)
     }));
     const wsProd = crearHojaHermaco({
+    XLSX,
       titulo: 'CONTROL DE LOGÍSTICA - TOP PRODUCTOS',
       periodoLabel,
       headers: ['#', 'Descripción', 'Marca', 'Cotizado (veces)', 'Unidades Solicitadas', 'Pedidos Ganados', 'Unidades Ganadas'],
@@ -85,6 +87,7 @@ export function exportarResumenGeneralExcel({ metricas, topProductos, statsVende
       'Tasa Éxito (%)': v.total > 0 ? `${((v.pedidos / v.total) * 100).toFixed(1)}%` : '0%'
     }));
     const wsVend = crearHojaHermaco({
+    XLSX,
       titulo: 'CONTROL DE LOGÍSTICA - RENDIMIENTO VENDEDORES',
       periodoLabel,
       headers: ['#', 'Vendedor', 'Total Solicitudes', 'Cotizadas', 'Pedidos Ganados', 'Pedidos Parciales', 'Tasa Éxito (%)'],
@@ -105,6 +108,7 @@ export function exportarResumenGeneralExcel({ metricas, topProductos, statsVende
       'Pedidos Parciales': Number(c.pedidosParciales || 0)
     }));
     const wsCli = crearHojaHermaco({
+    XLSX,
       titulo: 'CONTROL DE LOGÍSTICA - TOP CLIENTES',
       periodoLabel,
       headers: ['#', 'Cliente', 'Total Solicitudes', 'Pedidos Ganados', 'Pedidos Parciales'],
@@ -115,5 +119,5 @@ export function exportarResumenGeneralExcel({ metricas, topProductos, statsVende
     XLSX.utils.book_append_sheet(wb, wsCli, 'Top Clientes');
   }
 
-  descargarLibro(wb, nombreArchivo);
+  descargarLibro(XLSX, wb, nombreArchivo);
 }

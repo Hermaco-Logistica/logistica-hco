@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { TrendingDown, X } from 'lucide-react';
 import { normalizarItemVentaPerdida, formatearFechaVentaPerdida } from '../../utils/ventasPerdidasHelpers';
+import { Etiqueta } from '../../components/Etiqueta';
 
 /**
  * Modal exclusivo para consultar motivos de Venta Perdida (control comercial y CRM).
@@ -58,9 +59,9 @@ export const ModalConsultaVentaPerdida = ({ isOpen = true, onClose, data }) => {
                   Control Comercial
                 </span>
                 {data.esPendiente && (
-                  <span className="bg-amber-100 text-amber-800 text-[8px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider">
+                  <Etiqueta tono="aviso">
                     Pendiente de Enviar
-                  </span>
+                  </Etiqueta>
                 )}
               </div>
               <h2 id="motivo-venta-perdida-titulo" className="text-sm sm:text-base font-bold tracking-tight text-slate-900 truncate">
@@ -116,9 +117,9 @@ export const ModalConsultaVentaPerdida = ({ isOpen = true, onClose, data }) => {
                       </p>
                     )}
                   </div>
-                  <span className="shrink-0 px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-200">
+                  <Etiqueta tono="peligro" className="shrink-0">
                     Venta Perdida
-                  </span>
+                  </Etiqueta>
                 </div>
 
                 <div>

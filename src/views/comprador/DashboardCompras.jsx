@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { db, auth } from '../../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { Badge } from '../../components/Badge';
+import { Etiqueta } from '../../components/Etiqueta';
 import { MobileBadge } from '../../components/mobile';
 import CotizacionDocumento from '../../components/CotizacionDocumento';
 import { usePersistedState } from '../../hooks/usePersistedState';
@@ -1073,11 +1073,11 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   <td className="p-4">
                     <div className="flex flex-col items-center gap-1">
                       {s.tipo === 'Pedido Manual' ? (
-                        <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">Total: {formatearTotal(s)}</span>
+                        <Etiqueta tono="amarillo" className="w-28 text-center">Total: {formatearTotal(s)}</Etiqueta>
                       ) : itemsConPrecio.length > 0 ? (
                         <>
-                          <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">A: {totalA}</span>
-                          <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">M: {totalM}</span>
+                          <Etiqueta tono="exito" className="w-28 text-center">A: {totalA}</Etiqueta>
+                          <Etiqueta tono="azul" className="w-28 text-center">M: {totalM}</Etiqueta>
                           {s.estado === 'Cotizado Parcial' && (
                             <span className="text-[9px] font-black text-blue-600 uppercase italic tracking-widest">Parcial</span>
                           )}
@@ -1090,7 +1090,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   <td className="p-4 text-center">
                     <div className="flex flex-col items-center gap-1">
                       <div className="flex items-center gap-1">
-                        <Badge estado={s.estado} />
+                        <Etiqueta dominio="estadoSolicitud" valor={s.estado} />
                         {s.estado === 'Venta Perdida' && (
                           <button
                             type="button"

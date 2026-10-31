@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { Send, X, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import { useHiloItem } from '../../hooks/useHiloItem';
 import { PropuestaPrecioCard } from './PropuestaPrecioCard';
+import { tonoDe } from '../../utils/etiquetas';
+import { Etiqueta } from '../Etiqueta';
 
 const getRolColor = (rol) => {
   switch (rol?.toLowerCase()) {
@@ -360,22 +362,22 @@ export const HiloComentariosItem = ({
                 const isAccept = m.accion === 'aprobar' || m.accion === 'aceptar' || m.tipo === 'aceptacion';
                 const isReject = m.accion === 'rechazar' || m.accion === 'denegar';
 
-                let colorClass = 'bg-slate-50 text-slate-700 border-slate-200/60';
+                let tonoEvento = tonoDe('eventoHilo', 'evento');
                 let icon = '•';
                 
                 if (isAccept) {
-                  colorClass = 'bg-emerald-50 text-emerald-700 border-emerald-200/60';
+                  tonoEvento = tonoDe('eventoHilo', 'aceptacion');
                   icon = '✓';
                 } else if (isReject) {
-                  colorClass = 'bg-rose-50 text-rose-700 border-rose-200/60';
+                  tonoEvento = tonoDe('eventoHilo', 'rechazo');
                   icon = '✗';
                 }
 
                 return (
                   <div key={m.id || index} className="flex flex-col items-center my-4 gap-1">
-                    <span className={`${colorClass} border text-[10px] font-bold uppercase px-4 py-1 rounded-full tracking-wider shadow-xs`}>
+                    <Etiqueta tono={tonoEvento} tamano="normal" className="shadow-xs">
                       {icon} {m.autor?.nombre} {actionText}
-                    </span>
+                    </Etiqueta>
                     {formatearHoraMensaje(m.createdAt) && (
                       <span className="text-[9px] text-slate-400 font-medium">
                         {formatearHoraMensaje(m.createdAt)}

@@ -4,6 +4,8 @@
  * variables CSS del proyecto y la paleta propia de cada rol.
  */
 
+import { textoDeTono, tonoDe } from '../../utils/etiquetas';
+
 export const ROLE_THEMES = {
   comprador: {
     key: 'comprador',
@@ -12,7 +14,6 @@ export const ROLE_THEMES = {
     textAccent: 'text-blue-600',
     textAccentHover: 'hover:text-blue-700',
     bgSubtle: 'bg-blue-50/70',
-    bgBadge: 'bg-blue-50 text-blue-700 border-blue-200/80',
     borderAccent: 'border-blue-200',
     activeTab: 'bg-slate-900 text-white shadow-xs',
     activePeriod: 'bg-blue-600 text-white shadow-xs',
@@ -27,7 +28,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-amber-50 text-amber-600 border-amber-200/80',
         barGradient: 'from-amber-500 to-amber-600',
         subGradient: 'from-amber-400 to-amber-500',
-        badge: 'bg-amber-50 text-amber-800 border-amber-200/80',
         dot: 'bg-amber-500'
       },
       cotizadas: {
@@ -38,7 +38,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-blue-50 text-blue-600 border-blue-200/80',
         barGradient: 'from-blue-600 to-indigo-600',
         subGradient: 'from-blue-400 to-indigo-400',
-        badge: 'bg-blue-50 text-blue-700 border-blue-200/80',
         dot: 'bg-blue-600'
       },
       pedidos: {
@@ -49,7 +48,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-200/80',
         barGradient: 'from-emerald-500 to-teal-600',
         subGradient: 'from-emerald-400 to-teal-400',
-        badge: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
         dot: 'bg-emerald-600'
       }
     }
@@ -61,7 +59,6 @@ export const ROLE_THEMES = {
     textAccent: 'text-purple-600',
     textAccentHover: 'hover:text-purple-700',
     bgSubtle: 'bg-purple-50/70',
-    bgBadge: 'bg-purple-50 text-purple-700 border-purple-200/80',
     borderAccent: 'border-purple-200',
     activeTab: 'bg-slate-900 text-white shadow-xs',
     activePeriod: 'bg-purple-600 text-white shadow-xs',
@@ -76,7 +73,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-amber-50 text-amber-600 border-amber-200/80',
         barGradient: 'from-amber-500 to-amber-600',
         subGradient: 'from-amber-400 to-amber-500',
-        badge: 'bg-amber-50 text-amber-800 border-amber-200/80',
         dot: 'bg-amber-500'
       },
       cotizadas: {
@@ -87,7 +83,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-purple-50 text-purple-600 border-purple-200/80',
         barGradient: 'from-purple-600 to-indigo-600',
         subGradient: 'from-purple-400 to-indigo-400',
-        badge: 'bg-purple-50 text-purple-700 border-purple-200/80',
         dot: 'bg-purple-600'
       },
       pedidos: {
@@ -98,7 +93,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-200/80',
         barGradient: 'from-emerald-500 to-teal-600',
         subGradient: 'from-emerald-400 to-teal-400',
-        badge: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
         dot: 'bg-emerald-600'
       }
     }
@@ -110,7 +104,6 @@ export const ROLE_THEMES = {
     textAccent: 'text-emerald-600',
     textAccentHover: 'hover:text-emerald-700',
     bgSubtle: 'bg-emerald-50/70',
-    bgBadge: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
     borderAccent: 'border-emerald-200',
     activeTab: 'bg-slate-900 text-white shadow-xs',
     activePeriod: 'bg-emerald-600 text-white shadow-xs',
@@ -125,7 +118,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-amber-50 text-amber-600 border-amber-200/80',
         barGradient: 'from-amber-500 to-amber-600',
         subGradient: 'from-amber-400 to-amber-500',
-        badge: 'bg-amber-50 text-amber-800 border-amber-200/80',
         dot: 'bg-amber-500'
       },
       cotizadas: {
@@ -136,7 +128,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-teal-50 text-teal-600 border-teal-200/80',
         barGradient: 'from-teal-600 to-cyan-600',
         subGradient: 'from-teal-400 to-cyan-400',
-        badge: 'bg-teal-50 text-teal-800 border-teal-200/80',
         dot: 'bg-teal-600'
       },
       pedidos: {
@@ -147,7 +138,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
         barGradient: 'from-emerald-600 to-teal-600',
         subGradient: 'from-emerald-400 to-teal-400',
-        badge: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
         dot: 'bg-emerald-600'
       }
     }
@@ -159,7 +149,6 @@ export const ROLE_THEMES = {
     textAccent: 'text-rose-700',
     textAccentHover: 'hover:text-rose-800',
     bgSubtle: 'bg-rose-50/70',
-    bgBadge: 'bg-rose-50 text-rose-700 border-rose-200/80',
     borderAccent: 'border-rose-200',
     activeTab: 'bg-slate-900 text-white shadow-xs',
     activePeriod: 'bg-rose-700 text-white shadow-xs',
@@ -174,7 +163,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-amber-50 text-amber-600 border-amber-200/80',
         barGradient: 'from-amber-500 to-amber-600',
         subGradient: 'from-amber-400 to-amber-500',
-        badge: 'bg-amber-50 text-amber-800 border-amber-200/80',
         dot: 'bg-amber-500'
       },
       cotizadas: {
@@ -185,7 +173,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-rose-50 text-rose-600 border-rose-200/80',
         barGradient: 'from-rose-600 to-pink-600',
         subGradient: 'from-rose-400 to-pink-400',
-        badge: 'bg-rose-50 text-rose-700 border-rose-200/80',
         dot: 'bg-rose-600'
       },
       pedidos: {
@@ -196,7 +183,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-200/80',
         barGradient: 'from-emerald-500 to-teal-600',
         subGradient: 'from-emerald-400 to-teal-400',
-        badge: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
         dot: 'bg-emerald-600'
       }
     }
@@ -208,7 +194,6 @@ export const ROLE_THEMES = {
     textAccent: 'text-slate-800',
     textAccentHover: 'hover:text-slate-900',
     bgSubtle: 'bg-slate-50',
-    bgBadge: 'bg-slate-100 text-slate-700 border-slate-200/80',
     borderAccent: 'border-slate-200',
     activeTab: 'bg-slate-900 text-white shadow-xs',
     activePeriod: 'bg-slate-900 text-white shadow-xs',
@@ -223,7 +208,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-amber-50 text-amber-600 border-amber-200/80',
         barGradient: 'from-amber-500 to-amber-600',
         subGradient: 'from-amber-400 to-amber-500',
-        badge: 'bg-amber-50 text-amber-800 border-amber-200/80',
         dot: 'bg-amber-500'
       },
       cotizadas: {
@@ -234,7 +218,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-sky-50 text-sky-600 border-sky-200/80',
         barGradient: 'from-sky-500 to-blue-600',
         subGradient: 'from-sky-400 to-blue-400',
-        badge: 'bg-slate-100 text-slate-700 border-slate-200/80',
         dot: 'bg-slate-600'
       },
       pedidos: {
@@ -245,7 +228,6 @@ export const ROLE_THEMES = {
         iconBg: 'bg-emerald-50 text-emerald-600 border-emerald-200/80',
         barGradient: 'from-emerald-500 to-teal-600',
         subGradient: 'from-emerald-400 to-teal-400',
-        badge: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
         dot: 'bg-emerald-600'
       }
     }
@@ -261,7 +243,7 @@ export const getRoleTheme = (role) => {
  * Si es menor a 1 día (< 24 horas), muestra horas o minutos con indicación de alta agilidad.
  *
  * @param {number|null} diasNum - Tiempo promedio en días (número flotante)
- * @returns {object} { valor, unidad, subtexto, etiqueta, badgeClase, esRapido, textoCorto }
+ * @returns {object} { valor, unidad, subtexto, etiqueta, tono, esRapido, textoCorto }
  */
 export const formatearTiempoRespuesta = (diasNum) => {
   if (diasNum === null || diasNum === undefined || isNaN(diasNum) || diasNum < 0) {
@@ -270,7 +252,7 @@ export const formatearTiempoRespuesta = (diasNum) => {
       unidad: '',
       subtexto: 'Sin cotizaciones con fecha',
       etiqueta: null,
-      badgeClase: '',
+      tono: tonoDe('ritmo', 'normal'),
       esRapido: false,
       textoCorto: '---'
     };
@@ -286,7 +268,7 @@ export const formatearTiempoRespuesta = (diasNum) => {
       unidad: minutos === 1 ? 'minuto' : 'minutos',
       subtexto: 'Atención inmediata',
       etiqueta: 'Inmediato (< 1h)',
-      badgeClase: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
+      tono: tonoDe('ritmo', 'inmediato'),
       esRapido: true,
       textoCorto: `${minutos}m`
     };
@@ -300,7 +282,7 @@ export const formatearTiempoRespuesta = (diasNum) => {
       unidad: Number(horas) === 1 ? 'hora' : 'horas',
       subtexto: 'Respuesta en el mismo día',
       etiqueta: 'Mismo día (< 24h)',
-      badgeClase: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
+      tono: tonoDe('ritmo', 'inmediato'),
       esRapido: true,
       textoCorto: `${horas}h`
     };
@@ -313,7 +295,7 @@ export const formatearTiempoRespuesta = (diasNum) => {
     valor: dias,
     unidad: Number(dias) === 1 ? 'día' : 'días',
     etiqueta: esRapido ? 'Buen ritmo (≤ 2d)' : null,
-    badgeClase: esRapido ? 'bg-blue-50 text-blue-700 border-blue-200/80' : 'bg-slate-100 text-slate-600 border-slate-200',
+    tono: tonoDe('ritmo', esRapido ? 'rapido' : 'normal'),
     esRapido,
     textoCorto: `${dias}d`
   };
@@ -324,7 +306,7 @@ export const formatearTiempoRespuesta = (diasNum) => {
  * Representa el tiempo real que tarda el vendedor / cliente en concretar el pedido tras ser cotizado.
  * 
  * @param {number|null} diasNum - Tiempo en días (puede ser fraccionario)
- * @returns {object} { valor, unidad, subtexto, etiqueta, badgeClase, esRapido, textoCorto }
+ * @returns {object} { valor, unidad, subtexto, etiqueta, tono, esRapido, textoCorto }
  */
 export const formatearTiempoCierre = (diasNum) => {
   if (diasNum === null || diasNum === undefined || isNaN(diasNum) || diasNum < 0) {
@@ -333,7 +315,7 @@ export const formatearTiempoCierre = (diasNum) => {
       unidad: '',
       subtexto: 'Sin pedidos con fecha de cierre',
       etiqueta: null,
-      badgeClase: '',
+      tono: tonoDe('ritmo', 'normal'),
       esRapido: false,
       textoCorto: '---'
     };
@@ -349,7 +331,7 @@ export const formatearTiempoCierre = (diasNum) => {
       unidad: minutos === 1 ? 'minuto' : 'minutos',
       subtexto: 'Cierre inmediato',
       etiqueta: 'Inmediato (< 1h)',
-      badgeClase: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
+      tono: tonoDe('ritmo', 'inmediato'),
       esRapido: true,
       textoCorto: `${minutos}m`
     };
@@ -363,7 +345,7 @@ export const formatearTiempoCierre = (diasNum) => {
       unidad: Number(horas) === 1 ? 'hora' : 'horas',
       subtexto: 'Cierre en el mismo día',
       etiqueta: 'Mismo día (< 24h)',
-      badgeClase: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
+      tono: tonoDe('ritmo', 'inmediato'),
       esRapido: true,
       textoCorto: `${horas}h`
     };
@@ -377,7 +359,7 @@ export const formatearTiempoCierre = (diasNum) => {
     unidad: Number(dias) === 1 ? 'día' : 'días',
     subtexto: 'Promedio cotización → pedido',
     etiqueta: esRapido ? 'Cierre ágil (≤ 3d)' : null,
-    badgeClase: esRapido ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80' : 'bg-slate-100 text-slate-600 border-slate-200',
+    tono: tonoDe('ritmo', esRapido ? 'agil' : 'normal'),
     esRapido,
     textoCorto: `${dias}d`
   };
@@ -390,7 +372,7 @@ export const formatearTiempoCierre = (diasNum) => {
  * Los pedidos parciales se identifican claramente como parciales y no se consideran ganadas completas.
  * 
  * @param {object|string} itemOEstado - Objeto solicitud/movimiento o string de estado
- * @returns {object} { esGanada, esParcial, label, badgeClase, textClase }
+ * @returns {object} { esGanada, esParcial, clave, label, tono, textClase }
  */
 export const evaluarEstadoGanada = (itemOEstado) => {
   let estado = '';
@@ -451,16 +433,18 @@ export const evaluarEstadoGanada = (itemOEstado) => {
         esGanada: false,
         esParcial: true,
         label: 'Ganado Parcial',
-        badgeClase: 'bg-sky-50 text-sky-700 border-sky-200/80',
-        textClase: 'text-sky-700'
+        clave: 'ganado_parcial',
+        tono: tonoDe('resultado', 'ganado_parcial'),
+        textClase: textoDeTono(tonoDe('resultado', 'ganado_parcial'))
       };
     }
     return {
       esGanada: true,
       esParcial: false,
       label: 'Ganada',
-      badgeClase: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
-      textClase: 'text-emerald-700'
+      clave: 'ganada',
+      tono: tonoDe('resultado', 'ganada'),
+      textClase: textoDeTono(tonoDe('resultado', 'ganada'))
     };
   }
 
@@ -470,8 +454,9 @@ export const evaluarEstadoGanada = (itemOEstado) => {
       esGanada: false,
       esParcial: true,
       label: 'Ganado Parcial',
-      badgeClase: 'bg-sky-50 text-sky-700 border-sky-200/80',
-      textClase: 'text-sky-700'
+      clave: 'ganado_parcial',
+      tono: tonoDe('resultado', 'ganado_parcial'),
+      textClase: textoDeTono(tonoDe('resultado', 'ganado_parcial'))
     };
   }
 
@@ -481,8 +466,9 @@ export const evaluarEstadoGanada = (itemOEstado) => {
       esGanada: false,
       esParcial: true,
       label: 'No Comprado',
-      badgeClase: 'bg-slate-100 text-slate-500 border-slate-200/80',
-      textClase: 'text-slate-500'
+      clave: 'no_comprado',
+      tono: tonoDe('resultado', 'no_comprado'),
+      textClase: textoDeTono(tonoDe('resultado', 'no_comprado'))
     };
   }
 
@@ -492,8 +478,9 @@ export const evaluarEstadoGanada = (itemOEstado) => {
       esGanada: false,
       esParcial: false,
       label: 'Cotizada',
-      badgeClase: 'bg-blue-50 text-blue-700 border-blue-200/80',
-      textClase: 'text-blue-700'
+      clave: 'cotizada',
+      tono: tonoDe('resultado', 'cotizada'),
+      textClase: textoDeTono(tonoDe('resultado', 'cotizada'))
     };
   }
 
@@ -503,8 +490,9 @@ export const evaluarEstadoGanada = (itemOEstado) => {
       esGanada: false,
       esParcial: false,
       label: 'Anulada',
-      badgeClase: 'bg-rose-50 text-rose-600 border-rose-200/80',
-      textClase: 'text-rose-600'
+      clave: 'anulada',
+      tono: tonoDe('resultado', 'anulada'),
+      textClase: textoDeTono(tonoDe('resultado', 'anulada'))
     };
   }
 
@@ -513,8 +501,9 @@ export const evaluarEstadoGanada = (itemOEstado) => {
     esGanada: false,
     esParcial: false,
     label: est || 'Pendiente',
-    badgeClase: 'bg-amber-50 text-amber-700 border-amber-200/80',
-    textClase: 'text-amber-700'
+    clave: 'pendiente',
+    tono: tonoDe('resultado', 'pendiente'),
+    textClase: textoDeTono(tonoDe('resultado', 'pendiente'))
   };
 };
 

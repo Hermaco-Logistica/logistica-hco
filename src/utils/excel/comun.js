@@ -1,4 +1,5 @@
-import * as XLSX from 'xlsx';
+/** La librería xlsx pesa mucho: se descarga solo cuando el usuario exporta. */
+export const cargarXLSX = () => import('xlsx');
 
 export const parseDate = (val) => {
   if (!val) return null;
@@ -38,6 +39,7 @@ export const INT_FMT = '#,##0';
  * Crea una hoja de cálculo con el encabezado institucional predefinido de Hermaco
  */
 export function crearHojaHermaco({
+  XLSX,
   titulo = 'REPORTE DE CONTROL',
   periodoLabel = '',
   headers = [],
@@ -110,6 +112,6 @@ export function crearHojaHermaco({
 }
 
 /** Escribe el libro en disco con el nombre de archivo saneado y extensión .xlsx. */
-export function descargarLibro(wb, nombreArchivo) {
+export function descargarLibro(XLSX, wb, nombreArchivo) {
   XLSX.writeFile(wb, `${sanitizeFileName(nombreArchivo)}.xlsx`);
 }

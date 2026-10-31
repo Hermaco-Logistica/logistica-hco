@@ -11,6 +11,7 @@ import { AlertCircle } from 'lucide-react';
 import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
 import { prepararDatosConsultaVentaPerdida } from '../../utils/ventasPerdidasHelpers';
 import { BottomActionBar } from '../../components/mobile/BottomActionBar';
+import { Etiqueta } from '../../components/Etiqueta';
 
 const injectStyles = () => {
   if (typeof document !== 'undefined' && !document.getElementById('anim-cant-styles')) {
@@ -637,7 +638,7 @@ export const Calculadora = ({ onGuardar }) => {
                   <Receipt size={14} className="text-emerald-600 shrink-0" />
                   <span className="text-[10px] font-black uppercase tracking-tight truncate">Aduana</span>
                 </div>
-                <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Editar</span>
+                <Etiqueta tono="exito">Editar</Etiqueta>
               </div>
               <div className="mt-1.5 font-mono font-black text-emerald-700 text-sm sm:text-base truncate">
                 ${aduana.toFixed(2)}
@@ -660,16 +661,16 @@ export const Calculadora = ({ onGuardar }) => {
                 ) : (
                   <div className="flex flex-col gap-1.5">
                     {factoresAereosFijados.map(({ factor, cantidad }) => (
-                      <span key={factor} className="inline-flex items-center justify-between gap-1 text-[9px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-1 rounded border border-emerald-100 uppercase">
+                      <Etiqueta key={factor} tono="exito" className="justify-between">
                         <span>FA {factor}</span>
                         <span className="text-emerald-600/80 bg-white px-1 rounded-sm border border-emerald-100 shadow-2xs">x{cantidad}</span>
-                      </span>
+                      </Etiqueta>
                     ))}
                     {!esSoloLectura && tienePendientesGlobales && (
-                      <span className="inline-flex items-center justify-between gap-1 text-[9px] font-black text-blue-700 bg-blue-50 px-1.5 py-1 rounded border border-blue-100 uppercase">
+                      <Etiqueta tono="azul" className="justify-between">
                         <span>Nuevos</span>
                         <span className="text-blue-600/80 bg-white px-1 rounded-sm border border-blue-100 shadow-2xs">FA {factorA.toFixed(2)}</span>
-                      </span>
+                      </Etiqueta>
                     )}
                   </div>
                 )}
@@ -767,14 +768,14 @@ export const Calculadora = ({ onGuardar }) => {
                   <div className="absolute right-0 top-full z-50 mt-2 flex w-72 max-w-[calc(100vw-3rem)] flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-xl">
                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Factores aplicados</span>
                 {factoresAereosFijados.map(({ factor, cantidad }) => (
-                  <span key={factor} className="flex items-center justify-between rounded-md border border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-black text-emerald-700">
+                  <Etiqueta key={factor} tono="exito" className="flex justify-between">
                     {factor} · {cantidad} {cantidad === 1 ? 'ítem' : 'ítems'}
-                  </span>
+                  </Etiqueta>
                 ))}
                 {!esSoloLectura && tienePendientesGlobales && (
-                  <span className="flex items-center justify-between rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700">
+                  <Etiqueta tono="azul" className="flex justify-between">
                     Pendientes: {factorA.toFixed(2)}
-                  </span>
+                  </Etiqueta>
                 )}
                   </div>
                 )}
@@ -890,7 +891,7 @@ export const Calculadora = ({ onGuardar }) => {
                 <span className="text-sm font-black text-slate-800">${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : '0.00'}</span>
               </div>
               {activeProvider === 'dhl' && (
-                <span className="bg-blue-600 text-white text-[7px] font-black uppercase px-1.5 py-1 rounded-full shrink-0">En uso</span>
+                <Etiqueta tono="azul" className="shrink-0">En uso</Etiqueta>
               )}
             </button>
             <button
@@ -910,7 +911,7 @@ export const Calculadora = ({ onGuardar }) => {
                 <span className="text-sm font-black text-slate-800">${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : '0.00'}</span>
               </div>
               {activeProvider === 'qs' && (
-                <span className="bg-blue-600 text-white text-[7px] font-black uppercase px-1.5 py-1 rounded-full shrink-0">En uso</span>
+                <Etiqueta tono="azul" className="shrink-0">En uso</Etiqueta>
               )}
             </button>
           </div>
@@ -942,7 +943,7 @@ export const Calculadora = ({ onGuardar }) => {
                 <p className={`text-[10px] font-semibold ${activeProvider === 'dhl' ? 'text-slate-400' : 'text-slate-400/70'}`}>Tarifa por peso volumétrico (kg)</p>
               </div>
               {activeProvider === 'dhl' && (
-                <span className="bg-blue-600 text-white text-[8px] font-black uppercase px-2 py-1 rounded-full shrink-0">En uso</span>
+                <Etiqueta tono="azul" className="shrink-0">En uso</Etiqueta>
               )}
             </div>
 
@@ -1012,7 +1013,7 @@ export const Calculadora = ({ onGuardar }) => {
                 <p className={`text-[10px] font-semibold ${activeProvider === 'qs' ? 'text-slate-400' : 'text-slate-400/70'}`}>Tarifa por libra, mínimo $10.00</p>
               </div>
               {activeProvider === 'qs' && (
-                <span className="bg-blue-600 text-white text-[8px] font-black uppercase px-2 py-1 rounded-full shrink-0">En uso</span>
+                <Etiqueta tono="azul" className="shrink-0">En uso</Etiqueta>
               )}
             </div>
 
@@ -1154,9 +1155,9 @@ export const Calculadora = ({ onGuardar }) => {
                   
                   {esAnuladoItem ? (
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wide border bg-rose-50 text-rose-700 border-rose-200">
+                      <Etiqueta tono="peligro">
                         <Ban size={10} /> Anulado
-                      </span>
+                      </Etiqueta>
                       <button
                         type="button"
                         onClick={() => setMotivoAnulacionVisible(p.motivoAnulacion || '')}
@@ -1167,9 +1168,9 @@ export const Calculadora = ({ onGuardar }) => {
                     </div>
                   ) : esVentaPerdidaItem ? (
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wide border bg-rose-50 text-rose-700 border-rose-200">
+                      <Etiqueta tono="peligro">
                         Venta Perdida
-                      </span>
+                      </Etiqueta>
                       <button
                         type="button"
                         onClick={() => abrirConsultaVentaPerdida(p)}
@@ -1179,10 +1180,10 @@ export const Calculadora = ({ onGuardar }) => {
                       </button>
                     </div>
                   ) : esPedidoPrevio && (
-                    <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-wide border bg-emerald-50 text-emerald-700 border-emerald-200/60">
+                    <Etiqueta tono="exito">
                       <Check size={10} className="text-emerald-500" />
                       <span>Pedido</span>
-                    </span>
+                    </Etiqueta>
                   )}
                   {!esAnuladoItem && !esVentaPerdidaItem && !esPedidoPrevio && !esSoloLectura && (
                     <div
@@ -1225,21 +1226,21 @@ export const Calculadora = ({ onGuardar }) => {
                       {Number(p.factorA) > 0 && (
                         <>
                           <span className="text-slate-300">·</span>
-                          <span className="font-mono font-black text-emerald-700 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded uppercase truncate shrink-0">
+                          <Etiqueta tono="exito" mono className="truncate shrink-0">
                             FA {Number(p.factorA).toFixed(2)}
-                          </span>
+                          </Etiqueta>
                         </>
                       )}
                     </div>
                     
                     <div className="shrink-0">
-                      <span className="font-mono font-black text-slate-800 text-xs bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/60 shadow-xs flex items-center justify-center">
+                      <Etiqueta tono="neutral" tamano="normal" mono className="flex justify-center">
                         x{itemsCambiados[idx] ? (
                           <span className={`${itemsCambiados[idx].animating ? 'anim-cant-text' : ''} ${itemsCambiados[idx].underlined ? 'underline underline-offset-2 decoration-2 decoration-blue-500' : ''}`}>
                             {itemsCambiados[idx].animating ? <AnimatedCant oldCant={itemsCambiados[idx].oldCant} newCant={itemsCambiados[idx].newCant} /> : p.cant}
                           </span>
                         ) : p.cant}
-                      </span>
+                      </Etiqueta>
                     </div>
                   </div>
                   {esAnuladoItem && p.motivoAnulacion && (
@@ -1286,9 +1287,9 @@ export const Calculadora = ({ onGuardar }) => {
                       <Plane size={13} className="text-emerald-600 shrink-0" />
                       <span className="text-[10px] font-black text-emerald-900 uppercase tracking-wide">Aéreo</span>
                     </div>
-                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${rentaA < 20 ? 'bg-red-100 text-red-700' : 'bg-emerald-200/70 text-emerald-800'}`}>
+                    <Etiqueta tono={rentaA < 20 ? 'peligro' : 'exito'}>
                       {rentaA > 0 ? `${rentaA.toFixed(0)}%` : '0%'}
-                    </span>
+                    </Etiqueta>
                   </div>
 
                   <div className="text-sm sm:text-base font-black text-emerald-900 font-mono truncate">
@@ -1325,9 +1326,9 @@ export const Calculadora = ({ onGuardar }) => {
                       <Ship size={13} className="text-sky-600 shrink-0" />
                       <span className="text-[10px] font-black text-sky-900 uppercase tracking-wide">Marítimo</span>
                     </div>
-                    <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${rentaM < 15 ? 'bg-red-100 text-red-700' : 'bg-sky-200/70 text-sky-800'}`}>
+                    <Etiqueta tono={rentaM < 15 ? 'peligro' : 'info'}>
                       {rentaM > 0 ? `${rentaM.toFixed(0)}%` : '0%'}
-                    </span>
+                    </Etiqueta>
                   </div>
 
                   <div className="text-sm sm:text-base font-black text-sky-900 font-mono truncate">
@@ -1405,9 +1406,9 @@ export const Calculadora = ({ onGuardar }) => {
                           </span>
                         </div>
                         {picardEsMejor && (
-                          <span className="text-[9px] font-black bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full uppercase tracking-tight">
+                          <Etiqueta tono="exito">
                             Mejor Margen
-                          </span>
+                          </Etiqueta>
                         )}
                       </div>
 
@@ -1593,9 +1594,9 @@ export const Calculadora = ({ onGuardar }) => {
                              onFocus={(e) => e.target.select()} />
                       {esAnuladoItem ? (
                         <div className="mt-1 flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest bg-rose-50 text-rose-700 border border-rose-200">
+                          <Etiqueta tono="peligro">
                             <Ban size={11} /> Anulado
-                          </span>
+                          </Etiqueta>
                           {p.motivoAnulacion && (
                             <span className="text-[9px] text-slate-500 italic truncate max-w-48" title={p.motivoAnulacion}>
                               {p.motivoAnulacion}
@@ -1604,9 +1605,9 @@ export const Calculadora = ({ onGuardar }) => {
                         </div>
                       ) : esVentaPerdidaItem ? (
                         <div className="mt-1 flex flex-wrap items-center gap-2">
-                          <span className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest bg-rose-50 text-rose-700 border border-rose-200">
+                          <Etiqueta tono="peligro">
                             Venta Perdida
-                          </span>
+                          </Etiqueta>
                           <button
                             type="button"
                             onClick={() => abrirConsultaVentaPerdida(p)}
@@ -1617,13 +1618,13 @@ export const Calculadora = ({ onGuardar }) => {
                         </div>
                       ) : esPedidoPrevio ? (
                         <div className="mt-1">
-                          <span className={`inline-flex items-center gap-1.5 text-[9px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest ${(!p.modalidad || p.modalidad === 'Aéreo') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-blue-50 text-blue-700 border border-blue-200/60'}`}>
-                            <Check size={12} className={(!p.modalidad || p.modalidad === 'Aéreo') ? 'text-emerald-500' : 'text-blue-500'} />
+                          <Etiqueta dominio="modalidad" valor={p.modalidad || 'Aéreo'} sinIcono>
+                            <Check size={12} className="text-current" />
                             <span>Confirmado</span>
-                            <span className={`border-l pl-1.5 flex items-center ${(!p.modalidad || p.modalidad === 'Aéreo') ? 'border-emerald-200/80' : 'border-blue-200/80'}`}>
+                            <span className="border-l border-current/30 pl-1.5 flex items-center">
                               {(!p.modalidad || p.modalidad === 'Aéreo') ? <Plane size={12} /> : <Ship size={12} />}
                             </span>
-                          </span>
+                          </Etiqueta>
                         </div>
                       ) : !isRowDisabled ? (
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -1642,18 +1643,18 @@ export const Calculadora = ({ onGuardar }) => {
                             <span>En consulta</span>
                           </label>
                           {p.enConsulta && (
-                            <span className="inline-flex items-center gap-1 text-[8px] font-medium text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 uppercase tracking-tight">
+                            <Etiqueta tono="suave">
                               Sin precio (Consulta a proveedor)
-                            </span>
+                            </Etiqueta>
                           )}
                         </div>
                       ) : (
                         p.enConsulta && (
                           <div className="mt-1">
-                            <span className="inline-flex items-center gap-1 text-[8px] font-medium text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 uppercase tracking-tight">
+                            <Etiqueta tono="neutral">
                               <HelpCircle className="w-2.5 h-2.5 text-slate-400 shrink-0" />
                               En consulta con proveedor
-                            </span>
+                            </Etiqueta>
                           </div>
                         )
                       )}
@@ -1753,9 +1754,9 @@ export const Calculadora = ({ onGuardar }) => {
                         </td>
                         {/* % Renta */}
                         <td className="p-2 text-center bg-emerald-100/30">
-                          <span className={`font-bold px-2 py-1 rounded-md ${rentaA < 20 ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'}`}>
+                          <Etiqueta tono={rentaA < 20 ? 'peligro' : 'exito'} tamano="normal">
                               {rentaA > 0 ? `${rentaA.toFixed(0)}%` : '0%'}
-                          </span>
+                          </Etiqueta>
                         </td>
                       </>
                     )}
@@ -1770,9 +1771,9 @@ export const Calculadora = ({ onGuardar }) => {
                        </div>
                     </td>
                     <td className="p-2 text-center bg-blue-100/30">
-                      <span className={`font-bold px-2 py-1 rounded-md ${rentaM < 15 ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-700'}`}>
+                      <Etiqueta tono={rentaM < 15 ? 'peligro' : 'azul'} tamano="normal">
                           {rentaM > 0 ? `${rentaM.toFixed(0)}%` : '0%'}
-                      </span>
+                      </Etiqueta>
                     </td>
 
                     <td className="p-2">
@@ -2021,9 +2022,9 @@ export const Calculadora = ({ onGuardar }) => {
                     </div>
                   </div>
                   {appliedProvider === 'dhl' && (
-                    <span className="bg-blue-600 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full">
+                    <Etiqueta tono="azul">
                       En uso
-                    </span>
+                    </Etiqueta>
                   )}
                 </div>
 
@@ -2087,9 +2088,9 @@ export const Calculadora = ({ onGuardar }) => {
                     </div>
                   </div>
                   {appliedProvider === 'qs' && (
-                    <span className="bg-blue-600 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full">
+                    <Etiqueta tono="azul">
                       En uso
-                    </span>
+                    </Etiqueta>
                   )}
                 </div>
 

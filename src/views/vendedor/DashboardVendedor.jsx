@@ -1,6 +1,6 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge } from '../../components/Badge';
+import { Etiqueta } from '../../components/Etiqueta';
 import { 
   Calendar as CalendarIcon, Trash2, AlertTriangle, AlertOctagon, AlertCircle, Filter, 
   ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Hash, Package,
@@ -276,9 +276,9 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                 <span className="font-semibold text-[var(--detalle-text)]">
                   Creación bloqueada
                 </span>
-                <span className="rounded-[4px] bg-[var(--detalle-bg-warning)] px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[var(--detalle-accent-warning)] tabular-nums">
+                <Etiqueta tono="neutral" tamano="normal" mono className="bg-[var(--detalle-bg-warning)] text-[var(--detalle-accent-warning)]">
                   {cotizacionesEstancadas.length} estancada(s)
-                </span>
+                </Etiqueta>
               </div>
               <p className="text-[12px] text-[var(--detalle-text-muted)] mt-0.5 leading-normal">
                 Tienes cotizaciones o pedidos parciales con ítems fuera de su vigencia configurada pendientes de seguimiento. Debes atenderlos o cerrarlos para habilitar nuevas solicitudes.
@@ -890,11 +890,11 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   <td className="p-4">
                     <div className="flex flex-col items-center gap-1">
                       {esPedidoManual ? (
-                        <span className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">Total: ${totalManual.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <Etiqueta tono="amarillo" className="w-28 text-center">Total: ${totalManual.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Etiqueta>
                       ) : totalA > 0 ? (
                         <>
-                          <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">A: ${totalA.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-[10px] font-black w-28 text-center uppercase">M: ${totalM.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <Etiqueta tono="exito" className="w-28 text-center">A: ${totalA.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Etiqueta>
+                          <Etiqueta tono="azul" className="w-28 text-center">M: ${totalM.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Etiqueta>
                         </>
                       ) : (
                         <span className="text-[10px] font-black text-slate-300 uppercase italic tracking-widest">En costeo...</span>
@@ -904,7 +904,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                   <td className="p-4 text-center">
                     <div className="flex flex-col items-center gap-1">
                       <div className="flex items-center gap-1">
-                        <Badge estado={s.estado} />
+                        <Etiqueta dominio="estadoSolicitud" valor={s.estado} />
                         {s.estado === 'Venta Perdida' && (
                           <button
                             type="button"
@@ -955,7 +955,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                     </div>
                   </td>
                   <td className="p-4 text-center">
-                    <span className="text-[10px] font-black text-slate-700 bg-slate-100 px-3 py-1 rounded-full uppercase">{ocRefText}</span>
+                    <Etiqueta tono="neutral">{ocRefText}</Etiqueta>
                   </td>
                   <td className="p-4 text-center">
                     <button 

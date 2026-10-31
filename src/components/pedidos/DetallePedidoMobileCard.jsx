@@ -8,6 +8,7 @@ import { OfertaDiff } from './negociacion/OfertaDiff';
 import { tieneMotivoConsultaItem } from '../../utils/ventasPerdidasHelpers';
 import { esItemCerrado } from '../../utils/decisionItemHelpers';
 import { SeguimientoItemCondicion } from '../seguimiento/SeguimientoItemCondicion';
+import { Etiqueta } from '../../components/Etiqueta';
 
 export const DetallePedidoMobileCard = ({
   idx,
@@ -91,10 +92,10 @@ export const DetallePedidoMobileCard = ({
         <div className="flex flex-col items-end gap-1">
           {stagedVP ? (
             <div className="flex flex-col items-end gap-1">
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-sm">
+              <Etiqueta tono="peligro">
                 <TrendingDown size={11} />
                 <span>Por enviar</span>
-              </span>
+              </Etiqueta>
               <div className="flex items-center gap-1.5 mt-0.5">
                 {onConsultaVentaPerdida && (
                   <button

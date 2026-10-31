@@ -29,6 +29,7 @@ import { useRechazarOferta } from './pedido-manual/hooks/useRechazarOferta';
 import { useSeguimientoSolicitud } from '../../hooks/useSeguimientoSolicitud';
 import { useSolicitudScopedMap } from './pedido-manual/hooks/useSolicitudScopedMap';
 import './pedido-manual/detallePedidoManual.css';
+import { Etiqueta } from '../../components/Etiqueta';
 
 export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   const { id } = useParams();
@@ -442,9 +443,9 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
           <span className="font-mono font-bold text-base text-slate-900 tracking-tight">
             {solicitudBase.correlativo || '---'}
           </span>
-          <span className="text-[10px] font-semibold uppercase text-slate-600 bg-slate-100 px-2 py-0.5 rounded-sm border border-slate-200">
+          <Etiqueta tono="neutral">
             {cerrados} de {itemsServer.length} cerrados
-          </span>
+          </Etiqueta>
         </div>
         <p className={`text-xs font-semibold uppercase leading-snug line-clamp-2 wrap-break-word ${colors.text}`}>
           {solicitudBase.cliente || 'Sin cliente'}
@@ -498,9 +499,9 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
               Modo Solo Lectura
             </span>
           </div>
-          <span className="text-[9px] md:text-[10px] font-bold px-2 py-1 rounded-md bg-blue-100 text-blue-800 uppercase tracking-widest shrink-0 font-mono">
+          <Etiqueta tono="azul" mono className="md:text-[10px] shrink-0">
             Auditando
-          </span>
+          </Etiqueta>
         </div>
       )}
 
@@ -703,10 +704,10 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                         <div className="flex flex-col items-center gap-1.5 mt-1">
                           {stagedVP ? (
                             <>
-                              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-sm">
+                              <Etiqueta tono="peligro">
                                 <TrendingDown size={11} />
                                 <span>Por enviar</span>
-                              </span>
+                              </Etiqueta>
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 <button
                                   type="button"

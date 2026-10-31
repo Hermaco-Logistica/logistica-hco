@@ -2,6 +2,7 @@ import React from 'react';
 import { Ban, CheckCircle2, CheckSquare, Clock, MessageCircleQuestion, MessageSquare, Minus, Package, Pencil, Plane, Plus, Ship, Square, Tag, TrendingDown, X } from 'lucide-react';
 import { crearContextoProducto } from './productoContext';
 import { SeguimientoItemCondicion } from '../../../components/seguimiento/SeguimientoItemCondicion';
+import { Etiqueta } from '../../../components/Etiqueta';
 
 /** Props: viewModel contiene los datos y handlers del flujo de detalle RFQ. */
 export const DetalleRFQProductos = ({ viewModel }) => {
@@ -126,10 +127,10 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                 <div className="shrink-0 flex items-center gap-1.5 flex-wrap justify-end">
                   {stagedVP ? (
                     <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-sm">
+                      <Etiqueta tono="peligro">
                         <TrendingDown size={11} />
                         <span>Por enviar</span>
-                      </span>
+                      </Etiqueta>
                       <button
                         type="button"
                         onClick={() => abrirConsultaVentaPerdida(p, idx)}
@@ -149,10 +150,10 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                     </div>
                   ) : fueVentaPerdida ? (
                     <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-sm">
+                      <Etiqueta tono="peligro">
                         <TrendingDown size={11} />
                         <span>Venta Perdida</span>
-                      </span>
+                      </Etiqueta>
                       <button
                         type="button"
                         onClick={() => abrirConsultaVentaPerdida(p, idx)}
@@ -169,29 +170,29 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                       <span>Anulado</span>
                     </span>
                   ) : yaFuePedido ? (
-                    <span className={`inline-flex items-center gap-1.5 text-[9px] px-2.5 py-1 rounded-full font-black uppercase tracking-widest border ${(!p.modalidad || p.modalidad === 'Aéreo') ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60' : 'bg-blue-50 text-blue-700 border-blue-200/60'}`}>
-                      <CheckCircle2 size={12} className={(!p.modalidad || p.modalidad === 'Aéreo') ? 'text-emerald-500' : 'text-blue-500'} />
+                    <Etiqueta dominio="modalidad" valor={p.modalidad || 'Aéreo'} sinIcono>
+                      <CheckCircle2 size={12} className="text-current" />
                       <span>Confirmado</span>
-                      <span className={`border-l pl-1.5 flex items-center ${(!p.modalidad || p.modalidad === 'Aéreo') ? 'border-emerald-200/80' : 'border-blue-200/80'}`}>
+                      <span className="border-l border-current/30 pl-1.5 flex items-center">
                         {(!p.modalidad || p.modalidad === 'Aéreo') ? <Plane size={12} /> : <Ship size={12} />}
                       </span>
-                    </span>
+                    </Etiqueta>
                   ) : fueDenegado ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-sm">
+                    <Etiqueta tono="peligro">
                       <X size={11} />
                       <span>Denegado</span>
-                    </span>
+                    </Etiqueta>
                   ) : !estaCotizado && (
                     (p.enConsulta || p.estadoItem === 'En consulta') ? (
-                      <span className="inline-flex items-center gap-1 text-[9px] bg-amber-50 text-amber-700 border border-amber-200/60 px-2 py-0.5 rounded-full font-black uppercase tracking-wide">
+                      <Etiqueta tono="aviso">
                         <MessageSquare size={10} className="shrink-0" />
                         <span>En Consulta</span>
-                      </span>
+                      </Etiqueta>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[9px] bg-slate-50 text-slate-500 border border-slate-200/60 px-2 py-0.5 rounded-full font-black uppercase tracking-wide">
+                      <Etiqueta tono="suave">
                         <Clock size={10} className="shrink-0" />
                         <span>Pendiente</span>
-                      </span>
+                      </Etiqueta>
                     )
                   )}
 
@@ -266,9 +267,9 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-black text-slate-800 text-xs bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200/60 shadow-xs flex items-center justify-center">
+                        <Etiqueta tono="neutral" tamano="normal" mono className="flex justify-center">
                           x{p.cant}
-                        </span>
+                        </Etiqueta>
                         {rfq?.estado === 'Pendiente' && (
                           <button 
                             onClick={(e) => { e.stopPropagation(); setEditandoCant({ index: idx, value: p.cant }); }} 
@@ -460,10 +461,10 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                         </span>
                       ) : stagedVP ? (
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-300 px-2 py-0.5 rounded-sm">
+                          <Etiqueta tono="peligro">
                             <TrendingDown size={10} />
                             <span>Por enviar</span>
-                          </span>
+                          </Etiqueta>
                           <button
                             type="button"
                             onClick={() => abrirConsultaVentaPerdida(p, idx)}
@@ -476,10 +477,10 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                         </div>
                       ) : fueVentaPerdida ? (
                         <div className="flex items-center gap-2 mt-2">
-                          <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-sm">
+                          <Etiqueta tono="peligro">
                             <TrendingDown size={10} />
                             <span>Venta Perdida</span>
-                          </span>
+                          </Etiqueta>
                           <button
                             type="button"
                             onClick={() => abrirConsultaVentaPerdida(p, idx)}
@@ -491,29 +492,29 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                           </button>
                         </div>
                       ) : yaFuePedido ? (
-                        <span className={`inline-flex items-center gap-1.5 text-[8px] px-2 py-0.5 rounded-full font-black uppercase mt-2 tracking-widest ${(!p.modalidad || p.modalidad === 'Aéreo') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-blue-50 text-blue-700 border-blue-200/60'}`}>
-                          <CheckCircle2 size={10} className={(!p.modalidad || p.modalidad === 'Aéreo') ? 'text-emerald-500' : 'text-blue-500'} />
+                        <Etiqueta dominio="modalidad" valor={p.modalidad || 'Aéreo'} sinIcono className="mt-2">
+                          <CheckCircle2 size={10} className="text-current" />
                           <span>Confirmado</span>
-                          <span className={`border-l pl-1.5 flex items-center ${(!p.modalidad || p.modalidad === 'Aéreo') ? 'border-emerald-200/80' : 'border-blue-200/80'}`}>
+                          <span className="border-l border-current/30 pl-1.5 flex items-center">
                             {(!p.modalidad || p.modalidad === 'Aéreo') ? <Plane size={10} /> : <Ship size={10} />}
                           </span>
-                        </span>
+                        </Etiqueta>
                       ) : fueDenegado ? (
-                        <span className="inline-flex items-center gap-1.5 text-[8px] px-2 py-0.5 rounded-full font-black uppercase mt-2 tracking-widest bg-rose-50 text-rose-700 border border-rose-200/60">
+                        <Etiqueta tono="peligro" className="mt-2">
                           <X size={10} className="text-rose-500" />
                           <span>Denegado</span>
-                        </span>
+                        </Etiqueta>
                       ) : !estaCotizado && (
                         (p.enConsulta || p.estadoItem === 'En consulta') ? (
-                          <span className="inline-flex items-center gap-1 text-[8px] bg-amber-500 text-white px-2.5 py-0.5 rounded-full font-black uppercase mt-2 shadow-sm">
+                          <Etiqueta tono="aviso" className="mt-2">
                             <MessageSquare size={10} />
                             <span>En Consulta con Proveedor</span>
-                          </span>
+                          </Etiqueta>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-[8px] bg-amber-100 text-amber-600 px-2.5 py-0.5 rounded-full font-black uppercase mt-2">
+                          <Etiqueta tono="aviso" className="mt-2">
                             <Clock size={10} />
                             <span>Pendiente de Costeo</span>
-                          </span>
+                          </Etiqueta>
                         )
                       )}
                     </td>
@@ -573,9 +574,9 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                     )}
                     <td className="p-5 text-center">
                       {yaFuePedido ? (
-                        <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                        <Etiqueta tono="exito">
                           {p.modalidad || 'Aéreo'}
-                        </span>
+                        </Etiqueta>
                       ) : seleccionados[idx] ? (
                         rfq?.tipo === 'Pedido Manual' ? (
                           <span className="text-emerald-600 font-black uppercase text-xs">Aceptado</span>

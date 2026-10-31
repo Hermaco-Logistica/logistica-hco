@@ -19,6 +19,7 @@ import { normalizarBusqueda } from '../../utils/normalizers';
 import { usePersistedState } from '../../hooks/usePersistedState';
 import { generarPlantillaOCAsignada } from '../../utils/emailTemplates';
 import { interpretarEstadoLogistico } from '../../utils/interpretarEstadoLogistico';
+import { Etiqueta } from '../../components/Etiqueta';
 
 function parseCorrelativo(numeroOC, anio) {
   const match = String(numeroOC).match(new RegExp(`^0*(\\d+)-${anio}$`));
@@ -1513,9 +1514,9 @@ export const DashboardPedidos = ({ role }) => {
                   </td>
                   <td className="p-6 text-center whitespace-nowrap">
                     {item.numOC ? (
-                      <span className="bg-slate-100 text-slate-800 text-[10px] font-black px-2 py-1 rounded border border-slate-200">
+                      <Etiqueta tono="neutral">
                         {item.numOC}
-                      </span>
+                      </Etiqueta>
                     ) : <span className="text-slate-200 italic text-[9px]">PENDIENTE</span>}
                   </td>
                 </tr>

@@ -3,13 +3,12 @@ import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Search, Package, ExternalLink, Calendar, User, Building, Link as LinkIcon, CheckCircle2, Download, X, Ban, MessageCircleQuestion } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { MotivoAnulacionModal } from '../../components/MotivoAnulacionModal';
-import { Badge } from '../../components/Badge';
+import { Etiqueta } from '../../components/Etiqueta';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, evaluarEstadoGanada } from './theme';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
 import { useSessionState } from '../../hooks/usePersistedState';
-import { crearMapaFasesSeguimiento } from '../../utils/faseSeguimiento';
-import { FaseSeguimientoChip } from './components/FaseSeguimientoChip';
+import { obtenerFaseSolicitudCacheada } from '../../utils/faseSeguimiento';
 import {
   getHoyElSalvador,
   getAnioActualElSalvador,
@@ -157,9 +156,6 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
       }));
   };
 
-  // Fase de seguimiento (revisión / prórroga) derivada; no se guarda en Firestore
-  const fasesSeguimiento = useMemo(() => crearMapaFasesSeguimiento(solicitudes), [solicitudes]);
-
   // Filtrar según el tab activo y filtros contextuales (vendedor / cliente)
   const solicitudesPorEstado = useMemo(() => {
     const { periodo, fechaInicio, fechaFin, anioHistorico } = filtroPeriodo;
@@ -199,7 +195,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
         if (!normalizarBusqueda(s.cliente || '').includes(term)) return false;
       }
 
-      if (tabActual === 'seguimiento') return fasesSeguimiento.has(s.id);
+      if (tabActual === 'seguimiento') return Boolean(obtenerFaseSolicitudCacheada(s));
 
       const est = s.estado || 'Pendiente';
       if (tabActual === 'pendiente') {
@@ -226,7 +222,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
       }
       return true;
     });
-  }, [solicitudes, tabActual, vendedorFilter, clienteFilter, filtroPeriodo, rangoEsteMes, fasesSeguimiento]);
+  }, [solicitudes, tabActual, vendedorFilter, clienteFilter, filtroPeriodo, rangoEsteMes]);
 
   // Filtrar por término de búsqueda
   const solicitudesFiltradas = useMemo(() => {
@@ -287,8 +283,8 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
     <>
       <MotivoAnulacionModal movimientos={itemsMotivo} onClose={() => setItemsMotivo([])} />
       <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
-      {/* CABECERA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* CABECERA: título arriba y filtro de estado debajo */}
+      <div className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -300,9 +296,9 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
           </button>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className={`text-[10px] font-semibold tracking-wider px-2.5 py-0.5 rounded-full ${theme.bgBadge}`}>
+              <Etiqueta dominio="rol" valor={theme.key}>
                 Solicitudes
-              </span>
+              </Etiqueta>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
               Detalle de Solicitudes
@@ -439,7 +435,6 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                 const primerProd = s.productos?.[0]?.desc || '';
                 const ocs = obtenerOCs(s);
                 const tieneLink = s.linkOC && s.linkOC.startsWith('http');
-                const res = evaluarEstadoGanada(s);
                 const motivosAnulacion = obtenerMotivosAnulacion(s);
                 const itemsAnulados = obtenerItemsAnulados(s);
 
@@ -452,20 +447,6 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                           <Calendar size={10} />
                           <span>{formatFecha(s.fechaS || s.fechaCreacion)}</span>
                         </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1.5">
-                        <Badge estado={s.estado || 'Pendiente'} roleTheme={theme} />
-                        <FaseSeguimientoChip fase={fasesSeguimiento.get(s.id)} />
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${res.esGanada ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80' : 'bg-slate-50 text-slate-600 border-slate-200/80'}`}>
-                          {res.esGanada && <CheckCircle2 size={10} className="shrink-0" />}
-                          {res.label}
-                        </span>
-                        {s.estado !== 'Anulado' && s.productos?.some(p => p.estadoItem === 'Anulado') && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-500">
-                            <Ban size={9} className="shrink-0" />
-                            ítems anulados
-                          </span>
-                        )}
                       </div>
                     </div>
 
@@ -494,6 +475,10 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                           {cantItems} {cantItems === 1 ? 'ítem' : 'ítems'}
                         </span>
                       </div>
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <Etiqueta dominio="estadoSolicitud" valor={s.estado || 'Pendiente'} rol={theme.key} />
+                        <Etiqueta dominio="faseSeguimiento" valor={obtenerFaseSolicitudCacheada(s)?.fase} />
+                      </div>
                     </div>
 
                     {esTabDecision && (
@@ -514,12 +499,9 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                       <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-1.5 items-center">
                         <span className="text-[10px] text-slate-500 mr-1">OC:</span>
                         {ocs.map((oc, i) => (
-                          <span 
-                            key={i} 
-                            className="font-mono text-[10px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200"
-                          >
+                          <Etiqueta key={i} tono="neutral" mono>
                             {oc}
-                          </span>
+                          </Etiqueta>
                         ))}
                         {tieneLink && (
                           <a
@@ -585,9 +567,9 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                       return (
                         <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
                           <td className="py-2.5 px-3.5 whitespace-nowrap">
-                            <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 border border-slate-200/80 inline-block whitespace-nowrap">
+                            <Etiqueta tono="neutral" tamano="normal" mono>
                               {s.correlativo || 'S/N'}
-                            </span>
+                            </Etiqueta>
                           </td>
                           <td className="py-2.5 px-3.5 whitespace-nowrap">
                             <div className="flex items-center gap-1.5 text-slate-700">
@@ -622,10 +604,10 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                             </div>
                           </td>
                           <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-mono font-medium" title={primerProd ? primerProd.toUpperCase() : ''}>
+                            <Etiqueta tono="neutral" tamano="normal" mono title={primerProd ? primerProd.toUpperCase() : ''}>
                               <Package size={11} className="text-slate-400" />
                               {cantItems}
-                            </span>
+                            </Etiqueta>
                           </td>
                           {esTabDecision && (
                             <td className="max-w-[280px] py-2.5 px-3.5 align-top text-xs text-slate-600">
@@ -639,12 +621,9 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                             {ocs.length > 0 ? (
                               <div className="flex flex-wrap gap-1 items-center">
                                 {ocs.map((oc, i) => (
-                                  <span 
-                                    key={i} 
-                                    className="font-mono text-[11px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200"
-                                  >
+                                  <Etiqueta key={i} tono="neutral" tamano="normal" mono>
                                     {oc}
-                                  </span>
+                                  </Etiqueta>
                                 ))}
                                 {tieneLink && (
                                   <a
@@ -673,8 +652,8 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                           </td>
                           <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                             <div className="flex flex-col items-center gap-1">
-                              <Badge estado={s.estado || 'Pendiente'} roleTheme={theme} />
-                              <FaseSeguimientoChip fase={fasesSeguimiento.get(s.id)} />
+                              <Etiqueta dominio="estadoSolicitud" valor={s.estado || 'Pendiente'} rol={theme.key} />
+                              <Etiqueta dominio="faseSeguimiento" valor={obtenerFaseSolicitudCacheada(s)?.fase} />
                             </div>
                           </td>
                           <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
@@ -682,10 +661,9 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                               {(() => {
                                 const res = evaluarEstadoGanada(s);
                                 return (
-                                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${res.badgeClase}`}>
-                                    {res.esGanada && <CheckCircle2 size={11} className="shrink-0" />}
+                                  <Etiqueta dominio="resultado" valor={res.clave}>
                                     <span>{res.label}</span>
-                                  </span>
+                                  </Etiqueta>
                                 );
                               })()}
                               {s.estado !== 'Anulado' && s.productos?.some(p => p.estadoItem === 'Anulado') && (

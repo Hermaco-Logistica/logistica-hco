@@ -3,8 +3,8 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Search, Building, Download } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
-import { acumularFaseSeguimiento, obtenerFaseSolicitudCacheada } from '../../utils/faseSeguimiento';
-import { FaseSeguimientoConteo } from './components/FaseSeguimientoConteo';
+import { Etiqueta } from '../../components/Etiqueta';
+import { acumularFaseSeguimiento, describirFasesSeguimiento, obtenerFaseSolicitudCacheada } from '../../utils/faseSeguimiento';
 import { getRoleTheme } from './theme';
 import { contarDecisiones } from './utils/decisionMetrics';
 import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
@@ -205,9 +205,9 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
           </button>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className={`text-[10px] font-semibold tracking-wider px-2.5 py-0.5 rounded-full ${theme.bgBadge}`}>
+              <Etiqueta dominio="rol" valor={theme.key}>
                 Directorio
-              </span>
+              </Etiqueta>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
               Directorio de Clientes
@@ -311,7 +311,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         <h3 className="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-blue-600 transition-colors">{c.cliente}</h3>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono font-bold px-2 py-1 bg-slate-100 text-slate-600 border border-slate-200/60 rounded-lg shrink-0">#{numGlobal}</span>
+                    <Etiqueta tono="neutral" mono className="shrink-0">#{numGlobal}</Etiqueta>
                   </div>
                   
                   <div className="grid grid-cols-3 gap-2 text-xs">
@@ -322,7 +322,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                     <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-blue-600/70 font-medium">Cotizadas</span>
                       <span className="font-bold font-mono text-blue-700">{c.cotizadas}</span>
-                      <FaseSeguimientoConteo conteo={c.enSeguimiento} porFase={c.fasesSeguimiento} unidad="en seg." className="mt-1" />
+                      <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)} className="mt-1">{c.enSeguimiento > 0 ? `${c.enSeguimiento} en seg.` : null}</Etiqueta>
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-emerald-600/70 font-medium">Pedidos</span>
@@ -416,7 +416,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         </td>
                         <td className="py-2.5 px-3.5 text-center font-mono text-slate-600">
                           {c.cotizadas}
-                          <FaseSeguimientoConteo conteo={c.enSeguimiento} porFase={c.fasesSeguimiento} className="block mt-0.5 mx-auto w-fit" />
+                          <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)} className="block mt-0.5 mx-auto w-fit">{c.enSeguimiento > 0 ? `${c.enSeguimiento} en seguimiento` : null}</Etiqueta>
                         </td>
                         <DecisionSummaryColumns counts={c} basePath={`/analisis/cliente/${encodeURIComponent(c.cliente)}`} navigate={navigate} />
                         <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
@@ -428,15 +428,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                           )}
                         </td>
                         <td className="py-2.5 px-3.5 text-center">
-                          <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold border ${
-                            convPct > 50 
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
-                              : convPct > 0 
-                              ? 'bg-blue-50 text-blue-700 border-blue-200/60' 
-                              : 'bg-slate-50 text-slate-400 border-slate-200/60'
-                          }`}>
-                            {convPct}%
-                          </span>
+                          <Etiqueta dominio="rendimiento" valor={convPct} mono />
                         </td>
                         <td className="py-2.5 px-3.5 text-right font-mono font-semibold text-slate-900">
                           {formatearDinero(c.montoTotal)}

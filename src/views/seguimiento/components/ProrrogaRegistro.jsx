@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowRight, Check, ChevronDown, ChevronUp, X } from 'lucide-react';
+import { ArrowRight, CalendarClock, Check, ChevronDown, ChevronUp, Inbox, MessageCircleQuestion, Send, X } from 'lucide-react';
 import { completarAnclasProrroga, obtenerFechaVencimientoProrroga, obtenerFechasVencimientoProrroga } from '../../../utils/prorrogasCliente';
 import { StatusChip } from '../../../components/detalle/StatusChip';
+import { textoDeRol } from '../../../utils/etiquetas';
 import { ProrrogaItemsAfectados } from './ProrrogaItemsAfectados';
 
 const LIMITE_CARACTERES_MOTIVO = 50;
@@ -27,6 +28,13 @@ const fechasTexto = (fechas = []) => {
   if (!unicas.length) return 'Sin fecha';
   return unicas.length === 1 ? unicas[0] : `${unicas[0]} – ${unicas[unicas.length - 1]}`;
 };
+
+/** Contenedor que anima suavemente su altura al abrir y cerrar. El contenido se monta la primera vez que se abre. */
+const ExpansionSuave = ({ abierto, montado, children }) => (
+  <div className="prorrogas-expand" data-abierto={abierto} inert={!abierto}>
+    <div className="prorrogas-expand__inner">{montado && children}</div>
+  </div>
+);
 
 /** Menú desplegable para comprador con prórroga pendiente: Atender, Aceptar o Rechazar (portaled a document.body) */
 const AccionesDropdown = ({ solicitud, record, onAtender, onResponder }) => {
@@ -144,8 +152,9 @@ const AccionesDropdown = ({ solicitud, record, onAtender, onResponder }) => {
 };
 
 /** Presenta una prórroga o evento de revisión en tarjeta móvil o fila de escritorio. */
-export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onResponder }) => {
+export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onResponder, mostrarVendedor = true, rol }) => {
   const [expandido, setExpandido] = useState(false);
+  const [itemsMontados, setItemsMontados] = useState(false);
   const [modalMotivoOpen, setModalMotivoOpen] = useState(false);
   const { solicitud } = record;
   const esRevision = record.tipo === 'revision';
@@ -157,6 +166,7 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
   let descripcionEstado = '';
   let metadatos = [];
   let gridMobileFacts = [];
+  let plazoFilas = [];
 
   if (esRevision) {
     const { revision, item } = record;
@@ -190,6 +200,12 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
       ['Registrada por', revision.registradoPor || solicitud.vendedorEmail || 'Vendedor']
     ];
 
+    plazoFilas = [
+      { icono: CalendarClock, etiqueta: 'Revisión hasta', valor: fechaTexto(revision.fechaVencimientoRevision), destacada: true },
+      { icono: Inbox, etiqueta: 'Base', valor: fechaTexto(revision.fechaInicioRevision) },
+      { icono: Send, etiqueta: 'Registrada', valor: fechaTexto(revision.fechaRevision) }
+    ];
+
     gridMobileFacts = [
       { label: 'Revisión hasta', value: fechaTexto(revision.fechaVencimientoRevision), highlight: true },
       { label: 'Tiempo adicional', value: revision.diasExtension ? `${revision.diasExtension} días` : 'Según validez', highlight: true },
@@ -220,6 +236,12 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
       ['Atendida por', cierreRegistro?.motivo || prorroga.respondidoPor || (pendiente ? 'Pendiente Compras' : 'Sin dato')]
     ];
 
+    plazoFilas = [
+      { icono: CalendarClock, etiqueta: 'Nueva límite', valor: nuevaFechaLimiteStr, destacada: true },
+      { icono: Inbox, etiqueta: 'Base', valor: vencimientoBaseStr },
+      { icono: Send, etiqueta: 'Solicitada', valor: fechaTexto(prorroga.fechaSolicitud) }
+    ];
+
     gridMobileFacts = [
       { label: 'Nueva fecha límite', value: nuevaFechaLimiteStr, highlight: true },
       { label: 'Días solicitados', value: `${prorroga.diasSolicitados || 0} días`, highlight: true },
@@ -246,6 +268,7 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
   ].filter(Boolean).join(' · ');
 
   const vendedor = solicitud.vendedorNombre || solicitud.vendedorEmail || record.revision?.registradoPor || 'Vendedor';
+  const vendedorCorreo = solicitud.vendedorNombre ? solicitud.vendedorEmail : '';
   const cliente = solicitud.cliente || record.prorroga?.cliente || 'Cliente sin nombre';
   const tipo = solicitud.tipo || record.prorroga?.tipoSolicitud || 'RFQ';
   const referencia = solicitud.correlativo || 'Sin ref';
@@ -255,6 +278,11 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
 
   const esPendiente = !esRevision && record.prorroga?.estado === 'pendiente';
   const mostrarRespuesta = puedeResponder && esPendiente && !registroCerrado;
+
+  const alternarItems = () => {
+    setItemsMontados(true);
+    setExpandido((prev) => !prev);
+  };
 
   const motivoTextoLimpio = String(descripcionEstado || '').trim();
   const motivoEsLargo = motivoTextoLimpio.length > LIMITE_CARACTERES_MOTIVO;
@@ -285,7 +313,7 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
         <div className="flex items-center justify-between border-b border-[var(--detalle-border)] px-5 py-3.5">
           <div>
             <h3 className="text-[14px] font-semibold text-[var(--detalle-text)] m-0 leading-tight">
-              {esRevision ? 'Comentario de revisión' : 'Motivo de la prórroga'}
+              {esRevision ? 'Comentario y datos de la revisión' : 'Motivo y datos de la prórroga'}
             </h3>
             <p className="text-[11px] text-[var(--detalle-text-subtle)] m-0 mt-0.5">
               #{referencia} · {cliente}
@@ -305,6 +333,16 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
           <p className="text-[13px] leading-relaxed text-[var(--detalle-text)] whitespace-pre-wrap m-0">
             {motivoTextoLimpio}
           </p>
+          {metadatos.length > 0 && (
+            <dl className="mt-4 pt-3 border-t border-[var(--detalle-border)] grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 m-0">
+              {metadatos.map(([etiqueta, valor]) => (
+                <React.Fragment key={etiqueta}>
+                  <dt className="text-[11px] text-[var(--detalle-text-subtle)]">{etiqueta}</dt>
+                  <dd className="text-[12px] font-semibold text-[var(--detalle-text)] m-0 text-right">{valor}</dd>
+                </React.Fragment>
+              ))}
+            </dl>
+          )}
           {!esRevision && record.prorroga?.respuestaComprador && (
             <div className="mt-4 pt-3 border-t border-[var(--detalle-border)]">
               <span className="text-[11px] font-semibold text-[var(--detalle-text-subtle)] block mb-1">
@@ -344,7 +382,7 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
         <div>
           <h2 className="prorrogas-mobile-title">{cliente}</h2>
           <div className="mt-1 text-[12px] text-[var(--detalle-text-muted)]">
-            {vendedor} · {tipo} · {rondaSub}
+            {mostrarVendedor ? `${vendedor} · ` : ''}{tipo} · {rondaSub}
           </div>
           <div className="mt-1 flex items-center gap-1.5 text-[12px] text-[var(--detalle-text-muted)]">
             {esCompleta && <Check size={13} className="text-[var(--detalle-accent-success)]" aria-hidden="true" />}
@@ -373,17 +411,17 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
             <button
               type="button"
               aria-expanded={expandido}
-              onClick={() => setExpandido((prev) => !prev)}
+              onClick={alternarItems}
               className="prorrogas-btn-items"
             >
               <span>{expandido ? 'Ocultar ítems' : 'Ver ítems'}</span>
-              {expandido ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+              <ChevronDown size={13} className={`transition-transform duration-300 ${expandido ? 'rotate-180' : ''}`} />
             </button>
-            {expandido && (
+            <ExpansionSuave abierto={expandido} montado={itemsMontados}>
               <div className="mt-2 pt-2 border-t border-[var(--detalle-border)]">
                 <ProrrogaItemsAfectados solicitud={solicitud} record={record} />
               </div>
-            )}
+            </ExpansionSuave>
           </div>
         )}
 
@@ -444,21 +482,31 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
     );
   }
 
-  // Vista de tabla (5 columnas: 22% | 15% | 24% | 22% | 17%).
+  // Vista de tabla: Solicitud | Vendedor (si aplica) | Estado | Motivo | Plazo | Acción.
+  const columnas = mostrarVendedor ? 6 : 5;
   return (
     <>
       <tr className="prorrogas-tr">
-        {/* Columna 1: Solicitud (22%) */}
-        <td className="prorrogas-td" style={{ width: '22%' }}>
+        {/* Solicitud */}
+        <td className="prorrogas-td">
           <div className="prorrogas-cell-ref">#{referencia}</div>
           <div className="prorrogas-cell-cliente" title={cliente}>{cliente}</div>
-          <div className="prorrogas-cell-sub">{vendedor} · {tipo} · {rondaSub}</div>
+          <div className="prorrogas-cell-sub">{tipo}</div>
         </td>
 
-        {/* Columna 2: Estado (15%) */}
-        <td className="prorrogas-td" style={{ width: '15%' }}>
+        {/* Vendedor (se omite cuando quien mira es el propio vendedor) */}
+        {mostrarVendedor && (
+          <td className="prorrogas-td">
+            <div className="prorrogas-cell-vendedor" title={vendedor}>{vendedor}</div>
+            {vendedorCorreo && <div className="prorrogas-cell-sub" title={vendedorCorreo}>{vendedorCorreo}</div>}
+          </td>
+        )}
+
+        {/* Estado + ronda + cobertura + ver ítems */}
+        <td className="prorrogas-td">
           <div className="prorrogas-cell-status">
             <StatusChip status={statusKey} label={statusLabel} />
+            <div className="prorrogas-status-meta prorrogas-status-meta--ronda">{rondaSub}</div>
             <div className="prorrogas-status-meta">
               {esCompleta && <Check size={12} className="text-[var(--detalle-accent-success)]" aria-hidden="true" />}
               <span>{textoCobertura}</span>
@@ -468,51 +516,51 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
                 {resumenEventos}
               </div>
             )}
-          </div>
-        </td>
-
-        {/* Columna 3: Motivo (24%) con recorte a 50 caracteres y Ver más */}
-        <td className="prorrogas-td" style={{ width: '24%' }}>
-          <div className="text-[13px] leading-snug text-[var(--detalle-text)]">
-            <span>{motivoVisible}</span>
-            {motivoEsLargo && (
+            {mostrarDetalleItems && (
               <button
                 type="button"
-                onClick={() => setModalMotivoOpen(true)}
-                className="ml-1 inline-flex items-center text-[12px] font-semibold text-[var(--detalle-accent-info)] hover:underline cursor-pointer align-baseline"
-                title="Ver motivo completo"
+                aria-expanded={expandido}
+                onClick={alternarItems}
+                className="prorrogas-btn-items"
               >
-                Ver más
+                <span>{expandido ? 'Ocultar ítems' : 'Ver ítems'}</span>
+                <ChevronDown size={13} className={`transition-transform duration-300 ${expandido ? 'rotate-180' : ''}`} />
               </button>
             )}
           </div>
-          {mostrarDetalleItems && (
-            <button
-              type="button"
-              aria-expanded={expandido}
-              onClick={() => setExpandido((prev) => !prev)}
-              className="prorrogas-btn-items mt-1.5"
-            >
-              <span>{expandido ? 'Ocultar ítems' : 'Ver ítems'}</span>
-              {expandido ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-            </button>
-          )}
         </td>
 
-        {/* Columna 4: Plazo (22%) */}
-        <td className="prorrogas-td" style={{ width: '22%' }}>
-          <ul className="prorrogas-facts-list">
-            {metadatos.slice(0, 3).map(([lbl, val]) => (
-              <li key={lbl} className="prorrogas-fact-item">
-                <span className="prorrogas-fact-label">{lbl}:</span>
-                <span className="prorrogas-fact-val">{val}</span>
-              </li>
-            ))}
+        {/* Motivo: icono de consulta que abre el resumen */}
+        <td className="prorrogas-td">
+          <button
+            type="button"
+            onClick={() => setModalMotivoOpen(true)}
+            className="prorrogas-btn-consulta"
+            title={esRevision ? 'Consultar comentario de la revisión' : 'Consultar motivo de la prórroga'}
+          >
+            <MessageCircleQuestion size={13} /> Consulta
+          </button>
+        </td>
+
+        {/* Plazo: icono + fecha (sin hora) */}
+        <td className="prorrogas-td">
+          <ul className="prorrogas-fechas">
+            {plazoFilas.map((fila) => {
+              const Icono = fila.icono;
+              const colorRol = textoDeRol(rol);
+              return (
+                <li key={fila.etiqueta} className={`prorrogas-fecha-fila ${fila.destacada ? 'prorrogas-fecha-fila--destacada' : ''}`}>
+                  <Icono size={12} className={`prorrogas-fecha-icono ${colorRol} ${fila.destacada ? '' : 'opacity-60'}`} aria-hidden="true" />
+                  <span className="prorrogas-fecha-etiqueta">{fila.etiqueta}:</span>
+                  <b className={`prorrogas-fecha-valor ${fila.destacada ? colorRol : 'text-[var(--detalle-text)]'}`}>{fila.valor}</b>
+                </li>
+              );
+            })}
           </ul>
         </td>
 
-        {/* Columna 5: Acciones (17%) */}
-        <td className="prorrogas-td text-right" style={{ width: '17%' }}>
+        {/* Acción */}
+        <td className="prorrogas-td text-right">
           <div className="prorrogas-actions-desktop">
             {mostrarRespuesta ? (
               <AccionesDropdown
@@ -535,11 +583,15 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
         </td>
       </tr>
 
-      {/* Fila expandida de ítems afectados */}
-      {mostrarDetalleItems && expandido && (
+      {/* Fila de ítems afectados: se abre y se cierra con animación de altura */}
+      {mostrarDetalleItems && itemsMontados && (
         <tr className="prorrogas-expanded-row">
-          <td colSpan={5} className="prorrogas-expanded-cell">
-            <ProrrogaItemsAfectados solicitud={solicitud} record={record} />
+          <td colSpan={columnas} className="prorrogas-expanded-cell">
+            <ExpansionSuave abierto={expandido} montado={itemsMontados}>
+              <div className="prorrogas-expand__contenido">
+                <ProrrogaItemsAfectados solicitud={solicitud} record={record} />
+              </div>
+            </ExpansionSuave>
           </td>
         </tr>
       )}

@@ -1,30 +1,22 @@
 import React from 'react';
 import { ESTADOS_SEGUIMIENTO_CLIENTE, obtenerHistorialPlazosItem } from '../../utils/seguimientoCliente';
+import { Etiqueta } from '../Etiqueta';
 import './seguimiento.css';
 
 const formatoFecha = (fecha) => fecha
   ? new Intl.DateTimeFormat('es-SV', { day: 'numeric', month: 'short', timeZone: 'America/El_Salvador' }).format(fecha)
   : '—';
 
-const TONOS_CHIP = {
-  danger: 'text-rose-700 bg-rose-50 border-rose-300',
-  warning: 'text-amber-800 bg-amber-50 border-amber-300',
-  info: 'text-sky-700 bg-sky-50 border-sky-300'
-};
-
 const ESTADOS_PRORROGA = { pendiente: 'pendiente', aprobada: 'aprobada', rechazada: 'rechazada' };
 
-function obtenerChip({ detalle, elegibleRevision, elegibleProrroga, prorrogaPendiente }) {
-  if (prorrogaPendiente) return { tono: 'info', texto: 'Prórroga pendiente', titulo: 'Compras aún no responde la prórroga solicitada.' };
-  if (detalle.estado === ESTADOS_SEGUIMIENTO_CLIENTE.CIERRE_REQUERIDO || (detalle.vencida && !elegibleRevision && !elegibleProrroga)) {
-    return { tono: 'danger', texto: 'Sin extensiones', titulo: 'Agotó revisiones y prórroga. Ciérralo como pedido o venta perdida.' };
-  }
-  if (detalle.vencida && !elegibleRevision) {
-    return { tono: 'warning', texto: 'Solo prórroga', titulo: 'Ya usó todas sus revisiones. Solo puede pedir prórroga formal.' };
-  }
-  if (detalle.vencida) return { tono: 'danger', texto: 'Vencido', titulo: 'Puede mantenerse en revisión o pedir prórroga.' };
-  if (detalle.diasRestantes <= 2) return { tono: 'warning', texto: 'Por vencer', titulo: 'Vence en 2 días hábiles o menos.' };
-  if (detalle.estado === ESTADOS_SEGUIMIENTO_CLIENTE.EN_REVISION) return { tono: 'info', texto: 'En revisión', titulo: 'Revisión activa con el cliente.' };
+/** Clave del catálogo `vigenciaItem` (utils/etiquetas.js) que corresponde al estado del ítem. */
+function obtenerClaveVigencia({ detalle, elegibleRevision, elegibleProrroga, prorrogaPendiente }) {
+  if (prorrogaPendiente) return 'prorroga_pendiente';
+  if (detalle.estado === ESTADOS_SEGUIMIENTO_CLIENTE.CIERRE_REQUERIDO || (detalle.vencida && !elegibleRevision && !elegibleProrroga)) return 'sin_extensiones';
+  if (detalle.vencida && !elegibleRevision) return 'solo_prorroga';
+  if (detalle.vencida) return 'vencido';
+  if (detalle.diasRestantes <= 2) return 'por_vencer';
+  if (detalle.estado === ESTADOS_SEGUIMIENTO_CLIENTE.EN_REVISION) return 'en_revision';
   return null;
 }
 
@@ -43,7 +35,7 @@ export const SeguimientoItemCondicion = ({
   if (!detalle) return null;
 
   const plazos = obtenerHistorialPlazosItem(item, solicitud, index);
-  const chip = obtenerChip({ detalle, elegibleRevision, elegibleProrroga, prorrogaPendiente });
+  const claveVigencia = obtenerClaveVigencia({ detalle, elegibleRevision, elegibleProrroga, prorrogaPendiente });
   const vigencia = detalle.vencida
     ? `Venció ${formatoFecha(detalle.fechaAlertaInicial)} · hace ${detalle.diasVencidos} d. háb.`
     : `Vence ${formatoFecha(detalle.fechaAlertaInicial)} · ${detalle.diasRestantes} d. háb.`;
@@ -59,11 +51,7 @@ export const SeguimientoItemCondicion = ({
           <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Revisiones</span>
           <span className="text-sm font-bold text-slate-700">{detalle.cantidadRevisiones}/{maxRevisiones}</span>
         </div>
-        {chip && (
-          <span title={chip.titulo} className={`self-center inline-flex items-center text-[10px] font-bold uppercase tracking-wider border px-2 py-0.5 rounded-sm ${TONOS_CHIP[chip.tono]}`}>
-            {chip.texto}
-          </span>
-        )}
+        {claveVigencia && <Etiqueta dominio="vigenciaItem" valor={claveVigencia} className="self-center" />}
       </div>
 
       {plazos.length > 1 && (

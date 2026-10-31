@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Send, Check, X, Plane, Ship } from 'lucide-react';
+import { Etiqueta } from '../../components/Etiqueta';
 
 const ModalidadIcon = ({ mod, className }) => {
   if (mod === 'Marítimo') return <Ship size={14} className={className} />;
@@ -42,14 +43,14 @@ export const PropuestaPrecioCard = ({ mensaje, currentUser, onAceptar, onContrao
           Propuesta de precio
         </span>
         {estado === 'aceptada' && (
-          <span className="bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase px-2 py-0.5 rounded">
+          <Etiqueta tono="exito">
             Aceptada
-          </span>
+          </Etiqueta>
         )}
         {estado === 'contraofertada' && (
-          <span className="bg-amber-100 text-amber-700 text-[9px] font-black uppercase px-2 py-0.5 rounded">
+          <Etiqueta tono="aviso">
             Contraofertada
-          </span>
+          </Etiqueta>
         )}
       </div>
 

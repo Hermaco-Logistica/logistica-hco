@@ -1,6 +1,5 @@
-import * as XLSX from 'xlsx';
 import { evaluarEstadoGanada } from '../../views/analisis/theme';
-import { crearHojaHermaco, descargarLibro, formatFecha } from './comun';
+import { crearHojaHermaco, descargarLibro, formatFecha, cargarXLSX } from './comun';
 import { obtenerDetalleDecisionExportable } from './decisionExportable';
 import { extraerTodosLosMovimientos } from './extraerMovimientos';
 import { crearCalculadorSeguimiento, ENCABEZADOS_SEGUIMIENTO_ITEM, ANCHOS_SEGUIMIENTO_ITEM } from './seguimientoExcel';
@@ -8,7 +7,7 @@ import { crearCalculadorSeguimiento, ENCABEZADOS_SEGUIMIENTO_ITEM, ANCHOS_SEGUIM
 /**
  * Exporta el historial de movimientos de productos (usado en Cliente, Producto, Vendedor Historial y Análisis)
  */
-export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial_movimientos', {
+export async function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial_movimientos', {
   titulo = 'CONTROL DE LOGÍSTICA - MOVIMIENTOS HISTÓRICOS',
   periodoLabel = '',
   sheetName = 'Movimientos'
@@ -115,7 +114,10 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
     ...ANCHOS_SEGUIMIENTO_ITEM
   ];
 
+  const XLSX = await cargarXLSX();
+
   const ws = crearHojaHermaco({
+    XLSX,
     titulo,
     periodoLabel,
     headers,
@@ -127,16 +129,16 @@ export function exportarMovimientosExcel(movimientos, nombreArchivo = 'historial
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  descargarLibro(wb, nombreArchivo);
+  descargarLibro(XLSX, wb, nombreArchivo);
 }
 
 /**
  * Exporta todos los movimientos de una lista de solicitudes en formato Excel
  */
-export function exportarTodosLosMovimientosExcel(solicitudes, ordenesCompra = [], nombreArchivo = 'todos_los_movimientos', {
+export async function exportarTodosLosMovimientosExcel(solicitudes, ordenesCompra = [], nombreArchivo = 'todos_los_movimientos', {
   titulo = 'CONTROL DE LOGÍSTICA - REPORTE COMPLETO DE MOVIMIENTOS',
   periodoLabel = ''
 } = {}) {
   const movs = extraerTodosLosMovimientos(solicitudes, ordenesCompra);
-  exportarMovimientosExcel(movs, nombreArchivo, { titulo, periodoLabel, sheetName: 'Movimientos' });
+  return exportarMovimientosExcel(movs, nombreArchivo, { titulo, periodoLabel, sheetName: 'Movimientos' });
 }

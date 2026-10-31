@@ -15,6 +15,7 @@ import { SeguimientoClienteBanner } from '../../../components/seguimiento/Seguim
 import { PanelCriteriosProrroga } from '../../../components/seguimiento/PanelCriteriosProrroga';
 import { ContextBar } from '../../../components/detalle/ContextBar';
 import './detalleRFQResponsive.css';
+import { Etiqueta } from '../../../components/Etiqueta';
 
 export const DetalleRFQVista = ({ viewModel }) => {
   const {
@@ -401,9 +402,9 @@ export const DetalleRFQVista = ({ viewModel }) => {
             <span className="font-mono font-black text-base text-slate-900 tracking-tight">
               {rfq?.correlativo || '---'}
             </span>
-            <span className="text-[10px] font-black uppercase text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-md">
+            <Etiqueta tono="apagado">
               {itemsCotizadosCount} de {totalProductosCount} cotizados
-            </span>
+            </Etiqueta>
           </div>
           <p className={`text-xs font-bold uppercase mt-0.5 line-clamp-2 break-words ${colors.text}`}>
             {rfq?.cliente || 'Sin cliente'}
@@ -518,7 +519,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 italic">
                     Archivos Adjuntos
                     {archivosAdjuntos.length > 0 && (
-                      <span className="ml-2 bg-emerald-500 text-white rounded-full px-1.5 py-0.5 text-[9px]">{archivosAdjuntos.length}</span>
+                      <Etiqueta tono="exito" className="ml-2">{archivosAdjuntos.length}</Etiqueta>
                     )}
                   </label>
                   <label className={`inline-flex cursor-pointer items-center gap-2 rounded-xl px-4 py-2.5 text-[10px] font-black uppercase tracking-wide transition-colors ${!puedeConfirmarPedido ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400' : 'bg-slate-900 text-white hover:bg-emerald-600'}`}>
@@ -590,7 +591,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
                 <div className="bg-slate-50/50 rounded-xl p-4 text-[10px] font-black uppercase tracking-widest space-y-3 border border-slate-200">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Estado</span>
-                    <span className="bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-md">Generado</span>
+                    <Etiqueta tono="exito" tamano="normal">Generado</Etiqueta>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400">Ref. OC Cliente</span>
@@ -598,9 +599,9 @@ export const DetalleRFQVista = ({ viewModel }) => {
                   </div>
                   <div className="flex justify-between items-center pt-3 border-t border-slate-200">
                     <span className="text-slate-400">OC Compras (Hermaco)</span>
-                    <span className="text-blue-700 normal-case font-mono bg-blue-100 px-2.5 py-1 rounded-md">
+                    <Etiqueta tono="azul" tamano="normal" mono>
                       {[...new Set((rfq?.productos || []).filter(p => p.numOC).map(p => p.numOC))].join(', ') || 'Pendiente'}
-                    </span>
+                    </Etiqueta>
                   </div>
                 </div>
 
@@ -623,9 +624,9 @@ export const DetalleRFQVista = ({ viewModel }) => {
                         {productosDelPedido.map((registro, i) => (
                           <div key={`${registro.idx}-${i}`} className="flex justify-between items-center gap-3 p-2 hover:bg-slate-50 transition-colors rounded-lg border-b border-slate-50 last:border-0">
                             <span className="truncate text-xs font-bold text-slate-700 normal-case">{registro.item?.descripcion || registro.item?.desc || `Ítem ${registro.idx + 1}`}</span>
-                            <span className={`shrink-0 text-[9px] font-black uppercase px-2 py-1 rounded-md ${getTextoModalidad(registro.idx, registro.item) === 'Aéreo' ? 'bg-emerald-100 text-emerald-700' : getTextoModalidad(registro.idx, registro.item) === 'Marítimo' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                            <Etiqueta dominio="modalidad" valor={getTextoModalidad(registro.idx, registro.item)} className="shrink-0">
                               {getTextoModalidad(registro.idx, registro.item)}
-                            </span>
+                            </Etiqueta>
                           </div>
                         ))}
                       </div>

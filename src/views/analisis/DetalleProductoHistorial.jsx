@@ -22,13 +22,13 @@ import {
   MessageCircleQuestion
 } from 'lucide-react';
 import { exportarMovimientosExcel } from '../../utils/exportarExcel';
-import { Badge } from '../../components/Badge';
+import { Etiqueta } from '../../components/Etiqueta';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
 import { normalizarDecisionFilter, obtenerConfiguracionDecision, obtenerEstadoDecision } from './utils/decisionFilter';
 import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
 import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
 import { DecisionBadge } from './components/DecisionBadge';
-import { FaseSeguimientoItemChip } from './components/FaseSeguimientoItemChip';
+import { obtenerFaseItemCacheada } from '../../utils/faseSeguimiento';
 import {
   prepararDatosConsultaMovimiento,
   obtenerTextoConsultaMovimiento,
@@ -77,13 +77,13 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
         <div className="flex justify-between items-start w-full gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-              <span className={`text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-sm border ${res.badgeClase}`}>
+              <Etiqueta dominio="resultado" valor={res.clave}>
                 {res.label}
-              </span>
+              </Etiqueta>
               <span className="text-slate-300 text-[9px]">•</span>
               <span className="text-slate-500 font-mono font-medium text-[10px] uppercase">{m.correlativo}</span>
               {!soloAnulados && res.esParcial && (
-                <span className="bg-amber-100 text-amber-800 text-[8px] font-bold px-1.5 py-0.5 rounded-sm uppercase tracking-wider">Parcial</span>
+                <Etiqueta tono="aviso">Parcial</Etiqueta>
               )}
               {soloAnulados && <DecisionBadge decisionFilter={decisionFilter} withIcon />}
             </div>
@@ -97,7 +97,7 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
 
           {/* Bloque de valores financieros a la derecha */}
           <div className="flex flex-col items-end shrink-0 pl-2 justify-center">
-            <span className="text-[10px] text-slate-500 font-mono mb-0.5 bg-slate-100 px-1.5 py-0.5 rounded-md border border-slate-200/60">{m.unidades.toLocaleString()} u.</span>
+            <Etiqueta tono="apagado" mono className="mb-0.5">{m.unidades.toLocaleString()} u.</Etiqueta>
             <span className="font-mono font-bold text-slate-900 text-[13px] mt-1">{formatMoneda(m.valorNeto)}</span>
           </div>
         </div>
@@ -164,8 +164,8 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
               {!soloAnulados && <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
                 <span className="text-slate-500">Estado / Sistema</span>
                 <div className="flex items-center gap-1.5">
-                  <FaseSeguimientoItemChip movimiento={m} />
-                  <Badge estado={m.estado} roleTheme={theme} className="scale-90 origin-right" />
+                  <Etiqueta dominio="faseSeguimiento" valor={obtenerFaseItemCacheada(m.solicitudOriginal, m.idxProducto)} />
+                  <Etiqueta dominio="estadoSolicitud" valor={m.estado} rol={theme.key} />
                 </div>
               </div>}
               {m.ocRef && (
@@ -617,9 +617,9 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
           </button>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-1.5">
-              <span className={`text-[9px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-sm ${theme.bgBadge}`}>
+              <Etiqueta dominio="rol" valor={theme.key}>
                 {soloAnulados ? `${obtenerConfiguracionDecision(decisionFilter).titulo} de Producto` : 'Historial de Producto'}
-              </span>
+              </Etiqueta>
             </div>
             
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 w-full">
@@ -910,16 +910,13 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                       {/* Correlativo RFQ */}
                       <td className="py-2.5 px-3 whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded-md bg-slate-100 text-slate-800 border border-slate-200/80 inline-block whitespace-nowrap">
+                          <Etiqueta tono="neutral" tamano="normal" mono>
                             {m.correlativo}
-                          </span>
+                          </Etiqueta>
                           {m.solicitudOriginal?.estado === 'Pedido Parcial' && (
-                            <span 
-                              className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200/80 shrink-0 whitespace-nowrap"
-                              title="La solicitud original es Pedido Parcial"
-                            >
+                            <Etiqueta tono="info" className="shrink-0" title="La solicitud original es Pedido Parcial">
                               Parcial
-                            </span>
+                            </Etiqueta>
                           )}
                         </div>
                       </td>
@@ -1013,13 +1010,13 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                       {/* Modalidad */}
                       <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         {esAereo ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-sky-50 text-sky-700 border border-sky-200/60 whitespace-nowrap">
+                          <Etiqueta tono="info">
                             <Plane size={11} /> Aéreo
-                          </span>
+                          </Etiqueta>
                         ) : esMaritimo ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200/60 whitespace-nowrap">
+                          <Etiqueta tono="azul">
                             <Ship size={11} /> Marítimo
-                          </span>
+                          </Etiqueta>
                         ) : (
                           <span className="text-[10px] text-slate-400 font-medium whitespace-nowrap">
                             {m.modalidad}
@@ -1060,9 +1057,9 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                               <LinkIcon size={11} /> Ver OC
                             </a>
                           ) : (
-                            <span className="font-mono text-[11px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 whitespace-nowrap">
+                            <Etiqueta tono="neutral" tamano="normal" mono>
                               {m.ocRef}
-                            </span>
+                            </Etiqueta>
                           )
                         ) : (
                           <span className="text-slate-300 text-[11px]">---</span>
@@ -1072,8 +1069,8 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                       {/* Estado */}
                       {!soloAnulados && <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         <div className="flex flex-col items-center gap-1">
-                          <Badge estado={m.estado} roleTheme={theme} />
-                          <FaseSeguimientoItemChip movimiento={m} />
+                          <Etiqueta dominio="estadoSolicitud" valor={m.estado} rol={theme.key} />
+                          <Etiqueta dominio="faseSeguimiento" valor={obtenerFaseItemCacheada(m.solicitudOriginal, m.idxProducto)} />
                         </div>
                       </td>}
 
@@ -1083,10 +1080,9 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                           {(() => {
                             const res = evaluarEstadoGanada(m);
                             return (
-                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${res.badgeClase}`}>
-                                {res.esGanada && <CheckCircle2 size={11} className="shrink-0" />}
+                              <Etiqueta dominio="resultado" valor={res.clave}>
                                 <span>{res.label}</span>
-                              </span>
+                              </Etiqueta>
                             );
                           })()}
                           {m.solicitudOriginal?.estado !== 'Anulado' && (m.estado === 'Anulado' || m.solicitudOriginal?.productos?.some(p => p.estadoItem === 'Anulado')) && (

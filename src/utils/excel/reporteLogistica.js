@@ -1,10 +1,9 @@
-import * as XLSX from 'xlsx';
-import { crearHojaHermaco, descargarLibro, formatFecha } from './comun';
+import { crearHojaHermaco, descargarLibro, formatFecha, cargarXLSX } from './comun';
 
 /**
  * Exporta órdenes de compra de logística con detalle de tracking e ítems
  */
-export function exportarLogisticaExcel(ordenes = [], nombreArchivo = 'reporte_logistica', {
+export async function exportarLogisticaExcel(ordenes = [], nombreArchivo = 'reporte_logistica', {
   titulo = 'CONTROL DE LOGÍSTICA - ÓRDENES DE COMPRA Y TRACKING',
   periodoLabel = ''
 } = {}) {
@@ -79,7 +78,10 @@ export function exportarLogisticaExcel(ordenes = [], nombreArchivo = 'reporte_lo
     { wch: 18 }
   ];
 
+  const XLSX = await cargarXLSX();
+
   const ws = crearHojaHermaco({
+    XLSX,
     titulo,
     periodoLabel,
     headers,
@@ -91,5 +93,5 @@ export function exportarLogisticaExcel(ordenes = [], nombreArchivo = 'reporte_lo
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Logística');
-  descargarLibro(wb, nombreArchivo);
+  descargarLibro(XLSX, wb, nombreArchivo);
 }

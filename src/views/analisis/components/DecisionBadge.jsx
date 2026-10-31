@@ -1,13 +1,11 @@
 import React from 'react';
-import { Ban } from 'lucide-react';
+import { Etiqueta } from '../../../components/Etiqueta';
 import { obtenerEtiquetaDecision } from '../utils/decisionFilter';
 
+const CLAVE_DECISION = { anulados: 'anulacion', 'ventas-perdidas': 'venta_perdida', rechazos: 'rechazo' };
+
 export const DecisionBadge = ({ decisionFilter, withIcon = false }) => (
-  <span className={withIcon
-    ? 'inline-flex items-center gap-1 text-[8px] font-semibold text-rose-500 bg-rose-50 px-1 py-0.5 rounded border border-rose-200'
-    : 'text-[8px] font-semibold text-rose-600 uppercase tracking-wider'}
-  >
-    {withIcon && <Ban size={8} className="shrink-0" />}
+  <Etiqueta dominio="decision" valor={CLAVE_DECISION[decisionFilter] || 'anulacion'} sinIcono={!withIcon}>
     {obtenerEtiquetaDecision(decisionFilter)}
-  </span>
+  </Etiqueta>
 );

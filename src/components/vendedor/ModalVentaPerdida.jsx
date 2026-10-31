@@ -7,6 +7,7 @@ import {
   COMENTARIO_VENTA_PERDIDA_MIN 
 } from '../../constants/motivosVentaPerdidaData';
 import { auth } from '../../firebase';
+import { Etiqueta } from '../../components/Etiqueta';
 
 export const ModalVentaPerdida = ({
   isOpen,
@@ -94,9 +95,9 @@ export const ModalVentaPerdida = ({
         <div className="bg-slate-900 px-4 sm:px-6 py-3.5 sm:py-4 text-white flex items-center justify-between border-b border-slate-800 gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase bg-slate-800 border border-slate-700 text-slate-300">
+              <Etiqueta tono="oscuro" mono>
                 {esPorItems ? `Cierre (${cantItems} ítem${cantItems > 1 ? 's' : ''})` : 'Cierre Total'}
-              </span>
+              </Etiqueta>
               <h2 className="text-sm sm:text-base md:text-lg font-bold uppercase tracking-tight truncate">
                 Registrar Venta Perdida
               </h2>

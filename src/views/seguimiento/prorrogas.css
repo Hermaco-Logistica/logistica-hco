@@ -97,9 +97,10 @@
 /* ── Contenedor unificado: Filtros + Tabs + Tabla ─────────────────────────── */
 .prorrogas-box {
   border: 1px solid var(--detalle-border);
-  border-radius: var(--detalle-radius-card);
+  border-radius: 24px;
   background: var(--detalle-surface);
-  overflow: visible;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  overflow: hidden;
 }
 
 /* Sección 1: Filtros */
@@ -331,11 +332,11 @@
 }
 
 .prorrogas-thead th {
-  padding: 10px 16px;
-  font-size: 11px;
-  font-weight: 600;
+  padding: 16px;
+  font-size: 10px;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.1em;
   color: #f1f5f9;
 }
 
@@ -348,22 +349,25 @@
 }
 
 .prorrogas-td {
-  padding: 14px 16px;
-  vertical-align: top;
+  padding: 16px;
+  vertical-align: middle;
   font-size: 13px;
 }
 
 /* Columna Solicitud */
 .prorrogas-cell-ref {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
   color: var(--detalle-text);
   overflow-wrap: anywhere;
 }
 .prorrogas-cell-cliente {
-  margin-top: 2px;
-  font-size: 13px;
+  margin-top: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  font-style: italic;
+  text-transform: uppercase;
   color: var(--detalle-text);
   white-space: nowrap;
   overflow: hidden;
@@ -395,6 +399,11 @@
   line-height: 1.3;
 }
 
+.prorrogas-status-meta--ronda {
+  font-weight: 700;
+  color: var(--detalle-text);
+}
+
 /* Columna Motivo */
 .prorrogas-cell-motivo {
   font-size: 13px;
@@ -422,33 +431,69 @@
   text-decoration: underline;
 }
 
-/* Columna Plazo */
-.prorrogas-facts-list {
+/* Columna Vendedor */
+.prorrogas-cell-vendedor {
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--detalle-text);
+  overflow-wrap: anywhere;
+}
+
+/* Columna Motivo: botón de consulta (mismo patrón que los historiales de Análisis) */
+.prorrogas-btn-consulta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--detalle-border);
+  border-radius: 6px;
+  background: var(--detalle-surface);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--detalle-text-muted);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+  cursor: pointer;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+.prorrogas-btn-consulta:hover {
+  background: var(--detalle-surface-muted);
+  border-color: var(--detalle-border-strong);
+}
+.prorrogas-btn-consulta:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.12);
+}
+
+/* Columna Plazo: icono + etiqueta + fecha, como la columna de fechas del dashboard */
+.prorrogas-fechas {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.prorrogas-fact-item {
+.prorrogas-fecha-fila {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px;
-  font-size: 12px;
-  line-height: 1.35;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--detalle-text-muted);
+  white-space: nowrap;
 }
-.prorrogas-fact-label {
-  font-size: 11px;
-  color: var(--detalle-text-subtle);
+.prorrogas-fecha-icono {
   flex-shrink: 0;
 }
-.prorrogas-fact-val {
-  font-weight: 600;
-  color: var(--detalle-text);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.prorrogas-fecha-valor {
+  font-size: 11px;
+  font-weight: 900;
+}
+.prorrogas-fecha-fila--destacada .prorrogas-fecha-valor {
+  font-size: 12px;
 }
 
 /* Columna Acciones */
@@ -460,15 +505,17 @@
   gap: 8px;
 }
 .prorrogas-btn-action {
-  height: 32px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 0 10px;
-  border-radius: var(--detalle-radius-control);
-  font-size: 12px;
-  font-weight: 600;
+  gap: 6px;
+  padding: 0 20px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   cursor: pointer;
   transition: all 120ms ease;
   text-decoration: none;
@@ -499,21 +546,43 @@
   background: var(--detalle-success-hover);
 }
 
-/* Fila expandida de ítems afectados */
-.prorrogas-expanded-row {
-  background: var(--detalle-surface-muted);
-  border-top: 1px solid var(--detalle-border);
+/* Fila expandida de ítems afectados: la altura se anima con grid-template-rows (0fr -> 1fr). */
+.prorrogas-expanded-row > td {
+  padding: 0;
+  border: 0;
 }
-.prorrogas-expanded-cell {
-  padding: 12px 16px 16px 16px;
+.prorrogas-expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 280ms ease, opacity 220ms ease;
+}
+.prorrogas-expand[data-abierto="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+.prorrogas-expand__inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.prorrogas-expand__contenido {
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--detalle-border);
+  background: var(--detalle-surface-muted);
+}
+@media (prefers-reduced-motion: reduce) {
+  .prorrogas-expand {
+    transition: none;
+  }
 }
 
 /* ── Tarjetas Móviles (< 768px) ───────────────────────────────────────────── */
 .prorrogas-mobile-card {
   border: 1px solid var(--detalle-border);
-  border-radius: var(--detalle-radius-card);
+  border-radius: 16px;
   background: var(--detalle-surface);
-  padding: 14px;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -565,7 +634,8 @@
 .prorrogas-mobile-title {
   margin: 0;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 900;
+  text-transform: uppercase;
   color: var(--detalle-text);
   line-height: 1.3;
 }
@@ -611,9 +681,11 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border-radius: var(--detalle-radius-control);
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   cursor: pointer;
   transition: all 120ms ease;
   width: 100%;
@@ -641,9 +713,9 @@
   align-items: center;
   gap: 12px;
   border: 1px solid var(--detalle-border);
-  border-radius: var(--detalle-radius-card);
+  border-radius: 24px;
   background: var(--tf-color-sidebar);
-  padding: 12px 16px;
+  padding: 16px 24px;
   color: #ffffff;
 }
 @media (min-width: 640px) {
@@ -655,6 +727,9 @@
 
 .prorrogas-pagination-text {
   font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   color: #cbd5e1;
   font-variant-numeric: tabular-nums;
 }
@@ -666,17 +741,19 @@
 }
 
 .prorrogas-pagination-btn {
-  height: 32px;
+  height: 40px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 0 12px;
-  border-radius: var(--detalle-radius-control);
+  padding: 0 16px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   cursor: pointer;
   transition: all 120ms ease;
 }
@@ -686,4 +763,9 @@
 .prorrogas-pagination-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Borde de 2px en los botones de acción (misma presencia que "Ver Detalle" en el dashboard del vendedor). */
+.prorrogas-actions-desktop .prorrogas-btn-action {
+  border-width: 2px;
 }

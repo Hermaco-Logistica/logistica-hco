@@ -1,11 +1,10 @@
-import * as XLSX from 'xlsx';
-import { crearHojaHermaco, descargarLibro, formatFecha } from './comun';
+import { crearHojaHermaco, descargarLibro, formatFecha, cargarXLSX } from './comun';
 import { crearCalculadorSeguimiento, ENCABEZADOS_SEGUIMIENTO_SOLICITUD, ANCHOS_SEGUIMIENTO_SOLICITUD } from './seguimientoExcel';
 
 /**
  * Exporta el listado de solicitudes (usado en DetalleSolicitudesAnalisis)
  */
-export function exportarSolicitudesExcel(solicitudes, nombreArchivo = 'solicitudes_analisis', {
+export async function exportarSolicitudesExcel(solicitudes, nombreArchivo = 'solicitudes_analisis', {
   titulo = 'CONTROL DE LOGÍSTICA - SOLICITUDES (RFQS)',
   periodoLabel = ''
 } = {}) {
@@ -79,7 +78,10 @@ export function exportarSolicitudesExcel(solicitudes, nombreArchivo = 'solicitud
     ...ANCHOS_SEGUIMIENTO_SOLICITUD
   ];
 
+  const XLSX = await cargarXLSX();
+
   const ws = crearHojaHermaco({
+    XLSX,
     titulo,
     periodoLabel,
     headers,
@@ -91,5 +93,5 @@ export function exportarSolicitudesExcel(solicitudes, nombreArchivo = 'solicitud
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Solicitudes');
-  descargarLibro(wb, nombreArchivo);
+  descargarLibro(XLSX, wb, nombreArchivo);
 }

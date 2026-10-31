@@ -3,6 +3,7 @@
  * Zona horaria oficial: America/El_Salvador (UTC-6)
  */
 import { convertirFechaSeguimiento, sumarDiasHabiles } from './diasHabiles';
+import { claseEscalaUrgencia } from './etiquetas';
 
 export const ZONA_HORARIA_EL_SALVADOR = 'America/El_Salvador';
 
@@ -63,6 +64,9 @@ export function esRolBloqueable(roleOrUser) {
   return ROLES_CON_BLOQUEO.includes(norm);
 }
 
+// Se crea una sola vez: construir un Intl.DateTimeFormat por llamada era el costo dominante del cálculo de seguimiento.
+const FORMATEADOR_DIA_EL_SALVADOR = new Intl.DateTimeFormat('en-CA', { timeZone: ZONA_HORARIA_EL_SALVADOR });
+
 /**
  * Convierte cualquier fecha a clave de día YYYY-MM-DD en la zona horaria de El Salvador.
  * Soporta Date, Firestore Timestamp (.toDate()) y string ISO.
@@ -77,7 +81,7 @@ export function obtenerClaveDiaElSalvador(fecha) {
   }
   if (isNaN(d.getTime())) return null;
 
-  return new Intl.DateTimeFormat('en-CA', { timeZone: ZONA_HORARIA_EL_SALVADOR }).format(d);
+  return FORMATEADOR_DIA_EL_SALVADOR.format(d);
 }
 
 /**
@@ -237,14 +241,8 @@ export function calcularDiasDesdeRespuesta(fecha, fechaReferencia = new Date()) 
   return dias;
 }
 
-export function obtenerEscalaRojoTiempo(dias, limite = 5) {
-  const umbral = Math.max(1, Number(limite) || 5);
-  if (dias < umbral) return 'bg-slate-100 text-slate-700 border-slate-200';
-  if (dias === umbral) return 'bg-rose-50 text-rose-700 border-rose-200';
-  if (dias <= umbral + 2) return 'bg-rose-100 text-rose-800 border-rose-300 font-bold';
-  if (dias <= umbral + 4) return 'bg-rose-200 text-rose-900 border-rose-400 font-black';
-  return 'bg-rose-600 text-white border-rose-700 font-black';
-}
+/** Escala de color por días transcurridos; el estilo vive en utils/etiquetas.js. */
+export const obtenerEscalaRojoTiempo = claseEscalaUrgencia;
 
 export function calcularTotalesCotizados(solicitud, { soloEstancados = false } = {}) {
   const productos = Array.isArray(solicitud?.productos) ? solicitud.productos : [];

@@ -3,13 +3,13 @@ import { useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Search, Package, ChevronRight, Download, X, User, Building } from 'lucide-react';
 import { extraerTodosLosMovimientos, exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
+import { Etiqueta } from '../../components/Etiqueta';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
 import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
-import { acumularFaseSeguimiento, obtenerFaseItemCacheada } from '../../utils/faseSeguimiento';
-import { FaseSeguimientoConteo } from './components/FaseSeguimientoConteo';
+import { acumularFaseSeguimiento, describirFasesSeguimiento, obtenerFaseItemCacheada } from '../../utils/faseSeguimiento';
 import { cumpleFiltroPeriodoAnalisis } from './utils/periodoAnalisis';
 import {
   getHoyElSalvador,
@@ -228,9 +228,9 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
           </button>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className={`text-[10px] font-semibold tracking-wider px-2.5 py-0.5 rounded-full ${theme.bgBadge}`}>
+              <Etiqueta dominio="rol" valor={theme.key}>
                 Catálogo
-              </span>
+              </Etiqueta>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
               Top Productos Más Cotizados
@@ -380,14 +380,14 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                         <p className="text-[10px] text-slate-500 line-clamp-1">{p.marcaPrincipal}</p>
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono font-bold px-2 py-1 bg-slate-100 text-slate-600 border border-slate-200/60 rounded-lg shrink-0">#{numGlobal}</span>
+                    <Etiqueta tono="neutral" mono className="shrink-0">#{numGlobal}</Etiqueta>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-slate-400 font-medium">Cotizados</span>
                       <span className="font-bold font-mono text-slate-700">{p.vecesCotizado} <span className="text-[9px] font-normal">veces</span></span>
-                      <FaseSeguimientoConteo conteo={p.enSeguimiento} porFase={p.fasesSeguimiento} unidad="en seg." className="mt-1" />
+                      <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(p.fasesSeguimiento)} className="mt-1">{p.enSeguimiento > 0 ? `${p.enSeguimiento} en seg.` : null}</Etiqueta>
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-emerald-600/70 font-medium">Ganados</span>
@@ -475,10 +475,10 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                           </span>
                         </td>
                         <td className="py-2.5 px-3.5 text-center">
-                          <span className="inline-block px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono text-xs font-semibold">
+                          <Etiqueta tono="neutral" tamano="normal" mono>
                             {p.vecesCotizado} RFQ{p.vecesCotizado > 1 ? 's' : ''}
-                          </span>
-                          <FaseSeguimientoConteo conteo={p.enSeguimiento} porFase={p.fasesSeguimiento} unidad="ítems en seguimiento" className="block mt-0.5 mx-auto w-fit" />
+                          </Etiqueta>
+                          <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(p.fasesSeguimiento)} className="block mt-0.5 mx-auto w-fit">{p.enSeguimiento > 0 ? `${p.enSeguimiento} ítems en seguimiento` : null}</Etiqueta>
                         </td>
                         <DecisionSummaryColumns counts={p} basePath={`/analisis/producto/${encodeURIComponent(p.desc)}`} navigate={navigate} />
                         <td className="py-2.5 px-3.5 text-center">
@@ -487,14 +487,14 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                           </span>
                         </td>
                         <td className="py-2.5 px-3.5 text-center">
-                          <span className="inline-flex items-center gap-1 font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60 text-xs">
+                          <Etiqueta tono="exito" tamano="normal" mono>
                             {p.vecesPedido}
                             {p.vecesCotizado > 0 && (
                               <span className="text-[10px] font-medium text-emerald-600">
                                 ({Math.round((p.vecesPedido / p.vecesCotizado) * 100)}%)
                               </span>
                             )}
-                          </span>
+                          </Etiqueta>
                         </td>
                         <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700">
                           {p.unidadesPedidas.toLocaleString()}

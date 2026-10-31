@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { MetricasRotativas } from './components/MetricasRotativas';
 import { FASES_SEGUIMIENTO } from '../../utils/faseSeguimiento';
+import { Etiqueta } from '../../components/Etiqueta';
 
 /* ============================================================================
    PRIMITIVOS MÓVILES
@@ -42,7 +43,7 @@ function StatChip({ icon: Icon, iconBg, iconColor, value, unit, label }) {
 }
 
 /** Fila de lista tipo "Recently uploaded" — avatar iniciales + nombre + badge derecha, con soporte para barra de progreso */
-function ListRow({ initials, title, subtitle, badgeValue, badgeColorClass, onClick, index, total, pedidos, maxTotal, theme }) {
+function ListRow({ initials, title, subtitle, badgeValue, badgeTono, onClick, index, total, pedidos, maxTotal, theme }) {
   if (total !== undefined && maxTotal !== undefined) {
     const pct = Math.max(5, Math.round((total / maxTotal) * 100));
     const pedidosRatio = total > 0 ? (pedidos / total) : 0;
@@ -65,9 +66,9 @@ function ListRow({ initials, title, subtitle, badgeValue, badgeColorClass, onCli
             </p>
             <div className="flex items-center gap-1.5 shrink-0">
               <span className="text-xs font-bold text-slate-900 font-mono">{total}</span>
-              <span className={`text-[9px] font-bold px-1 py-0.5 rounded font-mono ${theme?.flujoEstados?.pedidos?.badge || 'text-emerald-700 bg-emerald-50 border border-emerald-200/60'}`}>
+              <Etiqueta tono="exito" mono>
                 {pedidosPct}%
-              </span>
+              </Etiqueta>
             </div>
           </div>
           
@@ -106,9 +107,9 @@ function ListRow({ initials, title, subtitle, badgeValue, badgeColorClass, onCli
         <p className="text-xs font-semibold text-slate-800 truncate">{title}</p>
         <p className="text-[10px] text-slate-400 font-medium truncate">{subtitle}</p>
       </div>
-      <span className={`shrink-0 text-[11px] font-mono font-bold px-2 py-1 rounded-lg border ${badgeColorClass}`}>
+      <Etiqueta tono={badgeTono} tamano="normal" mono className="shrink-0">
         {badgeValue}
-      </span>
+      </Etiqueta>
       <ChevronRight size={14} className="text-slate-300 shrink-0" />
     </div>
   );
@@ -446,9 +447,9 @@ function MobileFlujoCard({ theme, metricas, onVerTodas, onVerEstado }) {
                     <span className={`text-sm font-black ${item.textColor} font-mono`}>
                       {item.count}
                     </span>
-                    <span className="text-[9px] font-mono font-bold text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200/80 shadow-2xs">
+                    <Etiqueta tono="suave" mono>
                       {porcentaje}%
-                    </span>
+                    </Etiqueta>
                   </div>
                 </div>
 
@@ -588,9 +589,9 @@ function MobileProductosScroll({ productos, onSelect, onVerTodos }) {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-mono font-bold text-slate-400">#{idx + 1}</span>
                   {p.ganadas > 0 && p.ganadas === p.veces && (
-                    <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                    <Etiqueta tono="exito">
                       <CheckCircle2 size={9} /> Ganado
-                    </span>
+                    </Etiqueta>
                   )}
                 </div>
                 <h3 className="text-xs font-semibold text-slate-800 line-clamp-2 leading-snug mb-3 uppercase min-h-[32px]">
@@ -604,12 +605,12 @@ function MobileProductosScroll({ productos, onSelect, onVerTodos }) {
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] text-slate-400">Ganado</span>
                     {p.ganadas > 0 ? (
-                      <span className="inline-flex items-center gap-0.5 font-mono font-bold text-emerald-700 bg-emerald-50/80 px-1.5 py-0.5 rounded border border-emerald-200/60 text-[10px]">
+                      <Etiqueta tono="exito" mono>
                         {p.ganadas}x
                         <span className="text-[9px] text-emerald-600 font-sans ml-0.5">
                           ({Math.round((p.ganadas / p.veces) * 100)}%)
                         </span>
-                      </span>
+                      </Etiqueta>
                     ) : (
                       <span className="font-mono font-medium text-slate-400 text-[10px]">0</span>
                     )}
@@ -702,7 +703,7 @@ export const AnalisisEstadisticasMobile = ({
       title: v.nombre,
       subtitle: `${v.total} RFQs · ${v.cotizadas} cotizadas`,
       badgeValue: `${efectividad}% conv`,
-      badgeColorClass: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
+      badgeTono: 'exito',
       index: idx,
       total: v.total,
       pedidos: v.pedidos,
@@ -719,7 +720,7 @@ export const AnalisisEstadisticasMobile = ({
       title: c.cliente,
       subtitle: `${c.total} RFQs`,
       badgeValue: `${efectividad}% conv`,
-      badgeColorClass: 'bg-slate-100 text-slate-700 border-slate-200/60',
+      badgeTono: 'neutral',
       index: idx,
       total: c.total,
       pedidos: c.pedidos,
@@ -738,7 +739,7 @@ export const AnalisisEstadisticasMobile = ({
           <h1 className="text-xl font-black text-slate-900 tracking-tight">Analítica</h1>
           <p className="text-[11px] text-slate-500 font-medium">Resumen de operaciones</p>
         </div>
-        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${theme.bgBadge}`}>{theme.label}</span>
+        <Etiqueta dominio="rol" valor={theme.key}>{theme.label}</Etiqueta>
       </div>
 
       {/* SELECTOR DE PERÍODO */}

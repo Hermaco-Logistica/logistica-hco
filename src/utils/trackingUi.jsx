@@ -105,7 +105,7 @@ export const getStatusConfig = (code, provider) => {
     const raw = String(code || '').toUpperCase();
     if (DSV_COMPLETED_CODES.has(raw)) {
       return {
-        badge: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        tono: 'exito',
         card: 'bg-emerald-50 border-emerald-200',
         dot: 'bg-emerald-500',
         label: 'Completado',
@@ -113,7 +113,7 @@ export const getStatusConfig = (code, provider) => {
     }
     if (DSV_CUSTOMS_CODES.has(raw)) {
       return {
-        badge: 'bg-amber-100 text-amber-700 border-amber-200',
+        tono: 'aviso',
         card: 'bg-amber-50 border-amber-200',
         dot: 'bg-amber-500',
         label: 'Aduana',
@@ -121,7 +121,7 @@ export const getStatusConfig = (code, provider) => {
     }
     if (DSV_TRANSIT_CODES.has(raw)) {
       return {
-        badge: 'bg-blue-100 text-blue-700 border-blue-200',
+        tono: 'azul',
         card: 'bg-blue-50 border-blue-200',
         dot: 'bg-blue-500',
         label: 'En transito',
@@ -129,7 +129,7 @@ export const getStatusConfig = (code, provider) => {
     }
     if (DSV_PICKUP_CODES.has(raw)) {
       return {
-        badge: 'bg-slate-100 text-slate-700 border-slate-200',
+        tono: 'neutral',
         card: 'bg-slate-50 border-slate-200',
         dot: 'bg-slate-500',
         label: 'Recoleccion',
@@ -137,7 +137,7 @@ export const getStatusConfig = (code, provider) => {
     }
     if (DSV_DELIVERY_CODES.has(raw)) {
       return {
-        badge: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+        tono: 'exito',
         card: 'bg-emerald-50 border-emerald-200',
         dot: 'bg-emerald-500',
         label: 'Entrega',
@@ -148,7 +148,7 @@ export const getStatusConfig = (code, provider) => {
 
   if (normalized === 'delivered' || normalized === 'ok') {
     return {
-      badge: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      tono: 'exito',
       card: 'bg-emerald-50 border-emerald-200',
       dot: 'bg-emerald-500',
       label: 'Entregado',
@@ -157,7 +157,7 @@ export const getStatusConfig = (code, provider) => {
 
   if (normalized === 'failure') {
     return {
-      badge: 'bg-rose-100 text-rose-700 border-rose-200',
+      tono: 'peligro',
       card: 'bg-rose-50 border-rose-200',
       dot: 'bg-rose-500',
       label: 'Problema',
@@ -166,7 +166,7 @@ export const getStatusConfig = (code, provider) => {
 
   if (['rr', 'ic', 'ud', 'cr'].includes(normalized)) {
     return {
-      badge: 'bg-amber-100 text-amber-700 border-amber-200',
+      tono: 'aviso',
       card: 'bg-amber-50 border-amber-200',
       dot: 'bg-amber-500',
       label: 'Aduana',
@@ -175,7 +175,7 @@ export const getStatusConfig = (code, provider) => {
 
   if (['tr', 'wc', 'df', 'af', 'pl'].includes(normalized)) {
     return {
-      badge: 'bg-blue-100 text-blue-700 border-blue-200',
+      tono: 'azul',
       card: 'bg-blue-50 border-blue-200',
       dot: 'bg-blue-500',
       label: 'En transito',
@@ -184,7 +184,7 @@ export const getStatusConfig = (code, provider) => {
 
   if (normalized === 'pu') {
     return {
-      badge: 'bg-slate-100 text-slate-700 border-slate-200',
+      tono: 'neutral',
       card: 'bg-slate-50 border-slate-200',
       dot: 'bg-slate-500',
       label: 'Recogido',
@@ -192,29 +192,30 @@ export const getStatusConfig = (code, provider) => {
   }
 
   return {
-    badge: 'bg-slate-100 text-slate-700 border-slate-200',
+    tono: 'neutral',
     card: 'bg-slate-50 border-slate-200',
     dot: 'bg-slate-500',
     label: 'Actualizacion',
   };
 };
 
-export const getEventoBadgeClass = (code, provider) => {
+/** Tono (utils/etiquetas.js) del chip de un evento de tracking. */
+export const getEventoTono = (code, provider) => {
   const providerUpper = String(provider || '').toUpperCase();
   if (providerUpper === 'DSV') {
     const raw = String(code || '').toUpperCase();
-    if (DSV_COMPLETED_CODES.has(raw)) return 'bg-emerald-100 text-emerald-700';
-    if (DSV_CUSTOMS_CODES.has(raw)) return 'bg-amber-100 text-amber-700';
-    if (DSV_TRANSIT_CODES.has(raw)) return 'bg-blue-100 text-blue-700';
-    if (DSV_PICKUP_CODES.has(raw)) return 'bg-slate-100 text-slate-700';
-    return 'bg-slate-100 text-slate-500';
+    if (DSV_COMPLETED_CODES.has(raw)) return 'exito';
+    if (DSV_CUSTOMS_CODES.has(raw)) return 'aviso';
+    if (DSV_TRANSIT_CODES.has(raw)) return 'azul';
+    if (DSV_PICKUP_CODES.has(raw)) return 'neutral';
+    return 'apagado';
   }
   const normalized = normalizeCode(code);
-  if (normalized === 'delivered') return 'bg-emerald-100 text-emerald-700';
-  if (normalized === 'failure') return 'bg-rose-100 text-rose-700';
-  if (['ic', 'rr', 'ud', 'cr'].includes(normalized)) return 'bg-amber-100 text-amber-700';
-  if (normalized === 'wc') return 'bg-blue-100 text-blue-700';
-  return 'bg-slate-100 text-slate-500';
+  if (normalized === 'delivered') return 'exito';
+  if (normalized === 'failure') return 'peligro';
+  if (['ic', 'rr', 'ud', 'cr'].includes(normalized)) return 'aviso';
+  if (normalized === 'wc') return 'azul';
+  return 'apagado';
 };
 
 export const EventIcon = ({ code, provider, size = 14 }) => {

@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { XCircle, ShieldAlert, Ban, X } from 'lucide-react';
+import { tonoDe } from '../../../utils/etiquetas';
 import { 
   formatearFechaDecision, 
   esMotivoGenerico, 
   buscarMotivoDecisionMensajes 
 } from '../../../utils/decisionItemHelpers';
+import { Etiqueta } from '../../Etiqueta';
 
 /**
  * Modal exclusivo para consultar motivos de decisiones operativas en ítems:
@@ -175,14 +177,14 @@ export const ModalConsultaDecisionItem = ({ isOpen = true, onClose, data }) => {
         <div className="space-y-3.5 sm:space-y-4 px-4 sm:px-5 py-4 sm:py-5 bg-white overflow-y-auto max-h-[65vh]">
           {itemsList.map((item, idx) => {
             const itemTipo = item.tipoDecision || 'rechazo';
-            let itemBadgeStyle = 'bg-rose-100 text-rose-800 border-rose-200';
+            let itemTono = tonoDe('decision', 'rechazo');
             let itemCardBorder = 'border-rose-500';
 
             if (itemTipo === 'denegacion') {
-              itemBadgeStyle = 'bg-amber-100 text-amber-800 border-amber-200';
+              itemTono = tonoDe('decision', 'denegacion');
               itemCardBorder = 'border-amber-500';
             } else if (itemTipo === 'anulacion') {
-              itemBadgeStyle = 'bg-slate-100 text-slate-700 border-slate-300';
+              itemTono = tonoDe('decision', 'anulacion');
               itemCardBorder = 'border-slate-500';
             }
 
@@ -205,9 +207,9 @@ export const ModalConsultaDecisionItem = ({ isOpen = true, onClose, data }) => {
                       </p>
                     )}
                   </div>
-                  <span className={`shrink-0 px-2 py-0.5 rounded-sm text-[9px] font-bold uppercase tracking-wider border ${itemBadgeStyle}`}>
+                  <Etiqueta tono={itemTono} className="shrink-0">
                     {item.badgeLabel}
-                  </span>
+                  </Etiqueta>
                 </div>
 
                 {/* Motivo Único Directo */}

@@ -11,6 +11,7 @@ import { ShipmentTracker } from '../../components/ShipmentTracker';
 import { usePersistedState } from '../../hooks/usePersistedState';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { interpretarEstadoLogistico } from '../../utils/interpretarEstadoLogistico';
+import { Etiqueta } from '../../components/Etiqueta';
 
 export const GestionOC = ({ readOnly = false }) => {
   const [ordenes, setOrdenes] = useState([]);
@@ -377,9 +378,9 @@ export const GestionOC = ({ readOnly = false }) => {
           <div className="md:hidden bg-slate-900 p-4 text-white space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <span className="inline-block text-[10px] font-bold text-slate-400 bg-slate-800 border border-slate-700/80 px-2 py-0.5 rounded-md uppercase mb-1 truncate max-w-50">
+                <Etiqueta tono="oscuro" className="mb-1 truncate max-w-50">
                   {ocSeleccionada.proveedor}
-                </span>
+                </Etiqueta>
                 <h2 className="text-xl font-black text-white italic uppercase tracking-tight truncate">
                   {ocSeleccionada.numeroOC}
                 </h2>
@@ -516,9 +517,9 @@ export const GestionOC = ({ readOnly = false }) => {
             <div className="mt-6 md:mt-8">
               <div className="flex items-center justify-between mb-3 md:mb-4">
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Ítems de la Orden</h3>
-                <span className="text-[10px] font-black text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full md:hidden">
+                <Etiqueta tono="apagado" className="md:hidden">
                   {ocSeleccionada.items?.length || 0} {ocSeleccionada.items?.length === 1 ? 'partida' : 'partidas'}
-                </span>
+                </Etiqueta>
               </div>
               
               {/* Tarjetas Espaciosas en Mobile (< md) */}
@@ -535,13 +536,13 @@ export const GestionOC = ({ readOnly = false }) => {
                       {/* Fila 1: Cantidad + Marca + Total de línea */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                          <span className="text-[11px] font-black text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-lg shrink-0">
+                          <Etiqueta tono="neutral" tamano="normal" className="shrink-0">
                             {cant} {cant === 1 ? 'unidad' : 'unidades'}
-                          </span>
+                          </Etiqueta>
                           {item.marca && (
-                            <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-lg uppercase truncate max-w-37.5">
+                            <Etiqueta tono="azul" tamano="normal" className="truncate max-w-37.5">
                               {item.marca}
-                            </span>
+                            </Etiqueta>
                           )}
                         </div>
                         <div className="text-right shrink-0">
@@ -567,9 +568,9 @@ export const GestionOC = ({ readOnly = false }) => {
                           <span className="font-mono font-black text-slate-800">${fob.toFixed(2)}</span>
                         </div>
                         {item.numCotizacion && (
-                          <span className="text-[10px] font-bold text-slate-600 bg-white border border-slate-200 px-2 py-0.5 rounded-md shadow-2xs">
+                          <Etiqueta tono="suave">
                             Cot #{item.numCotizacion}
-                          </span>
+                          </Etiqueta>
                         )}
                       </div>
                     </div>
@@ -880,14 +881,7 @@ export const GestionOC = ({ readOnly = false }) => {
                       <span className="font-mono font-black text-base text-slate-900 tracking-tight">
                         {oc.numeroOC}
                       </span>
-                      <span className={`px-2.5 py-0.5 rounded-md font-black text-[9px] uppercase tracking-wide shrink-0 ${
-                        oc.estado === 'Recibido' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
-                        oc.estado === 'Aduana'   ? 'bg-amber-100 text-amber-800 border border-amber-200' :
-                        oc.estado === 'Tránsito' ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                        'bg-slate-100 text-slate-600 border border-slate-200'
-                      }`}>
-                        {oc.estado}
-                      </span>
+                      <Etiqueta dominio="estadoOC" valor={oc.estado} className="shrink-0" />
                     </div>
                     <p className="text-xs font-bold text-slate-600 uppercase mt-1 tracking-wide">
                       {oc.proveedor}
@@ -924,10 +918,10 @@ export const GestionOC = ({ readOnly = false }) => {
                     Guía / BL:
                   </span>
                   {oc.tracking ? (
-                    <span className="inline-flex items-center gap-1.5 font-mono font-black text-xs text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg break-all text-right">
+                    <Etiqueta tono="azul" tamano="normal" mono className="break-all text-right">
                       <Globe size={13} className="text-blue-500 shrink-0" />
                       <span>{oc.tracking}</span>
-                    </span>
+                    </Etiqueta>
                   ) : (
                     <span className="text-xs font-semibold text-slate-400 italic">
                       Sin guía asignada
@@ -1009,19 +1003,13 @@ export const GestionOC = ({ readOnly = false }) => {
                   </td>
                   <td className="px-8 py-6 text-center">
                     {oc.tracking ? (
-                      <span className="text-[10px] font-black text-slate-700 bg-slate-100 px-3 py-1 rounded-full uppercase border border-slate-200">
+                      <Etiqueta tono="neutral">
                         {oc.tracking}
-                      </span>
+                      </Etiqueta>
                     ) : <span className="text-slate-300 italic text-[9px]">-</span>}
                   </td>
                   <td className="px-8 py-6 text-center">
-                    <span className={`px-4 py-1.5 rounded-full font-black text-[9px] uppercase tracking-tighter ${
-                      oc.estado === 'Recibido' ? 'bg-emerald-100 text-emerald-600' :
-                      oc.estado === 'Aduana'   ? 'bg-amber-100 text-amber-600' :
-                      oc.estado === 'Tránsito' ? 'bg-blue-100 text-blue-600' : 'bg-slate-100 text-slate-400'
-                    }`}>
-                      {oc.estado}
-                    </span>
+                    <Etiqueta dominio="estadoOC" valor={oc.estado} />
                   </td>
                   <td className="px-8 py-6 text-right font-black text-xs text-slate-900">
                     ${calcularTotalOC(oc.items).toLocaleString('en-US', { minimumFractionDigits: 2 })}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Package, Plane, Ship, UserRound } from 'lucide-react';
 import { ESTADOS_SEGUIMIENTO_CLIENTE, obtenerResumenSeguimientoCliente } from '../../utils/seguimientoCliente';
 import { StatusChip } from '../detalle/StatusChip';
+import { Etiqueta } from '../../components/Etiqueta';
 
 const obtenerIntensidadAntiguedad = (dias) => {
   const diasTranscurridos = Math.max(0, Number(dias) || 0);
@@ -93,9 +94,9 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
               <h2 className="text-[16px] font-semibold text-white tracking-normal m-0 leading-tight">
                 Cotizaciones pendientes de seguimiento
               </h2>
-              <span className="rounded-[6px] bg-white/15 px-2 py-0.5 text-[12px] font-medium tabular-nums text-slate-200">
+              <Etiqueta tono="suave" tamano="normal">
                 {cotizaciones.length}
-              </span>
+              </Etiqueta>
             </div>
             <p className="mt-1 text-[13px] text-slate-300 font-normal leading-normal">
               Solicitudes con al menos un ítem cotizado fuera de su vigencia configurada sin seguimiento comercial.
@@ -202,17 +203,13 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
                             {itemsEst.length > 0 && (
                               <div className="mt-1.5 flex flex-wrap items-center gap-1">
                                 {itemsEst.slice(0, 2).map((it, idx) => (
-                                  <span
-                                    key={idx}
-                                    className="inline-flex items-center gap-1 rounded-[4px] border border-[var(--detalle-border)] bg-[var(--detalle-surface-muted)] px-1.5 py-0.5 text-[11px] text-[var(--detalle-text)] max-w-[170px]"
-                                    title={it.descripcion || it.desc}
-                                  >
+                                  <Etiqueta key={idx} tono="suave" tamano="normal" className="max-w-[170px]" titulo={it.descripcion || it.desc}>
                                     <Package size={10} className="text-[var(--detalle-text-subtle)] shrink-0" />
                                     <span className="truncate">{it.descripcion || it.desc}</span>
                                     <span className="font-mono text-[10px] text-[var(--detalle-accent-danger)] font-semibold shrink-0">
                                       ({it._diasItem || c.diasTranscurridos}d)
                                     </span>
-                                  </span>
+                                  </Etiqueta>
                                 ))}
                                 {itemsEst.length > 2 && (
                                   <span className="text-[11px] font-medium text-[var(--detalle-text-muted)]">

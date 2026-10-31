@@ -59,15 +59,13 @@ const normalizarBusqueda = (valor) => String(valor || '')
   .toLowerCase()
   .trim();
 
-const obtenerTextoSolicitud = (solicitud) => {
+const obtenerTextoSolicitud = (solicitud, incluirVendedor = true) => {
   const productos = Array.isArray(solicitud.productos) ? solicitud.productos : [];
   const textos = [
     solicitud.correlativo,
     solicitud.cliente,
     solicitud.nombreCliente,
-    solicitud.vendedor,
-    solicitud.vendedorNombre,
-    solicitud.vendedorEmail,
+    ...(incluirVendedor ? [solicitud.vendedor, solicitud.vendedorNombre, solicitud.vendedorEmail] : []),
     solicitud.tipo,
     solicitud.estado,
     solicitud.motivoVentaPerdida?.nombre,
@@ -87,8 +85,7 @@ const obtenerTextoSolicitud = (solicitud) => {
     ...obtenerHistorialSolicitud(solicitud).flatMap((prorroga) => [
       prorroga.motivo,
       prorroga.comentario,
-      prorroga.vendedorEmail,
-      prorroga.vendedorNombre
+      ...(incluirVendedor ? [prorroga.vendedorEmail, prorroga.vendedorNombre] : [])
     ])
   ];
   return normalizarBusqueda(textos.filter(Boolean).join(' '));
@@ -129,7 +126,7 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
   const terminoBusqueda = normalizarBusqueda(busqueda);
 
   const registros = useMemo(() => solicitudes.filter((solicitud) => (
-    !terminoBusqueda || obtenerTextoSolicitud(solicitud).includes(terminoBusqueda)
+    !terminoBusqueda || obtenerTextoSolicitud(solicitud, !esVendedor).includes(terminoBusqueda)
   )).flatMap((solicitud) => {
     const prorrogas = obtenerHistorialSolicitud(solicitud).map((prorroga, indice) => ({
       tipo: 'prorroga',
@@ -437,8 +434,8 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
               type="search"
               value={busqueda}
               onChange={(event) => setBusqueda(event.target.value)}
-              placeholder="Correlativo, cliente, vendedor, ítem o marca"
-              aria-label="Buscar por correlativo, cliente, vendedor o ítem"
+              placeholder={esVendedor ? 'Correlativo, cliente, ítem o marca' : 'Correlativo, cliente, vendedor, ítem o marca'}
+              aria-label={esVendedor ? 'Buscar por correlativo, cliente o ítem' : 'Buscar por correlativo, cliente, vendedor o ítem'}
             />
             {busqueda && (
               <button type="button" onClick={() => setBusqueda('')} aria-label="Limpiar búsqueda">
@@ -498,6 +495,8 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
                   key={record.clave}
                   record={record}
                   view="mobile"
+                  mostrarVendedor={!esVendedor}
+                  rol={role}
                   puedeResponder={puedeResponder}
                   onAtender={abrirSolicitud}
                   onResponder={(solicitud, prorroga, accion) => setRespuesta({ solicitud, prorroga, accion })}
@@ -505,17 +504,23 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
               ))}
             </div>
 
-            {/* Desktop: Tabla 5 columnas fijas */}
-            {/* 57rem (912px): los mínimos de columnas suman 910px (190 + 140 + 180 + 200 + 200). */}
+            {/* Desktop: la columna Vendedor se omite cuando quien mira es el propio vendedor. */}
+            {/* 57rem (912px): los mínimos de columnas suman 910px. */}
             <div className="prorrogas-desktop-table overflow-x-auto">
               <table className="prorrogas-table">
+                <colgroup>
+                  {(esVendedor ? [22, 22, 12, 26, 18] : [18, 13, 20, 10, 22, 17]).map((ancho, indice) => (
+                    <col key={indice} style={{ width: `${ancho}%` }} />
+                  ))}
+                </colgroup>
                 <thead className="prorrogas-thead">
                   <tr>
-                    <th style={{ width: '22%' }}>Solicitud</th>
-                    <th style={{ width: '15%' }}>Estado</th>
-                    <th style={{ width: '24%' }}>Motivo</th>
-                    <th style={{ width: '22%' }}>Plazo</th>
-                    <th style={{ width: '17%', textAlign: 'right' }}>Acción</th>
+                    <th>Solicitud</th>
+                    {!esVendedor && <th>Vendedor</th>}
+                    <th>Estado</th>
+                    <th>Motivo</th>
+                    <th>Plazo</th>
+                    <th style={{ textAlign: 'right' }}>Acción</th>
                   </tr>
                 </thead>
                 <tbody className="prorrogas-tbody">
@@ -524,6 +529,8 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
                       key={record.clave}
                       record={record}
                       view="desktop"
+                      mostrarVendedor={!esVendedor}
+                  rol={role}
                       puedeResponder={puedeResponder}
                       onAtender={abrirSolicitud}
                       onResponder={(solicitud, prorroga, accion) => setRespuesta({ solicitud, prorroga, accion })}

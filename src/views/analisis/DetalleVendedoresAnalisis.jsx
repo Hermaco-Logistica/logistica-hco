@@ -3,11 +3,11 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Search, Zap, Clock, Download } from 'lucide-react';
 import { extraerTodosLosMovimientos, exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
+import { Etiqueta } from '../../components/Etiqueta';
 import { getRoleTheme, formatearTiempoRespuesta, formatearTiempoCierre } from './theme';
 import { contarDecisiones } from './utils/decisionMetrics';
 import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
-import { acumularFaseSeguimiento, obtenerFaseSolicitudCacheada } from '../../utils/faseSeguimiento';
-import { FaseSeguimientoConteo } from './components/FaseSeguimientoConteo';
+import { acumularFaseSeguimiento, describirFasesSeguimiento, obtenerFaseSolicitudCacheada } from '../../utils/faseSeguimiento';
 import { cumpleFiltroPeriodoAnalisis } from './utils/periodoAnalisis';
 import { useSessionState } from '../../hooks/usePersistedState';
 import {
@@ -258,9 +258,9 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
           </button>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className={`text-[10px] font-semibold tracking-wider px-2.5 py-0.5 rounded-full ${theme.bgBadge}`}>
+              <Etiqueta dominio="rol" valor={theme.key}>
                 Comercial
-              </span>
+              </Etiqueta>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
               Rendimiento por Vendedor
@@ -366,7 +366,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                         {v.email && <p className="text-[10px] text-slate-500 line-clamp-1">{v.email}</p>}
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono font-bold px-2 py-1 bg-slate-100 text-slate-600 border border-slate-200/60 rounded-lg shrink-0">#{numGlobal}</span>
+                    <Etiqueta tono="neutral" mono className="shrink-0">#{numGlobal}</Etiqueta>
                   </div>
                   
                   <div className="grid grid-cols-3 gap-2 text-xs">
@@ -400,7 +400,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                     {v.enSeguimiento > 0 && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500">En seguimiento de cliente</span>
-                        <FaseSeguimientoConteo conteo={v.enSeguimiento} porFase={v.fasesSeguimiento} unidad="solicitudes" />
+                        <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(v.fasesSeguimiento)}>{v.enSeguimiento > 0 ? `${v.enSeguimiento} solicitudes` : null}</Etiqueta>
                       </div>
                     )}
                     <div className="flex items-center justify-between">
@@ -515,7 +515,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                       </td>
                       <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                         {v.enSeguimiento > 0
-                          ? <FaseSeguimientoConteo conteo={v.enSeguimiento} porFase={v.fasesSeguimiento} unidad="" />
+                          ? <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(v.fasesSeguimiento)}>{v.enSeguimiento > 0 ? `${v.enSeguimiento}` : null}</Etiqueta>
                           : <span className="font-mono text-slate-300 text-xs">---</span>}
                       </td>
                       <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
@@ -528,15 +528,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                       </td>
                         <DecisionSummaryColumns counts={v} basePath={`/analisis/vendedor/${encodeURIComponent(v.vendedor)}`} navigate={navigate} />
                       <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
-                        <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold border ${
-                          efPct > 50 
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
-                            : efPct > 0 
-                            ? 'bg-blue-50 text-blue-700 border-blue-200/60' 
-                            : 'bg-slate-50 text-slate-400 border-slate-200/60'
-                        }`}>
-                          {efPct}%
-                        </span>
+                        <Etiqueta dominio="rendimiento" valor={efPct} mono />
                       </td>
                       <td className="py-2.5 px-3.5 text-right font-mono font-semibold text-slate-900 whitespace-nowrap">
                         {formatearDinero(v.montoCotizado)}
@@ -548,13 +540,10 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                         {respInfo.valor === '---' ? (
                           <span className="font-mono text-slate-400 text-xs">---</span>
                         ) : respInfo.esRapido ? (
-                          <span 
-                            className="inline-flex items-center gap-1 font-mono font-bold text-[11px] px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/80"
-                            title={`Compras cotizó en ${respInfo.valor} ${respInfo.unidad} (${respInfo.subtexto || 'Creación → Cotización'})`}
-                          >
+                          <Etiqueta tono="azul" tamano="normal" mono title={`Compras cotizó en ${respInfo.valor} ${respInfo.unidad} (${respInfo.subtexto || 'Creación → Cotización'})`}>
                             <Clock size={11} className="shrink-0 text-blue-600" />
                             {respInfo.textoCorto}
-                          </span>
+                          </Etiqueta>
                         ) : (
                           <span 
                             className="font-mono text-slate-600 text-xs font-semibold"
@@ -568,13 +557,10 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                         {cierreInfo.valor === '---' ? (
                           <span className="font-mono text-slate-400 text-xs">---</span>
                         ) : cierreInfo.esRapido ? (
-                          <span 
-                            className="inline-flex items-center gap-1 font-mono font-bold text-[11px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80"
-                            title={`Vendedor cerró pedido en ${cierreInfo.valor} ${cierreInfo.unidad} (${cierreInfo.subtexto})`}
-                          >
+                          <Etiqueta tono="exito" tamano="normal" mono title={`Vendedor cerró pedido en ${cierreInfo.valor} ${cierreInfo.unidad} (${cierreInfo.subtexto})`}>
                             <Zap size={11} className="shrink-0" />
                             {cierreInfo.textoCorto}
-                          </span>
+                          </Etiqueta>
                         ) : (
                           <span 
                             className="font-mono text-slate-600 text-xs font-semibold"

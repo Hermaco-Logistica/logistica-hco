@@ -30,20 +30,27 @@ const RetaceosView = ENABLE_RETACEOS
 import { DetalleRFQVendedor } from './views/vendedor/DetalleRFQVendedor';
 import { DetallePedidoManual } from './views/vendedor/DetallePedidoManual';
 import { DashboardPedidos } from './views/pedidos/DashboardPedidos';
-import { AnalisisEstadisticas } from './views/analisis/AnalisisEstadisticas';
-import { DetalleSolicitudesAnalisis } from './views/analisis/DetalleSolicitudesAnalisis';
-import { DetalleClientesAnalisis } from './views/analisis/DetalleClientesAnalisis';
-import { DetalleVendedoresAnalisis } from './views/analisis/DetalleVendedoresAnalisis';
-import { DetalleVendedorHistorial } from './views/analisis/DetalleVendedorHistorial';
-import { DetalleProductosAnalisis } from './views/analisis/DetalleProductosAnalisis';
-import { DetalleProductoHistorial } from './views/analisis/DetalleProductoHistorial';
 import { ToastProvider } from './components/ui/Toast';
 import { GlobalAlertModal } from './components/ui/GlobalAlertModal';
 import { ReleaseNotesModal } from './components/ui/ReleaseNotesModal';
-import { DetalleClienteHistorial } from './views/analisis/DetalleClienteHistorial';
-import { DetalleLogisticaAnalisis } from './views/analisis/DetalleLogisticaAnalisis';
 import { clasificarSolicitud } from './utils/clasificarSolicitud';
+
 import { obtenerCierreEventoSeguimiento } from './utils/cicloSeguimiento';
+
+// Las vistas de Análisis se cargan bajo demanda: salen del paquete inicial y solo se descargan al entrar a /analisis.
+const cargarVistaAnalisis = (importar, nombre) => React.lazy(() => importar().then((m) => ({ default: m[nombre] })));
+const AnalisisEstadisticas = cargarVistaAnalisis(() => import('./views/analisis/AnalisisEstadisticas'), 'AnalisisEstadisticas');
+const DetalleSolicitudesAnalisis = cargarVistaAnalisis(() => import('./views/analisis/DetalleSolicitudesAnalisis'), 'DetalleSolicitudesAnalisis');
+const DetalleClientesAnalisis = cargarVistaAnalisis(() => import('./views/analisis/DetalleClientesAnalisis'), 'DetalleClientesAnalisis');
+const DetalleVendedoresAnalisis = cargarVistaAnalisis(() => import('./views/analisis/DetalleVendedoresAnalisis'), 'DetalleVendedoresAnalisis');
+const DetalleVendedorHistorial = cargarVistaAnalisis(() => import('./views/analisis/DetalleVendedorHistorial'), 'DetalleVendedorHistorial');
+const DetalleProductosAnalisis = cargarVistaAnalisis(() => import('./views/analisis/DetalleProductosAnalisis'), 'DetalleProductosAnalisis');
+const DetalleProductoHistorial = cargarVistaAnalisis(() => import('./views/analisis/DetalleProductoHistorial'), 'DetalleProductoHistorial');
+const DetalleClienteHistorial = cargarVistaAnalisis(() => import('./views/analisis/DetalleClienteHistorial'), 'DetalleClienteHistorial');
+const DetalleLogisticaAnalisis = cargarVistaAnalisis(() => import('./views/analisis/DetalleLogisticaAnalisis'), 'DetalleLogisticaAnalisis');
+const VistaDiferida = ({ children }) => (
+  <React.Suspense fallback={<div className="p-6 text-xs font-medium text-slate-400">Cargando…</div>}>{children}</React.Suspense>
+);
 
 let NegociacionPreview = null;
 if (import.meta.env.DEV) {
@@ -356,21 +363,21 @@ function App() {
 
   const rutasAnalisis = (
     <>
-      <Route path="/analisis" element={<AnalisisEstadisticas role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
+      <Route path="/analisis" element={<VistaDiferida><AnalisisEstadisticas role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} /></VistaDiferida>} />
       <Route path="/analisis/solicitudes" element={<Navigate to="/analisis/solicitudes/todas" replace />} />
-      <Route path="/analisis/solicitudes/:tipoEstado" element={<DetalleSolicitudesAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
-      <Route path="/analisis/clientes" element={<DetalleClientesAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
-      <Route path="/analisis/cliente/:clienteId/anulados" element={<DetalleClienteHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} soloAnulados />} />
-      <Route path="/analisis/cliente/:clienteId" element={<DetalleClienteHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
-      <Route path="/analisis/vendedores" element={<DetalleVendedoresAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
-      <Route path="/analisis/vendedor/:vendedorId/anulados" element={<DetalleVendedorHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} soloAnulados />} />
-      <Route path="/analisis/vendedor/:vendedorId" element={<DetalleVendedorHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
-      <Route path="/analisis/productos" element={<DetalleProductosAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
-      <Route path="/analisis/producto/:productId/anulados" element={<DetalleProductoHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} soloAnulados />} />
-      <Route path="/analisis/producto/:productId" element={<DetalleProductoHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
-      <Route path="/analisis/producto/*" element={<DetalleProductoHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} />} />
-      <Route path="/analisis/logistica" element={(isComprador || isAdmin) ? <DetalleLogisticaAnalisis role={role} ordenesCompra={ordenesCompra} /> : <Navigate to="/analisis" replace />} />
-      <Route path="/analisis/logistica/:filtro" element={(isComprador || isAdmin) ? <DetalleLogisticaAnalisis role={role} ordenesCompra={ordenesCompra} /> : <Navigate to="/analisis" replace />} />
+      <Route path="/analisis/solicitudes/:tipoEstado" element={<VistaDiferida><DetalleSolicitudesAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} /></VistaDiferida>} />
+      <Route path="/analisis/clientes" element={<VistaDiferida><DetalleClientesAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} /></VistaDiferida>} />
+      <Route path="/analisis/cliente/:clienteId/anulados" element={<VistaDiferida><DetalleClienteHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} soloAnulados /></VistaDiferida>} />
+      <Route path="/analisis/cliente/:clienteId" element={<VistaDiferida><DetalleClienteHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} /></VistaDiferida>} />
+      <Route path="/analisis/vendedores" element={<VistaDiferida><DetalleVendedoresAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} /></VistaDiferida>} />
+      <Route path="/analisis/vendedor/:vendedorId/anulados" element={<VistaDiferida><DetalleVendedorHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} soloAnulados /></VistaDiferida>} />
+      <Route path="/analisis/vendedor/:vendedorId" element={<VistaDiferida><DetalleVendedorHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} /></VistaDiferida>} />
+      <Route path="/analisis/productos" element={<VistaDiferida><DetalleProductosAnalisis role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} /></VistaDiferida>} />
+      <Route path="/analisis/producto/:productId/anulados" element={<VistaDiferida><DetalleProductoHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} soloAnulados /></VistaDiferida>} />
+      <Route path="/analisis/producto/:productId" element={<VistaDiferida><DetalleProductoHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} /></VistaDiferida>} />
+      <Route path="/analisis/producto/*" element={<VistaDiferida><DetalleProductoHistorial role={role} solicitudes={solicitudes} ordenesCompra={ordenesCompra} /></VistaDiferida>} />
+      <Route path="/analisis/logistica" element={(isComprador || isAdmin) ? <VistaDiferida><DetalleLogisticaAnalisis role={role} ordenesCompra={ordenesCompra} /></VistaDiferida> : <Navigate to="/analisis" replace />} />
+      <Route path="/analisis/logistica/:filtro" element={(isComprador || isAdmin) ? <VistaDiferida><DetalleLogisticaAnalisis role={role} ordenesCompra={ordenesCompra} /></VistaDiferida> : <Navigate to="/analisis" replace />} />
     </>
   );
 

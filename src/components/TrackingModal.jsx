@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { interpretarEstadoLogistico, ESTADOS_SISTEMA } from '../utils/interpretarEstadoLogistico';
 import { getStatusLabel, getDsvEventLabel, getDescripcionUi } from '../utils/trackingUi';
+import { Etiqueta } from './Etiqueta';
 
 const PASOS_LOGISTICOS = [
   { key: ESTADOS_SISTEMA.PEDIDO, label: 'Pedido', icon: Package },
@@ -221,10 +222,10 @@ export const TrackingModal = ({
               {latestEvent && (
                 <div className="border border-slate-200/80 rounded-2xl p-4 bg-white shadow-xs">
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="inline-flex items-center gap-1 text-[8.5px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                    <Etiqueta tono="exito">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                       Estado Actual
-                    </span>
+                    </Etiqueta>
                     {(provider === 'DSV' && (estadoActual === 'Aduana' || estadoActual === 'Recibido')
                       ? (fechaUltimoEstado || latestEvent.timestamp)
                       : latestEvent.timestamp) && (

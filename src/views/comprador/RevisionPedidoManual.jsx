@@ -25,6 +25,7 @@ import { SeguimientoClienteBanner } from '../../components/seguimiento/Seguimien
 import { PanelCriteriosProrroga } from '../../components/seguimiento/PanelCriteriosProrroga';
 import { SeguimientoItemCondicion } from '../../components/seguimiento/SeguimientoItemCondicion';
 import { crearPropsSeguimientoItem, obtenerResumenSeguimientoCliente } from '../../utils/seguimientoCliente';
+import { Etiqueta } from '../../components/Etiqueta';
 
 export const RevisionPedidoManual = ({ role = 'comprador' }) => {
   const { id } = useParams();
@@ -365,9 +366,9 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
           <span className="font-mono font-black text-base text-slate-900 tracking-tight">
             {solicitudBase.correlativo || '---'}
           </span>
-          <span className="text-[10px] font-black uppercase text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-md">
+          <Etiqueta tono="apagado">
             {cerrados} de {itemsServer.length} cerrados
-          </span>
+          </Etiqueta>
         </div>
         <p className={`text-xs font-bold uppercase leading-snug line-clamp-2 wrap-break-word ${colors.text}`}>
           {solicitudBase.cliente || 'Sin cliente'}

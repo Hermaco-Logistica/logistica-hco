@@ -1,4 +1,5 @@
 import { clasificarSolicitud } from './clasificarSolicitud';
+import { ETIQUETAS_FASE_SEGUIMIENTO } from './etiquetas';
 import { ESTADOS_SEGUIMIENTO_CLIENTE, obtenerResumenSeguimientoCliente } from './seguimientoCliente';
 
 /**
@@ -6,13 +7,20 @@ import { ESTADOS_SEGUIMIENTO_CLIENTE, obtenerResumenSeguimientoCliente } from '.
  * No se guarda en `estado` ni en `resultado`: se calcula al vuelo para análisis y listados.
  * Mayor `prioridad` = fase más urgente; la solicitud toma la fase más urgente de sus ítems.
  */
-export const FASES_SEGUIMIENTO = {
-  cierre_requerido: { etiqueta: 'Cierre requerido', titulo: 'Agotó revisiones y prórroga: debe cerrarse como pedido o venta perdida.', tono: 'danger', prioridad: 5 },
-  vencida: { etiqueta: 'Vencida', titulo: 'Venció y aún no tiene revisión ni prórroga.', tono: 'danger', prioridad: 4 },
-  prorroga_pendiente: { etiqueta: 'Prórroga pendiente', titulo: 'Compras aún no responde la prórroga solicitada.', tono: 'info', prioridad: 3 },
-  en_prorroga: { etiqueta: 'En prórroga', titulo: 'Tiene una prórroga aprobada vigente.', tono: 'violet', prioridad: 2 },
-  en_revision: { etiqueta: 'En revisión', titulo: 'Revisión activa con el cliente.', tono: 'warning', prioridad: 1 }
-};
+const PRIORIDAD_FASE = { cierre_requerido: 5, vencida: 4, prorroga_pendiente: 3, en_prorroga: 2, en_revision: 1 };
+
+export const FASES_SEGUIMIENTO = Object.fromEntries(Object.entries(ETIQUETAS_FASE_SEGUIMIENTO).map(([fase, datos]) => [
+  fase,
+  { etiqueta: datos.texto, titulo: datos.titulo, tono: datos.tono, prioridad: PRIORIDAD_FASE[fase] }
+]));
+
+/** Texto de desglose por fase para tooltips: "2 vencidas · 1 en revisión". */
+export function describirFasesSeguimiento(porFase = {}) {
+  return Object.entries(FASES_SEGUIMIENTO)
+    .filter(([fase]) => porFase[fase])
+    .map(([fase, datos]) => `${porFase[fase]} ${datos.etiqueta.toLowerCase()}`)
+    .join(' · ');
+}
 
 const ESTADOS_EVALUABLES = ['Cotizado', 'Cotizado Parcial', 'Pedido Parcial'];
 
@@ -84,16 +92,6 @@ export function obtenerFaseSeguimientoSolicitud(solicitud, fechaReferencia = new
     indicesPorFase,
     indicesEnSeguimiento: Object.values(indicesPorFase).flat().sort((a, b) => a - b)
   };
-}
-
-/** Mapa id -> fase para una lista de solicitudes (evita recalcular en cada render). */
-export function crearMapaFasesSeguimiento(solicitudes = [], fechaReferencia = new Date()) {
-  const mapa = new Map();
-  for (const solicitud of solicitudes) {
-    const fase = obtenerFaseSeguimientoSolicitud(solicitud, fechaReferencia);
-    if (fase) mapa.set(solicitud.id, fase);
-  }
-  return mapa;
 }
 
 /** Monto (precio unitario por cantidad) de los ítems indicados, con la misma regla que las métricas de análisis. */

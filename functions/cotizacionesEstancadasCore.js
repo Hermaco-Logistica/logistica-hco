@@ -56,6 +56,9 @@ export function esRolBloqueable(roleOrUser) {
   return ROLES_CON_BLOQUEO.includes(String(r).trim().toLowerCase());
 }
 
+// Se crea una sola vez: construir un Intl.DateTimeFormat por llamada era el costo dominante del cálculo de seguimiento.
+const FORMATEADOR_DIA_EL_SALVADOR = new Intl.DateTimeFormat('en-CA', { timeZone: ZONA_HORARIA_EL_SALVADOR });
+
 export function obtenerClaveDiaElSalvador(fecha) {
   if (!fecha) return null;
   let d = fecha;
@@ -66,7 +69,7 @@ export function obtenerClaveDiaElSalvador(fecha) {
   }
   if (isNaN(d.getTime())) return null;
 
-  return new Intl.DateTimeFormat('en-CA', { timeZone: ZONA_HORARIA_EL_SALVADOR }).format(d);
+  return FORMATEADOR_DIA_EL_SALVADOR.format(d);
 }
 
 export function esDomingoEnElSalvador(claveODate) {
