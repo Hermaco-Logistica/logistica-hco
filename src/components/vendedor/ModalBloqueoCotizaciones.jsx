@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Package, Plane, Ship, UserRound } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowRight, Package, Plane, Ship, UserRound } from 'lucide-react';
+import { Modal, ModalBoton, ModalEncabezado, ModalPestanas, ModalPie } from '../Modal';
 import { ESTADOS_SEGUIMIENTO_CLIENTE, obtenerResumenSeguimientoCliente } from '../../utils/seguimientoCliente';
 import { StatusChip } from '../detalle/StatusChip';
 import { Etiqueta } from '../../components/Etiqueta';
@@ -80,68 +81,35 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
     : pestana === 'seguimiento' ? pendientesSeguimiento
     : cotizaciones;
 
+  const volver = () => {
+    if (onVolver) onVolver();
+    else navigate('/vendedor');
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 md:p-6 bg-slate-950/60 backdrop-blur-xs overflow-y-auto">
-      <div className="flex flex-col w-full max-w-6xl h-[100dvh] sm:h-auto sm:max-h-[90vh] bg-white rounded-none sm:rounded-[10px] border-0 sm:border border-[var(--detalle-border)] shadow-2xl overflow-hidden animate-in fade-in duration-150">
-        
-        {/* Cabecera con var(--tf-color-sidebar) */}
-        <header
-          style={{ backgroundColor: 'var(--tf-color-sidebar)' }}
-          className="flex items-center justify-between px-5 py-4 text-white border-b border-white/10 gap-4"
-        >
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-[16px] font-semibold text-white tracking-normal m-0 leading-tight">
-                Cotizaciones pendientes de seguimiento
-              </h2>
-              <Etiqueta tono="suave" tamano="normal">
-                {cotizaciones.length}
-              </Etiqueta>
-            </div>
-            <p className="mt-1 text-[13px] text-slate-300 font-normal leading-normal">
-              Solicitudes con al menos un ítem cotizado fuera de su vigencia configurada sin seguimiento comercial.
-            </p>
-          </div>
+    <Modal etiqueta="Cotizaciones pendientes de seguimiento" variante="pantallaCompleta" ancho="completo" onCerrar={volver} cerrarAlClicFuera={false}>
+      <ModalEncabezado
+        titulo="Cotizaciones pendientes de seguimiento"
+        subtitulo="Solicitudes con al menos un ítem cotizado fuera de su vigencia configurada sin seguimiento comercial."
+        referencia={`${cotizaciones.length} ${cotizaciones.length === 1 ? 'solicitud' : 'solicitudes'}`}
+        icono={AlertTriangle}
+        tono="aviso"
+        onCerrar={volver}
+      />
 
-          <button
-            type="button"
-            onClick={() => {
-              if (onVolver) onVolver();
-              else navigate('/vendedor');
-            }}
-            className="inline-flex h-[36px] items-center gap-1.5 rounded-[6px] border border-white/20 bg-white/10 px-3 text-[12px] font-semibold text-white hover:bg-white/20 transition-colors cursor-pointer shrink-0"
-          >
-            <ArrowLeft size={14} />
-            <span>Regresar</span>
-          </button>
-        </header>
-
-        {/* Pestañas de filtrado (Todas / Cierre requerido / Seguimiento requerido) */}
-        <nav
-          className="grid grid-cols-3 gap-1.5 border-y border-[var(--detalle-border)] bg-[var(--detalle-surface)] px-2 sm:px-5"
-          aria-label="Filtro de cotizaciones"
-        >
-          {[
-            ['todas', 'Todas', cotizaciones.length],
-            ['cierre', 'Cierre requerido', cierresRequeridos.length],
-            ['seguimiento', 'Seguimiento requerido', pendientesSeguimiento.length]
-          ].map(([valor, etiqueta, total]) => (
-            <button
-              key={valor}
-              type="button"
-              onClick={() => setPestana(valor)}
-              aria-pressed={pestana === valor}
-              className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-0.5 border-b-2 px-1 py-2 text-center text-[12px] leading-tight transition-colors cursor-pointer sm:flex-row sm:gap-1.5 sm:py-3 sm:text-[13px] ${
-                pestana === valor
-                  ? 'border-[var(--tf-color-brand)] text-[var(--detalle-text)] font-semibold'
-                  : 'border-transparent text-[var(--detalle-text-muted)] font-medium hover:text-[var(--detalle-text)]'
-              }`}
-            >
-              <span className="min-w-0">{etiqueta}</span>
-              <span className="shrink-0 text-[11px] text-[var(--detalle-text-subtle)] font-normal tabular-nums">({total})</span>
-            </button>
-          ))}
-        </nav>
+      <div className="px-6 pt-5">
+        <ModalPestanas
+          etiqueta="Filtro de cotizaciones"
+          tono="aviso"
+          activa={pestana}
+          onElegir={setPestana}
+          opciones={[
+            { clave: 'todas', texto: 'Todas', cantidad: cotizaciones.length },
+            { clave: 'cierre', texto: 'Cierre requerido', cantidad: cierresRequeridos.length },
+            { clave: 'seguimiento', texto: 'Seguimiento requerido', cantidad: pendientesSeguimiento.length }
+          ]}
+        />
+      </div>
 
         {/* Contenido: Tabla Desktop / Cards Móvil */}
         <div className="flex-1 overflow-y-auto overflow-x-auto bg-[var(--detalle-surface-muted)] p-3 sm:p-6">
@@ -378,27 +346,15 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
 
         </div>
 
-        {/* Nota del pie con 12px muted y enlace de texto */}
-        <footer className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-t border-[var(--detalle-border)] bg-[var(--detalle-surface-muted)] px-5 py-3 text-[12px] text-[var(--detalle-text-muted)]">
-          <span>
-            {cierresRequeridos.length > 0
-              ? 'Las solicitudes con cierre requerido deben resolverse como pedido o venta perdida para desbloquear nuevas solicitudes.'
-              : 'Debe registrar seguimiento, pedido, contraoferta o venta perdida para desbloquear nuevas solicitudes.'}
-            {' '}Totales calculados sobre los ítems estancados.
-          </span>
-          <button
-            type="button"
-            onClick={() => {
-              if (onVolver) onVolver();
-              else navigate('/vendedor');
-            }}
-            className="font-medium text-[var(--detalle-text)] underline hover:text-[var(--tf-color-brand-strong)] transition-colors cursor-pointer shrink-0"
-          >
-            Ir al listado principal
-          </button>
-        </footer>
-
-      </div>
-    </div>
+      <ModalPie className="justify-between">
+        <span className="min-w-0 flex-1 text-[12.5px] leading-snug text-neutral-500">
+          {cierresRequeridos.length > 0
+            ? 'Las solicitudes con cierre requerido deben resolverse como pedido o venta perdida para desbloquear nuevas solicitudes.'
+            : 'Debe registrar seguimiento, pedido, contraoferta o venta perdida para desbloquear nuevas solicitudes.'}
+          {' '}Totales calculados sobre los ítems estancados.
+        </span>
+        <ModalBoton icono={ArrowLeft} onClick={volver}>Ir al listado principal</ModalBoton>
+      </ModalPie>
+    </Modal>
   );
 };

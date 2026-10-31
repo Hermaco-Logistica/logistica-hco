@@ -1,4 +1,5 @@
 import React from 'react';
+import { ModalProductoLocal } from '../../../components/vendedor/ModalProductoLocal';
 
 export const NuevaRFQView = ({ viewModel }) => {
   const { Loader2, PlusCircle, X, Package, StickyActionBar, ModalBloqueoCotizaciones, guardarProductoLocal, addFila, buscandoCliente, buscandoMarca, buscandoProducto, buscarMarcasConDebounce, buscarProductosConDebounce, cliente, comentariosVendedor, errorCliente, errorMarca, indiceSugerenciaActiva, indiceSugerenciaMarca, indiceSugerenciaProducto, loading, manejarTeclasCliente, manejarTeclasMarca, manejarTeclasProducto, modalNuevoProd, mostrarSugerencias, mostrarSugerenciasMarca, mostrarSugerenciasProducto, productos, removeFila, seleccionarSugerenciaCliente, seleccionarSugerenciaMarca, seleccionarSugerenciaProducto, setCliente, setComentariosVendedor, setIndiceSugerenciaActiva, setIndiceSugerenciaMarca, setIndiceSugerenciaProducto, setModalNuevoProd, setMostrarSugerencias, setMostrarSugerenciasMarca, setMostrarSugerenciasProducto, setValidez, sugerenciasCliente, sugerenciasMarca, sugerenciasProducto, updateMarcaState, updateProducto, validez, guardarRFQ } = viewModel;
@@ -537,85 +538,24 @@ export const NuevaRFQView = ({ viewModel }) => {
 
       {/* Modal Agregar Producto Local */}
       {modalNuevoProd.isOpen && (
-        <div className="fixed inset-0 z-100 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto mt-2.5 sm:hidden shrink-0" />
-            <div className="p-5 sm:p-6 overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-6">
-              <div className="flex justify-between items-center mb-5 sm:mb-6">
-                <h3 className="text-base sm:text-lg font-black text-slate-800 uppercase">Nuevo Producto Local</h3>
-                <button 
-                  type="button" 
-                  onClick={() => setModalNuevoProd(prev => ({...prev, isOpen: false}))} 
-                  className="text-slate-400 hover:text-slate-600 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg touch-manipulation cursor-pointer"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Código (SKU)</label>
-                  <input 
-                    type="text" 
-                    value={modalNuevoProd.sku} 
-                    onChange={e => setModalNuevoProd(prev => ({...prev, sku: e.target.value.toUpperCase()}))} 
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold uppercase text-base sm:text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
-                    placeholder="SKU..." 
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Nombre / Descripción</label>
-                  <input 
-                    type="text" 
-                    value={modalNuevoProd.producto} 
-                    onChange={e => setModalNuevoProd(prev => ({...prev, producto: e.target.value.toUpperCase()}))} 
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold uppercase text-base sm:text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
-                    placeholder="DESCRIPCIÓN..." 
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Marca</label>
-                  <input 
-                    type="text" 
-                    value={modalNuevoProd.marca} 
-                    onChange={e => setModalNuevoProd(prev => ({...prev, marca: e.target.value.toUpperCase()}))} 
-                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl font-bold uppercase text-base sm:text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" 
-                    placeholder="MARCA..." 
-                  />
-                </div>
-              </div>
-              <div className="mt-6 sm:mt-8 flex gap-3">
-                <button 
-                  type="button" 
-                  onClick={() => setModalNuevoProd(prev => ({...prev, isOpen: false}))} 
-                  className="flex-1 px-4 py-3 rounded-xl font-bold text-slate-500 bg-slate-100 hover:bg-slate-200 min-h-[44px] touch-manipulation cursor-pointer text-xs sm:text-sm uppercase tracking-wider"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="button" 
-                  disabled={modalNuevoProd.saving || !modalNuevoProd.sku || !modalNuevoProd.producto} 
-                  onClick={async () => {
-                    setModalNuevoProd(prev => ({...prev, saving: true}));
-                    try {
-                      const nuevo = await guardarProductoLocal(modalNuevoProd.sku, modalNuevoProd.producto, modalNuevoProd.marca);
-                      seleccionarSugerenciaProducto(modalNuevoProd.idx, nuevo);
-                      setModalNuevoProd(prev => ({...prev, isOpen: false}));
-                    } catch (e) {
-                      console.error(e);
-                      alert('Error guardando producto');
-                    } finally {
-                      setModalNuevoProd(prev => ({...prev, saving: false}));
-                    }
-                  }} 
-                  className="flex-1 px-4 py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 flex justify-center items-center gap-2 min-h-[44px] touch-manipulation cursor-pointer text-xs sm:text-sm uppercase tracking-wider"
-                >
-                  {modalNuevoProd.saving ? <Loader2 size={16} className="animate-spin" /> : <PlusCircle size={16} />}
-                  Guardar
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ModalProductoLocal
+          estado={modalNuevoProd}
+          onCambiar={(parche) => setModalNuevoProd(prev => ({ ...prev, ...parche }))}
+          onCerrar={() => setModalNuevoProd(prev => ({ ...prev, isOpen: false }))}
+          onGuardar={async () => {
+            setModalNuevoProd(prev => ({ ...prev, saving: true }));
+            try {
+              const nuevo = await guardarProductoLocal(modalNuevoProd.sku, modalNuevoProd.producto, modalNuevoProd.marca);
+              seleccionarSugerenciaProducto(modalNuevoProd.idx, nuevo);
+              setModalNuevoProd(prev => ({ ...prev, isOpen: false }));
+            } catch (e) {
+              console.error(e);
+              alert('Error guardando producto');
+            } finally {
+              setModalNuevoProd(prev => ({ ...prev, saving: false }));
+            }
+          }}
+        />
       )}
 
     </div>

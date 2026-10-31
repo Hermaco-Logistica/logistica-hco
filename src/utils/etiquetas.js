@@ -98,7 +98,7 @@ export const PALETA_CORREO = {
  */
 export const TAMANOS = {
   compacta: { clases: 'h-6 gap-1 px-2 text-[11px] rounded-lg', icono: 12 },
-  normal: { clases: 'h-8 gap-1.5 px-3 text-[13px] rounded-xl', icono: 16 },
+  normal: { clases: 'h-7 gap-1.5 px-2.5 text-[12.5px] rounded-[10px]', icono: 14 },
   grande: { clases: 'h-11 gap-2 px-3.5 text-base rounded-xl', icono: 20 }
 };
 

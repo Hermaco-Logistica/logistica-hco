@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { XCircle, ShieldAlert, Ban, X } from 'lucide-react';
+import { XCircle, ShieldAlert, Ban, MessageSquareText } from 'lucide-react';
 import { tonoDe } from '../../../utils/etiquetas';
 import { 
   formatearFechaDecision, 
@@ -7,6 +7,7 @@ import {
   buscarMotivoDecisionMensajes 
 } from '../../../utils/decisionItemHelpers';
 import { Etiqueta } from '../../Etiqueta';
+import { Modal, ModalBoton, ModalCallout, ModalCuerpo, ModalDetalle, ModalEncabezado, ModalPie } from '../../Modal';
 
 /**
  * Modal exclusivo para consultar motivos de decisiones operativas en ítems:
@@ -23,15 +24,6 @@ export const ModalConsultaDecisionItem = ({ isOpen = true, onClose, data }) => {
   const activo = Boolean(isOpen && data);
   const [itemsResueltos, setItemsResueltos] = useState([]);
   const [fuenteItemsResueltos, setFuenteItemsResueltos] = useState(null);
-
-  useEffect(() => {
-    if (!activo) return undefined;
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') onClose?.();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [activo, onClose]);
 
   const baseItems = useMemo(() => (
     Array.isArray(data?.items) && data.items.length > 0
@@ -111,151 +103,78 @@ export const ModalConsultaDecisionItem = ({ isOpen = true, onClose, data }) => {
   const tipoPrincipal = primerItem.tipoDecision || 'rechazo';
 
   // Configuración visual de la cabecera según el tipo principal de decisión
-  let headerIcon = <XCircle size={18} />;
-  let iconBg = 'bg-rose-600 text-white';
-  let headerTag = 'Negociación de Oferta';
-  let headerTitle = esMultiple 
-    ? `Decisiones de Ítems (${itemsList.length} ítems)` 
-    : (primerItem.tituloModal || 'Motivo de la Decisión');
+  let headerIcon = XCircle;
+  let tono = 'peligro';
+  let headerTag = 'Negociación de oferta';
+  let headerTitle = esMultiple
+    ? `Decisiones de ítems (${itemsList.length} ítems)`
+    : (primerItem.tituloModal || 'Motivo de la decisión');
 
   if (tipoPrincipal === 'denegacion') {
-    headerIcon = <ShieldAlert size={18} />;
-    iconBg = 'bg-amber-600 text-white';
+    headerIcon = ShieldAlert;
+    tono = 'aviso';
     headerTag = 'Revisión de Compras';
-    if (esMultiple) headerTitle = `Ítems Denegados (${itemsList.length} ítems)`;
+    if (esMultiple) headerTitle = `Ítems denegados (${itemsList.length} ítems)`;
   } else if (tipoPrincipal === 'anulacion') {
-    headerIcon = <Ban size={18} />;
-    iconBg = 'bg-slate-700 text-white';
-    headerTag = 'Anulación de Ítem';
-    if (esMultiple) headerTitle = `Ítems Anulados (${itemsList.length} ítems)`;
+    headerIcon = Ban;
+    tono = 'neutral';
+    headerTag = 'Anulación de ítem';
+    if (esMultiple) headerTitle = `Ítems anulados (${itemsList.length} ítems)`;
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-2 sm:p-4 md:p-6 backdrop-blur-[2px] animate-in fade-in duration-150"
-      role="presentation"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose?.();
-      }}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="motivo-decision-item-titulo"
-        className="flex max-h-[92vh] sm:max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
-      >
-        {/* Cabecera */}
-        <div className="flex items-start justify-between gap-3 sm:gap-4 border-b border-slate-200 bg-slate-50 px-4 sm:px-5 py-3.5 sm:py-4">
-          <div className="flex min-w-0 items-start gap-2.5 sm:gap-3">
-            <div className={`mt-0.5 flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg shadow-xs ${iconBg}`}>
-              {headerIcon}
-            </div>
-            <div className="min-w-0 flex-1">
-              <span className="block text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400 mb-0.5">
-                {headerTag}
-              </span>
-              <h2 id="motivo-decision-item-titulo" className="text-sm sm:text-base font-bold tracking-tight text-slate-900 truncate">
-                {headerTitle}
-              </h2>
-              <p className="mt-0.5 truncate text-[11px] font-medium text-slate-500">
-                Ref: <span className="font-mono font-bold text-slate-700">{correlativo}</span>
-                {cliente ? ` · ${cliente}` : ''}
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-200 hover:text-slate-700 cursor-pointer min-w-[32px] min-h-[32px]"
-            aria-label="Cerrar modal de motivo"
-          >
-            <X size={16} />
-          </button>
-        </div>
+    <Modal etiqueta={headerTitle} onCerrar={onClose} ancho="lg">
+      <ModalEncabezado
+        titulo={headerTitle}
+        subtitulo={`${headerTag}${cliente ? ` · ${cliente}` : ''}`}
+        referencia={correlativo}
+        icono={headerIcon}
+        tono={tono}
+        onCerrar={onClose}
+      />
 
-        {/* Contenido (con scroll si hay múltiples ítems) */}
-        <div className="space-y-3.5 sm:space-y-4 px-4 sm:px-5 py-4 sm:py-5 bg-white overflow-y-auto max-h-[65vh]">
-          {itemsList.map((item, idx) => {
-            const itemTipo = item.tipoDecision || 'rechazo';
-            let itemTono = tonoDe('decision', 'rechazo');
-            let itemCardBorder = 'border-rose-500';
+      <ModalCuerpo className="space-y-2">
+        {itemsList.map((item, idx) => {
+          const itemTipo = item.tipoDecision || 'rechazo';
+          const itemTono = tonoDe('decision', itemTipo === 'denegacion' || itemTipo === 'anulacion' ? itemTipo : 'rechazo');
+          const tonoMotivo = itemTipo === 'denegacion' ? 'aviso' : itemTipo === 'anulacion' ? 'neutral' : 'peligro';
 
-            if (itemTipo === 'denegacion') {
-              itemTono = tonoDe('decision', 'denegacion');
-              itemCardBorder = 'border-amber-500';
-            } else if (itemTipo === 'anulacion') {
-              itemTono = tonoDe('decision', 'anulacion');
-              itemCardBorder = 'border-slate-500';
-            }
-
-            const fechaTxt = formatearFechaDecision(item.fecha);
-
-            return (
-              <div key={idx} className={`border-l-3 ${itemCardBorder} bg-slate-50 p-3.5 sm:p-4 rounded-r-xl space-y-2.5 sm:space-y-3`}>
-                {/* Producto y Badge */}
-                <div className="flex justify-between items-start gap-2">
-                  <div className="min-w-0 flex-1">
-                    <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">
-                      {esMultiple ? `Ítem ${idx + 1} · Producto` : 'Producto / Descripción'}
-                    </span>
-                    <p className="font-bold text-slate-800 text-xs sm:text-sm leading-snug uppercase break-words">
-                      {item.producto}
-                    </p>
-                    {item.marca && item.marca !== 'N/A' && (
-                      <p className="text-[10px] font-bold text-slate-500 uppercase mt-0.5">
-                        Marca: {item.marca}
-                      </p>
-                    )}
-                  </div>
-                  <Etiqueta tono={itemTono} className="shrink-0">
-                    {item.badgeLabel}
-                  </Etiqueta>
+          return (
+            <article key={idx} className="space-y-3 rounded-[14px] bg-neutral-100 p-3.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12.5px] text-neutral-500">{esMultiple ? `Ítem ${idx + 1}` : 'Producto'}</p>
+                  {item.sku && <p className="font-mono text-[13.5px] font-semibold text-neutral-900">SKU {item.sku}</p>}
+                  <p className="break-words text-[14.5px] leading-snug text-neutral-900">{item.producto}</p>
+                  {item.marca && item.marca !== 'N/A' && <p className="mt-0.5 text-[12.5px] text-neutral-500">Marca: {item.marca}</p>}
                 </div>
-
-                {/* Motivo Único Directo */}
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">
-                      {item.labelMotivo || 'Motivo'}
-                    </span>
-                    {cargandoMotivos && esMotivoGenerico(item.motivo) && (
-                      <span className="text-[9px] font-medium text-slate-400 animate-pulse">
-                        Buscando motivo en historial...
-                      </span>
-                    )}
-                  </div>
-                  <div className="bg-white border border-slate-200 p-2.5 sm:p-3 rounded-xl text-xs font-semibold text-slate-800 leading-relaxed whitespace-pre-wrap break-words">
-                    {item.motivo}
-                  </div>
-                </div>
-
-                {/* Metadatos: Autor y Fecha */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-200/60 text-slate-500">
-                  <div className="min-w-0">
-                    <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Registrado por</span>
-                    <span className="font-medium text-slate-700 truncate block">{item.registradoPor || 'Usuario'}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <span className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Fecha</span>
-                    <span className="font-medium text-slate-700 block">{fechaTxt}</span>
-                  </div>
-                </div>
+                <Etiqueta tono={itemTono} className="shrink-0">{item.badgeLabel}</Etiqueta>
               </div>
-            );
-          })}
-        </div>
 
-        {/* Pie */}
-        <div className="flex justify-end border-t border-slate-100 bg-slate-50 px-4 sm:px-5 py-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full sm:w-auto rounded-xl bg-slate-800 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-slate-900 cursor-pointer shadow-xs text-center"
-          >
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
+              <div>
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-[13px] font-medium text-neutral-500">{item.labelMotivo || 'Motivo'}</p>
+                  {cargandoMotivos && esMotivoGenerico(item.motivo) && (
+                    <span className="animate-pulse text-xs text-neutral-400">Buscando motivo en historial...</span>
+                  )}
+                </div>
+                <ModalCallout tono={tonoMotivo} icono={MessageSquareText}>
+                  <span className="whitespace-pre-wrap break-words">{item.motivo}</span>
+                </ModalCallout>
+              </div>
+
+              <ModalDetalle datos={[
+                { etiqueta: 'Registrado por', valor: item.registradoPor || 'Usuario' },
+                { etiqueta: 'Fecha', valor: formatearFechaDecision(item.fecha) }
+              ]} />
+            </article>
+          );
+        })}
+      </ModalCuerpo>
+
+      <ModalPie>
+        <ModalBoton variante="primario" tono="neutral" onClick={onClose}>Cerrar</ModalBoton>
+      </ModalPie>
+    </Modal>
   );
 };

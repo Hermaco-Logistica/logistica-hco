@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Settings, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Settings, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Modal, ModalBoton, ModalCallout, ModalCampo, ModalCuerpo, ModalEncabezado, ModalPie, ModalSeccion } from './Modal';
 import { auth } from '../firebase';
 
 export const FindexSettingsModal = ({ isOpen, onClose }) => {
@@ -65,94 +66,49 @@ export const FindexSettingsModal = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-in fade-in sm:zoom-in-95 duration-200">
-        
-        {/* Header */}
-        <div className="bg-slate-900 px-5 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/10 p-2 rounded-lg shrink-0">
-              <Settings className="text-white w-5 h-5" />
-            </div>
-            <h2 className="text-white font-black text-xs sm:text-sm uppercase tracking-widest">
-              Conexión con Findex
-            </h2>
+    <Modal etiqueta="Conexión con Findex" variante="hoja" onCerrar={onClose} bloqueado={loading} como="form" onSubmit={handleSave}>
+      <ModalEncabezado
+        titulo="Conexión con Findex"
+        subtitulo="Tus credenciales se guardan encriptadas de forma segura."
+        icono={Settings}
+        tono="exito"
+        onCerrar={onClose}
+        cerrarDeshabilitado={loading}
+      />
+      <ModalCuerpo>
+        <p className="text-[13.5px] leading-[1.45] text-neutral-500">
+          Ingresa tus credenciales de Findex para habilitar la búsqueda en tiempo real.
+        </p>
+
+        <ModalSeccion etiqueta="Usuario de Findex" htmlFor="findex-usuario">
+          <ModalCampo id="findex-usuario" tono="exito" type="text" required value={username} onChange={(e) => setUsername(e.target.value)} />
+        </ModalSeccion>
+
+        <ModalSeccion etiqueta="Contraseña" htmlFor="findex-contrasena">
+          <div className="relative">
+            <ModalCampo id="findex-contrasena" tono="exito" type={showPassword ? 'text' : 'password'} required value={password} onChange={(e) => setPassword(e.target.value)} className="pr-12" />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              className="absolute right-3 top-3 flex size-6 items-center justify-center text-neutral-400 transition-colors hover:text-neutral-600"
+            >
+              {showPassword ? <EyeOff size={18} strokeWidth={1.75} /> : <Eye size={18} strokeWidth={1.75} />}
+            </button>
           </div>
-          <button 
-            type="button"
-            onClick={onClose}
-            className="text-slate-400 hover:text-white transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg touch-manipulation cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+        </ModalSeccion>
 
-        {/* Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] sm:pb-6">
-          <p className="text-xs sm:text-sm text-slate-500 mb-5 sm:mb-6 font-medium leading-relaxed">
-            Ingresa tus credenciales de Findex para habilitar la búsqueda en tiempo real. Se guardarán encriptadas de forma segura.
-          </p>
-
-          <form onSubmit={handleSave} className="space-y-4">
-            <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                Usuario de Findex
-              </label>
-              <input
-                type="text"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-base sm:text-sm font-bold text-slate-700"
-              />
-            </div>
-
-            <div className="relative">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
-                Contraseña
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-12 rounded-xl bg-slate-50 border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all text-base sm:text-sm font-bold text-slate-700"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors p-1 touch-manipulation cursor-pointer"
-                >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </button>
-              </div>
-            </div>
-
-            {error && (
-              <div className="bg-red-50 text-red-600 px-4 py-3 rounded-xl text-xs font-bold">
-                {error}
-              </div>
-            )}
-
-            {success ? (
-              <div className="bg-emerald-50 text-emerald-600 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2">
-                <CheckCircle2 className="w-5 h-5" />
-                Credenciales Guardadas
-              </div>
-            ) : (
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-slate-900 hover:bg-emerald-600 text-white font-black uppercase tracking-widest text-xs sm:text-[10px] py-3.5 sm:py-4 rounded-xl transition-all shadow-lg hover:shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50 min-h-[44px] touch-manipulation cursor-pointer"
-              >
-                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {loading ? 'ENCRIPTANDO Y GUARDANDO...' : 'GUARDAR CREDENCIALES'}
-              </button>
-            )}
-          </form>
-        </div>
-      </div>
-    </div>
+        {error && <ModalCallout tono="peligro" icono={AlertCircle} role="alert">{error}</ModalCallout>}
+        {success && <ModalCallout tono="exito" icono={CheckCircle2}>Credenciales guardadas</ModalCallout>}
+      </ModalCuerpo>
+      <ModalPie>
+        <ModalBoton onClick={onClose} disabled={loading}>Cerrar</ModalBoton>
+        {!success && (
+          <ModalBoton type="submit" variante="primario" tono="exito" icono={loading ? Loader2 : undefined} disabled={loading}>
+            {loading ? 'Encriptando y guardando...' : 'Guardar credenciales'}
+          </ModalBoton>
+        )}
+      </ModalPie>
+    </Modal>
   );
 };

@@ -108,6 +108,7 @@ export function extraerTodosLosMovimientos(solicitudes = [], ordenesCompra = [])
         rfqId: s.id,
         correlativo: s.correlativo || 'S/N',
         producto: descProducto,
+        sku: String(p.codigo || p.sku || '').trim(),
         marca: marcaProducto,
         cliente: clienteNombre,
         vendedor: s.vendedorNombre || 'Sin asignar',

@@ -95,6 +95,7 @@ export function prepararDatosDecisionItem({ solicitud = null, item = null, fallb
   const itemId = item?.idx !== undefined ? item.idx : (item?.itemId !== undefined ? item.itemId : fallbackIndex);
   const producto = item?.descripcion || item?.desc || item?.producto || `Ítem #${fallbackIndex + 1}`;
   const marca = item?.marca || 'N/A';
+  const sku = String(item?.sku || item?.codigoProducto || item?.codigo || '').trim();
   const tipoDecision = obtenerTipoDecisionItem(item) || 'rechazo';
 
   let tituloModal = 'Motivo de la Decisión';
@@ -144,6 +145,7 @@ export function prepararDatosDecisionItem({ solicitud = null, item = null, fallb
     correlativo,
     cliente,
     producto,
+    sku,
     marca,
     tipoDecision,
     tituloModal,

@@ -1,7 +1,8 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { MessageSquareText } from 'lucide-react';
 import { convertirFechaSeguimiento } from '../../utils/diasHabiles';
 import { obtenerEtiquetaItemSeguimiento } from '../../utils/seguimientoCliente';
+import { Modal, ModalBoton, ModalCuerpo, ModalEncabezado, ModalPie } from '../Modal';
 
 const formatoFecha = (fecha) => fecha
   ? new Intl.DateTimeFormat('es-SV', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'America/El_Salvador' }).format(fecha)
@@ -55,52 +56,41 @@ export const ModalComentariosProrroga = ({ solicitud, prorroga, indiceEnfocado, 
     .filter(({ indices: afectados }) => indiceEnfocado === null || afectados.includes(indiceEnfocado));
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs" role="dialog" aria-modal="true" aria-label="Comentarios del vendedor">
-      <div className="flex max-h-[85vh] w-full max-w-md flex-col rounded-2xl border border-slate-200 bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
-          <div className="min-w-0">
-            <h2 className="text-base font-black text-slate-900">Comentarios del vendedor</h2>
-            <p className="mt-1 truncate text-xs text-slate-500">
-              {indiceEnfocado === null ? `Todos los ítems afectados (${indices.length})` : etiqueta(indiceEnfocado)}
-            </p>
-          </div>
-          <button type="button" onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100" aria-label="Cerrar">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="space-y-3 overflow-y-auto px-5 py-4">
-          {comentarios.length === 0 && (
-            <p className="text-xs italic text-slate-500">El vendedor no dejó comentarios para este ítem.</p>
-          )}
-          {comentarios.map(({ titulo, texto, autor, fecha, indices: afectados }) => (
-            <article key={`${titulo}-${texto}`} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-500">{titulo}</h3>
-                <span className="text-[10px] text-slate-400">{[autor, formatoFecha(fecha)].filter(Boolean).join(' · ')}</span>
-              </div>
-              <p className="mt-1.5 whitespace-pre-wrap text-sm leading-snug text-slate-800">{texto}</p>
-              {afectados.length > 1 && (
-                <p className="mt-2 border-t border-slate-200 pt-1.5 text-[10px] text-slate-500">
-                  Aplica a {afectados.length} ítems: {afectados.map((indice) => `Ítem ${indice + 1}`).join(', ')}
-                </p>
-              )}
-            </article>
-          ))}
-        </div>
-
-        {indices.length > 1 && (
-          <div className="border-t border-slate-100 px-5 py-3">
-            <button
-              type="button"
-              onClick={() => onCambiarEnfoque(indiceEnfocado === null ? indices[0] : null)}
-              className="text-xs font-bold text-sky-700 hover:underline"
-            >
-              {indiceEnfocado === null ? 'Ver un ítem a la vez' : 'Ver comentarios de todos los ítems'}
-            </button>
-          </div>
+    <Modal etiqueta="Comentarios del vendedor" onCerrar={onClose}>
+      <ModalEncabezado
+        titulo="Comentarios del vendedor"
+        subtitulo={indiceEnfocado === null ? `Todos los ítems afectados (${indices.length})` : etiqueta(indiceEnfocado)}
+        icono={MessageSquareText}
+        tono="info"
+        onCerrar={onClose}
+      />
+      <ModalCuerpo className="space-y-2">
+        {comentarios.length === 0 && (
+          <p className="text-[13.5px] text-neutral-500">El vendedor no dejó comentarios para este ítem.</p>
         )}
-      </div>
-    </div>
+        {comentarios.map(({ titulo, texto, autor, fecha, indices: afectados }) => (
+          <article key={`${titulo}-${texto}`} className="rounded-[14px] bg-neutral-100 p-3.5">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+              <h3 className="text-[13px] font-medium text-neutral-500">{titulo}</h3>
+              <span className="text-xs text-neutral-400">{[autor, formatoFecha(fecha)].filter(Boolean).join(' · ')}</span>
+            </div>
+            <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-[1.45] text-neutral-900">{texto}</p>
+            {afectados.length > 1 && (
+              <p className="mt-2 text-[12.5px] text-neutral-500">
+                Aplica a {afectados.length} ítems: {afectados.map((indice) => `Ítem ${indice + 1}`).join(', ')}
+              </p>
+            )}
+          </article>
+        ))}
+      </ModalCuerpo>
+
+      {indices.length > 1 && (
+        <ModalPie className="justify-start">
+          <ModalBoton onClick={() => onCambiarEnfoque(indiceEnfocado === null ? indices[0] : null)}>
+            {indiceEnfocado === null ? 'Ver un ítem a la vez' : 'Ver comentarios de todos los ítems'}
+          </ModalBoton>
+        </ModalPie>
+      )}
+    </Modal>
   );
 };

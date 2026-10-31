@@ -20,6 +20,8 @@ import { usePersistedState } from '../../hooks/usePersistedState';
 import { enviarEvento } from '../../emails';
 import { interpretarEstadoLogistico } from '../../utils/interpretarEstadoLogistico';
 import { Etiqueta } from '../../components/Etiqueta';
+import { Modal, ModalBoton, ModalCallout, ModalCampo, ModalCuerpo, ModalEncabezado, ModalPie, ModalSeccion } from '../../components/Modal';
+import { CAMPO, CAMPO_ALTURA, tonoModal } from '../../utils/modales';
 
 function parseCorrelativo(numeroOC, anio) {
   const match = String(numeroOC).match(new RegExp(`^0*(\\d+)-${anio}$`));
@@ -837,44 +839,27 @@ export const DashboardPedidos = ({ role }) => {
   return (
     <div className="w-full animate-in fade-in duration-500 pb-10">
       {modalDuplicado.open && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <div className="mb-5 flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                <Hash size={20} />
-              </div>
-              <div>
-                <h3 className="text-base font-black uppercase tracking-wide text-slate-800">Correlativo existente</h3>
-                <p className="mt-1 text-xs leading-relaxed text-slate-500">
-                  El correlativo <strong className="text-slate-700">{modalDuplicado.original}</strong> ya existe.
-                </p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-              Para crear una nueva OC se usará:
-              <strong className="ml-1 font-mono text-slate-900">{modalDuplicado.reemplazo}</strong>
-            </div>
-            <p className="mt-4 text-xs leading-relaxed text-slate-500">
+        <Modal etiqueta="Correlativo existente" onCerrar={cancelarDuplicado}>
+          <ModalEncabezado
+            titulo="Correlativo existente"
+            subtitulo={`El correlativo ${modalDuplicado.original} ya existe.`}
+            icono={Hash}
+            tono="aviso"
+            onCerrar={cancelarDuplicado}
+          />
+          <ModalCuerpo>
+            <ModalCallout tono="aviso" icono={Hash}>
+              Para crear una nueva OC se usará: <strong className="font-semibold">{modalDuplicado.reemplazo}</strong>
+            </ModalCallout>
+            <p className="text-[13.5px] leading-[1.45] text-neutral-500">
               Esto evita crear dos órdenes con el mismo correlativo. ¿Deseas continuar con este nuevo número?
             </p>
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={cancelarDuplicado}
-                className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={aceptarDuplicado}
-                className="rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-black uppercase tracking-wide text-white shadow-sm transition-colors hover:bg-slate-700"
-              >
-                Crear {modalDuplicado.reemplazo}
-              </button>
-            </div>
-          </div>
-        </div>
+          </ModalCuerpo>
+          <ModalPie>
+            <ModalBoton onClick={cancelarDuplicado}>Cancelar</ModalBoton>
+            <ModalBoton variante="primario" tono="aviso" onClick={aceptarDuplicado}>Crear {modalDuplicado.reemplazo}</ModalBoton>
+          </ModalPie>
+        </Modal>
       )}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6">
         <div>
@@ -1555,28 +1540,23 @@ export const DashboardPedidos = ({ role }) => {
 
       {/* Modal Asignador Mobile */}
       {role === 'comprador' && showAsignador && (
-        <div className="md:hidden fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-sm p-0 animate-in fade-in">
-          <div className="bg-slate-900 w-full rounded-t-3xl border-t-2 border-emerald-500/30 p-6 flex flex-col max-h-[85vh] animate-in slide-in-from-bottom-10 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-white font-black text-sm uppercase tracking-widest flex items-center gap-2">
-                <LinkIcon size={16} className="text-emerald-500" />
-                Vincular {seleccionados.length} {seleccionados.length === 1 ? 'ítem' : 'ítems'}
-              </h3>
-              <button onClick={() => setShowAsignador(false)} className="text-slate-400 hover:text-white bg-slate-800 p-2 rounded-full transition-colors">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
-            </div>
-            
-            <div className="overflow-y-auto scrollbar-hide flex-1 pb-4 space-y-6">
-              <div className="space-y-4">
-                <p className="text-emerald-400 font-black text-[10px] uppercase">Nueva OC</p>
-                <div className="flex flex-col gap-3">
-                  <input type="text" placeholder="N° OC" className="bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" value={nuevaOC.numero} onFocus={(e) => e.target.select()} onChange={(e) => handleNumeroOCChange(e.target.value)} />
-                  <div className="relative">
+        <Modal etiqueta="Vincular ítems" variante="hoja" soloMovil onCerrar={() => setShowAsignador(false)}>
+          <ModalEncabezado
+            titulo={`Vincular ${seleccionados.length} ${seleccionados.length === 1 ? 'ítem' : 'ítems'}`}
+            subtitulo="Crea una OC nueva o agrégalos a una existente."
+            icono={LinkIcon}
+            tono="azul"
+            onCerrar={() => setShowAsignador(false)}
+          />
+          <ModalCuerpo>
+            <ModalSeccion etiqueta="Nueva OC" htmlFor="asignador-numero-oc">
+              <div className="flex flex-col gap-3">
+                <ModalCampo id="asignador-numero-oc" tono="azul" type="text" placeholder="N° OC" value={nuevaOC.numero} onFocus={(e) => e.target.select()} onChange={(e) => handleNumeroOCChange(e.target.value)} />
+                <div className="relative">
                     <input
                       type="text"
                       placeholder="PROVEEDOR"
-                      className="w-full bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold"
+                      className={`${CAMPO} ${CAMPO_ALTURA.texto} ${tonoModal("azul").foco}`}
                       value={nuevaOC.proveedor}
                       onKeyDown={manejarTeclasProveedor}
                       onFocus={() => {
@@ -1594,52 +1574,48 @@ export const DashboardPedidos = ({ role }) => {
                       onChange={(e) => setNuevaOC({ ...nuevaOC, proveedor: e.target.value.toUpperCase() })}
                     />
                     {mostrarSugerenciasProveedor && nuevaOC.proveedor.trim().length >= 2 && (
-                      <div className="absolute z-20 mt-2 w-full max-h-48 overflow-y-auto scrollbar-hide rounded-xl border border-slate-700 bg-slate-800 shadow-xl">
+                      <div className="absolute z-20 mt-2 w-full max-h-48 overflow-y-auto scrollbar-hide rounded-xl bg-white shadow-[0_8px_24px_rgba(0,0,0,0.14)]">
                         {buscandoProveedor && (
-                          <div className="px-4 py-3 text-[10px] font-bold text-slate-400">Buscando proveedores guardados...</div>
+                          <div className="px-4 py-3 text-[12.5px] text-neutral-500">Buscando proveedores guardados...</div>
                         )}
                         {!buscandoProveedor && !errorProveedor && sugerenciasProveedor.length === 0 && (
-                          <div className="px-4 py-3 text-[10px] font-bold text-slate-400">No hay coincidencias. Se guardará como nuevo.</div>
+                          <div className="px-4 py-3 text-[12.5px] text-neutral-500">No hay coincidencias. Se guardará como nuevo.</div>
                         )}
                         {!buscandoProveedor && errorProveedor && (
-                          <div className="px-4 py-3 text-[10px] font-bold text-rose-400">{errorProveedor}</div>
+                          <div className="px-4 py-3 text-[12.5px] text-rose-700">{errorProveedor}</div>
                         )}
                         {!buscandoProveedor && sugerenciasProveedor.map((s, idx) => (
                           <button
                             key={s.id}
                             type="button"
-                            className={`w-full text-left px-4 py-3 border-b last:border-b-0 border-slate-700 ${
-                              idx === indiceSugerenciaProveedor ? 'bg-slate-700' : 'hover:bg-slate-700'
-                            }`}
+                            className={`w-full px-4 py-3 text-left ${idx === indiceSugerenciaProveedor ? 'bg-neutral-200/70' : 'hover:bg-neutral-100'}`}
                             onMouseDown={() => seleccionarSugerenciaProveedor(s.nombre || '')}
                           >
-                            <p className="text-[11px] font-black text-slate-200 uppercase">{s.nombre}</p>
+                            <p className="text-[13.5px] font-medium text-neutral-900">{s.nombre}</p>
                           </button>
                         ))}
                       </div>
                     )}
                   </div>
-                </div>
-                <button onClick={() => procesarAsignacion()} className="w-full bg-emerald-500 text-white py-4 rounded-xl font-black text-xs uppercase cursor-pointer active:scale-95 transition-all">Crear y Vincular</button>
+                <ModalBoton variante="primario" tono="azul" className="w-full" onClick={() => procesarAsignacion()}>Crear y vincular</ModalBoton>
               </div>
+            </ModalSeccion>
 
-              <div className="space-y-4 pt-6 border-t border-slate-800">
-                <p className="text-blue-400 font-black text-[10px] uppercase">Agregar a OC Existente</p>
-                <div className="grid grid-cols-1 gap-2 pb-4">
-                  {ordenesExistentes.filter(oc => !['Aduana', 'Recibido', 'Entregado'].includes(oc.estado)).map(oc => (
-                    <button key={oc.id} onClick={() => procesarAsignacion(oc)} className="w-full bg-slate-800 hover:bg-blue-600 text-white p-4 rounded-xl text-left text-[10px] font-black uppercase flex justify-between items-center cursor-pointer transition-colors group">
-                      <span className="truncate pr-2">{oc.numeroOC} — {oc.proveedor}</span>
-                      <ChevronRight size={14} className="shrink-0 text-slate-500 group-hover:text-white" />
-                    </button>
-                  ))}
-                  {ordenesExistentes.filter(oc => !['Aduana', 'Recibido', 'Entregado'].includes(oc.estado)).length === 0 && (
-                    <p className="text-slate-500 text-[10px] font-bold text-center py-4">No hay OC generadas activas</p>
-                  )}
-                </div>
+            <ModalSeccion etiqueta="Agregar a una OC existente">
+              <div className="grid grid-cols-1 gap-2">
+                {ordenesExistentes.filter(oc => !['Aduana', 'Recibido', 'Entregado'].includes(oc.estado)).map(oc => (
+                  <button key={oc.id} type="button" onClick={() => procesarAsignacion(oc)} className="flex w-full items-center justify-between rounded-[14px] bg-neutral-100 p-3.5 text-left text-[14.5px] font-medium text-neutral-900 transition-colors hover:bg-neutral-200/70">
+                    <span className="truncate pr-2">{oc.numeroOC} — {oc.proveedor}</span>
+                    <ChevronRight size={16} className="shrink-0 text-neutral-400" />
+                  </button>
+                ))}
+                {ordenesExistentes.filter(oc => !['Aduana', 'Recibido', 'Entregado'].includes(oc.estado)).length === 0 && (
+                  <p className="py-4 text-center text-[13.5px] text-neutral-500">No hay OC generadas activas</p>
+                )}
               </div>
-            </div>
-          </div>
-        </div>
+            </ModalSeccion>
+          </ModalCuerpo>
+        </Modal>
       )}
 
       <TrackingModal

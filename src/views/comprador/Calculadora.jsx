@@ -12,6 +12,7 @@ import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsul
 import { prepararDatosConsultaVentaPerdida } from '../../utils/ventasPerdidasHelpers';
 import { BottomActionBar } from '../../components/mobile/BottomActionBar';
 import { Etiqueta } from '../../components/Etiqueta';
+import { Modal, ModalAviso, ModalConsultaTexto, ModalEncabezado, ModalMotivo } from '../../components/Modal';
 
 const injectStyles = () => {
   if (typeof document !== 'undefined' && !document.getElementById('anim-cant-styles')) {
@@ -483,68 +484,21 @@ export const Calculadora = ({ onGuardar }) => {
     <div className="@container max-w-[99%] mx-auto animate-in fade-in duration-500">
 
       {modalAnulacion.open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4">
-          <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md">
-            <h3 className="text-lg font-black text-slate-800 mb-2">Anular ítem</h3>
-            <p className="text-sm text-slate-500 mb-4">Ingresa el motivo de la anulación. Esta acción es irreversible.</p>
-            <textarea
-              value={modalAnulacion.motivo}
-              onChange={(e) => setModalAnulacion(prev => ({ ...prev, motivo: e.target.value }))}
-              placeholder="Motivo (obligatorio)..."
-              className="w-full h-24 mb-4 p-3 bg-slate-50 border border-slate-200 rounded-xl resize-none text-sm font-medium outline-none focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10"
-              autoFocus
-            />
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setModalAnulacion({ open: false, index: null, motivo: '' })}
-                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={confirmarAnulacion}
-                disabled={!modalAnulacion.motivo.trim()}
-                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
-              >
-                Confirmar
-              </button>
-            </div>
-          </div>
-        </div>
+        <ModalMotivo
+          titulo="Anular ítem"
+          subtitulo="Ingresa el motivo de la anulación. Esta acción es irreversible."
+          icono={Ban}
+          etiquetaCampo="Motivo de la anulación"
+          valor={modalAnulacion.motivo}
+          onCambiar={(motivo) => setModalAnulacion(prev => ({ ...prev, motivo }))}
+          textoConfirmar="Anular ítem"
+          onConfirmar={confirmarAnulacion}
+          onCancelar={() => setModalAnulacion({ open: false, index: null, motivo: '' })}
+        />
       )}
 
       {motivoAnulacionVisible !== null && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 px-4">
-          <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800">Motivo de anulación</h3>
-              <button
-                type="button"
-                onClick={() => setMotivoAnulacionVisible(null)}
-                aria-label="Cerrar motivo de anulación"
-                className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div className="border-l-4 border-rose-500 px-5 py-5">
-              <p className="text-sm leading-relaxed text-slate-700">
-                {motivoAnulacionVisible || 'Sin motivo registrado.'}
-              </p>
-            </div>
-            <div className="flex justify-end border-t border-slate-100 px-5 py-3">
-              <button
-                type="button"
-                onClick={() => setMotivoAnulacionVisible(null)}
-                className="rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
+        <ModalConsultaTexto titulo="Motivo de anulación" icono={Ban} texto={motivoAnulacionVisible} onCerrar={() => setMotivoAnulacionVisible(null)} />
       )}
 
       {/* ── Banner de Anulación ── */}
@@ -1894,37 +1848,14 @@ export const Calculadora = ({ onGuardar }) => {
 
       {/* Mobile Bottom Sheet: Gastos Adicionales Aéreos */}
       {modalGastosMobile && (
-        <div className="fixed inset-0 z-50 md:hidden bg-slate-900/60 backdrop-blur-xs flex flex-col justify-end animate-in fade-in duration-200">
-          <div 
-            className="fixed inset-0" 
-            onClick={() => setModalGastosMobile(false)} 
-            aria-hidden="true" 
+        <Modal etiqueta="Gastos adicionales" variante="hoja" soloMovil onCerrar={() => setModalGastosMobile(false)}>
+          <ModalEncabezado
+            titulo="Gastos adicionales"
+            subtitulo={`Total aduana: $${aduana.toFixed(2)}`}
+            icono={Receipt}
+            tono="exito"
+            onCerrar={() => setModalGastosMobile(false)}
           />
-          <div className="relative bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 pb-[max(1rem,env(safe-area-inset-bottom,1rem))]">
-            {/* Handle visual */}
-            <div className="pt-3 pb-1 flex justify-center">
-              <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
-            </div>
-
-            {/* Header */}
-            <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                  <Receipt size={18} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide">Gastos Adicionales</h3>
-                  <p className="text-[10px] text-slate-400 font-bold">Total Aduana: ${aduana.toFixed(2)}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModalGastosMobile(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
 
             {/* Content Fields */}
             <div className="p-5 overflow-y-auto space-y-3">
@@ -1969,43 +1900,19 @@ export const Calculadora = ({ onGuardar }) => {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* Mobile Bottom Sheet: Cotizador de Flete Internacional */}
       {modalCotizadorMobile && (
-        <div className="fixed inset-0 z-50 md:hidden bg-slate-900/60 backdrop-blur-xs flex flex-col justify-end animate-in fade-in duration-200">
-          <div 
-            className="fixed inset-0" 
-            onClick={() => setModalCotizadorMobile(false)} 
-            aria-hidden="true" 
+        <Modal etiqueta="Cotizador de flete" variante="hoja" soloMovil onCerrar={() => setModalCotizadorMobile(false)}>
+          <ModalEncabezado
+            titulo="Cotizador de flete"
+            subtitulo="DHL Bélgica o QuickShipping USA"
+            icono={Calculator}
+            tono="azul"
+            onCerrar={() => setModalCotizadorMobile(false)}
           />
-          <div className="relative bg-white rounded-t-3xl shadow-2xl border-t border-slate-200 max-h-[85vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 pb-[max(1rem,env(safe-area-inset-bottom,1rem))]">
-            {/* Handle visual */}
-            <div className="pt-3 pb-1 flex justify-center">
-              <div className="w-12 h-1.5 bg-slate-200 rounded-full" />
-            </div>
-
-            {/* Header */}
-            <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                  <Calculator size={18} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-black text-slate-800 uppercase tracking-wide">Cotizador de Flete</h3>
-                  <p className="text-[10px] text-slate-400 font-bold">DHL Bélgica o QuickShipping USA</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModalCotizadorMobile(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition-colors"
-              >
-                <X size={16} />
-              </button>
-            </div>
 
             {/* Selector Tabs */}
             <div className="p-4 overflow-y-auto space-y-4">
@@ -2132,41 +2039,30 @@ export const Calculadora = ({ onGuardar }) => {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
       
     
       {modalItemsCambiados && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm px-4">
-          <div className="bg-white p-6 rounded-3xl shadow-2xl max-w-sm text-center">
-            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4 rotate-12">
-              <AlertCircle size={32} />
-            </div>
-            <h3 className="text-xl font-black text-slate-800 mb-2">Cantidades Modificadas</h3>
-            <p className="text-sm text-slate-500 font-medium mb-6">
-              El vendedor cambió la cantidad de items pendientes. Revisa las celdas marcadas antes de continuar.
-            </p>
-            <button 
-              onClick={() => {
-                const changedMap = modalItemsCambiados;
-                setModalItemsCambiados(false);
-                setItemsCambiados(changedMap);
-                setItems(prev => prev.map((p, idx) => changedMap[idx] ? { ...p, cant: changedMap[idx].newCant } : p));
-                setTimeout(() => {
-                  setItemsCambiados(prev => {
-                    const next = { ...prev };
-                    Object.keys(next).forEach(k => { next[k] = { ...next[k], animating: false, underlined: true }; });
-                    return next;
-                  });
-                }, 3000);
-              }}
-              className="w-full bg-slate-900 text-white font-black px-6 py-3 rounded-xl hover:bg-slate-800 transition-colors"
-            >
-              Entendido
-            </button>
-          </div>
-        </div>
+        <ModalAviso
+          titulo="Cantidades modificadas"
+          mensaje="El vendedor cambió la cantidad de ítems pendientes. Revisa las celdas marcadas antes de continuar."
+          icono={AlertCircle}
+          tono="peligro"
+          onAceptar={() => {
+            const changedMap = modalItemsCambiados;
+            setModalItemsCambiados(false);
+            setItemsCambiados(changedMap);
+            setItems(prev => prev.map((p, idx) => changedMap[idx] ? { ...p, cant: changedMap[idx].newCant } : p));
+            setTimeout(() => {
+              setItemsCambiados(prev => {
+                const next = { ...prev };
+                Object.keys(next).forEach(k => { next[k] = { ...next[k], animating: false, underlined: true }; });
+                return next;
+              });
+            }, 3000);
+          }}
+        />
       )}
 
       <ModalConsultaVentaPerdida

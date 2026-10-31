@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
-import { Loader2, ArrowLeft, Check, X, ArrowLeftRight, MessageSquare, Save, Ban, MessageCircleQuestion } from 'lucide-react';
+import { Loader2, ArrowLeft, Check, X, ArrowLeftRight, MessageSquare, Save, Ban, MessageCircleQuestion, ShieldAlert } from 'lucide-react';
 import { HiloComentariosItem } from '../../components/hilos/HiloComentariosItem';
 import { RevisionPedidoMobileCard } from '../../components/pedidos/RevisionPedidoMobileCard';
 import { useMensajesResumen } from '../../hooks/useMensajesResumen';
@@ -26,6 +26,7 @@ import { PanelCriteriosProrroga } from '../../components/seguimiento/PanelCriter
 import { SeguimientoItemCondicion } from '../../components/seguimiento/SeguimientoItemCondicion';
 import { crearPropsSeguimientoItem, obtenerResumenSeguimientoCliente } from '../../utils/seguimientoCliente';
 import { Etiqueta } from '../../components/Etiqueta';
+import { ModalMotivo } from '../../components/Modal';
 
 export const RevisionPedidoManual = ({ role = 'comprador' }) => {
   const { id } = useParams();
@@ -241,67 +242,37 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
     <div className="@container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
       {/* Modal Anulación */}
       {modalAnulacion.open && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
-            <h3 className="text-lg font-black text-slate-800 mb-2">Anular Ítem</h3>
-            <p className="text-sm text-slate-500 mb-4">Ingresa el motivo de la anulación. Esta acción es irreversible.</p>
-            <textarea
-              className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all resize-none text-sm font-medium h-24 mb-4"
-              placeholder="Motivo (obligatorio)..."
-              value={modalAnulacion.motivo}
-              onChange={e => setModalAnulacion(prev => ({...prev, motivo: e.target.value}))}
-            />
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setModalAnulacion({open: false, index: null, motivo: '', enviando: false})}
-                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleAnularItem}
-                disabled={modalAnulacion.enviando || !modalAnulacion.motivo.trim()}
-                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
-              >
-                {modalAnulacion.enviando ? 'Anulando...' : 'Confirmar'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ModalMotivo
+          titulo="Anular ítem"
+          subtitulo="Ingresa el motivo de la anulación. Esta acción es irreversible."
+          icono={Ban}
+          etiquetaCampo="Motivo de la anulación"
+          valor={modalAnulacion.motivo}
+          onCambiar={(motivo) => setModalAnulacion(prev => ({ ...prev, motivo }))}
+          textoConfirmar="Anular ítem"
+          textoEnviando="Anulando..."
+          enviando={modalAnulacion.enviando}
+          onConfirmar={handleAnularItem}
+          onCancelar={() => setModalAnulacion({ open: false, index: null, motivo: '', enviando: false })}
+        />
       )}
 
       {/* Modal Denegar */}
       {modalDenegar.open && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-5 sm:p-6 animate-in zoom-in-95 duration-150">
-            <h3 className="text-base sm:text-lg font-black text-slate-800 mb-1.5 uppercase tracking-tight">Denegar Ítem</h3>
-            <p className="text-xs sm:text-sm text-slate-500 mb-3.5">Ingresa el motivo de la denegación para notificar al vendedor.</p>
-            <textarea
-              className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all resize-none text-xs sm:text-sm font-medium h-24 mb-4 outline-none"
-              placeholder="Motivo de la denegación (obligatorio)..."
-              value={modalDenegar.motivo}
-              onChange={e => setModalDenegar(prev => ({ ...prev, motivo: e.target.value }))}
-              autoFocus
-            />
-            <div className="flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-3">
-              <button 
-                type="button"
-                onClick={() => setModalDenegar({ open: false, index: null, versionEsperada: null, motivo: '' })}
-                className="w-full sm:w-auto sm:flex-1 py-2.5 sm:py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-xs sm:text-sm cursor-pointer text-center"
-              >
-                Cancelar
-              </button>
-              <button 
-                type="button"
-                onClick={handleConfirmarDenegar}
-                disabled={!modalDenegar.motivo.trim()}
-                className="w-full sm:w-auto sm:flex-1 py-2.5 sm:py-3 bg-rose-600 hover:bg-rose-700 active:scale-95 disabled:opacity-50 text-white font-bold rounded-xl transition-all text-xs sm:text-sm cursor-pointer text-center shadow-xs"
-              >
-                Confirmar Denegación
-              </button>
-            </div>
-          </div>
-        </div>
+        <ModalMotivo
+          titulo="Denegar ítem"
+          subtitulo="Ingresa el motivo de la denegación para notificar al vendedor."
+          icono={ShieldAlert}
+          tono="aviso"
+          variante="primario"
+          etiquetaCampo="Motivo de la denegación"
+          placeholder="Motivo de la denegación (obligatorio)"
+          valor={modalDenegar.motivo}
+          onCambiar={(motivo) => setModalDenegar(prev => ({ ...prev, motivo }))}
+          textoConfirmar="Confirmar denegación"
+          onConfirmar={handleConfirmarDenegar}
+          onCancelar={() => setModalDenegar({ open: false, index: null, versionEsperada: null, motivo: '' })}
+        />
       )}
       {/* Encabezado Superior */}
       <div className="flex flex-row items-center justify-between gap-4 mb-4 md:mb-8">

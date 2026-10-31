@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { CalendarClock, CalendarPlus, X } from 'lucide-react';
+import { Modal, ModalAreaTexto, ModalBoton, ModalCallout, ModalCuerpo, ModalEncabezado, ModalNumero, ModalPestanas, ModalPie, ModalSeccion } from '../Modal';
+import { CalendarClock, CalendarDays, CalendarPlus, TriangleAlert } from 'lucide-react';
 import { analizarDiasSolicitadosProrroga } from '../../utils/prorrogasCliente';
 import { sumarDiasHabiles } from '../../utils/diasHabiles';
 
@@ -110,90 +111,91 @@ export const ModalSeguimientoCliente = ({
     onPrepararProrroga?.();
   };
 
+  const tono = modo === 'revision' ? 'aviso' : 'info';
+  const titulo = modo === 'revision' ? 'Mantener en revisión' : 'Solicitar prórroga formal';
+  const deshabilitarEnvio = estaGuardando || pendiente || (modo === 'revision'
+    ? !comentario.trim() || !puedeMantenerRevision
+    : !motivoProrrogaValido || Number(dias) > 90 || (analisisProrroga.requiereConfirmacion && !confirmarDiasIncongruentes));
+
   return (
-    <div className="fixed inset-0 z-[75] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-xs">
-      <form onSubmit={confirmar} className="w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl">
-        <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4">
-          <div className="flex items-start gap-3">
-            <div className={`rounded-xl p-2 ${modo === 'revision' ? 'bg-amber-50 text-amber-700' : 'bg-sky-50 text-sky-700'}`}>
-              {modo === 'revision' ? <CalendarClock size={20} /> : <CalendarPlus size={20} />}
-            </div>
-            <div>
-              <h2 className="text-base font-black text-slate-900">
-                {modo === 'revision' ? 'Mantener en revisión' : 'Solicitar prórroga formal'}
-              </h2>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                {modo === 'revision'
-                  ? `Se mantendrá la revisión por ${diasValidez} días hábiles adicionales.`
-                  : 'Compras debe aprobar los días adicionales solicitados.'}
-              </p>
-              <p className="mt-1 text-[11px] font-semibold text-slate-400">
-                {cantidadItems} {cantidadItems === 1 ? 'ítem afectado' : 'ítems afectados'} · Revisión {Math.min(revisionesUsadas + (modo === 'revision' ? 1 : 0), maxRevisiones)} de {maxRevisiones}
-              </p>
-            </div>
-          </div>
-          <button type="button" onClick={cerrar} disabled={estaGuardando} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 disabled:opacity-50" aria-label="Cerrar">
-            <X size={18} />
-          </button>
-        </div>
+    <Modal etiqueta={titulo} como="form" onSubmit={confirmar} onCerrar={cerrar} bloqueado={estaGuardando}>
+      <ModalEncabezado
+        titulo={titulo}
+        subtitulo={modo === 'revision'
+          ? `Se mantendrá la revisión por ${diasValidez} días hábiles adicionales.`
+          : 'Compras debe aprobar los días adicionales solicitados.'}
+        referencia={`${cantidadItems} ${cantidadItems === 1 ? 'ítem afectado' : 'ítems afectados'} · Revisión ${Math.min(revisionesUsadas + (modo === 'revision' ? 1 : 0), maxRevisiones)} de ${maxRevisiones}`}
+        icono={modo === 'revision' ? CalendarClock : CalendarPlus}
+        tono={tono}
+        onCerrar={cerrar}
+        cerrarDeshabilitado={estaGuardando}
+      />
 
-        <div className="space-y-4 px-5 py-5">
-          {mostrarSolicitudProrroga && !pendiente && (
-            <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-1">
-              <button type="button" onClick={() => cambiarModo('revision')} disabled={!puedeMantenerRevision || estaGuardando} className={`rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-wide ${modo === 'revision' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-500'} disabled:cursor-not-allowed disabled:opacity-40`}>
-                Mantener revisión
-              </button>
-              <button type="button" onClick={seleccionarProrroga} disabled={estaGuardando || cantidadItemsProrroga === 0} className={`rounded-lg px-3 py-2 text-[10px] font-black uppercase tracking-wide ${modo === 'prorroga' ? 'bg-white text-sky-700 shadow-sm' : 'text-slate-500'}`}>
-                Solicitar prórroga{cantidadItemsProrroga === null ? '' : ` (${cantidadItemsProrroga})`}
-              </button>
-            </div>
-          )}
+      <ModalCuerpo>
+        {mostrarSolicitudProrroga && !pendiente && (
+          <ModalPestanas
+            etiqueta="Tipo de seguimiento"
+            tono={tono}
+            activa={modo}
+            opciones={[
+              { clave: 'revision', texto: 'Mantener revisión' },
+              { clave: 'prorroga', texto: 'Solicitar prórroga', cantidad: cantidadItemsProrroga === null ? undefined : cantidadItemsProrroga }
+            ]}
+            puedeElegir={(clave) => (clave === 'revision' ? puedeMantenerRevision && !estaGuardando : !estaGuardando && cantidadItemsProrroga !== 0)}
+            onElegir={(clave) => (clave === 'revision' ? cambiarModo('revision') : seleccionarProrroga())}
+          />
+        )}
 
-          {pendiente && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-              Ya existe una solicitud de prórroga pendiente de respuesta de Compras.
-            </div>
-          )}
+        {pendiente && (
+          <ModalCallout tono="aviso" icono={TriangleAlert} role="alert">
+            Ya existe una solicitud de prórroga pendiente de respuesta de Compras.
+          </ModalCallout>
+        )}
 
-          {modo === 'revision' ? (
-            <div className="space-y-2">
-              {fechasRevisionPropuestas.length > 0 && <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">Nueva fecha límite estimada: <strong>{formatoRangoFechas(fechasRevisionPropuestas)}</strong>. Se cuenta desde el vencimiento vigente.</p>}
-              <label htmlFor="comentario-seguimiento-cliente" className="text-xs font-black uppercase tracking-wider text-slate-600">Comentario del seguimiento</label>
-              <textarea id="comentario-seguimiento-cliente" value={comentario} onChange={(event) => setComentario(event.target.value)} rows={4} autoFocus required placeholder="Ej.: Cliente solicitó tiempo para validar la propuesta internamente." className="w-full resize-none rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />
-            </div>
-          ) : (
-            <>
-              <div>
-                <label htmlFor="dias-prorroga" className="mb-1.5 block text-xs font-black uppercase tracking-wider text-slate-600">Días adicionales solicitados</label>
-                <input id="dias-prorroga" type="number" min="1" max="90" step="1" value={dias} onChange={(event) => { setDias(event.target.value); setConfirmarDiasIncongruentes(false); }} disabled={pendiente || estaGuardando} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-bold text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100 disabled:bg-slate-100" />
-              </div>
-              {analisisProrroga.fechas.length > 0 && <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">Nueva fecha límite estimada: <strong>{formatoRangoFechas(analisisProrroga.fechas.map(({ fechaFin }) => fechaFin))}</strong>. Calculada desde el último vencimiento de cada ítem.</p>}
-              {analisisProrroga.requiereConfirmacion && (
-                <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-xs text-amber-950" role="alert">
-                  <p>Con esta cantidad, la nueva fecha límite quedaría vencida al momento de enviar la solicitud.</p>
-                  <p>Recomendación mínima: <strong>{analisisProrroga.diasMinimos} días hábiles</strong> · fecha estimada {formatoRangoFechas(fechasMinimasPropuestas)}.</p>
-                  <label className="flex items-start gap-2 font-semibold">
-                    <input type="checkbox" checked={confirmarDiasIncongruentes} onChange={(event) => setConfirmarDiasIncongruentes(event.target.checked)} className="mt-0.5" />
-                    Solicitar de todas formas {dias || 0} días hábiles desde el vencimiento vigente.
-                  </label>
-                </div>
-              )}
-              <div>
-                <label htmlFor="motivo-prorroga" className="mb-1.5 block text-xs font-black uppercase tracking-wider text-slate-600">Comentario obligatorio</label>
-                <textarea id="motivo-prorroga" rows={4} required minLength={10} value={motivo} onChange={(event) => setMotivo(event.target.value)} disabled={pendiente || estaGuardando} placeholder="Ej.: El cliente solicitó más tiempo para aprobar la compra." className="w-full resize-none rounded-xl border border-slate-300 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100 disabled:bg-slate-100" />
-                <p className="mt-1 text-[10px] text-slate-500">Escribe al menos 10 caracteres para explicar la prórroga.</p>
-              </div>
-            </>
-          )}
-        </div>
+        {modo === 'revision' ? (
+          <>
+            {fechasRevisionPropuestas.length > 0 && (
+              <ModalCallout tono="info" icono={CalendarDays}>
+                Nueva fecha límite estimada: <strong className="font-semibold">{formatoRangoFechas(fechasRevisionPropuestas)}</strong>. Se cuenta desde el vencimiento vigente.
+              </ModalCallout>
+            )}
+            <ModalSeccion etiqueta="Comentario del seguimiento" htmlFor="comentario-seguimiento-cliente">
+              <ModalAreaTexto id="comentario-seguimiento-cliente" tono={tono} value={comentario} onChange={(event) => setComentario(event.target.value)} autoFocus required placeholder="Ej.: Cliente solicitó tiempo para validar la propuesta internamente." />
+            </ModalSeccion>
+          </>
+        ) : (
+          <>
+            <ModalSeccion etiqueta="Días adicionales solicitados" htmlFor="dias-prorroga">
+              <ModalNumero id="dias-prorroga" tono={tono} valor={dias} sufijo="días" disabled={pendiente || estaGuardando} onCambiar={(valor) => { setDias(valor); setConfirmarDiasIncongruentes(false); }} />
+            </ModalSeccion>
+            {analisisProrroga.fechas.length > 0 && (
+              <ModalCallout tono="info" icono={CalendarDays}>
+                Nueva fecha límite estimada: <strong className="font-semibold">{formatoRangoFechas(analisisProrroga.fechas.map(({ fechaFin }) => fechaFin))}</strong>. Calculada desde el último vencimiento de cada ítem.
+              </ModalCallout>
+            )}
+            {analisisProrroga.requiereConfirmacion && (
+              <ModalCallout tono="aviso" icono={TriangleAlert} role="alert">
+                <p>Con esta cantidad, la nueva fecha límite quedaría vencida al momento de enviar la solicitud.</p>
+                <p className="mt-1">Recomendación mínima: <strong className="font-semibold">{analisisProrroga.diasMinimos} días hábiles</strong> · fecha estimada {formatoRangoFechas(fechasMinimasPropuestas)}.</p>
+                <label className="mt-2 flex items-start gap-2 font-medium">
+                  <input type="checkbox" checked={confirmarDiasIncongruentes} onChange={(event) => setConfirmarDiasIncongruentes(event.target.checked)} className="mt-0.5" />
+                  Solicitar de todas formas {dias || 0} días hábiles desde el vencimiento vigente.
+                </label>
+              </ModalCallout>
+            )}
+            <ModalSeccion etiqueta="Comentario obligatorio" htmlFor="motivo-prorroga">
+              <ModalAreaTexto id="motivo-prorroga" tono={tono} required minLength={10} value={motivo} onChange={(event) => setMotivo(event.target.value)} disabled={pendiente || estaGuardando} placeholder="Ej.: El cliente solicitó más tiempo para aprobar la compra." ayuda="Escribe al menos 10 caracteres para explicar la prórroga." />
+            </ModalSeccion>
+          </>
+        )}
+      </ModalCuerpo>
 
-        <div className="flex justify-end gap-2 border-t border-slate-100 px-5 py-4">
-          <button type="button" onClick={cerrar} disabled={estaGuardando} className="rounded-lg px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 disabled:opacity-50">Cancelar</button>
-          <button type="submit" disabled={estaGuardando || pendiente || (modo === 'revision' ? !comentario.trim() || !puedeMantenerRevision : !motivoProrrogaValido || Number(dias) > 90 || (analisisProrroga.requiereConfirmacion && !confirmarDiasIncongruentes))} className={`rounded-lg px-4 py-2 text-xs font-black uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:opacity-50 ${modo === 'revision' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-sky-600 hover:bg-sky-700'}`}>
-            {estaGuardando ? 'Guardando...' : modo === 'revision' ? 'Mantener en revisión' : 'Solicitar aprobación'}
-          </button>
-        </div>
-      </form>
-    </div>
+      <ModalPie>
+        <ModalBoton onClick={cerrar} disabled={estaGuardando}>Cancelar</ModalBoton>
+        <ModalBoton type="submit" variante="primario" tono={tono} disabled={deshabilitarEnvio}>
+          {estaGuardando ? 'Guardando...' : modo === 'revision' ? 'Mantener en revisión' : 'Solicitar aprobación'}
+        </ModalBoton>
+      </ModalPie>
+    </Modal>
   );
 };

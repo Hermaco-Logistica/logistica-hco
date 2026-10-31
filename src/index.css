@@ -141,6 +141,55 @@
       animation-duration: 0.01ms !important;
     }
   }
+
+  /* Modales (components/Modal.jsx): el fondo aparece con fundido y el panel crece desde el centro; en móvil las
+     hojas suben desde abajo. La salida dura lo mismo que DURACION_SALIDA_MS en utils/modales.js. */
+  @keyframes modal-fondo-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes modal-fondo-out { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes modal-pop-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes modal-pop-out {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(6px) scale(0.97); }
+  }
+  @keyframes modal-hoja-in {
+    from { opacity: 0.6; transform: translateY(100%); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes modal-hoja-out {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0.6; transform: translateY(100%); }
+  }
+  .modal-fondo {
+    animation: modal-fondo-in 0.18s ease-out backwards;
+  }
+  .modal-fondo[data-saliendo='true'] {
+    animation: modal-fondo-out 0.18s ease-in forwards;
+  }
+  .modal-panel {
+    animation: modal-pop-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  .modal-panel[data-saliendo='true'] {
+    animation: modal-pop-out 0.18s ease-in forwards;
+  }
+  @media (max-width: 639px) {
+    .modal-panel[data-variante='hoja'],
+    .modal-panel[data-variante='pantallaCompleta'] {
+      animation: modal-hoja-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+    }
+    .modal-panel[data-variante='hoja'][data-saliendo='true'],
+    .modal-panel[data-variante='pantallaCompleta'][data-saliendo='true'] {
+      animation: modal-hoja-out 0.18s ease-in forwards;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .modal-fondo,
+    .modal-panel {
+      animation-duration: 0.01ms !important;
+    }
+  }
 }
 
 @layer components {

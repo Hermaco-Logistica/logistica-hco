@@ -452,6 +452,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
             correlativo: s.correlativo || 'S/N',
             cliente: s.cliente || 'Consumidor Final',
             producto: desc,
+            sku: String(p.codigo || p.sku || '').trim(),
             marca: (p.marca || '').trim(),
             vendedor: s.vendedorNombre || 'Sin asignar',
             fechaSol: fechaSol,

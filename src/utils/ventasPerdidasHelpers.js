@@ -53,6 +53,7 @@ export function normalizarItemVentaPerdida({ item = null, solicitud = null, stag
 
   const prodNombre = item?.descripcion || item?.desc || item?.producto || (item ? `Ítem #${fallbackIndex + 1}` : 'Solicitud completa');
   const prodMarca = item?.marca || 'N/A';
+  const prodSku = String(item?.sku || item?.codigoProducto || item?.codigo || '').trim();
 
   // 1. Caso: Venta perdida en memoria (staged / pendiente de confirmación por el vendedor)
   if (staged) {
@@ -63,6 +64,7 @@ export function normalizarItemVentaPerdida({ item = null, solicitud = null, stag
     return {
       id: item?.id ?? fallbackIndex,
       producto: prodNombre,
+      sku: prodSku,
       marca: prodMarca,
       tipoDecision: 'venta_perdida',
       tituloModal: 'Motivo de Venta Perdida',
@@ -142,6 +144,7 @@ export function normalizarItemVentaPerdida({ item = null, solicitud = null, stag
   return {
     id: item?.id ?? fallbackIndex,
     producto: prodNombre,
+    sku: prodSku,
     marca: prodMarca,
     tipoDecision: 'venta_perdida',
     tituloModal: 'Motivo de Venta Perdida',

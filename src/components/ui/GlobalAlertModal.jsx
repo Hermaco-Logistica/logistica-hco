@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Info } from 'lucide-react';
+import { Modal, ModalBoton, ModalCuerpo, ModalEncabezado, ModalPie } from '../Modal';
 
 // onClose callback: ejecutado únicamente cuando el usuario presiona OK.
 // Esto permite que el código que llama a alert() encadene un navigate()
@@ -48,29 +50,14 @@ export const GlobalAlertModal = () => {
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200"
-      onClick={handleClose}
-    >
-      <div
-        className="bg-white rounded-2xl p-6 shadow-2xl max-w-sm w-full flex flex-col items-center gap-4 text-center animate-in zoom-in-95 duration-200 border border-slate-100"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-inner">
-          <span className="font-black text-xl italic">i</span>
-        </div>
-
-        <p className="text-slate-800 font-bold text-sm leading-snug break-words">
-          {message}
-        </p>
-
-        <button
-          onClick={handleClose}
-          className="mt-2 w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-2.5 rounded-xl uppercase tracking-wider text-xs transition-all shadow-md active:scale-95 cursor-pointer"
-        >
-          OK
-        </button>
-      </div>
-    </div>
+    <Modal etiqueta="Aviso" ancho="sm" capa="aviso" onCerrar={handleClose}>
+      <ModalEncabezado titulo="Aviso" icono={Info} tono="exito" />
+      <ModalCuerpo>
+        <p className="break-words text-[15px] leading-[1.45] text-neutral-900">{message}</p>
+      </ModalCuerpo>
+      <ModalPie>
+        <ModalBoton variante="primario" tono="exito" autoFocus onClick={handleClose}>OK</ModalBoton>
+      </ModalPie>
+    </Modal>
   );
 };

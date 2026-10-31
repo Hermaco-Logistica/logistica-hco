@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowRight, CalendarClock, Check, ChevronDown, ChevronUp, Inbox, MessageCircleQuestion, Send, X } from 'lucide-react';
+import { Modal, ModalBoton, ModalCallout, ModalCuerpo, ModalDetalle, ModalEncabezado, ModalPie, ModalSeccion } from '../../../components/Modal';
+import { ArrowRight, CalendarClock, Check, ChevronDown, ChevronUp, Inbox, MessageCircleQuestion, MessageSquareText, Send, X } from 'lucide-react';
 import { completarAnclasProrroga, obtenerFechaVencimientoProrroga, obtenerFechasVencimientoProrroga } from '../../../utils/prorrogasCliente';
 import { StatusChip } from '../../../components/detalle/StatusChip';
 import { textoDeRol } from '../../../utils/etiquetas';
@@ -290,83 +291,32 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
     ? `${motivoTextoLimpio.slice(0, LIMITE_CARACTERES_MOTIVO).trimEnd()}...`
     : motivoTextoLimpio;
 
-  useEffect(() => {
-    if (!modalMotivoOpen) return;
-    const handleKey = (e) => {
-      if (e.key === 'Escape') setModalMotivoOpen(false);
-    };
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
-  }, [modalMotivoOpen]);
-
-  const modalMotivoJSX = modalMotivoOpen && typeof document !== 'undefined' && createPortal(
-    <div
-      className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs"
-      onClick={() => setModalMotivoOpen(false)}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        className="w-full max-w-md rounded-[10px] border border-[var(--detalle-border)] bg-[var(--detalle-surface)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-[var(--detalle-border)] px-5 py-3.5">
-          <div>
-            <h3 className="text-[14px] font-semibold text-[var(--detalle-text)] m-0 leading-tight">
-              {esRevision ? 'Comentario y datos de la revisión' : 'Motivo y datos de la prórroga'}
-            </h3>
-            <p className="text-[11px] text-[var(--detalle-text-subtle)] m-0 mt-0.5">
-              #{referencia} · {cliente}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setModalMotivoOpen(false)}
-            aria-label="Cerrar modal"
-            className="rounded-[6px] p-1 text-[var(--detalle-text-muted)] hover:bg-[var(--detalle-surface-muted)] hover:text-[var(--detalle-text)] transition-colors cursor-pointer"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="p-5 max-h-[60vh] overflow-y-auto">
-          <p className="text-[13px] leading-relaxed text-[var(--detalle-text)] whitespace-pre-wrap m-0">
-            {motivoTextoLimpio}
-          </p>
-          {metadatos.length > 0 && (
-            <dl className="mt-4 pt-3 border-t border-[var(--detalle-border)] grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 m-0">
-              {metadatos.map(([etiqueta, valor]) => (
-                <React.Fragment key={etiqueta}>
-                  <dt className="text-[11px] text-[var(--detalle-text-subtle)]">{etiqueta}</dt>
-                  <dd className="text-[12px] font-semibold text-[var(--detalle-text)] m-0 text-right">{valor}</dd>
-                </React.Fragment>
-              ))}
-            </dl>
-          )}
-          {!esRevision && record.prorroga?.respuestaComprador && (
-            <div className="mt-4 pt-3 border-t border-[var(--detalle-border)]">
-              <span className="text-[11px] font-semibold text-[var(--detalle-text-subtle)] block mb-1">
-                Respuesta de Compras:
-              </span>
-              <p className="text-[12px] text-[var(--detalle-text-muted)] italic m-0">
-                {record.prorroga.respuestaComprador}
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-end border-t border-[var(--detalle-border)] bg-[var(--detalle-surface-muted)] px-5 py-3">
-          <button
-            type="button"
-            onClick={() => setModalMotivoOpen(false)}
-            className="prorrogas-btn-secondary"
-          >
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body
+  const tituloMotivo = esRevision ? 'Comentario y datos de la revisión' : 'Motivo y datos de la prórroga';
+  const modalMotivoJSX = modalMotivoOpen && (
+    <Modal etiqueta={tituloMotivo} onCerrar={() => setModalMotivoOpen(false)}>
+      <ModalEncabezado
+        titulo={tituloMotivo}
+        subtitulo={cliente}
+        referencia={`#${referencia}`}
+        icono={esRevision ? CalendarClock : MessageSquareText}
+        tono={esRevision ? 'aviso' : 'info'}
+        onCerrar={() => setModalMotivoOpen(false)}
+      />
+      <ModalCuerpo>
+        <ModalCallout tono="neutral" icono={MessageSquareText}>
+          <span className="whitespace-pre-wrap break-words">{motivoTextoLimpio}</span>
+        </ModalCallout>
+        {metadatos.length > 0 && <ModalDetalle datos={metadatos.map(([etiqueta, valor]) => ({ etiqueta, valor }))} />}
+        {!esRevision && record.prorroga?.respuestaComprador && (
+          <ModalSeccion etiqueta="Respuesta de Compras">
+            <ModalCallout tono="info" icono={MessageSquareText}>{record.prorroga.respuestaComprador}</ModalCallout>
+          </ModalSeccion>
+        )}
+      </ModalCuerpo>
+      <ModalPie>
+        <ModalBoton variante="primario" tono="neutral" onClick={() => setModalMotivoOpen(false)}>Cerrar</ModalBoton>
+      </ModalPie>
+    </Modal>
   );
 
   if (view === 'mobile') {

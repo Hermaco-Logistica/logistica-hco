@@ -21,6 +21,8 @@ import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/
 import { prepararDatosConsultaVentaPerdida, tieneVentaPerdidaSolicitud } from '../../utils/ventasPerdidasHelpers';
 import { tieneDecisionSolicitud, prepararDatosDecisionSolicitud } from '../../utils/decisionItemHelpers';
 import { esSolicitudDenegada } from '../../utils/solicitudHelpers';
+import { ModalMotivo } from '../../components/Modal';
+import { ModalVistaPrevia } from '../../components/ModalVistaPrevia';
 
 export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   const navigate = useNavigate();
@@ -390,33 +392,19 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
     <div className="animate-in fade-in duration-500">
       {/* Modal Anulación Global */}
       {modalAnulacionGlobal.open && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
-            <h3 className="text-lg font-black text-slate-800 mb-2">Anular Solicitud</h3>
-            <p className="text-sm text-slate-500 mb-4">Ingresa el motivo de la anulación para la solicitud <b>{modalAnulacionGlobal.rfqData?.correlativo}</b>. Esta acción anulará todos sus ítems de forma irreversible.</p>
-            <textarea
-              className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all resize-none text-sm font-medium h-24 mb-4"
-              placeholder="Motivo (obligatorio)..."
-              value={modalAnulacionGlobal.motivo}
-              onChange={e => setModalAnulacionGlobal(prev => ({...prev, motivo: e.target.value}))}
-            />
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setModalAnulacionGlobal({open: false, rfqId: null, rfqData: null, motivo: '', enviando: false})}
-                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleAnularSolicitudGlobal}
-                disabled={modalAnulacionGlobal.enviando || !modalAnulacionGlobal.motivo.trim()}
-                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
-              >
-                {modalAnulacionGlobal.enviando ? 'Anulando...' : 'Confirmar'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ModalMotivo
+          titulo="Anular solicitud"
+          subtitulo={`Se anularán todos los ítems de ${modalAnulacionGlobal.rfqData?.correlativo || 'la solicitud'} de forma irreversible.`}
+          icono={Ban}
+          etiquetaCampo="Motivo de la anulación"
+          valor={modalAnulacionGlobal.motivo}
+          onCambiar={(motivo) => setModalAnulacionGlobal(prev => ({ ...prev, motivo }))}
+          textoConfirmar="Anular solicitud"
+          textoEnviando="Anulando..."
+          enviando={modalAnulacionGlobal.enviando}
+          onConfirmar={handleAnularSolicitudGlobal}
+          onCancelar={() => setModalAnulacionGlobal({ open: false, rfqId: null, rfqData: null, motivo: '', enviando: false })}
+        />
       )}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
@@ -1268,39 +1256,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       )}
 
       {solicitudVista && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
-          <div className="bg-slate-100 rounded-3xl sm:rounded-4xl w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh]">
-            <div className="bg-slate-900 px-4 sm:px-8 py-4 sm:py-5 flex items-center justify-between text-white">
-              <div>
-                <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Documento Oficial</p>
-                <h3 className="text-base sm:text-lg font-black tracking-tight uppercase">Vista previa de cotización</h3>
-              </div>
-              <div className="flex items-center gap-2 sm:gap-3">
-                <button
-                  type="button"
-                  onClick={imprimirVistaCotizacion}
-                  className="bg-violet-500 hover:bg-violet-600 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <Printer size={14} /> <span className="hidden sm:inline">Imprimir / </span>PDF
-                </button>
-                <button
-                  type="button"
-                  onClick={cerrarVistaCotizacion}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 sm:p-2.5 rounded-full transition-all cursor-pointer"
-                  aria-label="Cerrar vista previa"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-3 sm:p-8 overflow-y-auto flex-1 bg-slate-50">
-              <div id="cotizacion-print-area" className="bg-white shadow-sm rounded-2xl sm:rounded-3xl p-1 overflow-x-auto">
-                <CotizacionDocumento cotizacionData={solicitudVista} />
-              </div>
-            </div>
-          </div>
-        </div>
+        <ModalVistaPrevia referencia={solicitudVista.correlativo} onImprimir={imprimirVistaCotizacion} onCerrar={cerrarVistaCotizacion}>
+          <CotizacionDocumento cotizacionData={solicitudVista} />
+        </ModalVistaPrevia>
       )}
 
       <ModalConsultaVentaPerdida

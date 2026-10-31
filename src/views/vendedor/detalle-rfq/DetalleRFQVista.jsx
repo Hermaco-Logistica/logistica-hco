@@ -16,6 +16,8 @@ import { PanelCriteriosProrroga } from '../../../components/seguimiento/PanelCri
 import { ContextBar } from '../../../components/detalle/ContextBar';
 import './detalleRFQResponsive.css';
 import { Etiqueta } from '../../../components/Etiqueta';
+import { ModalConsultaTexto, ModalMotivo } from '../../../components/Modal';
+import { ModalVistaPrevia } from '../../../components/ModalVistaPrevia';
 
 export const DetalleRFQVista = ({ viewModel }) => {
   const {
@@ -175,67 +177,25 @@ export const DetalleRFQVista = ({ viewModel }) => {
   return (
     <div className="@container/rfq rfq-detail-container w-full min-w-0 max-w-7xl mx-auto animate-in fade-in duration-500">
       {/* Modal Anulación */}
-      {modalAnulacion.open && typeof document !== 'undefined' && createPortal((
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6">
-            <h3 className="text-lg font-black text-slate-800 mb-2">Anular Ítem</h3>
-            <p className="text-sm text-slate-500 mb-4">Ingresa el motivo de la anulación. Esta acción es irreversible.</p>
-            <textarea
-              className="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all resize-none text-sm font-medium h-24 mb-4"
-              placeholder="Motivo (obligatorio)..."
-              value={modalAnulacion.motivo}
-              onChange={e => setModalAnulacion(prev => ({...prev, motivo: e.target.value}))}
-            />
-            <div className="flex gap-3">
-              <button 
-                onClick={() => setModalAnulacion({open: false, index: null, motivo: '', enviando: false})}
-                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
-              >
-                Cancelar
-              </button>
-              <button 
-                onClick={handleAnularItem}
-                disabled={modalAnulacion.enviando || !modalAnulacion.motivo.trim()}
-                className="flex-1 py-3 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white font-bold rounded-xl transition-colors text-sm"
-              >
-                {modalAnulacion.enviando ? 'Anulando...' : 'Confirmar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      ), document.body)}
+      {modalAnulacion.open && (
+        <ModalMotivo
+          titulo="Anular ítem"
+          subtitulo="Ingresa el motivo de la anulación. Esta acción es irreversible."
+          icono={Ban}
+          etiquetaCampo="Motivo de la anulación"
+          valor={modalAnulacion.motivo}
+          onCambiar={(motivo) => setModalAnulacion(prev => ({ ...prev, motivo }))}
+          textoConfirmar="Anular ítem"
+          textoEnviando="Anulando..."
+          enviando={modalAnulacion.enviando}
+          onConfirmar={handleAnularItem}
+          onCancelar={() => setModalAnulacion({ open: false, index: null, motivo: '', enviando: false })}
+        />
+      )}
 
-      {motivoAnulacionVisible !== null && typeof document !== 'undefined' && createPortal((
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 px-4">
-          <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800">Motivo de anulación</h3>
-              <button
-                type="button"
-                onClick={() => setMotivoAnulacionVisible(null)}
-                aria-label="Cerrar motivo de anulación"
-                className="rounded-md p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <div className="border-l-4 border-rose-500 px-5 py-5">
-              <p className="text-sm leading-relaxed text-slate-700">
-                {motivoAnulacionVisible || 'Sin motivo registrado.'}
-              </p>
-            </div>
-            <div className="flex justify-end border-t border-slate-100 px-5 py-3">
-              <button
-                type="button"
-                onClick={() => setMotivoAnulacionVisible(null)}
-                className="rounded-md border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      ), document.body)}
+      {motivoAnulacionVisible !== null && (
+        <ModalConsultaTexto titulo="Motivo de anulación" icono={Ban} texto={motivoAnulacionVisible} onCerrar={() => setMotivoAnulacionVisible(null)} />
+      )}
 
       <div className="mb-4 flex flex-col gap-3 md:mb-8 md:flex-row md:items-center md:justify-between md:gap-4">
         <div className="flex items-center gap-2 md:gap-4">
@@ -784,19 +744,12 @@ export const DetalleRFQVista = ({ viewModel }) => {
       ), document.body))}
 
       {/* Modal de Vista Previa y Exportación */}
-      {verPreview && typeof document !== 'undefined' && createPortal((
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
-          <div className="bg-slate-100 rounded-2xl sm:rounded-[2.5rem] w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] sm:max-h-[90vh]">
-            <div className="bg-slate-900 px-4 sm:px-8 py-3.5 sm:py-5 flex items-center justify-between text-white">
-              <div>
-                <p className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Documento Oficial</p>
-                <h3 className="text-sm sm:lg font-black tracking-tight uppercase">Vista Previa de Cotización</h3>
-              </div>
-              <div className="flex items-center gap-2 sm:gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const printContent = document.getElementById('cotizacion-print-area').innerHTML;
+      {verPreview && (
+        <ModalVistaPrevia
+          referencia={rfq?.correlativo}
+          onCerrar={() => setVerPreview(false)}
+          onImprimir={() => {
+            const printContent = document.getElementById('cotizacion-print-area').innerHTML;
                     const iframe = document.createElement('iframe');
                     iframe.style.position = 'fixed';
                     iframe.style.right = '0';
@@ -819,29 +772,11 @@ export const DetalleRFQVista = ({ viewModel }) => {
                       iframe.contentWindow.print();
                       document.body.removeChild(iframe);
                     }, 500);
-                  }}
-                  className="bg-emerald-500 hover:bg-emerald-600 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 sm:gap-2 transition-all cursor-pointer min-h-[38px] sm:min-h-0"
-                >
-                  <Printer size={14} /> <span className="hidden xs:inline">Imprimir / </span>PDF
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setVerPreview(false)}
-                  className="bg-slate-800 hover:bg-slate-700 text-slate-300 p-2 sm:p-2.5 rounded-full transition-all cursor-pointer min-w-[38px] min-h-[38px] flex items-center justify-center touch-manipulation"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-2 sm:p-8 overflow-y-auto flex-1 bg-slate-50">
-              <div id="cotizacion-print-area" className="bg-white shadow-sm rounded-2xl sm:rounded-3xl p-1 overflow-x-auto">
-                <CotizacionDocumento cotizacionData={rfq} />
-              </div>
-            </div>
-          </div>
-        </div>
-      ), document.body)}
+          }}
+        >
+          <CotizacionDocumento cotizacionData={rfq} />
+        </ModalVistaPrevia>
+      )}
 
       {typeof document !== 'undefined' && createPortal(<DetalleRFQModales
         id={id}

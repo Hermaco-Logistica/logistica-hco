@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Check, Loader2 } from 'lucide-react';
+import { AlertCircle, Check, Loader2, TrendingDown } from 'lucide-react';
+import { Modal, ModalAreaTexto, ModalBoton, ModalCallout, ModalCuerpo, ModalEncabezado, ModalPie } from '../Modal';
 import { registrarVentaPerdida } from '../../services/ventasPerdidasService';
 import { useMotivosVentaPerdida } from '../../hooks/useMotivosVentaPerdida';
 import { 
@@ -7,7 +8,6 @@ import {
   COMENTARIO_VENTA_PERDIDA_MIN 
 } from '../../constants/motivosVentaPerdidaData';
 import { auth } from '../../firebase';
-import { Etiqueta } from '../../components/Etiqueta';
 import { enviarEvento } from '../../emails';
 
 export const ModalVentaPerdida = ({
@@ -98,55 +98,32 @@ export const ModalVentaPerdida = ({
     }
   };
 
+  const titulo = 'Registrar venta perdida';
+
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl w-full max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in duration-150">
-        
-        {/* Cabecera */}
-        <div className="bg-slate-900 px-4 sm:px-6 py-3.5 sm:py-4 text-white flex items-center justify-between border-b border-slate-800 gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Etiqueta tono="oscuro" mono>
-                {esPorItems ? `Cierre (${cantItems} ítem${cantItems > 1 ? 's' : ''})` : 'Cierre Total'}
-              </Etiqueta>
-              <h2 className="text-sm sm:text-base md:text-lg font-bold uppercase tracking-tight truncate">
-                Registrar Venta Perdida
-              </h2>
-            </div>
-            <p className="text-slate-400 text-[11px] sm:text-xs mt-0.5 font-medium truncate">
-              Ref: <span className="font-mono text-slate-200 font-bold">{solicitud.correlativo || 'S/N'}</span> • {solicitud.cliente || 'Cliente no especificado'}
-              {esPorItems && <span className="text-amber-400 font-semibold ml-1.5">({cantItems} producto(s))</span>}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            disabled={guardando}
-            aria-label="Cerrar modal"
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors cursor-pointer disabled:opacity-50 shrink-0 min-w-[36px] min-h-[36px] flex items-center justify-center"
-          >
-            <X size={18} />
-          </button>
-        </div>
+    <Modal etiqueta={titulo} ancho="xl" onCerrar={onClose} bloqueado={guardando}>
+      <ModalEncabezado
+        titulo={titulo}
+        subtitulo={`${solicitud.cliente || 'Cliente no especificado'}${esPorItems ? ` · ${cantItems} producto(s)` : ''}`}
+        referencia={`${solicitud.correlativo || 'S/N'} · ${esPorItems ? `Cierre (${cantItems} ítem${cantItems > 1 ? 's' : ''})` : 'Cierre total'}`}
+        icono={TrendingDown}
+        tono="peligro"
+        onCerrar={onClose}
+        cerrarDeshabilitado={guardando}
+      />
 
         {/* Cuerpo */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-5 bg-slate-50/50">
-          
-          {errorMsg && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-md text-rose-800 text-xs font-semibold">
-              {errorMsg}
-            </div>
-          )}
+      <ModalCuerpo>
+          {errorMsg && <ModalCallout tono="peligro" icono={AlertCircle} role="alert">{errorMsg}</ModalCallout>}
 
           {loadingMotivos ? (
             <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2">
               <Loader2 className="animate-spin text-slate-700" size={24} />
-              <span className="text-xs font-semibold uppercase tracking-wider">Cargando catálogo...</span>
+              <span className="text-[13.5px]">Cargando catálogo...</span>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                Selecciona el motivo de pérdida:
-              </div>
+              <p className="text-[13px] font-medium text-neutral-500">Selecciona el motivo de pérdida</p>
 
               {CATEGORIAS_VENTA_PERDIDA.map((cat) => {
                 const motivosCat = motivos.filter(m => m.categoria === cat);
@@ -154,9 +131,7 @@ export const ModalVentaPerdida = ({
 
                 return (
                   <div key={cat} className="space-y-1.5">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 pb-1">
-                      {cat}
-                    </div>
+                    <p className="text-[13px] font-medium text-neutral-500">{cat}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {motivosCat.map((m) => {
                         const esSeleccionado = motivoSeleccionado?.codigo === m.codigo;
@@ -166,12 +141,12 @@ export const ModalVentaPerdida = ({
                           <div
                             key={m.codigo}
                             onClick={() => handleSeleccionarMotivo(m)}
-                            className={`p-3 rounded-xl border text-left cursor-pointer transition-all duration-200 flex items-start gap-2.5 ${
+                            className={`flex cursor-pointer items-start gap-2.5 rounded-[14px] p-3.5 text-left transition-colors duration-150 ${
                               esSeleccionado
-                                ? 'bg-slate-900 border-slate-900 text-white shadow-md scale-[1.01] -translate-y-0.5 z-10 ring-1 ring-slate-900'
+                                ? 'bg-rose-100 ring-2 ring-rose-500/40'
                                 : hayOtroSeleccionado
-                                  ? 'bg-white border-slate-200 text-slate-600 opacity-40 hover:opacity-85 hover:border-slate-300'
-                                  : 'bg-white border-slate-200 text-slate-800 hover:border-slate-300 hover:bg-slate-50'
+                                  ? 'bg-neutral-100 opacity-50 hover:opacity-90'
+                                  : 'bg-neutral-100 hover:bg-neutral-200/70'
                             }`}
                           >
                             <input
@@ -179,18 +154,16 @@ export const ModalVentaPerdida = ({
                               name="motivoVentaPerdida"
                               checked={esSeleccionado}
                               onChange={() => handleSeleccionarMotivo(m)}
-                              className="mt-1 text-slate-900 focus:ring-slate-500 shrink-0 cursor-pointer"
+                              className="mt-1 shrink-0 cursor-pointer accent-rose-700"
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-1.5">
-                                <span className={`text-xs font-bold leading-tight ${esSeleccionado ? 'text-white' : 'text-slate-800'}`}>
+                                <span className="text-[14.5px] font-semibold leading-tight text-neutral-900">
                                   {m.nombre}
                                 </span>
                               </div>
                               {m.descripcion && (
-                                <p className={`text-[11px] mt-0.5 leading-snug font-medium line-clamp-2 ${
-                                  esSeleccionado ? 'text-slate-300' : 'text-slate-500'
-                                }`}>
+                                <p className="mt-0.5 line-clamp-2 text-[12.5px] leading-snug text-neutral-500">
                                   {m.descripcion}
                                 </p>
                               )}
@@ -205,76 +178,38 @@ export const ModalVentaPerdida = ({
 
               {/* Comentario con contador y validación mínima de 15 caracteres */}
               {motivoSeleccionado && (
-                <div
-                  ref={seccionComentarioRef}
-                  className="pt-3 border-t border-slate-200 space-y-1.5 animate-in fade-in slide-in-from-top-3 duration-200"
-                >
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-                      Comentario explicativo <span className="text-rose-600 font-bold">* Obligatorio</span>
+                <div ref={seccionComentarioRef} className="animate-in fade-in slide-in-from-top-3 duration-200">
+                  <div className="mb-2 flex items-center justify-between">
+                    <label htmlFor="comentario-venta-perdida" className="text-[13px] font-medium text-neutral-500">
+                      Comentario explicativo (obligatorio)
                     </label>
-                    <span className={`text-[11px] font-mono font-bold ${
-                      esComentarioValido ? 'text-emerald-700' : 'text-slate-400'
-                    }`}>
+                    <span className={`text-xs ${esComentarioValido ? 'text-emerald-700' : 'text-neutral-400'}`}>
                       {longComentario} / {COMENTARIO_VENTA_PERDIDA_MIN} mínimo
                     </span>
                   </div>
-                  <textarea
+                  <ModalAreaTexto
+                    id="comentario-venta-perdida"
                     ref={textareaRef}
-                    rows={3}
+                    tono="peligro"
                     value={comentario}
                     onChange={(e) => setComentario(e.target.value)}
                     placeholder={motivoSeleccionado.placeholderComentario || 'Explica detalladamente la causa de la pérdida (mínimo 15 caracteres)...'}
-                    className={`w-full text-xs font-medium p-3 rounded-xl border bg-white transition-all shadow-xs focus:outline-none focus:ring-2 ${
-                      longComentario > 0 && !esComentarioValido
-                        ? 'border-amber-400 focus:ring-amber-500'
-                        : 'border-slate-300 focus:ring-slate-900'
-                    }`}
+                    error={longComentario > 0 && !esComentarioValido}
+                    mensajeError={`Faltan ${COMENTARIO_VENTA_PERDIDA_MIN - longComentario} caracteres para cumplir el mínimo requerido.`}
+                    ayuda={!esComentarioValido && longComentario === 0 ? `Ingresa al menos ${COMENTARIO_VENTA_PERDIDA_MIN} caracteres para habilitar el guardado.` : undefined}
                   />
-                  {!esComentarioValido && (
-                    <p className="text-[11px] text-amber-700 font-medium">
-                      {longComentario === 0
-                        ? `Ingresa al menos ${COMENTARIO_VENTA_PERDIDA_MIN} caracteres para habilitar el guardado.`
-                        : `Faltan ${COMENTARIO_VENTA_PERDIDA_MIN - longComentario} caracteres para cumplir el mínimo requerido.`}
-                    </p>
-                  )}
                 </div>
               )}
             </div>
           )}
-        </div>
+      </ModalCuerpo>
 
-        {/* Footer */}
-        <div className="p-3 sm:px-6 bg-white border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={guardando}
-            className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-semibold uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 text-center"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleGuardar}
-            disabled={!puedeGuardar}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2.5 sm:py-2 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 text-white disabled:text-slate-400 text-xs font-semibold uppercase tracking-wider transition-colors shadow-2xs cursor-pointer disabled:cursor-not-allowed"
-          >
-            {guardando ? (
-              <>
-                <Loader2 className="animate-spin" size={13} />
-                <span>Guardando...</span>
-              </>
-            ) : (
-              <>
-                <Check size={13} />
-                <span>{onConfirmarStaged ? 'Confirmar Selección' : 'Confirmar Venta Perdida'}</span>
-              </>
-            )}
-          </button>
-        </div>
-
-      </div>
-    </div>
+      <ModalPie>
+        <ModalBoton onClick={onClose} disabled={guardando}>Cancelar</ModalBoton>
+        <ModalBoton variante="peligro" icono={guardando ? Loader2 : Check} onClick={handleGuardar} disabled={!puedeGuardar}>
+          {guardando ? 'Guardando...' : onConfirmarStaged ? 'Confirmar selección' : 'Confirmar venta perdida'}
+        </ModalBoton>
+      </ModalPie>
+    </Modal>
   );
 };
