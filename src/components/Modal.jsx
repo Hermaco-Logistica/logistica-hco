@@ -155,10 +155,11 @@ export const Modal = ({
 };
 
 /** Encabezado: ícono con el color del `tono`, título, subtítulo, referencia (chip gris) y botón de cerrar. */
-export const ModalEncabezado = ({ titulo, subtitulo, referencia, icono, tono, onCerrar, cerrarDeshabilitado = false, oscuro = false, children }) => {
+export const ModalEncabezado = ({ titulo, subtitulo, referencia, icono, tono, onCerrar, cerrarDeshabilitado = false, oscuro = false, compactoMovil = false, children }) => {
   const Icono = icono;
+  const base = oscuro ? ENCABEZADO.oscuro : ENCABEZADO.claro;
   return (
-    <div className={oscuro ? ENCABEZADO.oscuro : ENCABEZADO.claro}>
+    <div className={compactoMovil ? base.replace('p-6', 'p-4 sm:p-6') : base}>
       <div className="flex min-w-0 items-start gap-3.5">
         {Icono && <div className={`${CAJA_ICONO} ${tonoModal(tono).icono}`}><Icono size={22} strokeWidth={1.75} /></div>}
         <div className="min-w-0">
