@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { PageContainer } from '../../../components/ui/PageContainer';
+import { PageHeader } from '../../../components/ui/PageHeader';
 import { createPortal } from 'react-dom';
 import {
-  AlertCircle, Ban, Calendar, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft,
+  AlertCircle, Ban, Calendar, CheckCircle2, CheckSquare, ChevronDown,
   Clock, FileText, Link as LinkIcon, MessageCircleQuestion, MessageSquare, Minus, MoreVertical,
   Package, Paperclip, Pencil, Plane, Plus, Printer, Ship, ShoppingCart, Square, Tag,
   Trash2, TrendingDown, X
@@ -198,90 +199,89 @@ export const DetalleRFQVista = ({ viewModel }) => {
         <ModalConsultaTexto titulo="Motivo de anulación" icono={Ban} texto={motivoAnulacionVisible} onCerrar={() => setMotivoAnulacionVisible(null)} />
       )}
 
-      <div className="mb-4 flex flex-col gap-3 md:mb-8 md:flex-row md:items-center md:justify-between md:gap-4">
-        <div className="flex items-center gap-2 md:gap-4">
-          <button onClick={handleVolver} className="p-1.5 md:p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600 shrink-0">
-            <ChevronLeft size={24} className="hidden md:block" />
-            <ChevronLeft size={20} className="md:hidden" />
-          </button>
-          <div>
-            <h1 className="text-xl md:text-3xl font-black text-slate-800 italic uppercase tracking-tighter leading-none md:leading-normal">
-              <span className="hidden md:inline">Detalle de Cotización</span>
-              <span className="md:hidden">Cotización</span>
-            </h1>
-            <p className="text-slate-500 font-bold text-[10px] md:text-xs uppercase tracking-widest hidden md:block">
-              Ref: {rfq?.correlativo} — Cliente: {rfq?.cliente} {rfq?.validez && `— Validez: ${rfq.validez}`}
-            </p>
-          </div>
-        </div>
-        <div
-          ref={accionesCabeceraRef}
-          onClickCapture={(event) => {
-            if (window.innerWidth >= 768) return;
-            const control = event.target.closest('button, [title]');
-            if (!control) return;
-            const esBoton = control.tagName === 'BUTTON';
-            const etiqueta = (control.getAttribute('aria-label') || control.getAttribute('title') || '').toLowerCase();
-            const clave = etiqueta.includes('ventas perdidas')
-              ? 'consultaVP'
-              : etiqueta.includes('motivos')
-                ? 'consulta'
-                : etiqueta.includes('cotización parcial')
-                  ? 'parcial'
-                  : etiqueta.includes('pedido ya generado')
-                    ? 'pedidoGenerado'
-                : 'exportar';
-            if (!esBoton) {
-              event.preventDefault();
-              setAccionMovilExpandida((actual) => actual === clave ? null : clave);
-              return;
-            }
-            if (accionMovilExpandida !== clave) {
-              event.preventDefault();
-              event.stopPropagation();
-              setAccionMovilExpandida(clave);
-            } else {
-              setAccionMovilExpandida(null);
-            }
-          }}
-          className="hidden w-full min-w-0 flex-wrap items-center justify-end gap-1.5 md:flex md:w-auto md:flex-nowrap md:gap-2"
-        >
-          {rfq?.estado !== 'Pendiente' && (
-            <button 
-              data-accion-cabecera="exportar"
-              onClick={() => setVerPreview(true)}
-              aria-label="Ver cotización o imprimir"
-              title="Ver cotización o imprimir"
-              className={`flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-900 py-2 text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 md:min-h-0 md:px-4 md:py-2.5 ${accionMovilExpandida === 'exportar' ? 'min-w-[6rem] px-3' : 'min-w-9 px-2.5'}`}
+      <PageHeader
+        onBack={handleVolver}
+        title={(
+          <>
+            <span className="hidden md:inline">Detalle de Cotización</span>
+            <span className="md:hidden">Cotización</span>
+          </>
+        )}
+        subtitle={(
+          <span className="hidden md:inline">
+            Ref: {rfq?.correlativo} — Cliente: {rfq?.cliente} {rfq?.validez && `— Validez: ${rfq.validez}`}
+          </span>
+        )}
+        actions={(
+            <div
+              ref={accionesCabeceraRef}
+              onClickCapture={(event) => {
+                if (window.innerWidth >= 768) return;
+                const control = event.target.closest('button, [title]');
+                if (!control) return;
+                const esBoton = control.tagName === 'BUTTON';
+                const etiqueta = (control.getAttribute('aria-label') || control.getAttribute('title') || '').toLowerCase();
+                const clave = etiqueta.includes('ventas perdidas')
+                  ? 'consultaVP'
+                  : etiqueta.includes('motivos')
+                    ? 'consulta'
+                    : etiqueta.includes('cotización parcial')
+                      ? 'parcial'
+                      : etiqueta.includes('pedido ya generado')
+                        ? 'pedidoGenerado'
+                    : 'exportar';
+                if (!esBoton) {
+                  event.preventDefault();
+                  setAccionMovilExpandida((actual) => actual === clave ? null : clave);
+                  return;
+                }
+                if (accionMovilExpandida !== clave) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setAccionMovilExpandida(clave);
+                } else {
+                  setAccionMovilExpandida(null);
+                }
+              }}
+              className="hidden w-full min-w-0 flex-wrap items-center justify-end gap-1.5 md:flex md:w-auto md:flex-nowrap md:gap-2"
             >
-              <Printer size={14} /> <span className="hidden md:inline">Ver Cotización / Imprimir</span><span className="sr-only md:hidden">Exportar</span>
-              {accionMovilExpandida === 'exportar' && <span className="md:hidden">Exportar</span>}
-            </button>
-          )}
-          {rfq?.estado?.includes('Parcial') && (
-            <div title="Cotización parcial" className="flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-blue-600 px-2 py-1.5 text-[10px] font-black uppercase text-white md:min-h-0 md:min-w-0 md:px-4 md:py-2">
-              <AlertCircle size={14} /> <span className="hidden md:inline">Cotización Parcial</span>
-              {accionMovilExpandida === 'parcial' && <span className="max-w-32 overflow-hidden whitespace-nowrap text-[9px] transition-all duration-200 md:hidden">Cotización parcial</span>}
+              {rfq?.estado !== 'Pendiente' && (
+                <button 
+                  data-accion-cabecera="exportar"
+                  onClick={() => setVerPreview(true)}
+                  aria-label="Ver cotización o imprimir"
+                  title="Ver cotización o imprimir"
+                  className={`flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-900 py-2 text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 md:min-h-0 md:px-4 md:py-2.5 ${accionMovilExpandida === 'exportar' ? 'min-w-[6rem] px-3' : 'min-w-9 px-2.5'}`}
+                >
+                  <Printer size={14} /> <span className="hidden md:inline">Ver Cotización / Imprimir</span><span className="sr-only md:hidden">Exportar</span>
+                  {accionMovilExpandida === 'exportar' && <span className="md:hidden">Exportar</span>}
+                </button>
+              )}
+              {rfq?.estado?.includes('Parcial') && (
+                <div title="Cotización parcial" className="flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-blue-600 px-2 py-1.5 text-[10px] font-black uppercase text-white md:min-h-0 md:min-w-0 md:px-4 md:py-2">
+                  <AlertCircle size={14} /> <span className="hidden md:inline">Cotización Parcial</span>
+                  {accionMovilExpandida === 'parcial' && <span className="max-w-32 overflow-hidden whitespace-nowrap text-[9px] transition-all duration-200 md:hidden">Cotización parcial</span>}
+                </div>
+              )}
+              {hayDecisionesEnParcial && (
+                <button type="button" onClick={abrirConsultaDecisionParcial} aria-label="Consultar motivos de los ítems afectados" className="inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1 rounded-full border border-slate-300 bg-white px-2 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 md:min-h-0 md:min-w-0 md:px-3" title="Consultar motivos de los ítems afectados">
+                  <MessageCircleQuestion size={14} /> <span className={`${accionMovilExpandida === 'consulta' ? 'max-w-32 opacity-100' : 'max-w-0 opacity-0'} overflow-hidden whitespace-nowrap transition-all duration-200 md:max-w-none md:opacity-100`}>Consulta</span>
+                </button>
+              )}
+              {hayVentaPerdidaEnParcial && (
+                <button type="button" onClick={() => abrirConsultaVentaPerdida()} aria-label="Consultar motivos de ventas perdidas" className="inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1 rounded-full border border-slate-300 bg-white px-2 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 md:min-h-0 md:min-w-0 md:px-3" title="Consultar motivos de ventas perdidas">
+                  <TrendingDown size={14} /> <span className={`${accionMovilExpandida === 'consultaVP' ? 'max-w-32 opacity-100' : 'max-w-0 opacity-0'} overflow-hidden whitespace-nowrap transition-all duration-200 md:max-w-none md:opacity-100`}>Consulta VP</span>
+                </button>
+              )}
+              {pedidoYaCreado && (
+                <div title="Pedido ya generado" className="flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-2 py-1.5 text-[10px] font-black uppercase text-white md:min-h-0 md:min-w-0 md:px-4 md:py-2">
+                  <CheckCircle2 size={14} /> <span className="hidden md:inline">Pedido ya generado</span>
+                  {accionMovilExpandida === 'pedidoGenerado' && <span className="max-w-32 overflow-hidden whitespace-nowrap text-[9px] transition-all duration-200 md:hidden">Pedido ya generado</span>}
+                </div>
+              )}
             </div>
-          )}
-          {hayDecisionesEnParcial && (
-            <button type="button" onClick={abrirConsultaDecisionParcial} aria-label="Consultar motivos de los ítems afectados" className="inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1 rounded-full border border-slate-300 bg-white px-2 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 md:min-h-0 md:min-w-0 md:px-3" title="Consultar motivos de los ítems afectados">
-              <MessageCircleQuestion size={14} /> <span className={`${accionMovilExpandida === 'consulta' ? 'max-w-32 opacity-100' : 'max-w-0 opacity-0'} overflow-hidden whitespace-nowrap transition-all duration-200 md:max-w-none md:opacity-100`}>Consulta</span>
-            </button>
-          )}
-          {hayVentaPerdidaEnParcial && (
-            <button type="button" onClick={() => abrirConsultaVentaPerdida()} aria-label="Consultar motivos de ventas perdidas" className="inline-flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1 rounded-full border border-slate-300 bg-white px-2 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 md:min-h-0 md:min-w-0 md:px-3" title="Consultar motivos de ventas perdidas">
-              <TrendingDown size={14} /> <span className={`${accionMovilExpandida === 'consultaVP' ? 'max-w-32 opacity-100' : 'max-w-0 opacity-0'} overflow-hidden whitespace-nowrap transition-all duration-200 md:max-w-none md:opacity-100`}>Consulta VP</span>
-            </button>
-          )}
-          {pedidoYaCreado && (
-            <div title="Pedido ya generado" className="flex min-h-9 min-w-9 shrink-0 items-center justify-center gap-1.5 rounded-full bg-emerald-600 px-2 py-1.5 text-[10px] font-black uppercase text-white md:min-h-0 md:min-w-0 md:px-4 md:py-2">
-              <CheckCircle2 size={14} /> <span className="hidden md:inline">Pedido ya generado</span>
-              {accionMovilExpandida === 'pedidoGenerado' && <span className="max-w-32 overflow-hidden whitespace-nowrap text-[9px] transition-all duration-200 md:hidden">Pedido ya generado</span>}
-            </div>
-          )}
-        </div>
-      </div>
+        )}
+      />
 
       <SeguimientoClienteBanner
         resumen={resumenSeguimientoCliente}

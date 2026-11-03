@@ -30,6 +30,6 @@ export const PageHeader = ({ title, subtitle, onBack, backLabel = 'Volver', stat
         {subtitle && <p className="mt-1 text-[12.5px] leading-tight text-slate-500">{subtitle}</p>}
       </div>
     </div>
-    {actions && <div className="flex shrink-0 flex-wrap items-center gap-2 md:justify-end">{actions}</div>}
+    {actions && <div className="flex shrink-0 flex-wrap items-center gap-2 max-md:[&:not(:has(>:not(.hidden)))]:hidden md:justify-end">{actions}</div>}
   </header>
 );

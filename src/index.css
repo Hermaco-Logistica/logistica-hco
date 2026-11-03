@@ -401,8 +401,8 @@
     border-spacing: 0;
   }
   .tf-tabla-head > th {
-    background-color: var(--tf-color-surface-muted);
-    color: #64748b;
+    background-color: color-mix(in srgb, var(--tf-color-brand) 10%, var(--tf-color-surface));
+    color: color-mix(in srgb, var(--tf-color-brand-strong) 50%, var(--tf-color-sidebar));
     font-size: 12px;
     font-weight: 500;
     white-space: nowrap;

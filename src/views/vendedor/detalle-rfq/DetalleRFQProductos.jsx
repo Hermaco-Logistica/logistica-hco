@@ -359,9 +359,9 @@ export const DetalleRFQProductos = ({ viewModel }) => {
       </div>
 
       {/* Vista Escritorio (>= md): Tabla tradicional */}
-      <div className="rfq-products-desktop bg-white rounded-3xl lg:rounded-4xl shadow-[var(--tf-shadow-card)] overflow-hidden mb-10 lg:mb-12">
+      <div className="rfq-products-desktop tf-tabla-card mb-10 lg:mb-12">
         <div className="rfq-products-table-scroll overflow-x-auto">
-          <table className="rfq-products-table w-full text-left border-collapse">
+          <table className="rfq-products-table tf-tabla text-left">
             <colgroup>
               <col className="w-16" />
               <col className="w-48" />
@@ -373,12 +373,12 @@ export const DetalleRFQProductos = ({ viewModel }) => {
               {mostrarColumnaAcciones && <col className="w-24" />}
             </colgroup>
             <thead>
-              <tr className="bg-slate-900 text-white text-[10px] uppercase font-black tracking-widest">
+              <tr className="tf-tabla-head">
                 <th className="p-5 text-center">Pedir</th>
                 <th className="p-5">Producto / Marca</th>
                 <th className="p-5 text-center">Cant.</th>
-                <th className="p-5 text-center bg-emerald-800">Venta Aéreo</th>
-                <th className="p-5 text-center bg-blue-800">Venta Marítimo</th>
+                <th className="p-5 text-center"><span className="inline-flex items-center gap-2 text-emerald-700"><span aria-hidden="true" className="size-2 rounded-full bg-emerald-700" />Venta Aéreo</span></th>
+                <th className="p-5 text-center"><span className="inline-flex items-center gap-2 text-blue-700"><span aria-hidden="true" className="size-2 rounded-full bg-blue-700" />Venta Marítimo</span></th>
                 <th className="p-5 text-center">Elegir Modalidad</th>
                 <th className="p-5">Tiempos y Entrega</th>
                 {mostrarColumnaAcciones && <th className="p-5 text-center">Acciones</th>}
