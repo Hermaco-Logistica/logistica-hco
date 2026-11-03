@@ -1,0 +1,158 @@
+/*
+ * TOKENS DE COLOR (Fase C1)
+ *
+ * Fuente única de los colores del proyecto. Nombres estándar (primary, secondary, success, …) que Tailwind v4
+ * convierte en utilidades: bg-primary, text-primary-strong, bg-success-soft, ring-primary/30, etc.
+ * Los nombres viejos (--tf-color-*, --detalle-*) siguen existiendo como alias; en C1 conservan su valor.
+ *
+ * Por rol solo cambian CUATRO tokens: primary, secondary, sidebar (= secondary) y background.
+ * Los estados (success, warning, danger, info) y los neutros NO cambian por rol.
+ *
+ * Cómo llega el rol a cada sitio:
+ *   - Dentro del shell:  .role-<rol> (clase en .tf-app-shell, App.jsx).
+ *   - Fuera del shell (modales y otros portales, que cuelgan de <body>): atributo data-role en <body>.
+ *     Se usa body[data-role] y no <html> a propósito: los alias antiguos (--tf-color-*) se declaran en :root,
+ *     y un data-role en <html> los volvería role-dependientes también en los portales, cambiando lo que hoy
+ *     se ve (p. ej. ModalBloqueoCotizaciones usa var(--tf-color-sidebar)). Con <body> los alias de :root
+ *     conservan su valor por defecto y los tokens nuevos sí siguen al rol en los portales.
+ *   - Los derivados (sidebar, *-soft) se vuelven a declarar en cada ámbito de rol: var() se resuelve donde se
+ *     declara, así que un derivado declarado solo en :root se quedaría fijo en el valor sin rol.
+ *
+ * CONFLICTOS PENDIENTES PARA C1b (dos valores vigentes hoy; en C1 NO se unifican):
+ *   Concepto         --tf-* (canónico)        --detalle-*
+ *   border           #e2e8f0                  #d9dee5
+ *   foreground       #1e293b                  #202833
+ *   foreground-muted #64748b                  #586575
+ *   surface-muted    #f5f5f5                  #f8f9fa
+ *   background       #f8fafc (por rol)        #f5f6f7
+ *   foreground-subtle #94a3b8 (slate-400, 643 usos)   #697586
+ *   border-strong    (sin equivalente tf)     #aeb7c2
+ *
+ * VALORES QUE NO CALZAN CON UN TOKEN (listados, no redondeados):
+ *   - mode-air / mode-sea: las tablas usan emerald-700 (#047857) y blue-700 (#1d4ed8), no estos valores.
+ *   - Estados: las etiquetas de usuario (TONOS en utils/etiquetas.js) usan pasteles de Tailwind distintos
+ *     (emerald-100/800, rose-100/700, amber-100/800, sky-100/700). Irán en la familia tag-* (C2).
+ *   - Color del rol duplicado fuera de index.css (Sidebar.jsx, BottomTabBar.jsx, roleColors.js, theme.js):
+ *     no migrados en C1.
+ */
+
+/* Tokens fijos y valores sin rol. `static` emite todas las variables aunque ninguna clase las use todavía. */
+@theme static {
+  /* Marca (sin rol). Cada rol sobrescribe primary, primary-strong, secondary y background. */
+  --color-primary: #10b981;
+  --color-primary-strong: #059669;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #0f172a;
+  --color-secondary-foreground: #ffffff;
+  --color-sidebar: var(--color-secondary);
+  --color-sidebar-foreground: #ffffff;
+
+  /* Neutros (familia canónica --tf-*, slate) */
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f5f5f5;
+  --color-border: #e2e8f0;
+  --color-border-strong: #aeb7c2;
+  --color-foreground: #1e293b;
+  --color-foreground-muted: #64748b;
+  --color-foreground-subtle: #94a3b8;
+  --color-foreground-inverse: #ffffff;
+
+  /* Estados (valores --detalle-*, los de StatusChip) */
+  --color-success: #176b45;
+  --color-success-soft: #eef8f2;
+  --color-success-strong: #105b39;
+  --color-warning: #8a5a00;
+  --color-warning-soft: #fff7e8;
+  --color-danger: #a42b32;
+  --color-danger-soft: #fff0f0;
+  --color-info: #1d5e87;
+  --color-info-soft: #eff6fa;
+  --color-status-neutral: #4b5566;
+  --color-status-neutral-soft: #f0f2f5;
+
+  /* Dominio (valores --detalle-air / --detalle-sea) */
+  --color-mode-air: #247a9b;
+  --color-mode-sea: #536f9b;
+
+  /* Gráficos (lista de views/analisis/theme.js y anillos de Análisis) */
+  --color-chart-1: #f59e0b;
+  --color-chart-2: #2563eb;
+  --color-chart-3: #059669;
+  --color-chart-4: #9333ea;
+  --color-chart-5: #0d9488;
+  --color-chart-6: #e11d48;
+  --color-chart-7: #475569;
+  --color-chart-8: #f97316;
+  --color-chart-9: #dc2626;
+
+  /* Sombras: apuntan a las existentes */
+  --shadow-card: var(--tf-shadow-card);
+  --shadow-panel: var(--tf-shadow-panel);
+  --shadow-float: var(--detalle-shadow-float);
+}
+
+/* Derivados: `inline` hace que la utilidad lleve la expresión completa (se evalúa en cada elemento y sigue al rol). */
+@theme inline static {
+  --color-primary-soft: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  --color-secondary-soft: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
+}
+
+@layer base {
+  /* Valores por rol */
+  .role-comprador,
+  body[data-role="comprador"] {
+    --color-primary: #3b82f6;
+    --color-primary-strong: #2563eb;
+    --color-secondary: #0b2545;
+    --color-background: #eef4ff;
+  }
+
+  .role-vendedor,
+  body[data-role="vendedor"] {
+    --color-primary: #8b5cf6;
+    --color-primary-strong: #7c3aed;
+    --color-secondary: #312e81;
+    --color-background: #f4f0ff;
+  }
+
+  .role-gerente,
+  body[data-role="gerente"] {
+    --color-primary: #10b981;
+    --color-primary-strong: #059669;
+    --color-secondary: #14532d;
+    --color-background: #edfdf4;
+  }
+
+  .role-administrador,
+  body[data-role="administrador"] {
+    --color-primary: #b45366;
+    --color-primary-strong: #9f3650;
+    --color-secondary: #7f1d2d;
+    --color-background: #fff4f4;
+  }
+
+  /* Derivados por ámbito: se redeclaran en cada rol para que var() se resuelva con el rol del elemento. */
+  :root,
+  .role-comprador,
+  .role-vendedor,
+  .role-gerente,
+  .role-administrador,
+  body[data-role] {
+    --color-sidebar: var(--color-secondary);
+    --color-primary-soft: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+    --color-secondary-soft: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
+  }
+
+  /* Alias de compatibilidad (nombres viejos). Solo en :root y en el shell, nunca en body[data-role]. */
+  :root,
+  .role-comprador,
+  .role-vendedor,
+  .role-gerente,
+  .role-administrador {
+    --tf-color-brand: var(--color-primary);
+    --tf-color-brand-strong: var(--color-primary-strong);
+    --tf-color-sidebar: var(--color-secondary);
+    --tf-color-bg-app: var(--color-background);
+  }
+}

@@ -120,6 +120,10 @@ function App() {
   };
 
   useEffect(() => {
+    document.body.dataset.role = role || 'default';
+  }, [role]);
+
+  useEffect(() => {
     import('./services/apiClient').then(({ apiClient }) => {
       apiClient.onFindexAuthFailure = () => setIsFindexActive(false);
       apiClient.onFindexAuthSuccess = () => setIsFindexActive(true);

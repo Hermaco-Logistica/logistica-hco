@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
 
 /* Escala de radios (REDISENO_COHERENCIA_UI.md §3): 12 control, 14 inner, 24 card, píldora.
    En Tailwind v4 el tema vive en CSS (@theme); tailwind.config.js no se carga sin @config.
@@ -10,12 +11,8 @@
 @layer base {
   :root {
     --tf-font-sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-    --tf-color-bg-app: #f8fafc;
-    --tf-color-sidebar: #0f172a;
     --tf-color-text-primary: #1e293b;
     --tf-color-text-muted: #64748b;
-    --tf-color-brand: #10b981;
-    --tf-color-brand-strong: #059669;
     --tf-color-surface: #ffffff;
     --tf-color-border: #e2e8f0;
     --tf-color-surface-muted: #f5f5f5;
@@ -261,33 +258,7 @@
   }
   .tf-scroll::-webkit-scrollbar-thumb:hover { background-color: rgb(100 116 139 / 0.55); }
 
-  .role-comprador {
-    --tf-color-bg-app: #eef4ff;
-    --tf-color-sidebar: #0b2545;
-    --tf-color-brand: #3b82f6;
-    --tf-color-brand-strong: #2563eb;
-  }
-
-  .role-vendedor {
-    --tf-color-bg-app: #f4f0ff;
-    --tf-color-sidebar: #312e81;
-    --tf-color-brand: #8b5cf6;
-    --tf-color-brand-strong: #7c3aed;
-  }
-
-  .role-gerente {
-    --tf-color-bg-app: #edfdf4;
-    --tf-color-sidebar: #14532d;
-    --tf-color-brand: #10b981;
-    --tf-color-brand-strong: #059669;
-  }
-
-  .role-administrador {
-    --tf-color-bg-app: #fff4f4;
-    --tf-color-sidebar: #7f1d2d;
-    --tf-color-brand: #b45366;
-    --tf-color-brand-strong: #9f3650;
-  }
+  /* Valores y alias por rol: ver styles/tokens.css. Abajo solo quedan los remapeos de utilidades por rol. */
 
   .role-comprador .bg-slate-900,
   .role-vendedor .bg-slate-900,
@@ -401,7 +372,7 @@
     border-spacing: 0;
   }
   .tf-tabla-head > th {
-    background-color: color-mix(in srgb, var(--tf-color-brand) 10%, var(--tf-color-surface));
+    background-color: var(--color-primary-soft);
     color: color-mix(in srgb, var(--tf-color-brand-strong) 50%, var(--tf-color-sidebar));
     font-size: 12px;
     font-weight: 500;
