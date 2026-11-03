@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, getDocFromServer } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -481,7 +483,7 @@ export const Calculadora = ({ onGuardar }) => {
   );
 
   return (
-    <div className="@container max-w-[99%] mx-auto animate-in fade-in duration-500">
+    <PageContainer size="wide" className="@container animate-in fade-in duration-500">
 
       {modalAnulacion.open && (
         <ModalMotivo
@@ -500,6 +502,22 @@ export const Calculadora = ({ onGuardar }) => {
       {motivoAnulacionVisible !== null && (
         <ModalConsultaTexto titulo="Motivo de anulación" icono={Ban} texto={motivoAnulacionVisible} onCerrar={() => setMotivoAnulacionVisible(null)} />
       )}
+
+      <PageHeader
+        title="Calculadora de Márgenes"
+        subtitle={
+          <div className="flex flex-wrap items-center gap-1.5 text-xs uppercase font-bold text-slate-500 mt-0.5">
+            <span className="font-mono text-slate-800">{rfq?.correlativo}</span>
+            <span>—</span>
+            <span className="truncate max-w-[190px] sm:max-w-xs md:max-w-md" title={rfq?.cliente}>{rfq?.cliente}</span>
+            {rfq?.validez && (
+              <span className="text-[10px] text-slate-400 block sm:inline w-full sm:w-auto mt-0.5 sm:mt-0">
+                <span className="hidden sm:inline"> — </span>Validez: {rfq.validez}
+              </span>
+            )}
+          </div>
+        }
+      />
 
       {/* ── Banner de Anulación ── */}
       {esAnulado && (
@@ -535,20 +553,7 @@ export const Calculadora = ({ onGuardar }) => {
       )}
 
       {/* Panel de Control de Costos (Separado en móvil, unificado en desktop) */}
-      <div className="mb-4 md:mb-6 flex flex-col gap-4 md:gap-5 xl:flex-row xl:items-center xl:gap-8 md:bg-white md:p-5 md:rounded-2xl md:shadow-sm md:border md:border-slate-200">
-        <div className="flex-1 min-w-0 px-1 md:px-0">
-          <h2 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight italic">Calculadora de Márgenes</h2>
-          <div className="flex flex-wrap items-center gap-1.5 text-xs uppercase font-bold text-slate-500 mt-0.5">
-            <span className="font-mono text-slate-800">{rfq?.correlativo}</span>
-            <span>—</span>
-            <span className="truncate max-w-[190px] sm:max-w-xs md:max-w-md" title={rfq?.cliente}>{rfq?.cliente}</span>
-            {rfq?.validez && (
-              <span className="text-[10px] text-slate-400 block sm:inline w-full sm:w-auto mt-0.5 sm:mt-0">
-                <span className="hidden sm:inline"> — </span>Validez: {rfq.validez}
-              </span>
-            )}
-          </div>
-        </div>
+      <div className="mb-4 md:mb-6 flex flex-col gap-4 md:gap-5 xl:flex-row xl:items-center xl:gap-8 md:bg-white md:p-5 md:rounded-2xl md:shadow-[var(--tf-shadow-card)]">
 
         {/* MÓVIL (< md): Cinturón limpio de parámetros globales */}
         <div className="md:hidden w-full bg-slate-100 p-3 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
@@ -752,7 +757,7 @@ export const Calculadora = ({ onGuardar }) => {
         </div>
       </div>
       {/* Gastos Adicionales Aéreos (Desktop) */}
-      <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 mb-4 md:mb-6 overflow-hidden">
+      <div className="hidden md:block bg-white rounded-2xl shadow-[var(--tf-shadow-card)] mb-4 md:mb-6 overflow-hidden">
         <div
           className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 flex items-center justify-between cursor-pointer select-none"
           onClick={() => setGastosExpandidos(prev => !prev)}
@@ -802,7 +807,7 @@ export const Calculadora = ({ onGuardar }) => {
       </div>
 
       {/* Cotizador de Flete Internacional (Desktop) */}
-      <div ref={cotizadorRef} className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 mb-4 md:mb-6 overflow-hidden">
+      <div ref={cotizadorRef} className="hidden md:block bg-white rounded-2xl shadow-[var(--tf-shadow-card)] mb-4 md:mb-6 overflow-hidden">
         <div
           className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2 cursor-pointer select-none"
           onClick={() => setCotizadorExpandido(prev => !prev)}
@@ -1463,7 +1468,7 @@ export const Calculadora = ({ onGuardar }) => {
       </div>
 
       {/* Vista Escritorio (>= md): Tabla de Productos tradicional */}
-      <div className="hidden md:block bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden mb-8">
+      <div className="hidden md:block bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden mb-8">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse table-fixed">
             <thead className="bg-slate-800 text-white text-[9px] uppercase font-bold">
@@ -2070,7 +2075,7 @@ export const Calculadora = ({ onGuardar }) => {
         onClose={() => setConsultaVentaPerdidaData(null)}
         data={consultaVentaPerdidaData}
       />
-    </div>
+    </PageContainer>
   );
 };
 

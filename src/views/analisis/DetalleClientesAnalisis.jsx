@@ -246,7 +246,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
       </div>
 
       {/* BUSCADOR */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+      <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
         <div className="relative w-full md:w-80">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -285,7 +285,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
       </div>
 
       {paginatedClientes.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl shadow-[var(--tf-shadow-card)]">
           No se encontraron clientes con el filtro aplicado.
         </div>
       ) : (
@@ -298,7 +298,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                 ? Math.round((c.pedidos / c.cotizadas) * 100) 
                 : 0;
               return (
-                <div key={c.cliente} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 relative">
+                <div key={c.cliente} className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3 relative">
                   <div className="flex justify-between items-start">
                     <div 
                       className="flex items-center gap-3 cursor-pointer group"
@@ -367,7 +367,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
           </div>
 
           {/* VISTA DESKTOP (Tabla original) */}
-          <div className="hidden md:flex bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex-col">
+          <div className="hidden md:flex bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden flex-col">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
@@ -454,7 +454,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
 
       {/* PAGINACIÓN DE 10 EN 10 */}
       {totalPages > 1 && (
-        <div className="p-3 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div className="p-3 bg-white rounded-2xl shadow-[var(--tf-shadow-card)] flex items-center justify-between">
           <button 
             type="button"
             onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}

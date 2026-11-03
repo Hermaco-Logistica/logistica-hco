@@ -204,7 +204,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
       </div>
 
       {/* BUSCADOR */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+      <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
         <div className="relative w-full md:w-80">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -254,7 +254,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
       {/* TABLA DE ÓRDENES */}
       <div className="flex flex-col gap-3">
         {paginatedOrdenes.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl border border-slate-200/80 shadow-xs">
+          <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl shadow-[var(--tf-shadow-card)]">
             No se encontraron órdenes con los filtros seleccionados.
           </div>
         ) : (
@@ -267,7 +267,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
                 const numOC = oc.numeroOC || oc.numero || oc.ocRef || 'S/N';
                 
                 return (
-                  <div key={oc.id} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 relative">
+                  <div key={oc.id} className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3 relative">
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col">
                         <span className="font-mono text-sm font-bold text-slate-800">{numOC}</span>
@@ -312,7 +312,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
             </div>
 
             {/* VISTA DESKTOP (Tabla original) */}
-            <div className="hidden md:flex bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex-col">
+            <div className="hidden md:flex bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden flex-col">
               <div
                 ref={scrollContainerRef}
                 onMouseDown={handleDragStart}
@@ -393,7 +393,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
 
       {/* PAGINACIÓN DE 10 EN 10 */}
       {totalPages > 1 && (
-        <div className="p-3 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div className="p-3 bg-white rounded-2xl shadow-[var(--tf-shadow-card)] flex items-center justify-between">
           <button 
             type="button"
             onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}

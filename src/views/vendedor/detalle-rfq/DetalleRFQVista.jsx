@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { PageContainer } from '../../../components/ui/PageContainer';
 import { createPortal } from 'react-dom';
 import {
   AlertCircle, Ban, Calendar, CheckCircle2, CheckSquare, ChevronDown, ChevronLeft,
@@ -175,7 +176,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
   const menuHaciaAbajo = stickyPosicion.y < alturaMenuMovil + 24;
 
   return (
-    <div className="@container/rfq rfq-detail-container w-full min-w-0 max-w-7xl mx-auto animate-in fade-in duration-500">
+    <PageContainer className="@container/rfq rfq-detail-container animate-in fade-in duration-500">
       {/* Modal Anulación */}
       {modalAnulacion.open && (
         <ModalMotivo
@@ -324,7 +325,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
         {opcionesMovilesAbiertas && (
           <div className={`absolute right-0 flex flex-col items-end gap-2 origin-bottom-right [&>button:first-child>span]:hidden animate-in duration-200 ${menuHaciaAbajo ? 'top-[calc(100%+0.75rem)] slide-in-from-top-3' : 'bottom-[calc(100%+0.75rem)] slide-in-from-bottom-3'}`}>
             {rfq?.estado !== 'Pendiente' && (
-              <button type="button" aria-label="Exportar cotización" title="Exportar cotización" onClick={() => { setOpcionesMovilesAbiertas(false); setVerPreview(true); }} className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-xl shadow-slate-900/15">
+              <button type="button" aria-label="Exportar cotización" title="Exportar cotización" onClick={() => { setOpcionesMovilesAbiertas(false); setVerPreview(true); }} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-[var(--tf-shadow-card)]">
                 <span>Exportar cotización</span><Printer size={17} className="text-slate-700" />
               </button>
             )}
@@ -334,12 +335,12 @@ export const DetalleRFQVista = ({ viewModel }) => {
               </div>
             )}
             {hayDecisionesEnParcial && (
-              <button type="button" aria-label="Consultar motivos" title="Consultar motivos" onClick={() => { setOpcionesMovilesAbiertas(false); abrirConsultaDecisionParcial(); }} className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-700 shadow-xl shadow-slate-900/15">
+              <button type="button" aria-label="Consultar motivos" title="Consultar motivos" onClick={() => { setOpcionesMovilesAbiertas(false); abrirConsultaDecisionParcial(); }} className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-700 shadow-[var(--tf-shadow-card)]">
                 <MessageCircleQuestion size={18} />
               </button>
             )}
             {hayVentaPerdidaEnParcial && (
-              <button type="button" aria-label="Consultar ventas perdidas" title="Consultar ventas perdidas" onClick={() => { setOpcionesMovilesAbiertas(false); abrirConsultaVentaPerdida(); }} className="flex h-11 w-11 items-center justify-center gap-0.5 rounded-2xl border border-orange-200 bg-white text-orange-700 shadow-xl shadow-orange-900/15">
+              <button type="button" aria-label="Consultar ventas perdidas" title="Consultar ventas perdidas" onClick={() => { setOpcionesMovilesAbiertas(false); abrirConsultaVentaPerdida(); }} className="flex h-11 w-11 items-center justify-center gap-0.5 rounded-2xl border-orange-200 bg-white text-orange-700 shadow-[var(--tf-shadow-card)] shadow-orange-900/15">
                 <TrendingDown size={17} /><span className="text-[9px] font-black">VP</span>
               </button>
             )}
@@ -356,7 +357,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
       </div>
       ), document.body)}
 
-      <div className="md:hidden bg-white rounded-2xl p-4 border border-slate-200/90 shadow-sm mb-4 space-y-3">
+      <div className="md:hidden bg-white rounded-2xl p-4 shadow-[var(--tf-shadow-card)] mb-4 space-y-3">
         <div>
           <div className="flex items-center justify-between gap-2">
             <span className="font-mono font-black text-base text-slate-900 tracking-tight">
@@ -445,7 +446,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
       <DetalleRFQProductos viewModel={viewModel} />
 
       <div className="rfq-detail-lower-grid">
-        <div className="rfq-documentation-panel bg-white rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm sm:shadow-xl overflow-hidden transition-all duration-300 self-start w-full">
+        <div className="rfq-documentation-panel bg-white rounded-2xl sm:rounded-[2.5rem] shadow-[var(--tf-shadow-card)] sm:shadow-[var(--tf-shadow-card)] overflow-hidden transition-all duration-300 self-start w-full">
           <button type="button" onClick={() => setDocumentacionOpen(!documentacionOpen)} className="w-full p-4 sm:p-8 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors cursor-pointer text-left focus:outline-none">
             <h2 className="text-sm font-black text-slate-800 uppercase flex items-center gap-2"><LinkIcon size={18} className="text-emerald-500" /> Documentación Extra</h2>
             <div className={`transform transition-transform duration-300 text-slate-400 ${documentacionOpen ? 'rotate-180' : ''}`}><ChevronDown size={20} /></div>
@@ -802,7 +803,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
         guardandoSeguimientoCliente={guardandoSeguimientoCliente}
         diasValidezSeguimiento={diasValidezSeguimiento}
       />, document.body)}
-    </div>
+    </PageContainer>
   );
 };
 

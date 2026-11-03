@@ -1,16 +1,17 @@
 import React from 'react';
+import { PageContainer } from '../../../components/ui/PageContainer';
+import { PageHeader } from '../../../components/ui/PageHeader';
 import { ModalProductoLocal } from '../../../components/vendedor/ModalProductoLocal';
 
 export const NuevoPedidoView = ({ viewModel }) => {
   const { Loader2, PlusCircle, X, Package, StickyActionBar, NuevoPedidoMobileCard, ModalBloqueoCotizaciones, guardarProductoLocal, addFila, buscandoCliente, buscandoMarca, buscandoProducto, buscarMarcasConDebounce, buscarProductosConDebounce, cliente, comentariosVendedor, errorCliente, errorMarca, erroresValidacion, indiceSugerenciaActiva, indiceSugerenciaMarca, indiceSugerenciaProducto, intentoGuardar, loading, manejarTeclasCliente, manejarTeclasMarca, manejarTeclasProducto, modalNuevoProd, mostrarSugerencias, mostrarSugerenciasMarca, mostrarSugerenciasProducto, productos, removeFila, seleccionarSugerenciaCliente, seleccionarSugerenciaMarca, seleccionarSugerenciaProducto, setCliente, setComentariosVendedor, setIndiceSugerenciaActiva, setIndiceSugerenciaMarca, setIndiceSugerenciaProducto, setModalNuevoProd, setMostrarSugerencias, setMostrarSugerenciasMarca, setMostrarSugerenciasProducto, setValidez, sugerenciasCliente, sugerenciasMarca, sugerenciasProducto, updateMarcaState, updateProducto, validez, guardarRFQ } = viewModel;
 
   return (
-    <div className="@container w-full max-w-[1700px] mx-auto px-3 sm:px-4 md:px-6 lg:px-10 animate-in slide-in-from-bottom-4 duration-500">
-      <div className="flex justify-between items-center mb-8">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tighter italic">NUEVO PEDIDO MANUAL</h1>
-          <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Detalles para el equipo de compras</p>
-        </div>
+    <PageContainer size="wide" className="@container animate-in slide-in-from-bottom-4 duration-500">
+      <PageHeader
+        title="Nuevo Pedido Manual"
+        subtitle="Detalles para el equipo de compras"
+        actions={
         <button 
           type="button"
           onClick={() => window.history.back()} 
@@ -18,12 +19,13 @@ export const NuevoPedidoView = ({ viewModel }) => {
         >
           Cancelar
         </button>
-      </div>
+        }
+      />
 
       <form id="form-nuevo-pedido" onSubmit={guardarRFQ} className="space-y-6">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
         {/* Card Cliente */}
-        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl border border-slate-200 shadow-xl shadow-slate-100">
+        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl shadow-[var(--tf-shadow-card)]">
           <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Nombre del Cliente / Empresa</label>
           <div className="relative">
             <input 
@@ -98,7 +100,7 @@ export const NuevoPedidoView = ({ viewModel }) => {
           </div>
         </div>
 
-        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl border border-slate-200 shadow-xl shadow-slate-100">
+        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl shadow-[var(--tf-shadow-card)]">
           <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest" htmlFor="comentarios-vendedor">
             Comentarios del Vendedor
           </label>
@@ -115,7 +117,7 @@ export const NuevoPedidoView = ({ viewModel }) => {
         </div>
 
         {/* Listado de Productos */}
-        <div className="bg-white rounded-3xl sm:rounded-4xl border border-slate-200 shadow-xl shadow-slate-100 overflow-visible">
+        <div className="bg-white rounded-3xl sm:rounded-4xl shadow-[var(--tf-shadow-card)] overflow-visible">
           <div className="p-4 sm:p-6 bg-slate-900 flex justify-between items-center rounded-t-3xl sm:rounded-t-4xl">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Items Solicitados</span>
             <button 
@@ -447,6 +449,6 @@ export const NuevoPedidoView = ({ viewModel }) => {
         />
       )}
 
-    </div>
+    </PageContainer>
   );
 };

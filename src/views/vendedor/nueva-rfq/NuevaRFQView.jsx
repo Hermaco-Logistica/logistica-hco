@@ -1,16 +1,17 @@
 import React from 'react';
+import { PageContainer } from '../../../components/ui/PageContainer';
+import { PageHeader } from '../../../components/ui/PageHeader';
 import { ModalProductoLocal } from '../../../components/vendedor/ModalProductoLocal';
 
 export const NuevaRFQView = ({ viewModel }) => {
   const { Loader2, PlusCircle, X, Package, StickyActionBar, ModalBloqueoCotizaciones, guardarProductoLocal, addFila, buscandoCliente, buscandoMarca, buscandoProducto, buscarMarcasConDebounce, buscarProductosConDebounce, cliente, comentariosVendedor, errorCliente, errorMarca, indiceSugerenciaActiva, indiceSugerenciaMarca, indiceSugerenciaProducto, loading, manejarTeclasCliente, manejarTeclasMarca, manejarTeclasProducto, modalNuevoProd, mostrarSugerencias, mostrarSugerenciasMarca, mostrarSugerenciasProducto, productos, removeFila, seleccionarSugerenciaCliente, seleccionarSugerenciaMarca, seleccionarSugerenciaProducto, setCliente, setComentariosVendedor, setIndiceSugerenciaActiva, setIndiceSugerenciaMarca, setIndiceSugerenciaProducto, setModalNuevoProd, setMostrarSugerencias, setMostrarSugerenciasMarca, setMostrarSugerenciasProducto, setValidez, sugerenciasCliente, sugerenciasMarca, sugerenciasProducto, updateMarcaState, updateProducto, validez, guardarRFQ } = viewModel;
 
   return (
-    <div className="@container max-w-4xl mx-auto animate-in slide-in-from-bottom-4 duration-500">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tighter italic">NUEVA SOLICITUD</h1>
-          <p className="text-slate-500 font-bold text-xs uppercase tracking-widest">Detalles para el equipo de compras</p>
-        </div>
+    <PageContainer size="form" className="@container animate-in slide-in-from-bottom-4 duration-500">
+      <PageHeader
+        title="Nueva Solicitud"
+        subtitle="Detalles para el equipo de compras"
+        actions={
         <button 
           type="button"
           onClick={() => window.history.back()} 
@@ -18,11 +19,12 @@ export const NuevaRFQView = ({ viewModel }) => {
         >
           Cancelar
         </button>
-      </div>
+        }
+      />
 
       <form id="form-nueva-rfq" onSubmit={guardarRFQ} className="space-y-6">
         {/* Card Cliente */}
-        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl border border-slate-200 shadow-xl shadow-slate-100">
+        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl shadow-[var(--tf-shadow-card)]">
           <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Nombre del Cliente / Empresa</label>
           <div className="relative">
             <input 
@@ -97,7 +99,7 @@ export const NuevaRFQView = ({ viewModel }) => {
           </div>
         </div>
 
-        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl border border-slate-200 shadow-xl shadow-slate-100">
+        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl shadow-[var(--tf-shadow-card)]">
           <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest" htmlFor="comentarios-vendedor">
             Comentarios del Vendedor
           </label>
@@ -113,7 +115,7 @@ export const NuevaRFQView = ({ viewModel }) => {
         </div>
 
         {/* Listado de Productos */}
-        <div className="bg-white rounded-3xl sm:rounded-4xl border border-slate-200 shadow-xl shadow-slate-100 overflow-visible">
+        <div className="bg-white rounded-3xl sm:rounded-4xl shadow-[var(--tf-shadow-card)] overflow-visible">
           <div className="p-4 sm:p-6 bg-slate-900 flex justify-between items-center rounded-t-3xl sm:rounded-t-4xl">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Items Solicitados</span>
             <button 
@@ -558,6 +560,6 @@ export const NuevaRFQView = ({ viewModel }) => {
         />
       )}
 
-    </div>
+    </PageContainer>
   );
 };

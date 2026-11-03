@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useNavigate } from 'react-router-dom';
 import { FilePlus, ShoppingCart, ArrowRight } from 'lucide-react';
 import { useCotizacionesEstancadas } from '../../hooks/useCotizacionesEstancadas';
@@ -17,11 +19,9 @@ export const NuevaSolicitudGateway = ({ role }) => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 sm:py-12 animate-in fade-in zoom-in duration-300">
+    <PageContainer size="form" className="animate-in fade-in zoom-in duration-300">
+      <PageHeader title="Nueva Solicitud" />
       <div className="text-center mb-10">
-        <h1 className="text-2xl sm:text-4xl font-black text-slate-800 uppercase italic tracking-tight mb-3">
-          Nueva Solicitud
-        </h1>
         <p className="text-slate-500 font-medium text-sm sm:text-base max-w-xl mx-auto">
           ¿Qué tipo de solicitud deseas crear? Selecciona el flujo correspondiente para continuar.
         </p>
@@ -31,7 +31,7 @@ export const NuevaSolicitudGateway = ({ role }) => {
         {/* Opción RFQ */}
         <button
           onClick={() => navigate('/vendedor/nueva-rfq')}
-          className="group relative bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 text-left hover:border-violet-400 hover:shadow-xl hover:shadow-violet-500/10 transition-all duration-300 overflow-hidden"
+          className="group relative bg-white rounded-3xl p-6 sm:p-8 text-left hover:border-violet-400 hover:shadow-xl hover:shadow-violet-500/10 transition-all duration-300 overflow-hidden shadow-[var(--tf-shadow-card)]"
         >
           <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300">
             <ArrowRight className="text-violet-500" size={24} />
@@ -52,7 +52,7 @@ export const NuevaSolicitudGateway = ({ role }) => {
         {/* Opción Pedido Manual */}
         <button
           onClick={() => navigate('/vendedor/nuevo-pedido')}
-          className="group relative bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 text-left hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 overflow-hidden"
+          className="group relative bg-white rounded-3xl p-6 sm:p-8 text-left hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 overflow-hidden shadow-[var(--tf-shadow-card)]"
         >
           <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300">
             <ArrowRight className="text-emerald-500" size={24} />
@@ -70,6 +70,6 @@ export const NuevaSolicitudGateway = ({ role }) => {
           </p>
         </button>
       </div>
-    </div>
+    </PageContainer>
   );
 };

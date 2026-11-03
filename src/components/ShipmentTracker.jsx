@@ -111,7 +111,7 @@ export const ShipmentTracker = ({ shipmentData, estadoManual }) => {
 
     return (
       <div className="mt-6 space-y-4">
-        <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+        <div className="bg-white rounded-3xl p-6 shadow-[var(--tf-shadow-card)]">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tracking DSV</p>
@@ -189,7 +189,7 @@ export const ShipmentTracker = ({ shipmentData, estadoManual }) => {
           </div>
         )}
 
-        <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden">
+        <div className="bg-white rounded-3xl overflow-hidden shadow-[var(--tf-shadow-card)]">
           <div className="flex items-center justify-between px-5 py-4">
             <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Eventos del embarque</p>
             {dsvEvents.length > 1 && (
@@ -234,7 +234,7 @@ export const ShipmentTracker = ({ shipmentData, estadoManual }) => {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden">
+        <div className="bg-white rounded-3xl overflow-hidden shadow-[var(--tf-shadow-card)]">
           <button
             type="button"
             onClick={() => setCargoOpen((prev) => !prev)}
@@ -274,7 +274,7 @@ export const ShipmentTracker = ({ shipmentData, estadoManual }) => {
         </div>
 
         {raw?.containers?.[0] && (
-          <div className="bg-white rounded-3xl border border-slate-100 p-5 grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="bg-white rounded-3xl p-5 grid grid-cols-1 md:grid-cols-3 gap-3 shadow-[var(--tf-shadow-card)]">
             {raw.containers[0].containerNumber && (
               <div className="text-[10px] font-bold text-slate-500 uppercase">Contenedor: <span className="text-slate-800 font-black">{raw.containers[0].containerNumber}</span></div>
             )}
@@ -310,7 +310,7 @@ export const ShipmentTracker = ({ shipmentData, estadoManual }) => {
 
   return (
     <div className="mt-6 space-y-4">
-      <div className="bg-white rounded-3xl border border-slate-100 p-6 shadow-sm">
+      <div className="bg-white rounded-3xl p-6 shadow-[var(--tf-shadow-card)]">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tracking DHL</p>
@@ -358,7 +358,7 @@ export const ShipmentTracker = ({ shipmentData, estadoManual }) => {
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-3xl overflow-hidden shadow-[var(--tf-shadow-card)]">
         <div className="flex items-center justify-between px-5 py-4">
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Eventos del envio</p>
           {events.length > 1 && (

@@ -1,6 +1,8 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Etiqueta } from '../../components/Etiqueta';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { 
   Calendar as CalendarIcon, Trash2, AlertTriangle, AlertOctagon, AlertCircle, Filter, 
   ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Hash, Package,
@@ -191,13 +193,8 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   ].filter(Boolean).length;
 
   return (
-    <div className="animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tighter italic">{title}</h1>
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Estado de RFQs enviadas</p>
-        </div>
-        {canCreate && (
+    <PageContainer className="animate-in fade-in duration-500">
+      <PageHeader title={title} subtitle="Estado de RFQs enviadas" actions={canCreate && (
           <div className="flex gap-2 w-full sm:w-auto">
             <button 
               onClick={() => navigate('/vendedor/nueva-rfq')}
@@ -212,8 +209,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               + Pedido Manual
             </button>
           </div>
-        )}
-      </div>
+        )} />
 
       {/* Banner único de bloqueo para solicitudes estancadas */}
       {tieneBloqueo && (
@@ -256,7 +252,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       )}
 
       {/* BARRA DE FILTROS MÓVIL (visible en < md) */}
-      <div className="md:hidden bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs mb-4 space-y-3">
+      <div className="md:hidden bg-white p-3.5 rounded-2xl shadow-[var(--tf-shadow-card)] mb-4 space-y-3">
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <input 
@@ -264,7 +260,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               placeholder="Buscar Ref o Cliente..." 
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none focus:border-slate-400 text-slate-700"
+              className="tf-campo"
             />
           </div>
           <button
@@ -304,7 +300,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           <div className="pt-3 border-t border-slate-100 space-y-2.5 animate-in fade-in duration-200">
             <div>
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Resultado</label>
-              <select value={filterResultado} onChange={(e) => { setFilterResultado(e.target.value); setCurrentPage(1); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 cursor-pointer">
+              <select value={filterResultado} onChange={(e) => { setFilterResultado(e.target.value); setCurrentPage(1); }} className="tf-campo cursor-pointer">
                 <option value="">TODOS LOS RESULTADOS</option>
                 {resultadosDisponibles.map(resultado => <option key={resultado} value={resultado}>{etiquetaResultadoSolicitud(resultado).toUpperCase()}</option>)}
               </select>
@@ -314,7 +310,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               <select 
                 value={filterEstado} 
                 onChange={(e) => { setFilterEstado(e.target.value); setCurrentPage(1); }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 cursor-pointer"
+                className="tf-campo cursor-pointer"
               >
                 <option value="">TODOS LOS ESTADOS</option>
                 {estadosDisponibles.map(est => (
@@ -328,7 +324,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                 <select 
                   value={filterVendedor} 
                   onChange={(e) => { setFilterVendedor(e.target.value); setCurrentPage(1); }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 cursor-pointer"
+                  className="tf-campo cursor-pointer"
                 >
                   <option value="">TODOS LOS VENDEDORES</option>
                   {vendedoresDisponibles.map(vend => (
@@ -340,7 +336,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
             {role === 'gerente' && (
               <div>
                 <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Prórroga</label>
-                <select value={filterProrroga} onChange={(e) => { setFilterProrroga(e.target.value); setCurrentPage(1); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 cursor-pointer">
+                <select value={filterProrroga} onChange={(e) => { setFilterProrroga(e.target.value); setCurrentPage(1); }} className="tf-campo cursor-pointer">
                   <option value="">TODAS LAS PRÓRROGAS</option>
                   <option value="propias">PRÓRROGAS PROPIAS</option>
                   <option value="otros">PRÓRROGAS DE OTROS</option>
@@ -351,7 +347,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
             <div className="relative" ref={refCalendarioMobile}>
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Fecha</label>
               <div 
-                className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold cursor-pointer text-slate-700" 
+                className="tf-campo flex items-center gap-1 cursor-pointer" 
                 onClick={() => setMostrarCalendario(!mostrarCalendario)}
               >
                 <CalendarIcon size={14} className="text-slate-400 shrink-0" />
@@ -361,7 +357,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                 )}
               </div>
               {mostrarCalendario && (
-                <div className="absolute right-0 mt-2 z-40 bg-white border border-slate-200 shadow-2xl rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+                <div className="absolute right-0 mt-2 z-40 bg-white shadow-[var(--tf-shadow-card)] rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
                     <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
@@ -400,7 +396,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       <div className={`hidden md:grid grid-cols-1 sm:grid-cols-2 ${role === 'vendedor' ? 'md:grid-cols-5' : 'md:grid-cols-6'} gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm`}>
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Resultado</label>
-          <select value={filterResultado} onChange={(e) => { setFilterResultado(e.target.value); setCurrentPage(1); }} className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer">
+          <select value={filterResultado} onChange={(e) => { setFilterResultado(e.target.value); setCurrentPage(1); }} className="tf-campo cursor-pointer">
             <option value="">TODOS LOS RESULTADOS</option>
             {resultadosDisponibles.map(resultado => <option key={resultado} value={resultado}>{etiquetaResultadoSolicitud(resultado).toUpperCase()}</option>)}
           </select>
@@ -412,7 +408,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
             placeholder="Escribe para buscar..." 
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
+            className="tf-campo"
           />
         </div>
         <div>
@@ -420,7 +416,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           <select 
             value={filterEstado} 
             onChange={(e) => { setFilterEstado(e.target.value); setCurrentPage(1); }}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+            className="tf-campo cursor-pointer"
           >
             <option value="">TODOS LOS ESTADOS</option>
             {estadosDisponibles.map(est => (
@@ -434,7 +430,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
             <select 
               value={filterVendedor} 
               onChange={(e) => { setFilterVendedor(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+              className="tf-campo cursor-pointer"
             >
               <option value="">TODOS LOS VENDEDORES</option>
               {vendedoresDisponibles.map(vend => (
@@ -446,7 +442,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
         {role === 'gerente' && (
           <div>
             <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Prórroga</label>
-            <select value={filterProrroga} onChange={(e) => { setFilterProrroga(e.target.value); setCurrentPage(1); }} className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer">
+            <select value={filterProrroga} onChange={(e) => { setFilterProrroga(e.target.value); setCurrentPage(1); }} className="tf-campo cursor-pointer">
               <option value="">TODAS LAS PRÓRROGAS</option>
               <option value="propias">PRÓRROGAS PROPIAS</option>
               <option value="otros">PRÓRROGAS DE OTROS</option>
@@ -458,7 +454,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
         {/* Rango de Fecha Calendario Popover */}
         <div className="relative" ref={refCalendario}>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Fecha</label>
-          <div className="flex items-center gap-1 bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold cursor-pointer text-slate-700" onClick={() => setMostrarCalendario(!mostrarCalendario)}>
+          <div className="tf-campo flex items-center gap-1 cursor-pointer" onClick={() => setMostrarCalendario(!mostrarCalendario)}>
             <CalendarIcon size={14} className="text-slate-400 shrink-0" />
             <span className="truncate flex-1 select-none">{formattedRangoText}</span>
             {(fechaInicio || fechaFin) && (
@@ -467,7 +463,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
           </div>
 
           {mostrarCalendario && (
-            <div className="absolute right-0 mt-2 z-30 bg-white border border-slate-200 shadow-2xl rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+            <div className="absolute right-0 mt-2 z-30 bg-white shadow-[var(--tf-shadow-card)] rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
               <div className="flex items-center justify-between mb-4">
                 <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
                 <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
@@ -532,7 +528,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       {/* VISTA MÓVIL: TARJETAS DETALLADAS Y ESPACIOSAS (< md) */}
       <div className="space-y-3.5 md:hidden mb-6">
         {paginatedSolicitudes.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center text-slate-400 font-bold text-xs border border-slate-200">
+          <div className="bg-white rounded-2xl p-8 text-center text-slate-400 font-bold text-xs shadow-[var(--tf-shadow-card)]">
             No se encontraron solicitudes con los filtros aplicados.
           </div>
         ) : (
@@ -566,7 +562,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               <div
                 key={s.id}
                 onClick={() => navigate(s.tipo === 'Pedido Manual' ? `/vendedor/pedido-manual/${s.id}` : `/vendedor/detalle/${s.id}`)}
-                className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer relative active:scale-[0.98] touch-manipulation"
+                className="bg-white rounded-2xl p-4 shadow-[var(--tf-shadow-card)] hover:shadow-md transition-all cursor-pointer relative active:scale-[0.98] touch-manipulation"
               >
                 {/* Header: Correlativo + Alertas (Izq) y Estado (Der) */}
                 <div className="flex items-start justify-between mb-1.5">
@@ -748,10 +744,10 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       </div>
 
       {/* VISTA DESKTOP: TABLA CLÁSICA (hidden en < md, visible en >= md) */}
-      <div className="hidden md:block bg-white rounded-3xl shadow-xl border border-slate-200 overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-175">
+      <div className="hidden md:block tf-tabla-card overflow-x-auto">
+        <table className="tf-tabla text-left min-w-175">
           <thead>
-            <tr className="bg-slate-900 text-white text-[10px] uppercase font-black tracking-widest">
+            <tr className="tf-tabla-head">
               <th className="p-4">Referencia / Cliente</th>
               <th className="p-4">Vendedor</th>
               <th className="p-4">Fechas (Solicitud / Respuesta)</th>
@@ -761,7 +757,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               <th className="p-4 text-center">Acción</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {paginatedSolicitudes.map((s) => {
               const esPedidoManual = s.tipo === 'Pedido Manual';
               const resultado = etiquetaResultadoSolicitud(s.resultado || clasificarSolicitud(s.productos, s.estado).resultado);
@@ -784,7 +780,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               const ocRefText = ocRefs.length > 0 ? ocRefs.join(', ') : '-';
 
               return (
-                <tr key={s.id} className="hover:bg-slate-50 transition-colors">
+                <tr key={s.id}>
                   <td className="p-4">
                     <div className="flex items-center gap-2">
                       <span className="block font-black text-slate-800 text-lg leading-none">{s.correlativo}</span>
@@ -916,27 +912,27 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       </div>
 
       {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-6 p-4 sm:px-6 bg-slate-900 rounded-2xl sm:rounded-3xl text-white select-none">
+        <div className="tf-surface-panel flex flex-col sm:flex-row justify-between items-center gap-3 mt-6 p-3 sm:px-4 text-slate-700 select-none">
           <div className="flex items-center justify-between w-full sm:w-auto gap-3">
             <button
               onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
               disabled={safeCurrentPage === 1}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer"
+              className="flex-1 sm:flex-none h-10 px-4 text-[13.5px] font-semibold bg-neutral-200/70 text-neutral-700 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-[background-color,scale] duration-150 active:scale-[0.96] cursor-pointer"
             >
               Anterior
             </button>
-            <span className="sm:hidden text-[11px] font-bold text-slate-300">
+            <span className="sm:hidden text-xs font-medium text-slate-500">
               {safeCurrentPage} de {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
               disabled={safeCurrentPage === totalPages}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer"
+              className="flex-1 sm:flex-none h-10 px-4 text-[13.5px] font-semibold bg-neutral-200/70 text-neutral-700 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-[background-color,scale] duration-150 active:scale-[0.96] cursor-pointer"
             >
               Siguiente
             </button>
           </div>
-          <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-widest text-slate-300">
+          <span className="hidden sm:inline-block text-[13px] text-slate-500">
             Página {safeCurrentPage} de {totalPages} ({sortedSolicitudes.length} solicitudes)
           </span>
         </div>
@@ -955,6 +951,6 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
         onClose={() => setConsultaDecisionData(null)}
         data={consultaDecisionData}
       />
-    </div>
+    </PageContainer>
   );
 };

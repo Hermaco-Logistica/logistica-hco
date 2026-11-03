@@ -40,29 +40,29 @@ export const Sidebar = ({
   const roleTheme = {
     comprador: {
       accentText: 'text-blue-300',
-      active: 'bg-blue-500 text-white shadow-xl shadow-black/25',
-      activeCollapsed: 'bg-blue-500 text-white shadow-xl shadow-black/25',
+      active: 'bg-blue-500 text-white',
+      activeCollapsed: 'bg-blue-500 text-white',
       iconHover: 'group-hover:text-white',
       roleText: 'text-blue-300',
     },
     vendedor: {
       accentText: 'text-violet-300',
-      active: 'bg-violet-500 text-white shadow-xl shadow-black/25',
-      activeCollapsed: 'bg-violet-500 text-white shadow-xl shadow-black/25',
+      active: 'bg-violet-500 text-white',
+      activeCollapsed: 'bg-violet-500 text-white',
       iconHover: 'group-hover:text-white',
       roleText: 'text-violet-300',
     },
     gerente: {
       accentText: 'text-emerald-300',
-      active: 'bg-emerald-500 text-white shadow-xl shadow-black/25',
-      activeCollapsed: 'bg-emerald-500 text-white shadow-xl shadow-black/25',
+      active: 'bg-emerald-500 text-white',
+      activeCollapsed: 'bg-emerald-500 text-white',
       iconHover: 'group-hover:text-white',
       roleText: 'text-emerald-300',
     },
     administrador: {
       accentText: 'text-rose-300',
-      active: 'bg-rose-500 text-white shadow-xl shadow-black/25',
-      activeCollapsed: 'bg-rose-500 text-white shadow-xl shadow-black/25',
+      active: 'bg-rose-500 text-white',
+      activeCollapsed: 'bg-rose-500 text-white',
       iconHover: 'group-hover:text-white',
       roleText: 'text-rose-300',
     },
@@ -87,6 +87,7 @@ export const Sidebar = ({
       label: 'Nueva Solicitud',
       icon: <FilePlus size={18} />,
       path: '/vendedor/nueva',
+      alias: ['/vendedor/nueva-rfq', '/vendedor/nuevo-pedido'],
       show: role === 'vendedor' || role === 'gerente'
     },
     {
@@ -100,6 +101,7 @@ export const Sidebar = ({
       label: 'Bandeja RFQ',
       icon: <ClipboardList size={18} />,
       path: '/compras',
+      alias: ['/calculadora'],
       show: role === 'comprador' || role === 'gerente' || role === 'administrador'
     },
     {
@@ -128,13 +130,32 @@ export const Sidebar = ({
     }
   ];
 
+  // El ítem activo es el de la ruta más específica que coincide por prefijo (o por alias), así el padre queda
+  // activo en las subvistas: /vendedor/detalle/:id enciende "Solicitudes", /compras/retaceos enciende "Retaceos"
+  // y no "Bandeja RFQ".
+  const indiceActivo = (() => {
+    let mejor = -1;
+    let largo = -1;
+    menuItems.forEach((item, i) => {
+      if (!item.show) return;
+      [item.path, ...(item.alias || [])].forEach((ruta) => {
+        const coincide = location.pathname === ruta || location.pathname.startsWith(`${ruta}/`);
+        if (coincide && ruta.length > largo) {
+          mejor = i;
+          largo = ruta.length;
+        }
+      });
+    });
+    return mejor;
+  })();
+
   return (
     <>
       <FindexSettingsModal isOpen={isFindexSettingsOpen} onClose={() => setIsFindexSettingsOpen(false)} />
       {/* SIDEBAR DESKTOP (solo visible en pantallas medianas y grandes >= md) */}
       <aside
-        className={`tf-sidebar-shell h-full hidden md:flex flex-col p-3 transition-[width] duration-300 ease-in-out shadow-2xl relative z-10 shrink-0 select-none overflow-x-hidden ${
-          collapsed ? 'w-20' : 'w-72'
+        className={`tf-sidebar-shell h-full hidden md:flex flex-col p-3 transition-[width] duration-300 ease-in-out relative z-10 shrink-0 select-none overflow-x-hidden ${
+          collapsed ? 'w-20' : 'w-60'
         }`}
       >
         {/* HEADER */}
@@ -150,41 +171,17 @@ export const Sidebar = ({
                 HCO
               </span>
             </button>
-            <button
-              type="button"
-              onClick={() => { if (!isFindexActive) setIsFindexSettingsOpen(true); }}
-              title={isFindexActive ? "Inventario Activo" : "Inventario Inactivo - Click para re-autenticar"}
-              className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors duration-200 ${
-                isFindexActive 
-                  ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)] cursor-default' 
-                  : 'text-white/40 hover:text-white hover:bg-white/10 cursor-pointer'
-              }`}
-            >
-              <Lightbulb size={17} className={isFindexActive ? "fill-yellow-400" : ""} />
-            </button>
           </div>
         ) : (
           <div className="mb-6 px-1 mt-1 shrink-0">
             <div className="flex items-center justify-between gap-2 h-11">
-              <div className="flex items-center gap-2 min-w-0">
-                <Link 
-                  to="/" 
-                  className="text-white font-black text-2xl italic tracking-tighter uppercase leading-none truncate select-none hover:opacity-85 active:scale-95 transition-all cursor-pointer"
-                  title="Ir al inicio"
-                >
-                  Logistica<span className={`${currentTheme.accentText} underline decoration-2 underline-offset-4`}>HCO</span>
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => { if (!isFindexActive) setIsFindexSettingsOpen(true); }}
-                  title={isFindexActive ? "Inventario Activo" : "Inventario Inactivo - Click para re-autenticar"}
-                  className={`transition-colors duration-300 shrink-0 p-1.5 rounded-lg hover:bg-white/10 ${
-                    isFindexActive ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)] cursor-default' : 'text-white/40 hover:text-white cursor-pointer'
-                  }`}
-                >
-                  <Lightbulb size={18} className={isFindexActive ? "fill-yellow-400" : ""} />
-                </button>
-              </div>
+              <Link 
+                to="/" 
+                className="shrink-0 text-white font-black text-[19px] italic tracking-tighter uppercase leading-none whitespace-nowrap select-none hover:opacity-85 active:scale-95 transition-all cursor-pointer"
+                title="Ir al inicio"
+              >
+                Logistica<span className={`${currentTheme.accentText} underline decoration-2 underline-offset-4`}>HCO</span>
+              </Link>
               <button
                 type="button"
                 onClick={() => setCollapsed(true)}
@@ -194,34 +191,34 @@ export const Sidebar = ({
                 <PanelLeftClose size={18} />
               </button>
             </div>
-            <p className="text-white/40 font-bold text-[9px] uppercase tracking-[0.4em] mt-1.5 whitespace-nowrap overflow-hidden">
+            <p className="text-white/50 font-medium text-[12px] mt-1.5 whitespace-nowrap overflow-hidden">
               Gestor de cotizaciones
             </p>
           </div>
         )}
 
         {/* NAVIGATION */}
-        <nav className="flex-1 space-y-1.5 w-full">
+        <nav className="flex-1 space-y-1 w-full">
           {menuItems.map((item, idx) => (
             item.show && (
               <Link
                 key={idx}
                 to={item.path}
                 title={collapsed ? item.label : undefined}
-                className={`w-full flex items-center h-11 rounded-xl transition-all duration-200 group px-3 ${
-                  location.pathname === item.path
-                    ? `${currentTheme.activeCollapsed} ${collapsed ? '' : 'translate-x-1'}`
-                    : `text-white/70 hover:bg-white/10 hover:text-white ${collapsed ? '' : 'hover:translate-x-1'}`
+                className={`w-full flex items-center h-11 rounded-xl text-[13.5px] transition-[background-color,color,scale] duration-150 active:scale-[0.96] group px-3 ${
+                  idx === indiceActivo
+                    ? `${currentTheme.activeCollapsed} font-semibold`
+                    : 'text-white/70 font-medium hover:bg-white/10 hover:text-white'
                 }`}
               >
                 <span className={`relative shrink-0 w-8 flex items-center justify-center transition-colors ${
-                  location.pathname === item.path ? 'text-white' : 'text-white/60 group-hover:text-white'
+                  idx === indiceActivo ? 'text-white' : 'text-white/60 group-hover:text-white'
                 }`}>
                   {item.icon}
-                  {item.badge > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border border-slate-900 bg-rose-600 px-1 text-[8px] font-black text-white">{item.badge > 99 ? '99+' : item.badge}</span>}
+                  {item.badge > 0 && collapsed && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full border border-slate-900 bg-rose-600 px-1 text-[8px] font-black text-white">{item.badge > 99 ? '99+' : item.badge}</span>}
                 </span>
                 <span
-                  className={`whitespace-nowrap overflow-hidden font-black text-[10px] uppercase tracking-[0.15em] transition-all duration-300 ease-in-out ${
+                  className={`whitespace-nowrap overflow-hidden transition-[max-width,margin,opacity,translate] duration-300 ease-in-out ${
                     collapsed
                       ? 'max-w-0 opacity-0 -translate-x-3 pointer-events-none'
                       : 'max-w-[200px] opacity-100 translate-x-0 ml-3'
@@ -229,6 +226,11 @@ export const Sidebar = ({
                 >
                   {item.label}
                 </span>
+                {item.badge > 0 && !collapsed && (
+                  <span className="ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-rose-600 px-1.5 text-[11px] font-semibold leading-none text-white">
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                )}
               </Link>
             )
           ))}
@@ -236,7 +238,7 @@ export const Sidebar = ({
 
         {/* FOOTER */}
         <div className="mt-auto border-t border-white/10 pt-4 w-full shrink-0">
-          <div 
+          <div
             title={`${userEmail} (${role})`}
             className="flex items-center h-11 px-3 mb-2 w-full select-none"
           >
@@ -256,17 +258,20 @@ export const Sidebar = ({
           </div>
 
           <div className="space-y-1">
-            <button 
+            <button
               type="button"
               onClick={() => setIsFindexSettingsOpen(true)}
-              title={collapsed ? "Findex Auth" : undefined}
-              className="w-full flex items-center h-10 rounded-xl text-white/60 hover:text-white hover:bg-white/10 font-black text-[10px] uppercase tracking-widest transition-colors duration-200 cursor-pointer px-3"
+              title={isFindexActive ? "Findex Auth: inventario activo" : "Findex Auth: inventario inactivo, clic para re-autenticar"}
+              className="w-full flex items-center h-11 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-medium text-[13.5px] transition-[background-color,color,scale] duration-150 active:scale-[0.96] cursor-pointer px-3"
             >
               <span className="shrink-0 w-8 flex items-center justify-center">
-                <Settings size={16} />
+                <Lightbulb
+                  size={18}
+                  className={isFindexActive ? 'fill-yellow-400 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]' : ''}
+                />
               </span>
               <span
-                className={`whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${
+                className={`whitespace-nowrap overflow-hidden transition-[max-width,margin,opacity,translate] duration-300 ease-in-out ${
                   collapsed
                     ? 'max-w-0 opacity-0 -translate-x-3 pointer-events-none'
                     : 'max-w-[200px] opacity-100 translate-x-0 ml-3'
@@ -279,20 +284,20 @@ export const Sidebar = ({
             <button 
               type="button"
               onClick={onLogout}
-              title={collapsed ? "Cerrar Sesión" : undefined}
-              className="w-full flex items-center h-10 rounded-xl text-white/60 hover:text-rose-300 hover:bg-white/10 font-black text-[10px] uppercase tracking-widest transition-colors duration-200 cursor-pointer px-3"
+              title={collapsed ? "Cerrar sesión" : undefined}
+              className="w-full flex items-center h-11 rounded-xl text-white/70 hover:text-rose-300 hover:bg-white/10 font-medium text-[13.5px] transition-[background-color,color,scale] duration-150 active:scale-[0.96] cursor-pointer px-3"
             >
               <span className="shrink-0 w-8 flex items-center justify-center">
-                <LogOut size={16} />
+                <LogOut size={18} />
               </span>
               <span
-                className={`whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${
+                className={`whitespace-nowrap overflow-hidden transition-[max-width,margin,opacity,translate] duration-300 ease-in-out ${
                   collapsed
                     ? 'max-w-0 opacity-0 -translate-x-3 pointer-events-none'
                     : 'max-w-[200px] opacity-100 translate-x-0 ml-3'
                 }`}
               >
-                Cerrar Sesión
+                Cerrar sesión
               </span>
             </button>
           </div>
@@ -356,18 +361,23 @@ export const Sidebar = ({
                   key={idx}
                   to={item.path}
                   onClick={onCloseMobile}
-                  className={`w-full flex items-center h-12 rounded-xl transition-all duration-200 px-3.5 ${
-                    location.pathname === item.path
-                      ? `${currentTheme.active} translate-x-1 font-black`
-                      : 'text-white/70 hover:bg-white/10 hover:text-white'
+                  className={`w-full flex items-center h-12 rounded-xl text-sm transition-[background-color,color,scale] duration-150 active:scale-[0.96] px-3.5 ${
+                    idx === indiceActivo
+                      ? `${currentTheme.active} font-semibold`
+                      : 'text-white/70 font-medium hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   <span className="shrink-0 w-8 flex items-center justify-center">
                     {item.icon}
                   </span>
-                  <span className="ml-3 flex flex-1 items-center font-black text-xs uppercase tracking-wider">
+                  <span className="ml-3 flex flex-1 items-center">
                     {item.label}
                   </span>
+                  {item.badge > 0 && (
+                    <span className="ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-rose-600 px-1.5 text-[11px] font-semibold leading-none text-white">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  )}
                 </Link>
               )
             ))}
@@ -388,7 +398,7 @@ export const Sidebar = ({
             <button 
               type="button"
               onClick={() => { setIsFindexSettingsOpen(true); onCloseMobile(); }}
-              className="w-full flex items-center h-11 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-bold text-xs uppercase tracking-wider transition-colors px-3 cursor-pointer"
+              className="w-full flex items-center h-11 rounded-xl text-white/70 hover:text-white hover:bg-white/10 font-medium text-[13.5px] transition-[background-color,color,scale] duration-150 active:scale-[0.96] px-3 cursor-pointer"
             >
               <span className="shrink-0 w-8 flex items-center justify-center">
                 <Settings size={18} />
@@ -399,12 +409,12 @@ export const Sidebar = ({
             <button 
               type="button"
               onClick={() => { onCloseMobile(); onLogout(); }}
-              className="w-full flex items-center h-11 rounded-xl text-white/70 hover:text-rose-300 hover:bg-white/10 font-bold text-xs uppercase tracking-wider transition-colors px-3 cursor-pointer"
+              className="w-full flex items-center h-11 rounded-xl text-white/70 hover:text-rose-300 hover:bg-white/10 font-medium text-[13.5px] transition-[background-color,color,scale] duration-150 active:scale-[0.96] px-3 cursor-pointer"
             >
               <span className="shrink-0 w-8 flex items-center justify-center">
                 <LogOut size={18} />
               </span>
-              <span className="ml-3">Cerrar Sesión</span>
+              <span className="ml-3">Cerrar sesión</span>
             </button>
           </div>
         </aside>

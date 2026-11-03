@@ -335,7 +335,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
       </div>
 
       {/* FILTROS Y BÚSQUEDA */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+      <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full md:w-80">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -423,7 +423,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
       {/* TABLA DE SOLICITUDES */}
       <div className="flex flex-col gap-3">
         {paginatedSolicitudes.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl border border-slate-200/80 shadow-xs">
+          <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl shadow-[var(--tf-shadow-card)]">
             No se encontraron solicitudes con los criterios seleccionados.
           </div>
         ) : (
@@ -439,7 +439,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                 const itemsAnulados = obtenerItemsAnulados(s);
 
                 return (
-                  <div key={s.id} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 relative">
+                  <div key={s.id} className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3 relative">
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col">
                         <span className="font-mono text-[11px] font-bold text-slate-800">{s.correlativo || 'S/N'}</span>
@@ -530,7 +530,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
             </div>
 
             {/* VISTA DESKTOP (Tabla original) */}
-            <div className="hidden md:flex bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex-col">
+            <div className="hidden md:flex bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden flex-col">
               <div
                 ref={scrollContainerRef}
                 onMouseDown={handleDragStart}
@@ -697,7 +697,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
 
       {/* PAGINACIÓN DE 10 EN 10 */}
       {totalPages > 1 && (
-        <div className="p-3 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
+        <div className="p-3 bg-white rounded-2xl shadow-[var(--tf-shadow-card)] flex items-center justify-between">
           <button 
             type="button"
             onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}

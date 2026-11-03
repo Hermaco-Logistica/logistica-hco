@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { PageContainer } from '../../components/ui/PageContainer';
 import { useParams, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { 
@@ -353,7 +354,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   };
 
   return (
-    <div className="@container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 fade-in">
+    <PageContainer className="@container fade-in">
       {/* Encabezado Superior */}
       <div className="pedido-detail-header flex flex-wrap items-start justify-between gap-3 mb-4 md:mb-8">
         <div className="pedido-detail-heading flex min-w-0 flex-[1_1_24rem] items-center gap-2 md:gap-4">
@@ -505,7 +506,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
         </div>
       )}
 
-      <div className="mb-6 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300">
+      <div className="mb-6 bg-white rounded-3xl shadow-[var(--tf-shadow-card)] overflow-hidden transition-all duration-300">
         <button 
           type="button" 
           onClick={() => setDocumentacionOpen(!documentacionOpen)}
@@ -571,7 +572,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
         onFiltrar={setFiltroTurno}
       />
 
-      <div className="@container/pedido pedido-items-container w-full min-w-0 bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-6">
+      <div className="@container/pedido pedido-items-container w-full min-w-0 bg-white rounded-3xl shadow-[var(--tf-shadow-card)] overflow-hidden mb-6">
         <div className="p-4 bg-slate-900 flex justify-between items-center">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Listado de Ítems</span>
         </div>
@@ -907,6 +908,6 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
         handleConfirmarPlanSeguimiento={handleConfirmarPlanSeguimiento}
         handleConfirmarVentaPerdidaStaged={handleConfirmarVentaPerdidaStaged}
       />
-    </div>
+    </PageContainer>
   );
 };

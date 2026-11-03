@@ -1,4 +1,6 @@
 import React, { useEffect } from 'react';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useInView, useCountUp } from '../../hooks/useInView';
 import {
   Package,
@@ -732,15 +734,13 @@ export const AnalisisEstadisticasMobile = ({
   const mostrarKpisLegacy = false;
 
   return (
-    <div className="animate-in fade-in duration-500 pb-12 space-y-4">
+    <PageContainer className="animate-in fade-in duration-500 pb-12 space-y-4">
       {/* CABECERA (Solo saludo y rol) */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-black text-slate-900 tracking-tight">Analítica</h1>
-          <p className="text-[11px] text-slate-500 font-medium">Resumen de operaciones</p>
-        </div>
-        <Etiqueta dominio="rol" valor={theme.key}>{theme.label}</Etiqueta>
-      </div>
+      <PageHeader
+        title="Analítica"
+        subtitle="Resumen de operaciones"
+        statusChip={<Etiqueta dominio="rol" valor={theme.key}>{theme.label}</Etiqueta>}
+      />
 
       {/* SELECTOR DE PERÍODO */}
       <MobilePeriodStrip periodo={periodo} setPeriodo={setPeriodo} onChange={resetPage} />
@@ -795,7 +795,7 @@ export const AnalisisEstadisticasMobile = ({
       {puedeVerLogistica && (
         <MobileLogisticaCard statsLogistica={statsLogistica} onVerLogistica={() => navigate('/analisis/logistica')} />
       )}
-    </div>
+    </PageContainer>
   );
 };
 

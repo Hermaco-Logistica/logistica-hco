@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { collection, query, onSnapshot, addDoc, doc, updateDoc, serverTimestamp, getDocs } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { Box, ShoppingBag, Plus, Info, CheckCircle2, Factory, Hash, DollarSign } from 'lucide-react';
@@ -202,11 +204,11 @@ export const ConsolidarCompras = () => {
   if (loading) return <div className="min-h-[50vh] py-24 flex items-center justify-center font-bold text-slate-400 animate-pulse uppercase tracking-[0.3em]">Cargando Consolidación...</div>;
 
   return (
-    <div className="max-w-7xl mx-auto animate-in fade-in duration-500 pb-20">
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-black text-slate-800 italic uppercase tracking-tighter">Consolidación de Compras</h1>
-        <p className="text-slate-500 font-bold text-[9px] sm:text-[10px] uppercase tracking-[0.2em]">Asignación de Proveedores y Costos Reales</p>
-      </div>
+    <PageContainer className="animate-in fade-in duration-500 pb-20">
+      <PageHeader
+        title="Consolidación de Compras"
+        subtitle="Asignación de Proveedores y Costos Reales"
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
         <div className="lg:col-span-2 space-y-3 sm:space-y-4">
@@ -334,6 +336,6 @@ export const ConsolidarCompras = () => {
           </div>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 };

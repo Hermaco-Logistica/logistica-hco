@@ -359,7 +359,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
       </div>
 
       {/* Vista Escritorio (>= md): Tabla tradicional */}
-      <div className="rfq-products-desktop bg-white rounded-3xl lg:rounded-4xl shadow-xl border border-slate-200 overflow-hidden mb-10 lg:mb-12">
+      <div className="rfq-products-desktop bg-white rounded-3xl lg:rounded-4xl shadow-[var(--tf-shadow-card)] overflow-hidden mb-10 lg:mb-12">
         <div className="rfq-products-table-scroll overflow-x-auto">
           <table className="rfq-products-table w-full text-left border-collapse">
             <colgroup>

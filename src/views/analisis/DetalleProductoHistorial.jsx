@@ -643,7 +643,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
 
       {/* TARJETAS RESUMEN DEL PRODUCTO */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <Package size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Veces Cotizado</span>
@@ -658,7 +658,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <Package size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Unid. Solicitadas</span>
@@ -673,7 +673,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <DollarSign size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Valor Neto Total</span>
@@ -688,7 +688,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <DollarSign size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Total (IVA 13%)</span>
@@ -703,7 +703,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between col-span-2 lg:col-span-1">
+        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <TrendingUp size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Efectividad</span>
@@ -724,7 +724,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
       </div>
 
       {/* FILTROS Y BÚSQUEDA */}
-      <div className="bg-white p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-sm flex flex-col sm:flex-row gap-2 sm:gap-3 items-center justify-between">
+      <div className="bg-white p-2.5 sm:p-3 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col sm:flex-row gap-2 sm:gap-3 items-center justify-between">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -843,9 +843,9 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
       </div>
 
       {/* TABLA DE MOVIMIENTOS HISTÓRICOS */}
-      <div className="bg-transparent sm:bg-white sm:rounded-2xl sm:border sm:border-slate-200/80 sm:shadow-xs overflow-hidden flex flex-col">
+      <div className="bg-transparent sm:bg-white sm:rounded-2xl sm:shadow-[var(--tf-shadow-card)] overflow-hidden flex flex-col">
         {paginatedMovimientos.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200/80 text-slate-400 text-xs font-medium mt-2">
+          <div className="text-center py-16 bg-white rounded-2xl text-slate-400 text-xs font-medium mt-2 shadow-[var(--tf-shadow-card)]">
             No se registraron movimientos con los filtros seleccionados.
           </div>
         ) : (
