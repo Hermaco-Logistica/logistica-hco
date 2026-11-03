@@ -3,7 +3,7 @@ import { urlSolicitud } from '../html/enlaces';
 import { descripcionItem, esc, fechaCorta } from '../html/texto';
 
 /**
- * Avisos del seguimiento de cliente (revisión registrada, prórroga solicitada y prórroga respondida) con el
+ * Avisos del seguimiento de cliente (prórroga solicitada y prórroga respondida; la revisión no envía correo) con el
  * diseño sobrio: datos en filas, texto citado y un único botón "Ir al sitio".
  * `items`: [{ item, indice, ... }]; `indice` es la posición del ítem en la solicitud (se muestra como "Ítem n").
  */
@@ -15,25 +15,6 @@ const datosBase = (solicitud) => [
   { rotulo: 'Cliente', valor: esc(solicitud.cliente) },
   { rotulo: 'Vendedor', valor: `${esc(solicitud.vendedorNombre || solicitud.vendedorEmail)}${solicitud.vendedorNombre && solicitud.vendedorEmail ? ` <span style="color:#64748b;font-weight:400;">· ${esc(solicitud.vendedorEmail)}</span>` : ''}` }
 ];
-
-/** El vendedor mantuvo ítems en revisión con el cliente. items: [{ item, indice, numero, hasta }] */
-export const revisionRegistrada = ({ solicitud, items = [], comentario = '', registradoPor }) => layoutSimple({
-  categoria: 'Seguimiento de cliente',
-  titulo: 'Solicitud mantenida en revisión',
-  etiqueta: etiquetaDeDominio('faseSeguimiento', 'en_revision'),
-  cuerpo: `
-    <p style="margin:12px 0 0;font-size:14px;line-height:1.55;color:#334155;">El vendedor registró que el cliente mantiene la solicitud en revisión.</p>
-    ${filasDatos([...datosBase(solicitud), { rotulo: 'Registrada por', valor: esc(registradoPor || solicitud.vendedorEmail) }])}
-    ${citaSimple({ titulo: 'Comentario del vendedor', texto: comentario })}
-    ${listaSimple({
-      titulo: 'Ítems en revisión',
-      elementos: items.map(({ item, indice, numero, hasta }) => ({
-        principal: nombreItem(item, indice),
-        secundario: `Revisión ${numero}/2 · hasta ${esc(fechaCorta(hasta))}`
-      }))
-    })}
-    ${boton({ texto: 'Ir al sitio', url: urlSolicitud(solicitud) })}`
-});
 
 /** El vendedor pidió una prórroga formal que Compras debe responder. items: [{ item, indice, vence }] */
 export const prorrogaSolicitada = ({ solicitud, prorroga, items = [] }) => layoutSimple({

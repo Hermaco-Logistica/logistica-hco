@@ -4,7 +4,7 @@ import { cotizacionEnviada } from './plantillas/cotizacionEnviada';
 import { negociacionPedidoManual } from './plantillas/negociacionPedidoManual';
 import { ocAsignada } from './plantillas/ocAsignada';
 import { pedidoConfirmado } from './plantillas/pedidoConfirmado';
-import { prorrogaRespondida, prorrogaSolicitada, revisionRegistrada } from './plantillas/seguimientoCliente';
+import { prorrogaRespondida, prorrogaSolicitada } from './plantillas/seguimientoCliente';
 import { solicitudCreada } from './plantillas/solicitudCreada';
 import { ventaPerdida } from './plantillas/ventaPerdida';
 
@@ -38,10 +38,6 @@ export const EVENTOS = {
   oc_asignada: {
     asunto: (ctx) => `OC Asignada ${ctx.numOC} — Tus productos ya tienen orden de compra`,
     html: ocAsignada
-  },
-  revision_registrada: {
-    asunto: (ctx) => `Solicitud en revisión con el cliente: ${referencia(ctx)}`,
-    html: revisionRegistrada
   },
   prorroga_solicitada: {
     asunto: (ctx) => `Prórroga solicitada: ${referencia(ctx)}`,

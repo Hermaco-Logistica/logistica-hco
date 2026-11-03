@@ -64,7 +64,6 @@ describe('plantillas', () => {
     venta_perdida: { solicitud, items: [{ ...item, motivoVentaPerdida: { nombre: 'Precio', comentario: 'Muy caro para el cliente' } }], registradoPor: 'pablo@hermaco.net' },
     anulacion: { solicitud, motivo: 'Duplicada <b>x</b>', anuladoPor: 'compras@hermaco.net', esParcial: false },
     oc_asignada: { numOC: 'OC-1', itemsVendedor: [{ correlativo: 'RFQ-0001', descripcion: 'Contactor', fechaCompromiso: '2026-11-10' }] },
-    revision_registrada: { solicitud, items: [{ item, indice: 0, numero: 1, hasta: new Date() }], comentario: 'Cliente pide esperar', registradoPor: 'pablo@hermaco.net' },
     prorroga_solicitada: { solicitud, prorroga, items: [{ item, indice: 0, vence: new Date() }] },
     prorroga_respondida: { solicitud, prorroga, accion: 'aprobada', comentario: 'Ok', respondidoPor: 'compras@hermaco.net', items: [{ item, indice: 0 }], fechasAprobadas: { 0: new Date() } },
     negociacion_compras: { pedido: { ...solicitud, id: 'p1', tipo: 'Pedido Manual', estado: 'Cotizado' }, items: [{ ...item, estadoItem: 'Cotizado', fob: 12 }], indicesModificados: [0], rol: 'compras', comentarioGeneral: 'Revisa' },

@@ -31,7 +31,6 @@ export const REGLAS_ENVIO = {
   venta_perdida: { remitente: 'actor', para: 'compras', config: 'ventaPerdida', copiaActor: true },
   anulacion: { remitente: 'actor', para: 'vendedor', config: 'respuestaCompras', copiaActor: true },
   oc_asignada: { remitente: 'sistema', para: 'vendedor', config: 'respuestaCompras' },
-  revision_registrada: { remitente: 'actor', para: 'compras', config: 'seguimientoCliente', copiaActor: true },
   prorroga_solicitada: { remitente: 'actor', para: 'compras', config: 'seguimientoCliente', copiaActor: true },
   prorroga_respondida: { remitente: 'actor', para: 'vendedor', config: 'respuestaCompras', copiaActor: true },
   // La negociación del pedido manual depende de quién escribe: compras responde al vendedor y viceversa.

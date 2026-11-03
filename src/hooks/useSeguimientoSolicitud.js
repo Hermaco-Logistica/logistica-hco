@@ -77,7 +77,6 @@ export const useSeguimientoSolicitud = ({
     setGuardando(true);
     try {
       const cambios = {};
-      const itemsRevision = [];
       if (planModal.revision.length > 0) {
         const productosActualizados = [...productos];
         planModal.revision.forEach((indice) => {
@@ -95,12 +94,6 @@ export const useSeguimientoSolicitud = ({
             })
           };
           productosActualizados[indice] = actualizado;
-          itemsRevision.push({
-            item: actualizado,
-            indice,
-            numero: actualizado.seguimientoCliente?.cantidadRevisiones,
-            hasta: actualizado.seguimientoCliente?.fechaVencimientoRevision
-          });
         });
         cambios.productos = productosActualizados;
       }
@@ -125,16 +118,9 @@ export const useSeguimientoSolicitud = ({
       });
       await updateDoc(doc(db, 'solicitudes', id), cambios);
 
-      // Avisos a Compras (ver src/emails). No bloquean ni fallan el registro si el correo no sale.
+      // Aviso a Compras de la prórroga (ver src/emails). Las revisiones no envían correo: no requieren respuesta.
+      // No bloquea ni falla el registro si el correo no sale.
       const solicitudCorreo = { ...solicitud, id };
-      if (itemsRevision.length > 0) {
-        enviarEvento('revision_registrada', {
-          solicitud: solicitudCorreo,
-          items: itemsRevision,
-          comentario,
-          registradoPor: auth.currentUser?.email || ''
-        });
-      }
       if (cambios.prorrogaCliente) {
         enviarEvento('prorroga_solicitada', {
           solicitud: solicitudCorreo,
