@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useParams, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { 
-  ChevronLeft, CheckCircle2, MessageSquare, ArrowLeftRight, Check, X,
+  CheckCircle2, MessageSquare, ArrowLeftRight, Check, X,
   ChevronDown, Link as LinkIcon, Save, AlertCircle, TrendingDown, MessageCircleQuestion, Undo2, RotateCcw
 } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -356,60 +357,59 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
   return (
     <PageContainer className="@container fade-in">
       {/* Encabezado Superior */}
-      <div className="pedido-detail-header flex flex-wrap items-start justify-between gap-3 mb-4 md:mb-8">
-        <div className="pedido-detail-heading flex min-w-0 flex-[1_1_24rem] items-center gap-2 md:gap-4">
-          <button onClick={() => navigate(-1)} className="p-1.5 md:p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600 shrink-0">
-            <ChevronLeft size={24} className="hidden md:block" />
-            <ChevronLeft size={20} className="md:hidden" />
-          </button>
-          <div className="min-w-0">
-            <h1 className="text-xl md:text-3xl font-black text-slate-800 italic uppercase tracking-tighter leading-none md:leading-normal">
-              <span className="hidden md:inline">Detalle de Pedido</span>
-              <span className="md:hidden">Pedido Manual</span>
-            </h1>
-            <p className="pedido-detail-reference text-slate-500 font-bold text-[10px] md:text-xs uppercase tracking-widest hidden md:block">
-              Ref: {solicitudBase.correlativo} — Cliente: {solicitudBase.cliente}
-            </p>
-          </div>
-        </div>
-        <div className="pedido-detail-actions flex flex-wrap items-center gap-2">
-          {hayDecisionesEnParcial && (
-            <button
-              type="button"
-              onClick={() => setConsultaDecisionData(prepararDatosDecisionSolicitud({ ...solicitudBase, id: solicitudBase?.id || id }))}
-              className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 cursor-pointer"
-              title="Consultar motivos de los ítems afectados"
-            >
-              <MessageCircleQuestion size={13} /> <span className="hidden md:inline">Consultar motivo</span><span className="md:hidden">Consulta</span>
-            </button>
-          )}
-          {hayVentaPerdidaEnParcial && (
-            <button type="button" onClick={() => abrirConsultaVentaPerdida()} className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 cursor-pointer" title="Consultar motivos de ventas perdidas">
-              <MessageCircleQuestion size={13} /> <span className="hidden md:inline">Consultar VP</span><span className="md:hidden">VP</span>
-            </button>
-          )}
-          {debeMostrarBotonVentaPerdida && (
-            <button
-              onClick={() => handleAbrirVentaPerdida()}
-              className="pedido-loss-button hidden md:flex bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-md text-[11px] font-semibold uppercase items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-            >
-              <TrendingDown size={13} className="text-slate-500" />
-              <span>
-                {totalItemsSeleccionados > 0
-                  ? `Registrar Venta Perdida (${totalItemsSeleccionados} sel.)`
-                  : 'Registrar Venta Perdida'}
-              </span>
-            </button>
-          )}
-          {allClosed && (
-            <div className="bg-slate-800 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-[10px] font-black uppercase flex items-center gap-1.5 shadow-md">
-              <CheckCircle2 size={14} className="text-emerald-400" />
-              <span className="hidden md:inline">Pedido Finalizado</span>
-              <span className="md:hidden">Finalizado</span>
+      <PageHeader
+        onBack={() => navigate(-1)}
+        title={(
+          <>
+            <span className="hidden md:inline">Detalle de Pedido</span>
+            <span className="md:hidden">Pedido Manual</span>
+          </>
+        )}
+        subtitle={(
+          <span className="pedido-detail-reference hidden md:inline">
+            Ref: {solicitudBase.correlativo} — Cliente: {solicitudBase.cliente}
+          </span>
+        )}
+        actions={(
+            <div className="pedido-detail-actions flex flex-wrap items-center gap-2">
+              {hayDecisionesEnParcial && (
+                <button
+                  type="button"
+                  onClick={() => setConsultaDecisionData(prepararDatosDecisionSolicitud({ ...solicitudBase, id: solicitudBase?.id || id }))}
+                  className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 cursor-pointer"
+                  title="Consultar motivos de los ítems afectados"
+                >
+                  <MessageCircleQuestion size={13} /> <span className="hidden md:inline">Consultar motivo</span><span className="md:hidden">Consulta</span>
+                </button>
+              )}
+              {hayVentaPerdidaEnParcial && (
+                <button type="button" onClick={() => abrirConsultaVentaPerdida()} className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-[9px] font-bold uppercase text-slate-600 hover:bg-slate-50 cursor-pointer" title="Consultar motivos de ventas perdidas">
+                  <MessageCircleQuestion size={13} /> <span className="hidden md:inline">Consultar VP</span><span className="md:hidden">VP</span>
+                </button>
+              )}
+              {debeMostrarBotonVentaPerdida && (
+                <button
+                  onClick={() => handleAbrirVentaPerdida()}
+                  className="pedido-loss-button hidden md:flex bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-md text-[11px] font-semibold uppercase items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                >
+                  <TrendingDown size={13} className="text-slate-500" />
+                  <span>
+                    {totalItemsSeleccionados > 0
+                      ? `Registrar Venta Perdida (${totalItemsSeleccionados} sel.)`
+                      : 'Registrar Venta Perdida'}
+                  </span>
+                </button>
+              )}
+              {allClosed && (
+                <div className="bg-slate-800 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-[10px] font-black uppercase flex items-center gap-1.5 shadow-md">
+                  <CheckCircle2 size={14} className="text-emerald-400" />
+                  <span className="hidden md:inline">Pedido Finalizado</span>
+                  <span className="md:hidden">Finalizado</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+        )}
+      />
 
       <SeguimientoClienteBanner
         resumen={resumenSeguimientoCliente}
@@ -572,9 +572,9 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
         onFiltrar={setFiltroTurno}
       />
 
-      <div className="@container/pedido pedido-items-container w-full min-w-0 bg-white rounded-3xl shadow-[var(--tf-shadow-card)] overflow-hidden mb-6">
-        <div className="p-4 bg-slate-900 flex justify-between items-center">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Listado de Ítems</span>
+      <div className="@container/pedido pedido-items-container tf-tabla-card w-full min-w-0 mb-6">
+        <div className="px-4 pb-3 pt-2">
+          <span className="text-sm font-medium text-slate-700">Listado de Ítems</span>
         </div>
 
         {/* La presentación cambia según los 55rem útiles del contenedor, no el ancho de ventana. */}
@@ -614,7 +614,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
         {/* Mínimos de columnas principales: Sel. 3rem + Producto 18rem + Mensajes 7rem + Estado 10rem + Acciones 18rem = 56rem. */}
         <div className="pedido-items-desktop">
           <div className="pedido-items-table-scroll">
-          <table className="pedido-items-table w-full text-left">
+          <table className="pedido-items-table tf-tabla text-left">
             <colgroup>
               <col className="w-12" />
               <col className="w-72" />
@@ -622,8 +622,8 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
               <col className="w-40" />
               {mostrarColumnaAcciones && <col className="w-72" />}
             </colgroup>
-            <thead className="text-[10px] uppercase font-black tracking-widest text-slate-400 border-b border-slate-100">
-              <tr>
+            <thead>
+              <tr className="tf-tabla-head">
                 <th className="p-4 text-center">Sel. ítem</th>
                 <th className="p-4">Producto</th>
                 <th className="p-4 text-center">Mensajes</th>
@@ -631,7 +631,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                 {mostrarColumnaAcciones && <th className="p-4 text-right">Acciones</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {filteredItems.length === 0 && (
                 <tr>
                   <td colSpan={mostrarColumnaAcciones ? 5 : 4} className="p-8 text-center text-slate-500 text-sm font-medium">No hay ítems en esta vista.</td>
