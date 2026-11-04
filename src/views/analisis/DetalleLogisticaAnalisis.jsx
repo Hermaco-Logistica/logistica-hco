@@ -6,6 +6,7 @@ import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 import { Etiqueta } from '../../components/Etiqueta';
+import { TablePagination } from '../../components/ui/TablePagination';
 
 export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
   const { filtro } = useParams();
@@ -391,31 +392,13 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
         )}
       </div>
 
-      {/* PAGINACIÓN DE 10 EN 10 */}
-      {totalPages > 1 && (
-        <div className="p-3 bg-white rounded-2xl shadow-[var(--tf-shadow-card)] flex items-center justify-between">
-          <button 
-            type="button"
-            onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-            disabled={safeCurrentPage === 1}
-            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-          >
-            Anterior
-          </button>
-          <span className="text-[11px] font-medium text-slate-400 text-center px-2">
-            Página <span className="font-bold text-slate-600">{safeCurrentPage}</span> de {totalPages} <br className="sm:hidden" />
-            <span className="hidden sm:inline">({paginatedOrdenes.length} regs)</span>
-          </span>
-          <button 
-            type="button"
-            onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
-            disabled={safeCurrentPage === totalPages}
-            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-          >
-            Siguiente
-          </button>
-        </div>
-      )}
+      <TablePagination
+        page={safeCurrentPage}
+        totalPages={totalPages}
+        totalItems={ordenesFiltradas.length}
+        noun="regs"
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };
