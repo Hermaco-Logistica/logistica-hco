@@ -104,7 +104,7 @@ export const TrackingModal = ({
         subtitulo={esAdminOComprador ? tituloSeguimiento : undefined}
         referencia={rfqLabel}
         icono={Truck}
-        tono="azul"
+        tono="rol"
         onCerrar={onClose}
       >
         <div className="mt-2 flex items-center gap-2">
