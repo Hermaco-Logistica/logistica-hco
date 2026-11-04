@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
  * Cabecera de página dentro del contenido: [←] título [chip]  ·····  [acciones]
  * `subtitle` y `statusChip` aceptan texto o nodos. `onBack` solo en detalles.
  * En móvil el título y las acciones se apilan.
- * (components/detalle/PageHeader.jsx sigue sirviendo a los detalles hasta la Fase 4, donde se consolida aquí.)
+ * (Sustituyó al antiguo components/detalle/PageHeader.jsx, ya eliminado.)
  */
 export const PageHeader = ({ title, subtitle, onBack, backLabel = 'Volver', statusChip, actions, className = '' }) => (
   <header

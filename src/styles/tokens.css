@@ -34,11 +34,11 @@
  *   ambos (emails.test.js solo busca un literal, #e0f2fe).
  *
  * VALORES QUE NO CALZAN CON UN TOKEN (listados, no redondeados):
- *   - mode-air / mode-sea: las tablas usan emerald-700 (#047857) y blue-700 (#1d4ed8), no estos valores.
+ *   - mode-air / mode-sea: las tablas de detalle usan emerald-700 y blue-700 (y la Calculadora emerald-600 y blue-600), no estos valores.
  *   - Estados: las etiquetas de usuario (TONOS en utils/etiquetas.js) usan pasteles de Tailwind distintos
  *     (emerald-100/800, rose-100/700, amber-100/800, sky-100/700). Irán en la familia tag-* (C2).
- *   - Color del rol duplicado fuera de index.css (Sidebar.jsx, BottomTabBar.jsx, roleColors.js, theme.js):
- *     no migrados en C1.
+ *   - Color del rol fuera de index.css (Sidebar.jsx, BottomTabBar.jsx, roleColors.js, theme.js): migrado en C3b a los
+ *     tokens nav-* y analysis-*; los valores no coinciden con primary/primary-strong (el administrador, en ninguno).
  */
 
 /* Tokens fijos y valores sin rol. `static` emite todas las variables aunque ninguna clase las use todavía. */

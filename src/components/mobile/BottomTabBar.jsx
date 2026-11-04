@@ -21,29 +21,21 @@ const PAGE_BG = 'var(--color-surface-muted)'; // #f8fafc
 const ROLE_THEMES = {
   comprador: {
     activeText: 'text-nav-accent-strong',
-    activeBg: 'bg-blue-50',
-    indicator: 'bg-blue-600',
     glowColor: 'var(--color-nav-glow)',
     ringColor: PAGE_BG,
   },
   vendedor: {
     activeText: 'text-nav-accent-strong',
-    activeBg: 'bg-violet-50',
-    indicator: 'bg-violet-600',
     glowColor: 'var(--color-nav-glow)',
     ringColor: PAGE_BG,
   },
   gerente: {
     activeText: 'text-nav-accent-strong',
-    activeBg: 'bg-emerald-50',
-    indicator: 'bg-emerald-600',
     glowColor: 'var(--color-nav-glow)',
     ringColor: PAGE_BG,
   },
   administrador: {
     activeText: 'text-nav-accent-strong',
-    activeBg: 'bg-rose-50',
-    indicator: 'bg-rose-600',
     glowColor: 'var(--color-nav-glow)',
     ringColor: PAGE_BG,
   },

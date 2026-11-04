@@ -23,7 +23,6 @@
       0 0 0 1px oklch(0 0 0 / 0.05),
       0 1px 2px -1px oklch(0 0 0 / 0.06),
       0 4px 16px -4px oklch(0 0 0 / 0.06);
-    --detalle-bg: var(--color-surface-muted); /* sin uso hoy; apunta a surface-muted (fijo) y no a background (cambia por rol) */
     --detalle-surface: var(--color-surface);
     --detalle-surface-muted: var(--color-surface-muted);
     --detalle-border: var(--color-border);
@@ -309,22 +308,6 @@
   .tf-sidebar-shell {
     background-color: var(--tf-color-sidebar);
     color: var(--color-sidebar-foreground);
-  }
-
-  .tf-brand-accent {
-    color: var(--tf-color-brand);
-  }
-
-  .tf-title {
-    color: var(--tf-color-text-primary);
-    font-weight: 900;
-  }
-
-  .tf-subtitle {
-    color: var(--tf-color-text-muted);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
   }
 
   .tf-surface-panel {
