@@ -56,7 +56,7 @@
   --color-background: #f8fafc;
   --color-surface: #ffffff;
   --color-surface-muted: #f8fafc;
-  --color-surface-hover: #f8fafc; /* fondo de la fila en hover de .tf-tabla (valor actual, igual a surface-muted) */
+  --color-surface-hover: #f8fafc; /* hoy no se usa: el hover de .tf-tabla usa color-mix de --color-border al 22 % (index.css) */
   --color-border: #e2e8f0;
   --color-border-subtle: #f1f5f9;
   --color-border-strong: #aeb7c2;

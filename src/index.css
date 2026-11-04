@@ -382,10 +382,13 @@
   .tf-tabla-head > th:last-child { border-radius: 0 12px 12px 0; }
   .tf-tabla tbody > tr + tr > td { border-top: 1px solid var(--color-border-subtle); }
   .tf-tabla tbody > tr > td {
-    transition-property: background-color;
+    transition-property: background-color, box-shadow;
     transition-duration: 150ms;
   }
-  .tf-tabla tbody > tr:hover > td { background-color: var(--color-surface-hover); border-top-color: transparent; }
+  /* Hover: una capa semitransparente (sombra interior) que se SUMA al fondo del <tr> y de la <td>, en vez de reemplazarlo,
+     para que el color de estado de la fila siga visible. Respeta el radio de las celdas extremas.
+     --color-surface-hover (tokens.css) hoy no se usa: el hover usa color-mix de --color-border al 22 %. */
+  .tf-tabla tbody > tr:hover > td { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--color-border) 22%, transparent); border-top-color: transparent; }
   .tf-tabla tbody > tr:hover + tr > td { border-top-color: transparent; }
   .tf-tabla tbody > tr:hover > td:first-child { border-radius: 12px 0 0 12px; }
   .tf-tabla tbody > tr:hover > td:last-child { border-radius: 0 12px 12px 0; }
