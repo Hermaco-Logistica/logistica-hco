@@ -94,27 +94,10 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Contenedor unificado: Filtros + Tabs + Tabla ─────────────────────────── */
-.prorrogas-box {
-  border: 1px solid var(--detalle-border);
-  border-radius: 24px;
-  background: var(--detalle-surface);
-  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  overflow: hidden;
-}
-
-/* Sección 1: Filtros */
-.prorrogas-filters {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--detalle-border);
-  background: var(--detalle-surface);
-}
-
+/* ── Tarjeta de filtros (fechas + buscador) y tarjeta de tabla: sus cajas están en ProrrogasPage.jsx ── */
 .prorrogas-search-section {
   display: grid;
   gap: 6px;
-  padding: 10px 16px 12px;
-  background: var(--detalle-surface-muted);
 }
 
 .prorrogas-search-label {
@@ -264,12 +247,7 @@
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 }
 
-/* Sección 2: Pestañas desplazables, con una pista visible en móvil */
-.prorrogas-tabs-container {
-  border-top: 1px solid var(--detalle-border);
-  background: var(--detalle-surface);
-}
-
+/* Pestañas desplazables, con una pista visible en móvil */
 .prorrogas-tabs {
   display: flex;
   overflow-x: auto;
