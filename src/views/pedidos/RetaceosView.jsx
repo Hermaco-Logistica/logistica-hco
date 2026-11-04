@@ -110,7 +110,7 @@ export const RetaceosView = ({ role }) => {
   return (
     <PageContainer className="animate-in fade-in duration-500 pb-10">
       <PageHeader
-        title={<>Retaceos <span className="text-blue-500">.</span></>}
+        title={<>Retaceos <span className="text-primary">.</span></>}
         subtitle="Desglose de Aduana"
       />
 
@@ -166,7 +166,7 @@ export const RetaceosView = ({ role }) => {
                       type="date" 
                       value={editForm.fechaStr}
                       onChange={e => setEditForm({...editForm, fechaStr: e.target.value})}
-                      className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none focus:border-blue-500"
+                      className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none focus:border-primary"
                     />
                   ) : (
                     <span className="text-xs font-bold text-slate-600 uppercase">
@@ -188,11 +188,11 @@ export const RetaceosView = ({ role }) => {
                       type="text" 
                       value={editForm.correlativoRetaceo}
                       onChange={e => setEditForm({...editForm, correlativoRetaceo: e.target.value})}
-                      className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-bold uppercase outline-none focus:border-blue-500"
+                      className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-bold uppercase outline-none focus:border-primary"
                       placeholder="Ej: A-1234"
                     />
                   ) : (
-                    <span className="text-xs font-black text-blue-700 uppercase">{r.correlativoRetaceo || '---'}</span>
+                    <span className="text-xs font-black text-primary-strong uppercase">{r.correlativoRetaceo || '---'}</span>
                   )}
                 </td>
                 <td className="p-4">
@@ -201,7 +201,7 @@ export const RetaceosView = ({ role }) => {
                       type="text" 
                       value={editForm.guia}
                       onChange={e => setEditForm({...editForm, guia: e.target.value})}
-                      className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-bold uppercase outline-none focus:border-blue-500"
+                      className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-bold uppercase outline-none focus:border-primary"
                       placeholder="Guía..."
                     />
                   ) : (
@@ -210,7 +210,7 @@ export const RetaceosView = ({ role }) => {
                 </td>
                 <td className="p-4 flex items-center justify-center gap-2">
                   {editandoId === r.id ? (
-                    <button onClick={() => handleSave(r.id)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors">
+                    <button onClick={() => handleSave(r.id)} className="p-2 bg-primary-soft text-primary-strong rounded-lg hover:bg-primary/15 transition-colors">
                       <Save size={16} />
                     </button>
                   ) : (
