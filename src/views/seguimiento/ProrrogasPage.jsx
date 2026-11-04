@@ -509,8 +509,8 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
                     <col key={indice} style={{ width: `${ancho}%` }} />
                   ))}
                 </colgroup>
-                <thead className="prorrogas-thead">
-                  <tr>
+                <thead>
+                  <tr className="tf-tabla-head">
                     <th>Solicitud</th>
                     {!esVendedor && <th>Vendedor</th>}
                     <th>Estado</th>

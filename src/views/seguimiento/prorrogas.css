@@ -326,18 +326,9 @@
   text-align: left;
 }
 
-.prorrogas-thead {
-  background: var(--tf-color-sidebar);
-  color: var(--color-foreground-inverse);
-}
-
-.prorrogas-thead th {
+/* Encabezado de la tabla: tf-tabla-head (index.css) pone fondo, color y tipografía; aquí solo se conserva el padding de 16px. */
+.prorrogas-table .tf-tabla-head > th {
   padding: 16px;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #f1f5f9;
 }
 
 .prorrogas-tbody tr.prorrogas-tr {
