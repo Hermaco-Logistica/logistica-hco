@@ -11,10 +11,10 @@
 @layer base {
   :root {
     --tf-font-sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-    --tf-color-text-primary: #1e293b;
-    --tf-color-text-muted: #64748b;
-    --tf-color-surface: #ffffff;
-    --tf-color-border: #e2e8f0;
+    --tf-color-text-primary: var(--color-foreground);
+    --tf-color-text-muted: var(--color-foreground-muted);
+    --tf-color-surface: var(--color-surface);
+    --tf-color-border: var(--color-border);
     --tf-color-surface-muted: var(--color-surface-muted);
     --tf-radius-panel: 1.5rem;
     --tf-shadow-panel: 0 16px 30px rgba(15, 23, 42, 0.08);
@@ -24,30 +24,30 @@
       0 1px 2px -1px oklch(0 0 0 / 0.06),
       0 4px 16px -4px oklch(0 0 0 / 0.06);
     --detalle-bg: var(--color-surface-muted); /* sin uso hoy; apunta a surface-muted (fijo) y no a background (cambia por rol) */
-    --detalle-surface: #ffffff;
+    --detalle-surface: var(--color-surface);
     --detalle-surface-muted: var(--color-surface-muted);
     --detalle-border: var(--color-border);
-    --detalle-border-strong: #aeb7c2;
+    --detalle-border-strong: var(--color-border-strong);
     --detalle-text: var(--color-foreground);
     --detalle-text-muted: #586575;
     --detalle-text-subtle: var(--color-foreground-muted);
-    --detalle-accent-info: #1d5e87;
-    --detalle-accent-warning: #8a5a00;
-    --detalle-accent-danger: #a42b32;
-    --detalle-accent-success: #176b45;
-    --detalle-bg-warning: #fff7e8;
-    --detalle-bg-danger: #fff0f0;
-    --detalle-bg-success: #eef8f2;
-    --detalle-bg-info: #eff6fa;
+    --detalle-accent-info: var(--color-info);
+    --detalle-accent-warning: var(--color-warning);
+    --detalle-accent-danger: var(--color-danger);
+    --detalle-accent-success: var(--color-success);
+    --detalle-bg-warning: var(--color-warning-soft);
+    --detalle-bg-danger: var(--color-danger-soft);
+    --detalle-bg-success: var(--color-success-soft);
+    --detalle-bg-info: var(--color-info-soft);
     --detalle-bg-selected: #f0f5f5;
     --detalle-bg-row-success: #f1f7f3;
     --detalle-bg-row-danger: #fff5f4;
     --detalle-shadow-float: 0 -4px 18px rgb(15 23 42 / 12%);
-    --detalle-success-hover: #105b39;
-    --detalle-accent-neutral: #4b5566;
-    --detalle-bg-neutral: #f0f2f5;
-    --detalle-air: #247a9b;
-    --detalle-sea: #536f9b;
+    --detalle-success-hover: var(--color-success-strong);
+    --detalle-accent-neutral: var(--color-status-neutral);
+    --detalle-bg-neutral: var(--color-status-neutral-soft);
+    --detalle-air: var(--color-mode-air);
+    --detalle-sea: var(--color-mode-sea);
     --detalle-radius-control: var(--radius-control);
     --detalle-radius-card: var(--radius-card);
     --detalle-radius-inner: var(--radius-inner);
@@ -248,15 +248,15 @@
   /* Scrollbar delgado (8px) para el área de contenido. */
   .tf-scroll {
     scrollbar-width: thin;
-    scrollbar-color: rgb(100 116 139 / 0.35) transparent;
+    scrollbar-color: color-mix(in srgb, var(--color-foreground-muted) 35%, transparent) transparent;
   }
   .tf-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
   .tf-scroll::-webkit-scrollbar-track { background: transparent; }
   .tf-scroll::-webkit-scrollbar-thumb {
-    background-color: rgb(100 116 139 / 0.35);
+    background-color: color-mix(in srgb, var(--color-foreground-muted) 35%, transparent);
     border-radius: 999px;
   }
-  .tf-scroll::-webkit-scrollbar-thumb:hover { background-color: rgb(100 116 139 / 0.55); }
+  .tf-scroll::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--color-foreground-muted) 55%, transparent); }
 
   /* Valores y alias por rol: ver styles/tokens.css. Abajo solo quedan los remapeos de utilidades por rol. */
 
@@ -308,7 +308,7 @@
 
   .tf-sidebar-shell {
     background-color: var(--tf-color-sidebar);
-    color: #ffffff;
+    color: var(--color-sidebar-foreground);
   }
 
   .tf-brand-accent {
@@ -349,9 +349,9 @@
     transition-duration: 150ms;
   }
   .tf-campo:focus {
-    background-color: #ffffff;
-    border-color: #64748b;
-    box-shadow: 0 0 0 4px rgb(100 116 139 / 0.2);
+    background-color: var(--color-surface);
+    border-color: var(--color-foreground-muted);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-foreground-muted) 20%, transparent);
   }
   .tf-campo:disabled { cursor: not-allowed; opacity: 0.6; }
   @media (prefers-reduced-motion: reduce) {
@@ -380,12 +380,12 @@
   }
   .tf-tabla-head > th:first-child { border-radius: 12px 0 0 12px; }
   .tf-tabla-head > th:last-child { border-radius: 0 12px 12px 0; }
-  .tf-tabla tbody > tr + tr > td { border-top: 1px solid #f1f5f9; }
+  .tf-tabla tbody > tr + tr > td { border-top: 1px solid var(--color-border-subtle); }
   .tf-tabla tbody > tr > td {
     transition-property: background-color;
     transition-duration: 150ms;
   }
-  .tf-tabla tbody > tr:hover > td { background-color: var(--tf-color-surface-muted); border-top-color: transparent; }
+  .tf-tabla tbody > tr:hover > td { background-color: var(--color-surface-hover); border-top-color: transparent; }
   .tf-tabla tbody > tr:hover + tr > td { border-top-color: transparent; }
   .tf-tabla tbody > tr:hover > td:first-child { border-radius: 12px 0 0 12px; }
   .tf-tabla tbody > tr:hover > td:last-child { border-radius: 0 12px 12px 0; }
@@ -396,7 +396,7 @@
 /* Esto asegura que el sidebar se vea profesional incluso si Tailwind tarda un milisegundo en cargar */
 aside {
   background-color: var(--tf-color-sidebar);
-  color: #ffffff;
+  color: var(--color-sidebar-foreground);
 }
 
 @media print {
