@@ -608,13 +608,13 @@ export const Calculadora = ({ onGuardar }) => {
             <div className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between text-slate-500">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <Plane size={14} className="text-emerald-600 shrink-0" />
+                  <Plane size={14} className="text-mode-air shrink-0" />
                   <span className="text-[10px] font-black uppercase tracking-tight truncate">Fact. Aéreo</span>
                 </div>
               </div>
               <div className="mt-1.5">
                 {!mostrarFactoresAereosFijados ? (
-                  <span className="font-mono font-black text-emerald-800 text-sm sm:text-base truncate block">
+                  <span className="font-mono font-black text-mode-air-800 text-sm sm:text-base truncate block">
                     {factorA.toFixed(2)}
                   </span>
                 ) : (
@@ -622,7 +622,7 @@ export const Calculadora = ({ onGuardar }) => {
                     {factoresAereosFijados.map(({ factor, cantidad }) => (
                       <Etiqueta key={factor} tono="exito" className="justify-between">
                         <span>FA {factor}</span>
-                        <span className="text-emerald-600/80 bg-white px-1 rounded-sm border border-emerald-100 shadow-2xs">x{cantidad}</span>
+                        <span className="text-mode-air/80 bg-white px-1 rounded-sm border border-mode-air-100 shadow-2xs">x{cantidad}</span>
                       </Etiqueta>
                     ))}
                     {!esSoloLectura && tienePendientesGlobales && (
@@ -710,10 +710,10 @@ export const Calculadora = ({ onGuardar }) => {
         </div>
 
         <div className="hidden md:flex w-full flex-wrap gap-4 xl:w-auto xl:flex-nowrap shrink-0">
-          <div className="min-w-60 flex-1 text-right px-5 py-2 bg-emerald-50 rounded-xl border border-emerald-100 xl:flex-none">
-            <span className="text-[9px] block text-emerald-600 font-black uppercase tracking-widest">Factor Aéreo Aplicado</span>
+          <div className="min-w-60 flex-1 text-right px-5 py-2 bg-mode-air-soft rounded-xl border border-mode-air-100 xl:flex-none">
+            <span className="text-[9px] block text-mode-air font-black uppercase tracking-widest">Factor Aéreo Aplicado</span>
             {!mostrarFactoresAereosFijados ? (
-              <span className="text-2xl font-black text-emerald-700">{factorA.toFixed(2)}</span>
+              <span className="text-2xl font-black text-mode-air-strong">{factorA.toFixed(2)}</span>
             ) : (
               <div ref={factoresRef} className="relative mt-1">
                 <button
@@ -741,14 +741,14 @@ export const Calculadora = ({ onGuardar }) => {
               </div>
             )}
           </div>
-          <div className="text-right px-5 py-2 bg-blue-50 rounded-xl border border-blue-100 flex flex-col items-end">
-            <span className="text-[9px] block text-blue-600 font-black uppercase tracking-widest">Factor Marítimo Aplicado</span>
+          <div className="text-right px-5 py-2 bg-mode-sea-soft rounded-xl border border-mode-sea-100 flex flex-col items-end">
+            <span className="text-[9px] block text-mode-sea font-black uppercase tracking-widest">Factor Marítimo Aplicado</span>
             <input 
               type="number" 
               step="0.01"
               min="0"
               disabled={esSoloLectura}
-              className="bg-transparent font-black text-blue-700 outline-none w-16 text-2xl text-right border-b border-transparent focus:border-blue-500 disabled:opacity-70" 
+              className="bg-transparent font-black text-mode-sea-strong outline-none w-16 text-2xl text-right border-b border-transparent focus:border-blue-500 disabled:opacity-70" 
               value={factorM} 
               onChange={handleNumericInput(setFactorM)} 
               onFocus={(e) => e.target.select()}
@@ -1242,22 +1242,22 @@ export const Calculadora = ({ onGuardar }) => {
               {/* Fila Financiera: Aéreo vs Marítimo en bloques limpios y con jerarquía */}
               <div className="px-3 pb-3 pt-1 grid grid-cols-2 gap-2.5 bg-white border-t border-slate-100">
                 {/* Modalidad Aérea */}
-                <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-2.5 space-y-1.5">
+                <div className="bg-mode-air-soft/60 border border-mode-air-border/80 rounded-xl p-2.5 space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <Plane size={13} className="text-emerald-600 shrink-0" />
-                      <span className="text-[10px] font-black text-emerald-900 uppercase tracking-wide">Aéreo</span>
+                      <Plane size={13} className="text-mode-air shrink-0" />
+                      <span className="text-[10px] font-black text-mode-air-900 uppercase tracking-wide">Aéreo</span>
                     </div>
                     <Etiqueta tono={rentaA < 20 ? 'peligro' : 'exito'}>
                       {rentaA > 0 ? `${rentaA.toFixed(0)}%` : '0%'}
                     </Etiqueta>
                   </div>
 
-                  <div className="text-sm sm:text-base font-black text-emerald-900 font-mono truncate">
+                  <div className="text-sm sm:text-base font-black text-mode-air-900 font-mono truncate">
                     {ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}
                   </div>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-emerald-200/60 text-[10px]">
+                  <div className="flex items-center justify-between pt-1 border-t border-mode-air-border/60 text-[10px]">
                     <span className="font-bold text-emerald-700/80">Factor Venta</span>
                     <div className="flex items-center gap-1">
                       <input
@@ -1481,9 +1481,9 @@ export const Calculadora = ({ onGuardar }) => {
                 {mostrarPicard ? (
                   <>
                     <th className="p-3 w-20 text-center">FOB SKF</th>
-                    <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />Venta (A)</span></th>
-                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />Costo SKF</span></th>
-                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />FV SKF</span></th>
+                    <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-air"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-air" />Venta (A)</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-air"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-air" />Costo SKF</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-air"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-air" />FV SKF</span></th>
                     <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-amber-700"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-amber-700" />FOB Picard</span></th>
                     <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-amber-700"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-amber-700" />Costo Picard</span></th>
                     <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-amber-700"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-amber-700" />FV Picard</span></th>
@@ -1491,12 +1491,12 @@ export const Calculadora = ({ onGuardar }) => {
                 ) : (
                   <>
                     <th className="p-3 w-20 text-center">FOB Unit</th>
-                    <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />Venta (A)</span></th>
-                    <th className="px-1.5 py-3 w-16 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />% Renta</span></th>
+                    <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-air"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-air" />Venta (A)</span></th>
+                    <th className="px-1.5 py-3 w-16 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-air"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-air" />% Renta</span></th>
                   </>
                 )}
-                <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-blue-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-blue-600" />Venta (M)</span></th>
-                <th className="px-1.5 py-3 w-16 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-blue-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-blue-600" />% Renta</span></th>
+                <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-sea"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-sea" />Venta (M)</span></th>
+                <th className="px-1.5 py-3 w-16 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-sea"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-sea" />% Renta</span></th>
                 <th className="p-3 w-32">Entrega (A/M)</th>
                 <th className="p-3 w-32">Notas</th>
                 <th className="py-3 px-1 w-12 text-center">Acción</th>
@@ -1620,7 +1620,7 @@ export const Calculadora = ({ onGuardar }) => {
                         )
                       )}
                       {Number(p.factorA) > 0 && (
-                        <span className="mt-2 inline-flex border-l-2 border-emerald-400 pl-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                        <span className="mt-2 inline-flex border-l-2 border-emerald-400 pl-2 text-[10px] font-semibold uppercase tracking-wide text-mode-air-strong">
                           FA {Number(p.factorA).toFixed(2)} fijado
                         </span>
                       )}
@@ -1641,15 +1641,15 @@ export const Calculadora = ({ onGuardar }) => {
                                  onFocus={(e) => e.target.select()} />
                          </td>
                          {/* Venta (A) */}
-                         <td className="p-2 text-center bg-emerald-50/20">
-                           <div className="font-black text-emerald-600 text-sm">{ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}</div>
+                         <td className="p-2 text-center bg-mode-air-soft/20">
+                           <div className="font-black text-mode-air text-sm">{ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}</div>
                            <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
                              <span className="text-slate-400 font-bold italic">FVA:</span>
                              <input type="number" step="0.01" min="0" disabled={isRowDisabled} className="w-8 border-b outline-none text-center bg-transparent font-bold disabled:opacity-70" value={p.fva} onChange={(e) => handleTableNumericInput(idx, 'fva', e.target.value)} onFocus={(e) => e.target.select()} />
                            </div>
                          </td>
                          {/* Costo SKF */}
-                        <td className="p-2 text-center bg-emerald-50/10 font-bold text-slate-700">
+                        <td className="p-2 text-center bg-mode-air-soft/10 font-bold text-slate-700">
                           {landedA > 0 ? `$${landedA.toFixed(2)}` : '—'}
                         </td>
                         {/* Factor Venta SKF */}
@@ -1704,8 +1704,8 @@ export const Calculadora = ({ onGuardar }) => {
                                  onFocus={(e) => e.target.select()} />
                         </td>
                         {/* Venta (A) */}
-                        <td className="p-2 text-center bg-emerald-50/20">
-                           <div className="font-black text-emerald-600 text-sm">{ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}</div>
+                        <td className="p-2 text-center bg-mode-air-soft/20">
+                           <div className="font-black text-mode-air text-sm">{ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}</div>
                            <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
                               <span className="text-slate-400 font-bold italic">FVA:</span>
                               <input type="number" step="0.01" min="0" disabled={isRowDisabled} className="w-8 border-b outline-none text-center bg-transparent font-bold disabled:opacity-70" 
@@ -1714,7 +1714,7 @@ export const Calculadora = ({ onGuardar }) => {
                            </div>
                         </td>
                         {/* % Renta */}
-                        <td className="p-2 text-center bg-emerald-100/30">
+                        <td className="p-2 text-center bg-mode-air-100/30">
                           <Etiqueta tono={rentaA < 20 ? 'peligro' : 'exito'} tamano="normal">
                               {rentaA > 0 ? `${rentaA.toFixed(0)}%` : '0%'}
                           </Etiqueta>
@@ -1722,8 +1722,8 @@ export const Calculadora = ({ onGuardar }) => {
                       </>
                     )}
 
-                    <td className="p-2 text-center bg-blue-50/20">
-                       <div className="font-black text-blue-600 text-sm">{ventaM > 0 ? `$${ventaM.toFixed(2)}` : '—'}</div>
+                    <td className="p-2 text-center bg-mode-sea-soft/20">
+                       <div className="font-black text-mode-sea text-sm">{ventaM > 0 ? `$${ventaM.toFixed(2)}` : '—'}</div>
                        <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
                           <span className="text-slate-400 font-bold italic">FVM:</span>
                           <input type="number" step="0.01" min="0" disabled={isRowDisabled} className="w-8 border-b outline-none text-center bg-transparent font-bold disabled:opacity-70" 
@@ -1731,7 +1731,7 @@ export const Calculadora = ({ onGuardar }) => {
                                  onFocus={(e) => e.target.select()} />
                        </div>
                     </td>
-                    <td className="p-2 text-center bg-blue-100/30">
+                    <td className="p-2 text-center bg-mode-sea-100/30">
                       <Etiqueta tono={rentaM < 15 ? 'peligro' : 'azul'} tamano="normal">
                           {rentaM > 0 ? `${rentaM.toFixed(0)}%` : '0%'}
                       </Etiqueta>
