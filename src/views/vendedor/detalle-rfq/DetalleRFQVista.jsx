@@ -448,7 +448,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
       <div className="rfq-detail-lower-grid">
         <div className="rfq-documentation-panel bg-white rounded-2xl sm:rounded-[2.5rem] shadow-[var(--tf-shadow-card)] sm:shadow-[var(--tf-shadow-card)] overflow-hidden transition-all duration-300 self-start w-full">
           <button type="button" onClick={() => setDocumentacionOpen(!documentacionOpen)} className="w-full p-4 sm:p-8 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors cursor-pointer text-left focus:outline-none">
-            <h2 className="text-sm font-black text-slate-800 uppercase flex items-center gap-2"><LinkIcon size={18} className="text-emerald-500" /> Documentación Extra</h2>
+            <h2 className="text-sm font-black text-slate-800 uppercase flex items-center gap-2"><LinkIcon size={18} className="text-primary" /> Documentación Extra</h2>
             <div className={`transform transition-transform duration-300 text-slate-400 ${documentacionOpen ? 'rotate-180' : ''}`}><ChevronDown size={20} /></div>
           </button>
           <div className={`grid transition-all duration-300 ease-in-out ${documentacionOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
@@ -458,7 +458,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 italic">Enlace a Orden de Compra</label>
                   <input
                     type="text"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3.5 sm:p-4 text-base md:text-sm outline-none focus:border-emerald-500 transition-all font-bold text-slate-700"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3.5 sm:p-4 text-base md:text-sm outline-none focus:border-primary transition-all font-bold text-slate-700"
                     placeholder="https://..."
                     value={linkOC}
                     onChange={(e) => setLinkOC(e.target.value)}
@@ -468,7 +468,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 italic">Comentarios del Pedido</label>
                   <textarea
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3.5 sm:p-4 text-base md:text-sm outline-none focus:border-emerald-500 transition-all font-bold text-slate-700"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3.5 sm:p-4 text-base md:text-sm outline-none focus:border-primary transition-all font-bold text-slate-700"
                     rows="3"
                     placeholder="Notas adicionales para compras/logística..."
                     value={notasPedido}
@@ -636,7 +636,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
               className={`rfq-summary-action rfq-summary-action--primary py-4 px-5 sm:px-6 rounded-2xl font-black uppercase tracking-wider shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[48px] text-xs sm:text-sm ${
                 totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
                   ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-900/20'
-                  : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-900/20'
+                  : 'bg-primary hover:bg-primary-strong text-primary-foreground shadow-secondary/20'
               }`}
             >
               {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0 ? (
@@ -720,7 +720,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
                   className={`active:scale-95 text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 shadow-md disabled:opacity-50 whitespace-nowrap min-h-[48px] ${
                     totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
                       ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/20'
-                      : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20'
+                      : 'bg-primary hover:bg-primary-strong shadow-primary/20'
                   }`}
                 >
                   {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0 ? (
