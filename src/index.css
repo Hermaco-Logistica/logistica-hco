@@ -15,7 +15,7 @@
     --tf-color-text-muted: #64748b;
     --tf-color-surface: #ffffff;
     --tf-color-border: #e2e8f0;
-    --tf-color-surface-muted: #f5f5f5;
+    --tf-color-surface-muted: var(--color-surface-muted);
     --tf-radius-panel: 1.5rem;
     --tf-shadow-panel: 0 16px 30px rgba(15, 23, 42, 0.08);
     /* Sombra de tarjeta: anillo de 1px + elevación + profundidad ambiente (sustituye al borde). */
@@ -23,14 +23,14 @@
       0 0 0 1px oklch(0 0 0 / 0.05),
       0 1px 2px -1px oklch(0 0 0 / 0.06),
       0 4px 16px -4px oklch(0 0 0 / 0.06);
-    --detalle-bg: #f5f6f7;
+    --detalle-bg: var(--color-surface-muted); /* sin uso hoy; apunta a surface-muted (fijo) y no a background (cambia por rol) */
     --detalle-surface: #ffffff;
-    --detalle-surface-muted: #f8f9fa;
-    --detalle-border: #d9dee5;
+    --detalle-surface-muted: var(--color-surface-muted);
+    --detalle-border: var(--color-border);
     --detalle-border-strong: #aeb7c2;
-    --detalle-text: #202833;
+    --detalle-text: var(--color-foreground);
     --detalle-text-muted: #586575;
-    --detalle-text-subtle: #697586;
+    --detalle-text-subtle: var(--color-foreground-muted);
     --detalle-accent-info: #1d5e87;
     --detalle-accent-warning: #8a5a00;
     --detalle-accent-danger: #a42b32;

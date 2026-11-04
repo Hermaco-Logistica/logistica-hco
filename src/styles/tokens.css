@@ -18,15 +18,16 @@
  *   - Los derivados (sidebar, *-soft) se vuelven a declarar en cada ámbito de rol: var() se resuelve donde se
  *     declara, así que un derivado declarado solo en :root se quedaría fijo en el valor sin rol.
  *
- * CONFLICTOS PENDIENTES PARA C1b (dos valores vigentes hoy; en C1 NO se unifican):
- *   Concepto         --tf-* (canónico)        --detalle-*
- *   border           #e2e8f0                  #d9dee5
- *   foreground       #1e293b                  #202833
- *   foreground-muted #64748b                  #586575
- *   surface-muted    #f5f5f5                  #f8f9fa
- *   background       #f8fafc (por rol)        #f5f6f7
- *   foreground-subtle #94a3b8 (slate-400, 643 usos)   #697586
- *   border-strong    (sin equivalente tf)     #aeb7c2
+ * NEUTROS UNIFICADOS EN C1b (valor de la clase slate que domina el JSX):
+ *   border #e2e8f0, foreground #1e293b, surface-muted #f8fafc (antes #f5f5f5 en --tf-* y #f8f9fa en --detalle-*).
+ *   --detalle-border, --detalle-text, --detalle-surface-muted y --detalle-bg apuntan a los tokens.
+ *   --detalle-text-subtle (#697586) apunta a foreground-muted (#64748b); nunca a foreground-subtle (#94a3b8,
+ *   solo placeholders, iconos y texto decorativo: no da 4.5:1 como texto).
+ *
+ * PENDIENTE (no unificado): --detalle-text-muted se queda en #586575 y NO apunta a foreground-muted (#64748b):
+ *   #64748b baja de 4.5:1 (y hoy estaba por encima) sobre bg-app de comprador/vendedor/administrador, el
+ *   encabezado de tabla tintado, las filas de éxito/peligro/seleccionada y el fondo neutro. Ver contrastes en C1b.
+ *   Tampoco cambian --detalle-border-strong (#aeb7c2) ni --tf-color-text-muted/-primary/-border (ya canónicos).
  *
  * VALORES QUE NO CALZAN CON UN TOKEN (listados, no redondeados):
  *   - mode-air / mode-sea: las tablas usan emerald-700 (#047857) y blue-700 (#1d4ed8), no estos valores.
@@ -50,7 +51,7 @@
   /* Neutros (familia canónica --tf-*, slate) */
   --color-background: #f8fafc;
   --color-surface: #ffffff;
-  --color-surface-muted: #f5f5f5;
+  --color-surface-muted: #f8fafc;
   --color-border: #e2e8f0;
   --color-border-strong: #aeb7c2;
   --color-foreground: #1e293b;
