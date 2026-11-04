@@ -71,6 +71,7 @@ export const clasesPanel = ({ variante = 'centrado', ancho = 'md' } = {}) => (
  * - texto: color del texto/ícono de acento (pestaña activa)
  * - boton: relleno del botón principal (texto blanco)
  * - foco: borde y anillo de los campos al enfocar
+ * - chip (opcional): fondo y texto del contador de las pestañas; si falta se usa `icono`
  * `rol` es el único tono que sigue el color del rol del usuario (tokens primary); los demás son fijos.
  */
 export const TONOS_MODAL = {
@@ -78,7 +79,7 @@ export const TONOS_MODAL = {
   peligro: { icono: 'bg-rose-100 text-rose-700', texto: 'text-rose-700', boton: 'bg-rose-700 hover:bg-rose-800', foco: 'focus:border-rose-500 focus:ring-rose-500/20' },
   aviso: { icono: 'bg-amber-100 text-amber-800', texto: 'text-amber-800', boton: 'bg-amber-700 hover:bg-amber-800', foco: 'focus:border-amber-500 focus:ring-amber-500/20' },
   naranja: { icono: 'bg-orange-100 text-orange-700', texto: 'text-orange-700', boton: 'bg-orange-700 hover:bg-orange-800', foco: 'focus:border-orange-500 focus:ring-orange-500/20' },
-  rol: { icono: 'bg-primary/15 text-primary-strong', texto: 'text-primary-strong', boton: 'bg-primary hover:bg-primary-strong', foco: 'focus:border-primary focus:ring-primary/20' },
+  rol: { icono: 'bg-primary/15 text-primary-strong', chip: 'bg-primary-soft text-primary-strong', texto: 'text-primary-strong', boton: 'bg-primary hover:bg-primary-strong', foco: 'focus:border-primary focus:ring-primary/20' },
   azul: { icono: 'bg-blue-100 text-blue-700', texto: 'text-blue-700', boton: 'bg-blue-700 hover:bg-blue-800', foco: 'focus:border-blue-500 focus:ring-blue-500/20' },
   info: { icono: 'bg-sky-100 text-sky-700', texto: 'text-sky-700', boton: 'bg-sky-700 hover:bg-sky-800', foco: 'focus:border-sky-500 focus:ring-sky-500/20' },
   exito: { icono: 'bg-emerald-100 text-emerald-800', texto: 'text-emerald-800', boton: 'bg-emerald-700 hover:bg-emerald-800', foco: 'focus:border-emerald-500 focus:ring-emerald-500/20' },
