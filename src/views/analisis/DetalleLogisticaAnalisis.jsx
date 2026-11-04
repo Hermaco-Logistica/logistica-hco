@@ -324,7 +324,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
               >
                 <table className="min-w-full w-max text-left text-xs">
                   <thead className="sticky top-0 z-10">
-                    <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <tr className="tf-tabla-head">
                       <th className="py-2.5 px-3.5 whitespace-nowrap"># OC</th>
                       <th className="py-2.5 px-3.5 whitespace-nowrap">Proveedor</th>
                       <th className="py-2.5 px-3.5 whitespace-nowrap">Tracking</th>

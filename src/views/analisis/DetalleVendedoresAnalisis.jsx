@@ -443,7 +443,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
             >
             <table className="min-w-full w-max text-left text-xs">
               <thead className="sticky top-0 z-10">
-                <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <tr className="tf-tabla-head">
                   <th className="py-2.5 px-3.5 whitespace-nowrap">#</th>
                   <th className="py-2.5 px-3.5 whitespace-nowrap">Vendedor</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Total RFQs</th>

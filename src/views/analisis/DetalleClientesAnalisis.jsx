@@ -371,18 +371,18 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="py-2.5 px-3.5">#</th>
-                    <th className="py-2.5 px-3.5">Cliente</th>
-                    <th className="py-2.5 px-3.5 text-center">Total RFQs</th>
-                    <th className="py-2.5 px-3.5 text-center">Cotizadas</th>
-                    <th className="py-2.5 px-3.5 text-center">Anulaciones</th>
-                    <th className="py-2.5 px-3.5 text-center">Ventas perdidas</th>
-                    <th className="py-2.5 px-3.5 text-center">Rechazos</th>
+                  <tr className="tf-tabla-head">
+                    <th className="py-2.5 px-3.5 whitespace-normal">#</th>
+                    <th className="py-2.5 px-3.5 whitespace-normal">Cliente</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Total RFQs</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Cotizadas</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Anulaciones</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Ventas perdidas</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Rechazos</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ganadas (Pedidos)</th>
-                    <th className="py-2.5 px-3.5 text-center">Conversión</th>
-                    <th className="py-2.5 px-3.5 text-right">Volumen Estimado</th>
-                    <th className="py-2.5 px-3.5 text-right">Detalle</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Conversión</th>
+                    <th className="py-2.5 px-3.5 text-right whitespace-normal">Volumen Estimado</th>
+                    <th className="py-2.5 px-3.5 text-right whitespace-normal">Detalle</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">

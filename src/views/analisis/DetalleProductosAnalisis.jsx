@@ -433,19 +433,19 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="py-2.5 px-3.5">#</th>
-                    <th className="py-2.5 px-3.5">Descripción del Producto</th>
-                    <th className="py-2.5 px-3.5">Marca</th>
-                    <th className="py-2.5 px-3.5 text-center">Veces Cotizado</th>
-                    <th className="py-2.5 px-3.5 text-center">Anulaciones</th>
-                    <th className="py-2.5 px-3.5 text-center">Ventas perdidas</th>
-                    <th className="py-2.5 px-3.5 text-center">Rechazos</th>
-                    <th className="py-2.5 px-3.5 text-center">Unidades Cotizadas</th>
+                  <tr className="tf-tabla-head">
+                    <th className="py-2.5 px-3.5 whitespace-normal">#</th>
+                    <th className="py-2.5 px-3.5 whitespace-normal">Descripción del Producto</th>
+                    <th className="py-2.5 px-3.5 whitespace-normal">Marca</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Veces Cotizado</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Anulaciones</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Ventas perdidas</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Rechazos</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Unidades Cotizadas</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Cotizaciones Ganadas</th>
-                    <th className="py-2.5 px-3.5 text-center">Unidades Pedidas</th>
-                    <th className="py-2.5 px-3.5 text-center">Clientes</th>
-                    <th className="py-2.5 px-3.5 text-right">Historial</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Unidades Pedidas</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Clientes</th>
+                    <th className="py-2.5 px-3.5 text-right whitespace-normal">Historial</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">

@@ -880,7 +880,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           >
             <table className="min-w-full w-max text-left text-xs">
               <thead className="sticky top-0 z-10">
-                <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <tr className="tf-tabla-head">
                   <th className="py-2.5 px-3 whitespace-nowrap">RFQ</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Sol.</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Resp.</th>
