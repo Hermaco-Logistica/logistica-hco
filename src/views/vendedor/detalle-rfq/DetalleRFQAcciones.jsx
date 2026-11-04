@@ -65,7 +65,7 @@ export const DetalleRFQAcciones = ({
           className={`rfq-summary-action rfq-summary-action--primary py-4 px-5 sm:px-6 rounded-2xl font-black uppercase tracking-wider shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[48px] text-xs sm:text-sm ${
             totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
               ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-900/20'
-              : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-900/20'
+              : 'bg-primary hover:bg-primary-strong text-primary-foreground shadow-secondary/20'
           }`}
         >
           {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0 ? (
@@ -148,7 +148,7 @@ export const DetalleRFQAcciones = ({
                 className={`active:scale-95 text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 shadow-md disabled:opacity-50 whitespace-nowrap min-h-[48px] ${
                   totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
                     ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/20'
-                    : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20'
+                    : 'bg-primary hover:bg-primary-strong shadow-primary/20'
                 }`}
               >
                 {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0 ? <TrendingDown size={16} /> : <ShoppingCart size={16} />}
