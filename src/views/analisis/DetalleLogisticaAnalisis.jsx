@@ -396,7 +396,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
         page={safeCurrentPage}
         totalPages={totalPages}
         totalItems={ordenesFiltradas.length}
-        noun="regs"
+        noun="órdenes"
         onPageChange={setCurrentPage}
       />
     </div>

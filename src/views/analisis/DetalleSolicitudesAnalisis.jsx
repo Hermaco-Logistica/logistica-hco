@@ -700,7 +700,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
         page={safeCurrentPage}
         totalPages={totalPages}
         totalItems={solicitudesOrdenadas.length}
-        noun="regs"
+        noun="solicitudes"
         onPageChange={setCurrentPage}
       />
       </div>
