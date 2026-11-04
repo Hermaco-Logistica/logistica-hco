@@ -8,6 +8,8 @@ describe('esHostDePruebas (desvío de correos a DESTINO_PRUEBAS)', () => {
     ['deploy-preview-12--sitio.netlify.app', true],
     ['rediseno-coherencia--sitio.netlify.app', true],
     ['sitio.netlify.app', false],
+    ['logisticahco.netlify.app', false],
+    ['www.logisticahco.netlify.app', false],
     ['app.ejemplo.com', false],
     ['', false],
     [undefined, false]
