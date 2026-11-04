@@ -2,6 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Etiqueta } from '../../components/Etiqueta';
 import { PageContainer } from '../../components/ui/PageContainer';
+import { TablePagination } from '../../components/ui/TablePagination';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { 
   Calendar as CalendarIcon, Trash2, AlertTriangle, AlertOctagon, AlertCircle, Filter, 
@@ -911,32 +912,13 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="tf-surface-panel flex flex-col sm:flex-row justify-between items-center gap-3 mt-6 p-3 sm:px-4 text-slate-700 select-none">
-          <div className="flex items-center justify-between w-full sm:w-auto gap-3">
-            <button
-              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-              disabled={safeCurrentPage === 1}
-              className="flex-1 sm:flex-none h-10 px-4 text-[13.5px] font-semibold bg-neutral-200/70 text-neutral-700 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-[background-color,scale] duration-150 active:scale-[0.96] cursor-pointer"
-            >
-              Anterior
-            </button>
-            <span className="sm:hidden text-xs font-medium text-slate-500">
-              {safeCurrentPage} de {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
-              disabled={safeCurrentPage === totalPages}
-              className="flex-1 sm:flex-none h-10 px-4 text-[13.5px] font-semibold bg-neutral-200/70 text-neutral-700 hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-[background-color,scale] duration-150 active:scale-[0.96] cursor-pointer"
-            >
-              Siguiente
-            </button>
-          </div>
-          <span className="hidden sm:inline-block text-[13px] text-slate-500">
-            Página {safeCurrentPage} de {totalPages} ({sortedSolicitudes.length} solicitudes)
-          </span>
-        </div>
-      )}
+      <TablePagination
+        page={safeCurrentPage}
+        totalPages={totalPages}
+        totalItems={sortedSolicitudes.length}
+        noun="solicitudes"
+        onPageChange={setCurrentPage}
+      />
 
       {/* Modal Consulta Venta Perdida (Comercial) */}
       <ModalConsultaVentaPerdida
