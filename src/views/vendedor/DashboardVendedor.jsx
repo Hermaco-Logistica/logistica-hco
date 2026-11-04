@@ -813,7 +813,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                         </button>
                       )}
                     </div>
-                    <span className="text-[10px] font-bold text-slate-600 uppercase italic">EXT: {s.cliente}</span>
+                    <span className="text-[10px] font-bold text-primary-strong uppercase italic">EXT: {s.cliente}</span>
                   </td>
                   <td className="p-4">
                     <div className="flex flex-col">
