@@ -4,6 +4,7 @@ import { Etiqueta } from '../../components/Etiqueta';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { TablePagination } from '../../components/ui/TablePagination';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
 import { 
   Calendar as CalendarIcon, Trash2, AlertTriangle, AlertOctagon, AlertCircle, Filter, 
   ChevronDown, ChevronUp, Clock, User, Plane, Ship, ChevronRight, Hash, Package,
@@ -197,18 +198,22 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
     <PageContainer className="animate-in fade-in duration-500">
       <PageHeader title={title} subtitle="Estado de RFQs enviadas" actions={canCreate && (
           <div className="flex gap-2 w-full sm:w-auto">
-            <button 
+            <Button
+              variant="primary"
+              size="cta"
               onClick={() => navigate('/vendedor/nueva-rfq')}
-              className="flex-1 sm:flex-none justify-center bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 sm:px-5 rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all shadow-sm flex items-center gap-2 cursor-pointer active:scale-95"
+              className="flex-1 sm:flex-none"
             >
               + Nueva RFQ
-            </button>
-            <button 
+            </Button>
+            <Button
+              variant="secondaryBrand"
+              size="cta"
               onClick={() => navigate('/vendedor/nuevo-pedido')}
-              className="flex-1 sm:flex-none justify-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 sm:px-5 rounded-xl text-[11px] sm:text-xs font-bold uppercase tracking-wider transition-all shadow-sm flex items-center gap-2 cursor-pointer active:scale-95"
+              className="flex-1 sm:flex-none"
             >
               + Pedido Manual
-            </button>
+            </Button>
           </div>
         )} />
 
@@ -233,15 +238,15 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               </p>
             </div>
           </div>
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            size="sm"
             onClick={() => setModalBloqueoOpen(true)}
-            style={{ backgroundColor: 'var(--tf-color-brand-strong)' }}
-            className="shrink-0 w-full sm:w-auto inline-flex h-[32px] items-center justify-center gap-1.5 px-3 text-[12px] font-semibold text-white rounded-[6px] transition-opacity hover:opacity-90 cursor-pointer"
+            className="shrink-0 w-full sm:w-auto h-8"
           >
             <span>Atender</span>
             <ArrowRight size={13} />
-          </button>
+          </Button>
         </div>
       )}
 
@@ -278,7 +283,9 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
             {mostrarFiltrosMobile ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
           {(searchTerm || filtrosActivosCount > 0) && (
-            <button
+            <Button
+              variant="secondary"
+              size="iconSm"
               onClick={() => {
                 setSearchTerm('');
                 setFilterEstado('');
@@ -290,10 +297,9 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                 setCurrentPage(1);
               }}
               title="Limpiar filtros"
-              className="p-2.5 rounded-xl bg-slate-50 text-slate-500 hover:text-rose-600 border border-slate-200 transition-colors cursor-pointer"
             >
               <Trash2 size={14} />
-            </button>
+            </Button>
           )}
         </div>
 
@@ -506,7 +512,9 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
         </div>
 
         <div className="flex flex-col justify-end w-fit pb-1">
-          <button
+          <Button
+            variant="secondary"
+            size="icon"
             onClick={() => {
               setSearchTerm('');
               setFilterAccion('');
@@ -519,10 +527,9 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               setCurrentPage(1);
             }}
             title="Limpiar filtros"
-            className="flex items-center justify-center bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded-xl w-10 h-10 border border-slate-100 transition-all cursor-pointer shadow-sm"
           >
             <Trash2 size={16} />
-          </button>
+          </Button>
         </div>
       </div>
       
@@ -806,7 +813,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                         </button>
                       )}
                     </div>
-                    <span className="text-[10px] font-bold text-blue-600 uppercase italic">EXT: {s.cliente}</span>
+                    <span className="text-[10px] font-bold text-slate-600 uppercase italic">EXT: {s.cliente}</span>
                   </td>
                   <td className="p-4">
                     <div className="flex flex-col">
@@ -898,12 +905,13 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
                     <Etiqueta tono="neutral">{ocRefText}</Etiqueta>
                   </td>
                   <td className="p-4 text-center">
-                    <button 
+                    <Button
+                      variant="secondary"
+                      size="lg"
                       onClick={() => navigate(s.tipo === 'Pedido Manual' ? `/vendedor/pedido-manual/${s.id}` : `/vendedor/detalle/${s.id}`)}
-                      className="bg-white border-2 border-slate-100 hover:border-slate-900 text-slate-900 px-5 py-2 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm"
                     >
                       Ver Detalle
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               );
