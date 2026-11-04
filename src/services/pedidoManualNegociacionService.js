@@ -726,10 +726,13 @@ export const notificarCambios = async ({ solicitudId, actor, comentarioGeneral, 
 
     transaction.update(docRef, updateData);
 
-    payloadParaCorreo = {
-      solicitud: { ...solicitud, ...updateData },
-      indicesModificados
-    };
+    // Las ventas perdidas no generan correo: el aviso solo cubre los cambios de negociación. Si lo único
+    // que se notificó fueron ventas perdidas, no se envía nada.
+    const indicesVentaPerdidaSet = new Set(indicesVentaPerdida);
+    const indicesParaCorreo = indicesModificados.filter((idx) => !indicesVentaPerdidaSet.has(idx));
+    payloadParaCorreo = indicesParaCorreo.length > 0
+      ? { solicitud: { ...solicitud, ...updateData }, indicesModificados: indicesParaCorreo }
+      : null;
   });
 
   if (payloadParaCorreo) {
@@ -778,10 +781,17 @@ export const reenviarCorreoPendiente = async ({ solicitudId, actor }) => {
   const rolNormalizado = (rolNotif === 'comprador' || rolNotif === 'compras') ? 'compras' : rolNotif;
 
   const evento = rolNormalizado === 'compras' ? 'negociacion_compras' : 'negociacion_vendedor';
+  // Las ventas perdidas no se incluyen en el correo.
+  const idxsNotificados = ultimaNotificacion.idxs || [];
+  const indicesParaCorreo = idxsNotificados.filter((idx) => solicitud.productos?.[idx]?.estadoItem !== 'Venta Perdida');
+  if (idxsNotificados.length > 0 && indicesParaCorreo.length === 0) {
+    await updateDoc(docRef, { notificacionPendienteEmail: false });
+    return;
+  }
   const { ok } = await enviarEvento(evento, {
     pedido: solicitud,
     items: solicitud.productos,
-    indicesModificados: ultimaNotificacion.idxs || [],
+    indicesModificados: indicesParaCorreo,
     rol: rolNormalizado,
     comentarioGeneral: ultimaNotificacion.comentarioGeneral || '',
     actor: { email: solicitud.vendedorEmail || '', nombre: solicitud.vendedorNombre }
