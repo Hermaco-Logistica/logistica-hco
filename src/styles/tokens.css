@@ -29,6 +29,10 @@
  *   encabezado de tabla tintado, las filas de éxito/peligro/seleccionada y el fondo neutro. Ver contrastes en C1b.
  *   Tampoco cambian --detalle-border-strong (#aeb7c2) ni --tf-color-text-muted/-primary/-border (ya canónicos).
  *
+ * ETIQUETAS (tag-*): PALETA_CORREO (utils/etiquetas.js, usada por emails/) es la versión en hexadecimal de TONOS y
+ *   debe mantenerse alineada con los tag-* A MANO: el correo no lee CSS. No hay ningún test ni script que compare
+ *   ambos (emails.test.js solo busca un literal, #e0f2fe).
+ *
  * VALORES QUE NO CALZAN CON UN TOKEN (listados, no redondeados):
  *   - mode-air / mode-sea: las tablas usan emerald-700 (#047857) y blue-700 (#1d4ed8), no estos valores.
  *   - Estados: las etiquetas de usuario (TONOS en utils/etiquetas.js) usan pasteles de Tailwind distintos
@@ -73,6 +77,47 @@
   --color-info-soft: #eff6fa;
   --color-status-neutral: #4b5566;
   --color-status-neutral-soft: #f0f2f5;
+
+  /* Etiquetas de usuario (TONOS y TEXTO_TONO de utils/etiquetas.js). Las claves son las de TONOS: no se renombran.
+     tag-<tono> = texto de la etiqueta; tag-<tono>-soft = fondo; tag-<tono>-text = texto suelto (TEXTO_TONO), solo
+     donde difiere del texto de la etiqueta. Apuntan a la paleta de Tailwind: valor resuelto idéntico al anterior. */
+  --color-tag-neutral: var(--color-slate-600);
+  --color-tag-neutral-soft: var(--color-slate-100);
+  --color-tag-neutral-text: var(--color-slate-700);
+  --color-tag-suave: var(--color-slate-500);
+  --color-tag-suave-soft: var(--color-slate-50);
+  --color-tag-suave-text: var(--color-slate-600);
+  --color-tag-apagado: var(--color-slate-500);
+  --color-tag-apagado-soft: var(--color-slate-100);
+  --color-tag-oscuro: var(--color-slate-300);
+  --color-tag-exito: var(--color-emerald-800);
+  --color-tag-exito-soft: var(--color-emerald-100);
+  --color-tag-exito-text: var(--color-emerald-700);
+  --color-tag-info: var(--color-sky-700);
+  --color-tag-info-soft: var(--color-sky-100);
+  --color-tag-azul: var(--color-blue-700);
+  --color-tag-azul-soft: var(--color-blue-100);
+  --color-tag-indigo: var(--color-indigo-700);
+  --color-tag-indigo-soft: var(--color-indigo-100);
+  --color-tag-indigo-text: var(--color-indigo-800);
+  --color-tag-aviso: var(--color-amber-800);
+  --color-tag-aviso-soft: var(--color-amber-100);
+  --color-tag-aviso-text: var(--color-amber-700);
+  --color-tag-peligro: var(--color-rose-700);
+  --color-tag-peligro-soft: var(--color-rose-100);
+  --color-tag-peligro-text: var(--color-rose-600);
+  --color-tag-naranja: var(--color-orange-700);
+  --color-tag-naranja-soft: var(--color-orange-100);
+  --color-tag-violeta: var(--color-violet-700);
+  --color-tag-violeta-soft: var(--color-violet-100);
+  --color-tag-morado: var(--color-purple-700);
+  --color-tag-morado-soft: var(--color-purple-100);
+  --color-tag-turquesa: var(--color-teal-800);
+  --color-tag-turquesa-soft: var(--color-teal-100);
+  --color-tag-turquesa-text: var(--color-teal-700);
+  --color-tag-amarillo: var(--color-yellow-800);
+  --color-tag-amarillo-soft: var(--color-yellow-100);
+  /* "oscuro" no tiene -soft: su fondo sigue siendo bg-slate-800 porque index.css lo remapea por rol (.role-* .bg-slate-800). */
 
   /* Dominio (valores --detalle-air / --detalle-sea) */
   --color-mode-air: #247a9b;

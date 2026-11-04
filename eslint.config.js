@@ -5,6 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 const MENSAJE_ETIQUETA = 'Etiqueta con estilo propio: usa <Etiqueta /> (src/components/Etiqueta.jsx) y define el estilo en src/utils/etiquetas.js.'
+const MENSAJE_TAG = 'Los colores tag-* (bg-tag-*-soft, text-tag-*) son exclusivos de src/utils/etiquetas.js: en una vista usa <Etiqueta tono="..." />.'
 // Firma de una etiqueta: redondeo + padding + texto diminuto (+ color o borde cuando la clase es fija).
 const FIRMA_ETIQUETA_ESTATICA = String.raw`/^(?=.*rounded)(?=.*px-[0-9.]+)(?=.*py-[0-9.]+)(?=.*text-\[[0-9.]+px\])(?=.*(bg|border)-)/`
 const FIRMA_ETIQUETA_DINAMICA = String.raw`/^(?=.*rounded)(?=.*px-[0-9.]+)(?=.*text-\[[0-9.]+px\])/`
@@ -15,6 +16,9 @@ const REGLAS_MODAL = [
   { selector: "JSXAttribute[name.name='className'] TemplateElement[value.raw=/fixed inset-0/]", message: MENSAJE_MODAL }
 ]
 const REGLAS_ETIQUETA = [
+  // Las utilidades de color de etiqueta (tag-*) solo se escriben en utils/etiquetas.js (que es .js y no entra en esta regla).
+  { selector: "JSXAttribute[name.name='className'] Literal[value=/(bg|text|border)-tag-/]", message: MENSAJE_TAG },
+  { selector: "JSXAttribute[name.name='className'] TemplateElement[value.raw=/(bg|text|border)-tag-/]", message: MENSAJE_TAG },
   {
     selector: `JSXOpeningElement[name.name='span'] JSXAttribute[name.name='className'] Literal[value=${FIRMA_ETIQUETA_ESTATICA}]`,
     message: MENSAJE_ETIQUETA
