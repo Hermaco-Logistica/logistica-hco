@@ -172,8 +172,8 @@
 .detalle-status[data-status='pendiente'],
 .detalle-status[data-status='en_revision'],
 .detalle-status[data-status='seguimiento_requerido'] {
-  color: var(--detalle-accent-warning);
-  background: var(--detalle-bg-warning);
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
 }
 /* danger: vencida, rechazada, plazo_vencido, cierre_requerido, error */
 .detalle-status[data-status='vencida'],
@@ -181,34 +181,34 @@
 .detalle-status[data-status='plazo_vencido'],
 .detalle-status[data-status='cierre_requerido'],
 .detalle-status[data-status='error'] {
-  color: var(--detalle-accent-danger);
-  background: var(--detalle-bg-danger);
+  color: var(--color-danger);
+  background: var(--color-danger-soft);
 }
 /* success: aprobada, resuelta, completa, success */
 .detalle-status[data-status='aprobada'],
 .detalle-status[data-status='resuelta'],
 .detalle-status[data-status='completa'],
 .detalle-status[data-status='success'] {
-  color: var(--detalle-accent-success);
-  background: var(--detalle-bg-success);
+  color: var(--color-success);
+  background: var(--color-success-soft);
 }
 /* info: info, prorroga_disponible, solo_lectura */
 .detalle-status[data-status='info'],
 .detalle-status[data-status='prorroga_disponible'],
 .detalle-status[data-status='solo_lectura'] {
-  color: var(--detalle-accent-info);
-  background: var(--detalle-bg-info);
+  color: var(--color-info);
+  background: var(--color-info-soft);
 }
 /* warning-parcial */
 .detalle-status[data-status='parcial'] {
-  color: var(--detalle-accent-warning);
-  background: var(--detalle-bg-warning);
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
 }
 /* neutral: reprogramada, neutral */
 .detalle-status[data-status='reprogramada'],
 .detalle-status[data-status='neutral'] {
-  color: var(--detalle-accent-neutral);
-  background: var(--detalle-bg-neutral);
+  color: var(--color-status-neutral);
+  background: var(--color-status-neutral-soft);
 }
 
 .detalle-items { min-width: 0; overflow: hidden; border: 1px solid var(--detalle-border); border-radius: var(--detalle-radius-card); background: var(--detalle-surface); }
