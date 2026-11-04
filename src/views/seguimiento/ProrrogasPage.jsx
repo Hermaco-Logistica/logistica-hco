@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { PageContainer } from '../../components/ui/PageContainer';
+import { TablePagination } from '../../components/ui/TablePagination';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock3, Filter, History, Search, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -539,34 +540,13 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
         )}
       </div>
 
-      {/* Paginación Sobria (D) */}
-      {totalPaginas > 1 && (
-        <nav className="prorrogas-pagination" aria-label="Paginación de prórrogas">
-          <p className="prorrogas-pagination-text">
-            Página {paginaSegura} de {totalPaginas} · {inicioPagina + 1}–{Math.min(inicioPagina + elementosPorPagina, visibles.length)} de {visibles.length} registros
-          </p>
-          <div className="prorrogas-pagination-controls">
-            <button
-              type="button"
-              onClick={() => setPaginacion({ clave: claveFiltros, pagina: Math.max(1, paginaSegura - 1) })}
-              disabled={paginaSegura === 1}
-              className="prorrogas-pagination-btn"
-              aria-label="Página anterior"
-            >
-              <ChevronLeft size={14} /> Anterior
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaginacion({ clave: claveFiltros, pagina: Math.min(totalPaginas, paginaSegura + 1) })}
-              disabled={paginaSegura === totalPaginas}
-              className="prorrogas-pagination-btn"
-              aria-label="Página siguiente"
-            >
-              Siguiente <ChevronRight size={14} />
-            </button>
-          </div>
-        </nav>
-      )}
+      <TablePagination
+        page={paginaSegura}
+        totalPages={totalPaginas}
+        totalItems={visibles.length}
+        noun="registros"
+        onPageChange={(pagina) => setPaginacion({ clave: claveFiltros, pagina })}
+      />
 
       <ModalRespuestaProrroga
         key={respuesta ? `${respuesta.solicitud.id}-${respuesta.prorroga.ronda}-${respuesta.accion}` : 'sin-respuesta'}

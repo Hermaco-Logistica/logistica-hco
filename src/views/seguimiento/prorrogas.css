@@ -697,65 +697,6 @@
   color: var(--detalle-text);
 }
 
-/* ── Paginación Sobria ────────────────────────────────────────────────────── */
-.prorrogas-pagination {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid var(--detalle-border);
-  border-radius: 24px;
-  background: var(--tf-color-sidebar);
-  padding: 16px 24px;
-  color: var(--color-foreground-inverse);
-}
-@media (min-width: 640px) {
-  .prorrogas-pagination {
-    flex-direction: row;
-    justify-content: space-between;
-  }
-}
-
-.prorrogas-pagination-text {
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #cbd5e1;
-  font-variant-numeric: tabular-nums;
-}
-
-.prorrogas-pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.prorrogas-pagination-btn {
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--color-foreground-inverse);
-  font-size: 12px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  transition: all 120ms ease;
-}
-.prorrogas-pagination-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.16);
-}
-.prorrogas-pagination-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
 /* Borde de 2px en los botones de acción (misma presencia que "Ver Detalle" en el dashboard del vendedor). */
 .prorrogas-actions-desktop .prorrogas-btn-action {
   border-width: 2px;
