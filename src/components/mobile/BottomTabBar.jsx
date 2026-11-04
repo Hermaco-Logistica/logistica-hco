@@ -16,35 +16,35 @@ export const NOTCH_WIDTH = 72;
 export const NOTCH_DEPTH = 27;
 export const BAR_RADIUS = 20;
 
-const PAGE_BG = '#f8fafc';
+const PAGE_BG = 'var(--color-surface-muted)'; // #f8fafc
 
 const ROLE_THEMES = {
   comprador: {
-    activeText: 'text-blue-600',
+    activeText: 'text-nav-accent-strong',
     activeBg: 'bg-blue-50',
     indicator: 'bg-blue-600',
-    glowColor: 'rgba(37, 99, 235, 0.18)',
+    glowColor: 'var(--color-nav-glow)',
     ringColor: PAGE_BG,
   },
   vendedor: {
-    activeText: 'text-violet-600',
+    activeText: 'text-nav-accent-strong',
     activeBg: 'bg-violet-50',
     indicator: 'bg-violet-600',
-    glowColor: 'rgba(124, 58, 237, 0.18)',
+    glowColor: 'var(--color-nav-glow)',
     ringColor: PAGE_BG,
   },
   gerente: {
-    activeText: 'text-emerald-600',
+    activeText: 'text-nav-accent-strong',
     activeBg: 'bg-emerald-50',
     indicator: 'bg-emerald-600',
-    glowColor: 'rgba(5, 150, 105, 0.18)',
+    glowColor: 'var(--color-nav-glow)',
     ringColor: PAGE_BG,
   },
   administrador: {
-    activeText: 'text-rose-600',
+    activeText: 'text-nav-accent-strong',
     activeBg: 'bg-rose-50',
     indicator: 'bg-rose-600',
-    glowColor: 'rgba(225, 29, 72, 0.18)',
+    glowColor: 'var(--color-nav-glow)',
     ringColor: PAGE_BG,
   },
 };
@@ -299,7 +299,7 @@ export const BottomTabBar = ({ role, onOpenDrawer, hidden = false, isInsideDock 
               filter: `drop-shadow(0 8px 24px ${theme.glowColor}) drop-shadow(0 4px 12px rgba(0,0,0,0.06))`
             }}
           >
-            <path d={pathD} fill="#FFFFFF" />
+            <path d={pathD} fill="var(--color-surface)" />
           </svg>
         )}
 

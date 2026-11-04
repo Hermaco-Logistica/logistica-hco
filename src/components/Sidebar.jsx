@@ -37,38 +37,14 @@ export const Sidebar = ({
     return w >= 1024 && w < 1280;
   });
 
-  const roleTheme = {
-    comprador: {
-      accentText: 'text-blue-300',
-      active: 'bg-blue-500 text-white',
-      activeCollapsed: 'bg-blue-500 text-white',
-      iconHover: 'group-hover:text-white',
-      roleText: 'text-blue-300',
-    },
-    vendedor: {
-      accentText: 'text-violet-300',
-      active: 'bg-violet-500 text-white',
-      activeCollapsed: 'bg-violet-500 text-white',
-      iconHover: 'group-hover:text-white',
-      roleText: 'text-violet-300',
-    },
-    gerente: {
-      accentText: 'text-emerald-300',
-      active: 'bg-emerald-500 text-white',
-      activeCollapsed: 'bg-emerald-500 text-white',
-      iconHover: 'group-hover:text-white',
-      roleText: 'text-emerald-300',
-    },
-    administrador: {
-      accentText: 'text-rose-300',
-      active: 'bg-rose-500 text-white',
-      activeCollapsed: 'bg-rose-500 text-white',
-      iconHover: 'group-hover:text-white',
-      roleText: 'text-rose-300',
-    },
+  // El color de cada rol sale de los tokens nav-* (styles/tokens.css), que .role-* y body[data-role] sobrescriben.
+  const currentTheme = {
+    accentText: 'text-nav-accent-text',
+    active: 'bg-nav-accent text-white',
+    activeCollapsed: 'bg-nav-accent text-white',
+    iconHover: 'group-hover:text-white',
+    roleText: 'text-nav-accent-text',
   };
-
-  const currentTheme = roleTheme[role] || roleTheme.comprador;
 
   const menuItems = [
     {

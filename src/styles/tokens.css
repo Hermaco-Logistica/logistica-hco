@@ -119,6 +119,16 @@
   --color-tag-amarillo-soft: var(--color-yellow-100);
   /* "oscuro" no tiene -soft: su fondo sigue siendo bg-slate-800 porque index.css lo remapea por rol (.role-* .bg-slate-800). */
 
+  /* Navegación por rol (Sidebar, tab bar móvil, roleColors.js) y Análisis (theme.js). Valores sin rol = comprador.
+     Apuntan a la paleta v4 de Tailwind (valor exacto de las clases que reemplazan). Cada rol los sobrescribe abajo. */
+  --color-nav-accent: var(--color-blue-500);          /* Sidebar: ítem activo */
+  --color-nav-accent-text: var(--color-blue-300);     /* Sidebar: "HCO" y etiqueta del rol */
+  --color-nav-accent-strong: var(--color-blue-600);   /* tab bar móvil y roleColors.text */
+  --color-nav-accent-hover: var(--color-blue-700);    /* roleColors.hoverText */
+  --color-nav-glow: rgb(37 99 235 / 0.18);            /* sombra del círculo activo de la tab bar (hex clásico, no el de la paleta) */
+  --color-analysis-accent: var(--color-slate-800);        /* theme.js textAccent (sin rol: slate-800) */
+  --color-analysis-accent-active: var(--color-slate-900); /* theme.js activePeriod (sin rol: slate-900) */
+
   /* Dominio (valores --detalle-air / --detalle-sea) */
   --color-mode-air: #247a9b;
   --color-mode-sea: #536f9b;
@@ -154,6 +164,13 @@
     --color-primary-strong: #2563eb;
     --color-secondary: #0b2545;
     --color-background: #eef4ff;
+    --color-nav-accent: var(--color-blue-500);
+    --color-nav-accent-text: var(--color-blue-300);
+    --color-nav-accent-strong: var(--color-blue-600);
+    --color-nav-accent-hover: var(--color-blue-700);
+    --color-nav-glow: rgb(37 99 235 / 0.18);
+    --color-analysis-accent: var(--color-blue-600);
+    --color-analysis-accent-active: var(--color-blue-600);
   }
 
   .role-vendedor,
@@ -162,6 +179,13 @@
     --color-primary-strong: #7c3aed;
     --color-secondary: #312e81;
     --color-background: #f4f0ff;
+    --color-nav-accent: var(--color-violet-500);
+    --color-nav-accent-text: var(--color-violet-300);
+    --color-nav-accent-strong: var(--color-violet-600);
+    --color-nav-accent-hover: var(--color-violet-700);
+    --color-nav-glow: rgb(124 58 237 / 0.18);
+    --color-analysis-accent: var(--color-purple-600);
+    --color-analysis-accent-active: var(--color-purple-600);
   }
 
   .role-gerente,
@@ -170,6 +194,13 @@
     --color-primary-strong: #059669;
     --color-secondary: #14532d;
     --color-background: #edfdf4;
+    --color-nav-accent: var(--color-primary); /* #10b981: el color de marca que hoy impone el remapeo de bg-emerald-500 */
+    --color-nav-accent-text: var(--color-emerald-300);
+    --color-nav-accent-strong: var(--color-emerald-600);
+    --color-nav-accent-hover: var(--color-emerald-700);
+    --color-nav-glow: rgb(5 150 105 / 0.18);
+    --color-analysis-accent: var(--color-emerald-600);
+    --color-analysis-accent-active: var(--color-emerald-600);
   }
 
   .role-administrador,
@@ -178,6 +209,13 @@
     --color-primary-strong: #9f3650;
     --color-secondary: #7f1d2d;
     --color-background: #fff4f4;
+    --color-nav-accent: var(--color-rose-500);
+    --color-nav-accent-text: var(--color-rose-300);
+    --color-nav-accent-strong: var(--color-rose-600);
+    --color-nav-accent-hover: var(--color-rose-700);
+    --color-nav-glow: rgb(225 29 72 / 0.18);
+    --color-analysis-accent: var(--color-rose-700);
+    --color-analysis-accent-active: var(--color-rose-700);
   }
 
   /* Derivados por ámbito: se redeclaran en cada rol para que var() se resuelva con el rol del elemento. */
