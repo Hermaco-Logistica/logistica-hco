@@ -30,7 +30,7 @@ export const NuevaRFQView = ({ viewModel }) => {
             <input 
               type="text" 
               required
-              className="w-full text-xl sm:text-2xl font-black outline-none border-b-4 border-slate-100 focus:border-emerald-500 transition-all pb-2 uppercase text-slate-700"
+              className="w-full text-xl sm:text-2xl font-black outline-none border-b-4 border-slate-100 focus:border-primary transition-all pb-2 uppercase text-slate-700"
               placeholder="EJ: KIMBERLY CLARK"
               value={cliente}
               onKeyDown={manejarTeclasCliente}
@@ -91,7 +91,7 @@ export const NuevaRFQView = ({ viewModel }) => {
             <input 
               type="text" 
               required
-              className="w-full text-base sm:text-lg font-bold outline-none border-b-2 border-slate-100 focus:border-emerald-500 transition-all pb-1 text-slate-700"
+              className="w-full text-base sm:text-lg font-bold outline-none border-b-2 border-slate-100 focus:border-primary transition-all pb-1 text-slate-700"
                       placeholder="EJ: 5 DÍAS HÁBILES, 15 DÍAS"
               value={validez}
               onChange={(e) => setValidez(e.target.value)}
@@ -107,7 +107,7 @@ export const NuevaRFQView = ({ viewModel }) => {
             id="comentarios-vendedor"
             rows={4}
             maxLength={2000}
-            className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 p-3.5 sm:p-4 text-base md:text-sm font-semibold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white"
+            className="w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 p-3.5 sm:p-4 text-base md:text-sm font-semibold text-slate-700 outline-none transition-all placeholder:text-slate-400 focus:border-primary focus:bg-white"
                       placeholder="Información adicional para Compras..."
             value={comentariosVendedor}
             onChange={(e) => setComentariosVendedor(e.target.value)}
@@ -121,7 +121,7 @@ export const NuevaRFQView = ({ viewModel }) => {
             <button 
               type="button"
               onClick={addFila}
-              className="hidden md:flex bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-900/20 items-center gap-1.5"
+              className="hidden md:flex bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl hover:bg-primary-strong transition-all shadow-lg shadow-secondary/20 items-center gap-1.5"
             >
               <PlusCircle size={14} />
               Añadir Ítem
@@ -156,7 +156,7 @@ export const NuevaRFQView = ({ viewModel }) => {
                     <input 
                       type="text" 
                       required
-                      className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 uppercase text-base focus:border-emerald-500 transition-all shadow-xs"
+                      className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 uppercase text-base focus:border-primary transition-all shadow-xs"
                       placeholder="SKU o nombre del ítem..."
                       value={p.desc}
                       onFocus={() => {
@@ -223,7 +223,7 @@ export const NuevaRFQView = ({ viewModel }) => {
                           <div className="p-2 border-t border-slate-100 bg-slate-50 rounded-b-lg">
                             <button
                               type="button"
-                              className="w-full text-left px-3 py-2 text-xs font-bold text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded flex items-center gap-2 transition-colors"
+                              className="w-full text-left px-3 py-2 text-xs font-bold text-slate-500 hover:text-primary-strong hover:bg-primary-soft rounded flex items-center gap-2 transition-colors"
                               onMouseDown={() => {
                                 setModalNuevoProd({ isOpen: true, idx, sku: p.desc || '', producto: '', marca: productos[idx]?.marca || '', saving: false });
                                 updateMarcaState(setMostrarSugerenciasProducto, idx, false);
@@ -247,7 +247,7 @@ export const NuevaRFQView = ({ viewModel }) => {
                     <div className="relative">
                       <input 
                         type="text" 
-                        className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-blue-600 text-base italic focus:border-emerald-500 transition-all shadow-xs"
+                        className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-primary-strong text-base italic focus:border-primary transition-all shadow-xs"
                         placeholder="Marca..."
                         value={p.marca}
                         onFocus={() => {
@@ -312,7 +312,7 @@ export const NuevaRFQView = ({ viewModel }) => {
                     <input 
                       type="number" 
                       min="1"
-                      className="w-full p-3 bg-white border border-slate-200 rounded-xl text-center font-black text-slate-700 text-base outline-none focus:border-emerald-500 transition-all shadow-xs"
+                      className="w-full p-3 bg-white border border-slate-200 rounded-xl text-center font-black text-slate-700 text-base outline-none focus:border-primary transition-all shadow-xs"
                       value={p.cant}
                       onChange={(e) => updateProducto(idx, 'cant', parseInt(e.target.value) || 1)}
                     />
@@ -323,7 +323,7 @@ export const NuevaRFQView = ({ viewModel }) => {
             <button
               type="button"
               onClick={addFila}
-              className="w-full py-3.5 px-4 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-[0.99] shadow-xs"
+              className="w-full py-3.5 px-4 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-[0.99] shadow-xs"
             >
               <PlusCircle size={16} />
               Añadir Ítem
@@ -416,7 +416,7 @@ export const NuevaRFQView = ({ viewModel }) => {
                               <div className="p-2 border-t border-slate-100 bg-slate-50 rounded-b-lg">
                                 <button
                                   type="button"
-                                  className="w-full text-left px-3 py-2 text-xs font-bold text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded flex items-center gap-2 transition-colors"
+                                  className="w-full text-left px-3 py-2 text-xs font-bold text-slate-500 hover:text-primary-strong hover:bg-primary-soft rounded flex items-center gap-2 transition-colors"
                                   onMouseDown={() => {
                                     setModalNuevoProd({ isOpen: true, idx, sku: p.desc || '', producto: '', marca: productos[idx]?.marca || '', saving: false });
                                     updateMarcaState(setMostrarSugerenciasProducto, idx, false);
@@ -435,7 +435,7 @@ export const NuevaRFQView = ({ viewModel }) => {
                       <div className="relative">
                         <input 
                           type="text" 
-                          className="w-full p-3 bg-transparent outline-none font-bold text-blue-600 text-sm italic"
+                          className="w-full p-3 bg-transparent outline-none font-bold text-primary-strong text-sm italic"
                           placeholder="Marca..."
                           value={p.marca}
                           onFocus={() => {
@@ -496,7 +496,7 @@ export const NuevaRFQView = ({ viewModel }) => {
                       <input 
                         type="number" 
                         min="1"
-                        className="w-full p-3 bg-slate-100 rounded-xl text-center font-black text-slate-600 outline-none focus:bg-emerald-50 focus:text-emerald-600 transition-all"
+                        className="w-full p-3 bg-slate-100 rounded-xl text-center font-black text-slate-600 outline-none focus:bg-primary-soft focus:text-primary-strong transition-all"
                         value={p.cant}
                         onChange={(e) => updateProducto(idx, 'cant', parseInt(e.target.value) || 1)}
                       />
