@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
@@ -197,7 +198,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
     return (
       <div className="flex min-h-[50vh] py-24 items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-slate-200 border-t-purple-500 rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
           <p className="text-slate-400 font-bold text-sm tracking-widest uppercase">Cargando detalles...</p>
         </div>
       </div>
@@ -385,7 +386,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
             <button 
               onClick={handleGuardarComentarios}
               disabled={editandoGeneral || allClosed}
-              className="text-purple-600 hover:text-purple-700 disabled:opacity-50 p-1 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors"
+              className="text-primary-strong bg-primary-soft hover:bg-primary/15 disabled:opacity-50 p-1 rounded-md transition-colors"
               title="Guardar comentario"
             >
               <Save size={16} />
@@ -396,7 +397,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
             onChange={(e) => setComentariosComprador(e.target.value)}
             disabled={allClosed}
             placeholder="Observaciones (visibles en el correo al vendedor)..."
-            className="flex-1 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-purple-500 text-sm font-medium resize-none disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed min-h-20"
+            className="flex-1 w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary text-sm font-medium resize-none disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed min-h-20"
           />
         </div>
       </div>
@@ -509,7 +510,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                                   min="0.01" step="0.01"
                                   value={draft.precio !== undefined ? draft.precio : ''} 
                                   onChange={(e) => updateBorrador(idx, { ...draft, precio: e.target.value })} 
-                                  className="w-full pl-6 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-purple-500 font-bold text-slate-700 text-sm" 
+                                  className="w-full pl-6 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-primary font-bold text-slate-700 text-sm" 
                                 />
                               </div>
                             ) : (
@@ -524,7 +525,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                                 value={draft.tiempoEntrega || ''} 
                                 onChange={(e) => updateBorrador(idx, { ...draft, tiempoEntrega: e.target.value })} 
                                 placeholder="Ej: 5" 
-                                className="w-full max-w-40 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-purple-500 font-bold text-slate-700 text-sm" 
+                                className="w-full max-w-40 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-primary font-bold text-slate-700 text-sm" 
                               />
                             ) : (
                               <span className="font-bold text-slate-700 text-sm">{tiempoEntrega || 'No definido'}</span>
@@ -536,7 +537,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                               <select 
                                 value={draft.modalidad || 'Aéreo'} 
                                 onChange={(e) => updateBorrador(idx, { ...draft, modalidad: e.target.value })}  
-                                className="w-full max-w-40 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-purple-500 font-bold text-slate-700 text-sm cursor-pointer"
+                                className="w-full max-w-40 p-1.5 bg-white border border-slate-200 rounded-lg outline-none focus:border-primary font-bold text-slate-700 text-sm cursor-pointer"
                               >
                                 <option value="Aéreo">Aéreo</option>
                                 <option value="Marítimo">Marítimo</option>
@@ -549,15 +550,17 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                       </td>
                       
                       <td className="p-4 text-center align-top">
-                        <button 
+                        <Button
+                          variant={hiloAbierto === idx ? 'secondaryBrand' : 'secondary'}
+                          size="md"
                           onClick={() => setHiloAbierto(hiloAbierto === idx ? null : idx)} 
-                          className={`relative inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-black text-[10px] uppercase transition-colors mt-2 ${hiloAbierto === idx ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`} 
+                          className="relative mt-2"
                         >
                           <MessageSquare size={14} className={msgCount === 0 ? 'opacity-50' : ''} />
                           <span className={msgCount === 0 ? 'opacity-50' : ''}>Msgs</span>
                           {msgCount > 0 && <span className="ml-0.5 opacity-70">({msgCount})</span>}
                           {unreadCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-blue-500 text-white text-[8px] w-4 h-4 flex items-center justify-center rounded-full shadow-sm">{unreadCount}</span>}
-                        </button>
+                        </Button>
                       </td>
                       
                       <td className="p-4 align-top text-center">

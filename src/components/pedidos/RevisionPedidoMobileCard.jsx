@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Check, X, MessageSquare, ArrowLeftRight, Ban, MessageCircleQuestion } from 'lucide-react';
 import { auth } from '../../firebase';
+import { Button } from '../ui/Button';
 import { HiloComentariosItem } from '../hilos/HiloComentariosItem';
 import { EstadoItemChip } from './negociacion/EstadoItemChip';
 import { FormularioOferta } from './negociacion/FormularioOferta';
@@ -162,9 +163,11 @@ export const RevisionPedidoMobileCard = ({
           )}
 
           <div className="flex w-full justify-between items-center">
-            <button 
+            <Button
+              variant={hiloAbierto === idx ? 'secondaryBrand' : 'secondary'}
+              size="md"
               onClick={() => setHiloAbierto(hiloAbierto === idx ? null : idx)} 
-              className={`relative inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-black text-[10px] uppercase transition-colors ${hiloAbierto === idx ? 'bg-purple-100 text-purple-700' : 'bg-slate-50 text-slate-600 border border-slate-100'}`}
+              className="relative"
             >
               <MessageSquare size={14} className={msgCount === 0 ? 'opacity-50' : ''} />
               <span>Mensajes</span>
@@ -172,7 +175,7 @@ export const RevisionPedidoMobileCard = ({
               {unreadCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 bg-blue-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow-sm">{unreadCount}</span>
               )}
-            </button>
+            </Button>
             
             {!isPending && neg.sinNotificar && neg.ultimoCambio?.rol === 'comprador' && (
               <button 
