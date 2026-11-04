@@ -65,7 +65,7 @@ export const NuevaSolicitudGateway = ({ role }) => {
           <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2 group-hover:text-primary-strong transition-colors">
             Pedido Manual
           </h2>
-          <p className="text-slate-500 text-sm leading-relaxed font-medium">
+          <p className="text-slate-600 text-sm leading-relaxed font-medium">
             Registra un pedido que ya cuenta con un precio acordado para que compras proceda directamente con la validación y compra.
           </p>
         </button>
