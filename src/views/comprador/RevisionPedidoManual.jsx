@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
-import { Loader2, ArrowLeft, Check, X, ArrowLeftRight, MessageSquare, Save, Ban, MessageCircleQuestion, ShieldAlert } from 'lucide-react';
+import { Loader2, Check, X, ArrowLeftRight, MessageSquare, Save, Ban, MessageCircleQuestion, ShieldAlert } from 'lucide-react';
 import { HiloComentariosItem } from '../../components/hilos/HiloComentariosItem';
 import { RevisionPedidoMobileCard } from '../../components/pedidos/RevisionPedidoMobileCard';
 import { useMensajesResumen } from '../../hooks/useMensajesResumen';
@@ -276,36 +277,35 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
         />
       )}
       {/* Encabezado Superior */}
-      <div className="flex flex-row items-center justify-between gap-4 mb-4 md:mb-8">
-        <div className="flex items-center gap-2 md:gap-4">
-          <button onClick={() => navigate('/compras')} className="p-1.5 md:p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600 shrink-0">
-            <ArrowLeft size={24} className="hidden md:block" />
-            <ArrowLeft size={20} className="md:hidden" />
-          </button>
-          <div>
-            <h1 className="text-xl md:text-3xl font-black text-slate-800 italic uppercase tracking-tighter leading-none md:leading-normal">
-              <span className="hidden md:inline">Revisión de Pedido</span>
-              <span className="md:hidden">Revisión Pedido</span>
-            </h1>
-            <p className="text-slate-500 font-bold text-[10px] md:text-xs uppercase tracking-widest hidden md:block">
-              Ref: {solicitudBase.correlativo} — Cliente: {solicitudBase.cliente}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {solicitudBase?.estado === 'Venta Perdida' ? (
-            <div className="bg-rose-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[10px] font-black uppercase flex items-center gap-1.5 shadow-md">
-              <span>Venta Perdida</span>
+      <PageHeader
+        onBack={() => navigate('/compras')}
+        title={(
+          <>
+            <span className="hidden md:inline">Revisión de Pedido</span>
+            <span className="md:hidden">Revisión Pedido</span>
+          </>
+        )}
+        subtitle={(
+          <span className="hidden md:inline">
+            Ref: {solicitudBase.correlativo} — Cliente: {solicitudBase.cliente}
+          </span>
+        )}
+        actions={(solicitudBase?.estado === 'Venta Perdida' || allClosed) ? (
+            <div className="flex items-center gap-2">
+              {solicitudBase?.estado === 'Venta Perdida' ? (
+                <div className="bg-rose-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[10px] font-black uppercase flex items-center gap-1.5 shadow-md">
+                  <span>Venta Perdida</span>
+                </div>
+              ) : allClosed && (
+                <div className="bg-slate-800 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[10px] font-black uppercase flex items-center gap-1.5 shadow-md">
+                  <Check size={14} className="text-emerald-400" />
+                  <span className="hidden md:inline">Pedido Finalizado</span>
+                  <span className="md:hidden">Finalizado</span>
+                </div>
+              )}
             </div>
-          ) : allClosed && (
-            <div className="bg-slate-800 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[10px] font-black uppercase flex items-center gap-1.5 shadow-md">
-              <Check size={14} className="text-emerald-400" />
-              <span className="hidden md:inline">Pedido Finalizado</span>
-              <span className="md:hidden">Finalizado</span>
-            </div>
-          )}
-        </div>
-      </div>
+        ) : null}
+      />
 
       {/* Resumen Móvil (< md): Correlativo, estado e info del cliente */}
       <div className="md:hidden bg-white rounded-2xl p-4 shadow-[var(--tf-shadow-card)] mb-4 space-y-2">
@@ -409,9 +409,9 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
         onFiltrar={setFiltroTurno}
       />
 
-      <div className="bg-white rounded-3xl shadow-[var(--tf-shadow-card)] overflow-hidden mb-6">
-        <div className="p-4 bg-slate-900 flex justify-between items-center">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Ítems del Pedido</span>
+      <div className="tf-tabla-card mb-6">
+        <div className="px-4 pb-3 pt-2">
+          <span className="text-sm font-medium text-foreground">Ítems del Pedido</span>
         </div>
 
         {/* Vista móvil/tablet (lg: 1024px) */}
@@ -445,9 +445,9 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
 
         {/* Vista escritorio (>1024px) */}
         <div className="hidden lg:block">
-          <table className="w-full text-left">
-            <thead className="text-[10px] uppercase font-black tracking-widest text-slate-400 border-b border-slate-100">
-              <tr>
+          <table className="tf-tabla text-left">
+            <thead>
+              <tr className="tf-tabla-head">
                 <th className="p-4 w-[25%]">Producto</th>
                 <th className="p-4 w-[40%]">Condiciones</th>
                 <th className="p-4 w-28 text-center">Mensajes</th>
@@ -486,7 +486,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                 const seguimiento = obtenerSeguimientoItem(p, idx);
 
                 return (
-                  <tbody key={idx} className="border-b border-slate-100 last:border-b-0">
+                  <tbody key={idx} className="[&:not(:first-of-type)>tr:first-child>td]:border-t [&:not(:first-of-type)>tr:first-child>td]:border-border-subtle">
                     <tr className={`transition-colors ${esCerrado ? 'opacity-60 bg-slate-50/50' : isPending ? 'bg-white' : 'hover:bg-slate-50'}`}>
                       <td className="p-4 align-top">
                         <div className="font-bold text-sm uppercase text-slate-700 leading-tight pr-4">{p.descripcion}</div>
