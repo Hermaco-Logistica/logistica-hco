@@ -1020,9 +1020,11 @@ export const Calculadora = ({ onGuardar }) => {
         </div>
       </div>
 
+      {/* Tarjeta de productos: en escritorio (md+) agrupa título, toggle Picard y tabla; en móvil no genera caja (contents) */}
+      <div className="contents md:block tf-tabla-card md:mb-8">
       {/* Cabecera de Tabla con Toggle Picard */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 mt-2">
-        <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Productos de la Solicitud</h3>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 mt-2 md:mb-0 md:mt-0 md:px-4 md:pb-3 md:pt-2">
+        <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider md:font-medium md:normal-case md:tracking-normal md:text-foreground">Productos de la Solicitud</h3>
         <div className="flex items-center gap-2 flex-wrap">
           {mostrarPicard && (
             <div ref={costosPicardRef} className={`relative overflow-hidden rounded-xl border transition-all duration-300 ease-out ${costosPicardExpandidos ? 'w-[18.5rem] border-amber-300 bg-amber-50 shadow-sm' : 'w-32 border-amber-200 bg-amber-50/70'}`}>
@@ -1468,39 +1470,39 @@ export const Calculadora = ({ onGuardar }) => {
       </div>
 
       {/* Vista Escritorio (>= md): Tabla de Productos tradicional */}
-      <div className="hidden md:block bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden mb-8">
+      <div className="hidden md:block">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse table-fixed">
-            <thead className="bg-slate-800 text-white text-[9px] uppercase font-bold">
-              <tr>
+          <table className="tf-tabla text-left table-fixed">
+            <thead>
+              <tr className="tf-tabla-head">
                 <th className="p-3 w-10 text-center">Sel</th>
                 <th className="p-3 w-48">Producto / Marca</th>
                 <th className="p-3 w-12 text-center">Cant</th>
                 {mostrarPicard ? (
                   <>
-                    <th className="p-3 w-20 text-center bg-slate-900/40">FOB SKF</th>
-                    <th className="p-3 w-24 text-center bg-emerald-900/40 font-black text-emerald-400">Venta (A)</th>
-                    <th className="p-3 w-20 text-center bg-emerald-900/40">Costo SKF</th>
-                    <th className="p-3 w-20 text-center bg-emerald-900/60">FV SKF</th>
-                    <th className="p-3 w-20 text-center bg-amber-900/30 font-black text-amber-400">FOB Picard</th>
-                    <th className="p-3 w-20 text-center bg-amber-900/40 font-black text-amber-400">Costo Picard</th>
-                    <th className="p-3 w-20 text-center bg-amber-900/50 font-black text-amber-400">FV Picard</th>
+                    <th className="p-3 w-20 text-center">FOB SKF</th>
+                    <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />Venta (A)</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />Costo SKF</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />FV SKF</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-amber-700"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-amber-700" />FOB Picard</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-amber-700"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-amber-700" />Costo Picard</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-amber-700"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-amber-700" />FV Picard</span></th>
                   </>
                 ) : (
                   <>
                     <th className="p-3 w-20 text-center">FOB Unit</th>
-                    <th className="p-3 w-24 text-center bg-emerald-900/40 font-black text-emerald-400">Venta (A)</th>
-                    <th className="p-3 w-16 text-center bg-emerald-900/60">% Renta</th>
+                    <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />Venta (A)</span></th>
+                    <th className="px-1.5 py-3 w-16 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />% Renta</span></th>
                   </>
                 )}
-                <th className="p-3 w-24 text-center bg-blue-900/40 font-black text-blue-400">Venta (M)</th>
-                <th className="p-3 w-16 text-center bg-blue-900/60">% Renta</th>
+                <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-blue-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-blue-600" />Venta (M)</span></th>
+                <th className="px-1.5 py-3 w-16 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-blue-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-blue-600" />% Renta</span></th>
                 <th className="p-3 w-32">Entrega (A/M)</th>
                 <th className="p-3 w-32">Notas</th>
-                <th className="p-3 w-12 text-center">Acción</th>
+                <th className="py-3 px-1 w-12 text-center">Acción</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-[11px]">
+            <tbody className="text-[11px]">
               {items.map((p, idx) => {
                 const currentFob = Number(p.fob || 0);
                 const isSelected = p.selected;
@@ -1768,6 +1770,7 @@ export const Calculadora = ({ onGuardar }) => {
             </tbody>
           </table>
         </div>
+      </div>
       </div>
 
       {/* ACCIONES INFERIORES RESPONSIVAS (Móvil vía BottomDock, Escritorio vía sticky en flujo) */}
