@@ -34,7 +34,7 @@
  *   ambos (emails.test.js solo busca un literal, #e0f2fe).
  *
  * VALORES QUE NO CALZAN CON UN TOKEN (listados, no redondeados):
- *   - mode-air / mode-sea: las tablas de detalle usan emerald-700 y blue-700 (y la Calculadora emerald-600 y blue-600), no estos valores.
+ *   - mode-air / mode-sea: antes #247a9b / #536f9b (solo los leía --detalle-air/-sea, sin uso). Ahora valen emerald-600 / blue-600, el valor real de las vistas.
  *   - Estados: las etiquetas de usuario (TONOS en utils/etiquetas.js) usan pasteles de Tailwind distintos
  *     (emerald-100/800, rose-100/700, amber-100/800, sky-100/700). Irán en la familia tag-* (C2).
  *   - Color del rol fuera de index.css (Sidebar.jsx, BottomTabBar.jsx, roleColors.js, theme.js): migrado en C3b a los
@@ -129,9 +129,24 @@
   --color-analysis-accent: var(--color-slate-800);        /* theme.js textAccent (sin rol: slate-800) */
   --color-analysis-accent-active: var(--color-slate-900); /* theme.js activePeriod (sin rol: slate-900) */
 
-  /* Dominio (valores --detalle-air / --detalle-sea) */
-  --color-mode-air: #247a9b;
-  --color-mode-sea: #536f9b;
+  /* Dominio: aéreo y marítimo. Fijos (no siguen al rol). Apuntan a la paleta v4 con el tono exacto que usaban las clases emerald-* y blue-* de
+     Calculadora, DetalleRFQProductos y DetalleRFQVista. */
+  --color-mode-air: var(--color-emerald-600);
+  --color-mode-air-strong: var(--color-emerald-700);
+  --color-mode-air-soft: var(--color-emerald-50);
+  --color-mode-air-border: var(--color-emerald-200);
+  --color-mode-air-100: var(--color-emerald-100);
+  --color-mode-air-800: var(--color-emerald-800);
+  --color-mode-air-900: var(--color-emerald-900);
+  --color-mode-air-950: var(--color-emerald-950);
+  --color-mode-sea: var(--color-blue-600);
+  --color-mode-sea-strong: var(--color-blue-700);
+  --color-mode-sea-soft: var(--color-blue-50);
+  --color-mode-sea-border: var(--color-blue-200);
+  --color-mode-sea-100: var(--color-blue-100);
+  --color-mode-sea-500: var(--color-blue-500);
+  --color-mode-sea-900: var(--color-blue-900);
+  --color-mode-sea-950: var(--color-blue-950);
 
   /* Gráficos (lista de views/analisis/theme.js y anillos de Análisis) */
   --color-chart-1: #f59e0b;
