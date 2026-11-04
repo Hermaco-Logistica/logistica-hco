@@ -144,7 +144,7 @@ export const DetallePedidoMobileCard = ({
           <button
             type="button"
             onClick={() => setHiloAbierto(hiloAbierto === idx ? null : idx)}
-            className={`relative inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${hiloAbierto === idx ? 'border-purple-300 bg-purple-100 text-purple-700' : 'border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`relative inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${hiloAbierto === idx ? 'border-primary/30 bg-primary-soft text-primary-strong hover:bg-primary/15' : 'border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
             aria-label={`Mensajes del ítem${msgCount > 0 ? ` (${msgCount})` : ''}`}
             title={`Mensajes${msgCount > 0 ? ` (${msgCount})` : ''}`}
           >
