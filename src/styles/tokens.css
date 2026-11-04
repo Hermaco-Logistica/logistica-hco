@@ -175,17 +175,17 @@
 
   .role-vendedor,
   body[data-role="vendedor"] {
-    --color-primary: #8b5cf6;
-    --color-primary-strong: #7c3aed;
-    --color-secondary: #312e81;
-    --color-background: #f4f0ff;
-    --color-nav-accent: var(--color-violet-500);
-    --color-nav-accent-text: var(--color-violet-300);
-    --color-nav-accent-strong: var(--color-violet-600);
-    --color-nav-accent-hover: var(--color-violet-700);
-    --color-nav-glow: rgb(124 58 237 / 0.18);
-    --color-analysis-accent: var(--color-purple-600);
-    --color-analysis-accent-active: var(--color-purple-600);
+    --color-primary: #7964a9;
+    --color-primary-strong: #614e8c;
+    --color-secondary: #310845;
+    --color-background: #f7eefb;
+    --color-nav-accent: var(--color-primary);
+    --color-nav-accent-text: #afa2cc;
+    --color-nav-accent-strong: var(--color-primary-strong);
+    --color-nav-accent-hover: #534378;
+    --color-nav-glow: rgb(97 78 140 / 0.18);
+    --color-analysis-accent: var(--color-primary-strong);
+    --color-analysis-accent-active: var(--color-primary-strong);
   }
 
   .role-gerente,
