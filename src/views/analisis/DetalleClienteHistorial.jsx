@@ -50,6 +50,7 @@ import {
   parseFinDiaElSalvador,
   cargarFiltroPeriodoStorage
 } from '../../utils/dateValidation';
+import { TablePagination } from '../../components/ui/TablePagination';
 
 const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGanada, irADetalle, onMostrarMotivo, soloAnulados = false, decisionFilter = 'anulados' }) => {
   const [expanded, setExpanded] = useState(false);
@@ -1105,31 +1106,14 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           </>
         )}
 
-        {/* PAGINACIÓN DE 10 EN 10 */}
-        {totalPages > 1 && (
-          <div className="p-3 border-t border-slate-100 flex items-center justify-between">
-            <button 
-              type="button"
-              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-              disabled={safeCurrentPage === 1}
-              className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-            >
-              Anterior
-            </button>
-            <span className="text-[11px] font-medium text-slate-400">
-              Página {safeCurrentPage} de {totalPages} ({movimientosFiltrados.length} productos)
-            </span>
-            <button 
-              type="button"
-              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
-              disabled={safeCurrentPage === totalPages}
-              className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-            >
-              Siguiente
-            </button>
-          </div>
-        )}
       </div>
+      <TablePagination
+        page={safeCurrentPage}
+        totalPages={totalPages}
+        totalItems={movimientosFiltrados.length}
+        noun="productos"
+        onPageChange={setCurrentPage}
+      />
       </div>
     </>
   );
