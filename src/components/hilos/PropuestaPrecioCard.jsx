@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Send, Check, X, Plane, Ship } from 'lucide-react';
 import { Etiqueta } from '../../components/Etiqueta';
+import { Button } from '../ui/Button';
 
 const ModalidadIcon = ({ mod, className }) => {
   if (mod === 'Marítimo') return <Ship size={14} className={className} />;
@@ -63,7 +64,7 @@ export const PropuestaPrecioCard = ({ mensaje, currentUser, onAceptar, onContrao
             <span className="text-slate-300 font-bold text-xs">&rarr;</span>
           </>
         )}
-        <span className="text-emerald-600 font-black text-lg">
+        <span className="text-slate-800 font-black text-lg">
           ${Number(mensaje.precioPropuesto || 0).toFixed(2)}
         </span>
         <span className="text-slate-400 font-bold text-[10px]">c/u</span>
@@ -134,7 +135,7 @@ export const PropuestaPrecioCard = ({ mensaje, currentUser, onAceptar, onContrao
                   value={nuevoFob}
                   onChange={(e) => setNuevoFob(e.target.value)}
                   placeholder="Precio"
-                  className="w-1/2 bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs font-bold outline-none focus:border-blue-500"
+                  className="w-1/2 bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs font-bold outline-none focus:border-primary"
                   autoFocus
                 />
                 <input
@@ -142,13 +143,13 @@ export const PropuestaPrecioCard = ({ mensaje, currentUser, onAceptar, onContrao
                   value={tiempoEntrega}
                   onChange={(e) => setTiempoEntrega(e.target.value)}
                   placeholder="Tiempo entrega"
-                  className="w-1/2 bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs outline-none focus:border-blue-500"
+                  className="w-1/2 bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs outline-none focus:border-primary"
                 />
               </div>
               <select
                 value={modalidad}
                 onChange={(e) => setModalidad(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs font-bold outline-none focus:border-blue-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs font-bold outline-none focus:border-primary"
               >
                 <option value="Aéreo">Aéreo</option>
                 <option value="Marítimo">Marítimo</option>
@@ -158,17 +159,19 @@ export const PropuestaPrecioCard = ({ mensaje, currentUser, onAceptar, onContrao
                 value={nota}
                 onChange={(e) => setNota(e.target.value)}
                 placeholder="Nota (opcional)"
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs outline-none focus:border-blue-500"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs outline-none focus:border-primary"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleContraofertar();
                 }}
               />
-              <button
+              <Button
+                variant="primary"
+                size="lg"
                 onClick={handleContraofertar}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-black text-[10px] uppercase py-2 rounded-xl transition-colors flex items-center justify-center gap-1"
+                className="w-full"
               >
                 <Send size={12} /> Enviar Propuesta
-              </button>
+              </Button>
             </div>
           )}
         </div>
