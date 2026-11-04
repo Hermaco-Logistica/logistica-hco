@@ -12,7 +12,7 @@ export const ROLE_THEMES = {
     label: 'Compras & Logística',
     textAccent: 'text-analysis-accent',
     textAccentHover: 'hover:text-blue-700',
-    linkClass: 'text-analysis-accent hover:text-blue-700',
+    linkClass: 'text-analysis-accent hover:text-nav-accent-hover',
     activePeriod: 'bg-analysis-accent-active text-white shadow-xs',
     flujoEstados: {
       pendiente: {
@@ -52,7 +52,7 @@ export const ROLE_THEMES = {
     label: 'Ventas Comercial',
     textAccent: 'text-analysis-accent',
     textAccentHover: 'hover:text-purple-700',
-    linkClass: 'text-analysis-accent hover:text-purple-700',
+    linkClass: 'text-analysis-accent hover:text-nav-accent-hover',
     activePeriod: 'bg-analysis-accent-active text-white shadow-xs',
     flujoEstados: {
       pendiente: {
@@ -92,7 +92,7 @@ export const ROLE_THEMES = {
     label: 'Gerencia General',
     textAccent: 'text-analysis-accent',
     textAccentHover: 'hover:text-emerald-700',
-    linkClass: 'text-analysis-accent hover:text-emerald-700',
+    linkClass: 'text-analysis-accent hover:text-nav-accent-hover',
     activePeriod: 'bg-analysis-accent-active text-white shadow-xs',
     flujoEstados: {
       pendiente: {
@@ -132,7 +132,7 @@ export const ROLE_THEMES = {
     label: 'Administración',
     textAccent: 'text-analysis-accent',
     textAccentHover: 'hover:text-rose-800',
-    linkClass: 'text-analysis-accent hover:text-rose-800',
+    linkClass: 'text-analysis-accent hover:text-nav-accent-hover',
     activePeriod: 'bg-analysis-accent-active text-white shadow-xs',
     flujoEstados: {
       pendiente: {
