@@ -16,6 +16,7 @@ import {
   parseFinDiaElSalvador,
   cargarFiltroPeriodoStorage
 } from '../../utils/dateValidation';
+import { TablePagination } from '../../components/ui/TablePagination';
 
 export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const { tipoEstado } = useParams();
@@ -335,7 +336,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
       </div>
 
       {/* FILTROS Y BÚSQUEDA */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+      <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full md:w-80">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -423,7 +424,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
       {/* TABLA DE SOLICITUDES */}
       <div className="flex flex-col gap-3">
         {paginatedSolicitudes.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl border border-slate-200/80 shadow-xs">
+          <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl shadow-[var(--tf-shadow-card)]">
             No se encontraron solicitudes con los criterios seleccionados.
           </div>
         ) : (
@@ -439,7 +440,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                 const itemsAnulados = obtenerItemsAnulados(s);
 
                 return (
-                  <div key={s.id} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 relative">
+                  <div key={s.id} className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3 relative">
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col">
                         <span className="font-mono text-[11px] font-bold text-slate-800">{s.correlativo || 'S/N'}</span>
@@ -530,7 +531,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
             </div>
 
             {/* VISTA DESKTOP (Tabla original) */}
-            <div className="hidden md:flex bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex-col">
+            <div className="hidden md:flex bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden flex-col">
               <div
                 ref={scrollContainerRef}
                 onMouseDown={handleDragStart}
@@ -542,7 +543,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
               >
                 <table className="min-w-full w-max text-left text-xs">
                   <thead className="sticky top-0 z-10">
-                    <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <tr className="tf-tabla-head">
                       <th className="py-2.5 px-3.5 whitespace-nowrap">Correlativo</th>
                       <th className="py-2.5 px-3.5 whitespace-nowrap">Cliente</th>
                       <th className="py-2.5 px-3.5 whitespace-nowrap">Vendedor</th>
@@ -695,31 +696,13 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
         )}
       </div>
 
-      {/* PAGINACIÓN DE 10 EN 10 */}
-      {totalPages > 1 && (
-        <div className="p-3 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
-          <button 
-            type="button"
-            onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-            disabled={safeCurrentPage === 1}
-            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-          >
-            Anterior
-          </button>
-          <span className="text-[11px] font-medium text-slate-400 text-center px-2">
-            Página <span className="font-bold text-slate-600">{safeCurrentPage}</span> de {totalPages} <br className="sm:hidden" />
-            <span className="hidden sm:inline">({paginatedSolicitudes.length} regs)</span>
-          </span>
-          <button 
-            type="button"
-            onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
-            disabled={safeCurrentPage === totalPages}
-            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-          >
-            Siguiente
-          </button>
-        </div>
-      )}
+      <TablePagination
+        page={safeCurrentPage}
+        totalPages={totalPages}
+        totalItems={solicitudesOrdenadas.length}
+        noun="solicitudes"
+        onPageChange={setCurrentPage}
+      />
       </div>
     </>
   );

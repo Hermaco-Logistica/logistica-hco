@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { TablePagination } from '../../components/ui/TablePagination';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { collection, onSnapshot, doc, updateDoc, serverTimestamp, getDoc, getDocFromServer, query, where, runTransaction } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { 
@@ -837,7 +840,7 @@ export const DashboardPedidos = ({ role }) => {
   ].filter(Boolean).length;
 
   return (
-    <div className="w-full animate-in fade-in duration-500 pb-10">
+    <PageContainer className="animate-in fade-in duration-500 pb-10">
       {modalDuplicado.open && (
         <Modal etiqueta="Correlativo existente" onCerrar={cancelarDuplicado}>
           <ModalEncabezado
@@ -861,16 +864,10 @@ export const DashboardPedidos = ({ role }) => {
           </ModalPie>
         </Modal>
       )}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-800 italic uppercase tracking-tighter">
-            Seguimiento de Pedidos <span className="text-emerald-500">.</span>
-          </h1>
-          <p className="text-slate-400 font-bold text-[11px] uppercase tracking-[0.3em]">
-            Vista: {role === 'vendedor' ? 'Ventas y Tiempos' : 'Compras y Logística'}
-          </p>
-        </div>
-        {role === 'comprador' && seleccionados.length > 0 && (
+      <PageHeader
+        title={<>Seguimiento de Pedidos <span className="text-emerald-500">.</span></>}
+        subtitle={`Vista: ${role === 'vendedor' ? 'Ventas y Tiempos' : 'Compras y Logística'}`}
+        actions={role === 'comprador' && seleccionados.length > 0 && (
            <button 
              onClick={() => setShowAsignador(!showAsignador)} 
              className="hidden md:flex justify-center bg-emerald-500 text-white px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-500/20 items-center gap-3 active:scale-95 transition-all cursor-pointer"
@@ -878,10 +875,10 @@ export const DashboardPedidos = ({ role }) => {
              <LinkIcon size={16} /> Vincular Selección ({seleccionados.length})
            </button>
         )}
-      </div>
+      />
 
       {/* BARRA DE FILTROS MÓVIL (visible en < md) */}
-      <div className="md:hidden bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs mb-4 space-y-3">
+      <div className="md:hidden bg-white p-3.5 rounded-2xl shadow-[var(--tf-shadow-card)] mb-4 space-y-3">
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <input 
@@ -889,7 +886,7 @@ export const DashboardPedidos = ({ role }) => {
               placeholder="Buscar ítem, ref, cliente..." 
               value={searchItemRef}
               onChange={(e) => { setSearchItemRef(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none focus:border-slate-400 text-slate-700"
+              className="tf-campo"
             />
           </div>
           <button
@@ -934,7 +931,7 @@ export const DashboardPedidos = ({ role }) => {
                 placeholder="N° de OC..." 
                 value={searchOCRef}
                 onChange={(e) => { setSearchOCRef(e.target.value); setCurrentPage(1); }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700"
+                className="tf-campo"
               />
             </div>
             {(role === 'comprador' || role === 'administrador') && (
@@ -943,7 +940,7 @@ export const DashboardPedidos = ({ role }) => {
                 <select 
                   value={filterProveedor} 
                   onChange={(e) => { setFilterProveedor(e.target.value); setCurrentPage(1); }}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 cursor-pointer"
+                  className="tf-campo cursor-pointer"
                 >
                   <option value="">TODOS LOS PROVEEDORES</option>
                   {proveedoresDisponibles.map(prov => (
@@ -957,7 +954,7 @@ export const DashboardPedidos = ({ role }) => {
               <select 
                 value={filterEstadoLogistico} 
                 onChange={(e) => { setFilterEstadoLogistico(e.target.value); setCurrentPage(1); }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 cursor-pointer"
+                className="tf-campo cursor-pointer"
               >
                 <option value="">TODOS LOS ESTADOS</option>
                 {estadosLogicosDisponibles.map(est => (
@@ -968,7 +965,7 @@ export const DashboardPedidos = ({ role }) => {
             <div className="relative" ref={refCalendarioConfirmadoMobile}>
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fecha Confirmado</label>
               <div 
-                className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold cursor-pointer text-slate-700" 
+                className="tf-campo flex items-center gap-1 cursor-pointer" 
                 onClick={() => setMostrarCalendarioConfirmado(!mostrarCalendarioConfirmado)}
               >
                 <Calendar size={14} className="text-slate-400 shrink-0" />
@@ -978,7 +975,7 @@ export const DashboardPedidos = ({ role }) => {
                 )}
               </div>
               {mostrarCalendarioConfirmado && (
-                <div className="absolute right-0 mt-2 z-40 bg-white border border-slate-200 shadow-2xl rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+                <div className="absolute right-0 mt-2 z-40 bg-white shadow-[var(--tf-shadow-card)] rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <button type="button" onClick={() => cambiarMesConfirmado(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
                     <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
@@ -1022,7 +1019,7 @@ export const DashboardPedidos = ({ role }) => {
             placeholder="Escribe para buscar..." 
             value={searchItemRef}
             onChange={(e) => { setSearchItemRef(e.target.value); setCurrentPage(1); }}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
+            className="tf-campo"
           />
         </div>
         {(role === 'comprador' || role === 'administrador') && (
@@ -1031,7 +1028,7 @@ export const DashboardPedidos = ({ role }) => {
             <select 
               value={filterProveedor} 
               onChange={(e) => { setFilterProveedor(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+              className="tf-campo cursor-pointer"
             >
               <option value="">TODOS LOS PROVEEDORES</option>
               {proveedoresDisponibles.map(prov => (
@@ -1045,7 +1042,7 @@ export const DashboardPedidos = ({ role }) => {
           <select 
             value={filterEstadoLogistico} 
             onChange={(e) => { setFilterEstadoLogistico(e.target.value); setCurrentPage(1); }}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+            className="tf-campo cursor-pointer"
           >
             <option value="">TODOS LOS ESTADOS</option>
             {estadosLogicosDisponibles.map(est => (
@@ -1060,14 +1057,14 @@ export const DashboardPedidos = ({ role }) => {
             placeholder="N° de OC..." 
             value={searchOCRef}
             onChange={(e) => { setSearchOCRef(e.target.value); setCurrentPage(1); }}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
+            className="tf-campo"
           />
         </div>
 
         {/* Rango de Fecha Confirmación Calendario Popover */}
         <div className="relative" ref={refCalendarioConfirmado}>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fecha Confirmado</label>
-          <div className="flex items-center gap-1 bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold cursor-pointer text-slate-700" onClick={() => setMostrarCalendarioConfirmado(!mostrarCalendarioConfirmado)}>
+          <div className="tf-campo flex items-center gap-1 cursor-pointer" onClick={() => setMostrarCalendarioConfirmado(!mostrarCalendarioConfirmado)}>
             <Calendar size={14} className="text-slate-400 shrink-0" />
             <span className="truncate flex-1 select-none">{formattedRangoConfirmadoText()}</span>
             {(fechaConfirmadoInicio || fechaConfirmadoFin) && (
@@ -1076,7 +1073,7 @@ export const DashboardPedidos = ({ role }) => {
           </div>
 
           {mostrarCalendarioConfirmado && (
-            <div className="absolute right-0 mt-2 z-30 bg-white border border-slate-200 shadow-2xl rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+            <div className="absolute right-0 mt-2 z-30 bg-white shadow-[var(--tf-shadow-card)] rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
               <div className="flex items-center justify-between mb-4">
                 <button type="button" onClick={() => cambiarMesConfirmado(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
                 <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
@@ -1220,7 +1217,7 @@ export const DashboardPedidos = ({ role }) => {
       {/* VISTA MÓVIL: TARJETAS MINIMALISTAS (< md) */}
       <div className="space-y-2.5 md:hidden mb-6">
         {paginatedItems.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center text-slate-400 font-bold text-xs border border-slate-200">
+          <div className="bg-white rounded-2xl p-8 text-center text-slate-400 font-bold text-xs shadow-[var(--tf-shadow-card)]">
             No se encontraron pedidos con los filtros aplicados.
           </div>
         ) : (
@@ -1348,30 +1345,30 @@ export const DashboardPedidos = ({ role }) => {
       </div>
 
       {/* VISTA DESKTOP: TABLA CLÁSICA (hidden en < md, visible en >= md) */}
-      <div className="hidden md:block bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-x-auto">
-        <table className={`w-full border-collapse ${(role === 'comprador' || role === 'administrador') ? 'min-w-312.5' : 'min-w-250'}`}>
+      <div className="hidden md:block tf-tabla-card overflow-x-auto">
+        <table className={`tf-tabla ${(role === 'comprador' || role === 'administrador') ? 'min-w-312.5' : 'min-w-250'}`}>
           <thead>
-            <tr className="bg-slate-900 text-[9px] text-slate-400 font-black uppercase tracking-[0.15em]">
-              <th 
-                className="p-6 text-center w-14 cursor-pointer select-none hover:bg-slate-800 hover:text-white transition-colors"
+            <tr className="tf-tabla-head">
+              <th
+                className="px-6 py-3 text-center w-14 cursor-pointer select-none hover:text-slate-900 transition-colors"
                 onClick={handleSortCycle}
                 title="Ciclar ordenamiento (Ordenados / Pendientes / Sin ordenar)"
               >
                 Sel{getSortIcon()}
               </th>
-              <th className="p-6 text-left">Ítem / Referencia</th>
-              <th className="p-6 text-center">Confirmado</th>
-              <th className="p-6 text-center">Cant.</th>
-              <th className="p-6 text-right">Venta (Unit/Total)</th>
-              {(role === 'comprador' || role === 'administrador') && <th className="p-6 text-center bg-slate-800">Costo FOB Real</th>}
-              {(role === 'comprador' || role === 'administrador') && <th className="p-6 text-left bg-slate-800">Proveedor</th>}
-              <th className="p-6 text-center">Prometido</th>
-              <th className="p-6 text-center">Countdown</th>
-              <th className="p-6 text-left">Estado Logístico</th>
-              <th className="p-6 text-center">OC Ref.</th>
+              <th className="px-6 py-3 text-left">Ítem / Referencia</th>
+              <th className="px-6 py-3 text-center">Confirmado</th>
+              <th className="px-6 py-3 text-center">Cant.</th>
+              <th className="px-6 py-3 text-right">Venta (Unit/Total)</th>
+              {(role === 'comprador' || role === 'administrador') && <th className="px-6 py-3 text-center">Costo FOB Real</th>}
+              {(role === 'comprador' || role === 'administrador') && <th className="px-6 py-3 text-left">Proveedor</th>}
+              <th className="px-6 py-3 text-center">Prometido</th>
+              <th className="px-6 py-3 text-center">Countdown</th>
+              <th className="px-6 py-3 text-left">Estado Logístico</th>
+              <th className="px-6 py-3 text-center">OC Ref.</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody>
             {paginatedItems.map((item) => {
               const uId = `${item.idRFQ}-${item.indexOriginal}`;
               const ocInfo = getInfoOC(item.numOC);
@@ -1382,7 +1379,7 @@ export const DashboardPedidos = ({ role }) => {
               const ventaTotal = (item.precio || 0) * (item.cantidad || 0);
 
               return (
-                <tr key={uId} className="hover:bg-slate-50/50 transition-colors">
+                <tr key={uId}>
                   <td className="p-6 text-center">
                     {role === 'comprador' && !item.numOC ? (
                       <button onClick={() => toggleSeleccion(uId)} className={`relative flex items-center justify-center mx-auto transition-colors ${seleccionados.includes(uId) ? 'text-blue-500' : 'text-slate-200 hover:text-slate-300'}`}>
@@ -1488,32 +1485,13 @@ export const DashboardPedidos = ({ role }) => {
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-6 p-4 sm:px-6 bg-slate-900 rounded-2xl sm:rounded-3xl text-white select-none">
-          <div className="flex items-center justify-between w-full sm:w-auto gap-3">
-            <button
-              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-              disabled={safeCurrentPage === 1}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer"
-            >
-              Anterior
-            </button>
-            <span className="sm:hidden text-[11px] font-bold text-slate-300">
-              {safeCurrentPage} de {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
-              disabled={safeCurrentPage === totalPages}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer"
-            >
-              Siguiente
-            </button>
-          </div>
-          <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-widest text-slate-300">
-            Página {safeCurrentPage} de {totalPages} ({filteredItems.length} ítems)
-          </span>
-        </div>
-      )}
+      <TablePagination
+        page={safeCurrentPage}
+        totalPages={totalPages}
+        totalItems={filteredItems.length}
+        noun="ítems"
+        onPageChange={setCurrentPage}
+      />
       {/* FAB y Modal Asignador para Mobile */}
       {role === 'comprador' && seleccionados.length > 0 && (
         <div className="md:hidden">
@@ -1625,6 +1603,6 @@ export const DashboardPedidos = ({ role }) => {
         fechaUltimoEstado={trackingModal.fechaUltimoEstado}
         role={role}
       />
-    </div>
+    </PageContainer>
   );
 };

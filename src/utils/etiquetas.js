@@ -31,42 +31,46 @@ import {
  *   definir clases de color/redondeo para etiquetas; ESLint lo impide (ver eslint.config.js).
  */
 
-/** Paleta semántica: fondo pastel + texto oscuro de la misma familia. Sin borde. */
+/**
+ * Paleta semántica: fondo pastel + texto oscuro de la misma familia. Sin borde.
+ * Los colores salen de los tokens tag-* (styles/tokens.css). Las utilidades van escritas completas para que Tailwind las detecte.
+ * `oscuro` conserva bg-slate-800 a propósito: index.css lo remapea por rol (.role-* .bg-slate-800).
+ */
 export const TONOS = {
-  neutral: 'bg-slate-100 text-slate-600',
-  suave: 'bg-slate-50 text-slate-500',
-  apagado: 'bg-slate-100 text-slate-500',
-  oscuro: 'bg-slate-800 text-slate-300',
-  exito: 'bg-emerald-100 text-emerald-800',
-  info: 'bg-sky-100 text-sky-700',
-  azul: 'bg-blue-100 text-blue-700',
-  indigo: 'bg-indigo-100 text-indigo-700',
-  aviso: 'bg-amber-100 text-amber-800',
-  peligro: 'bg-rose-100 text-rose-700',
-  naranja: 'bg-orange-100 text-orange-700',
-  violeta: 'bg-violet-100 text-violet-700',
-  morado: 'bg-purple-100 text-purple-700',
-  turquesa: 'bg-teal-100 text-teal-800',
-  amarillo: 'bg-yellow-100 text-yellow-800'
+  neutral: 'bg-tag-neutral-soft text-tag-neutral',
+  suave: 'bg-tag-suave-soft text-tag-suave',
+  apagado: 'bg-tag-apagado-soft text-tag-apagado',
+  oscuro: 'bg-slate-800 text-tag-oscuro',
+  exito: 'bg-tag-exito-soft text-tag-exito',
+  info: 'bg-tag-info-soft text-tag-info',
+  azul: 'bg-tag-azul-soft text-tag-azul',
+  indigo: 'bg-tag-indigo-soft text-tag-indigo',
+  aviso: 'bg-tag-aviso-soft text-tag-aviso',
+  peligro: 'bg-tag-peligro-soft text-tag-peligro',
+  naranja: 'bg-tag-naranja-soft text-tag-naranja',
+  violeta: 'bg-tag-violeta-soft text-tag-violeta',
+  morado: 'bg-tag-morado-soft text-tag-morado',
+  turquesa: 'bg-tag-turquesa-soft text-tag-turquesa',
+  amarillo: 'bg-tag-amarillo-soft text-tag-amarillo'
 };
 
 /** Solo el color de texto de cada tono (para valores que acompañan a una etiqueta pero no son una etiqueta). */
 export const TEXTO_TONO = {
-  neutral: 'text-slate-700',
-  suave: 'text-slate-600',
-  apagado: 'text-slate-500',
-  oscuro: 'text-slate-300',
-  exito: 'text-emerald-700',
-  info: 'text-sky-700',
-  azul: 'text-blue-700',
-  indigo: 'text-indigo-800',
-  aviso: 'text-amber-700',
-  peligro: 'text-rose-600',
-  naranja: 'text-orange-700',
-  violeta: 'text-violet-700',
-  morado: 'text-purple-700',
-  turquesa: 'text-teal-700',
-  amarillo: 'text-yellow-800'
+  neutral: 'text-tag-neutral-text',
+  suave: 'text-tag-suave-text',
+  apagado: 'text-tag-apagado',
+  oscuro: 'text-tag-oscuro',
+  exito: 'text-tag-exito-text',
+  info: 'text-tag-info',
+  azul: 'text-tag-azul',
+  indigo: 'text-tag-indigo-text',
+  aviso: 'text-tag-aviso-text',
+  peligro: 'text-tag-peligro-text',
+  naranja: 'text-tag-naranja',
+  violeta: 'text-tag-violeta',
+  morado: 'text-tag-morado',
+  turquesa: 'text-tag-turquesa-text',
+  amarillo: 'text-tag-amarillo'
 };
 
 /**

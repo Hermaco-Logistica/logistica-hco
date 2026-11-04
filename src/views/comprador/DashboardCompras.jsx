@@ -1,4 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { TablePagination } from '../../components/ui/TablePagination';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useNavigate } from 'react-router-dom';
 import { 
   Printer, X, Calendar as CalendarIcon, Trash2, Filter, 
@@ -389,7 +392,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
   ].filter(Boolean).length;
 
   return (
-    <div className="animate-in fade-in duration-500">
+    <PageContainer className="animate-in fade-in duration-500">
       {/* Modal Anulación Global */}
       {modalAnulacionGlobal.open && (
         <ModalMotivo
@@ -406,15 +409,13 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
           onCancelar={() => setModalAnulacionGlobal({ open: false, rfqId: null, rfqData: null, motivo: '', enviando: false })}
         />
       )}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-800 tracking-tighter italic">Panel de Compras</h1>
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Gestión de cotizaciones y logística</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Panel de Compras"
+        subtitle="Gestión de cotizaciones y logística"
+      />
 
       {/* BARRA DE FILTROS MÓVIL (visible en < md) */}
-      <div className="md:hidden bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs mb-4 space-y-3">
+      <div className="md:hidden bg-white p-3.5 rounded-2xl shadow-[var(--tf-shadow-card)] mb-4 space-y-3">
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <input 
@@ -422,7 +423,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
               placeholder="Buscar Ref o Cliente..." 
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none focus:border-slate-400 text-slate-700"
+              className="tf-campo"
             />
           </div>
           <button
@@ -461,7 +462,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
           <div className="pt-3 border-t border-slate-100 space-y-2.5 animate-in fade-in duration-200">
             <div>
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Resultado</label>
-              <select value={filterResultado} onChange={(e) => { setFilterResultado(e.target.value); setCurrentPage(1); }} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 cursor-pointer">
+              <select value={filterResultado} onChange={(e) => { setFilterResultado(e.target.value); setCurrentPage(1); }} className="tf-campo cursor-pointer">
                 <option value="">TODOS LOS RESULTADOS</option>
                 {resultadosDisponibles.map(resultado => <option key={resultado} value={resultado}>{etiquetaResultadoSolicitud(resultado).toUpperCase()}</option>)}
               </select>
@@ -471,7 +472,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
               <select 
                 value={filterEstado} 
                 onChange={(e) => { setFilterEstado(e.target.value); setCurrentPage(1); }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 cursor-pointer"
+                className="tf-campo cursor-pointer"
               >
                 <option value="">TODOS LOS ESTADOS</option>
                 {estadosDisponibles.map(est => (
@@ -484,7 +485,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
               <select 
                 value={filterVendedor} 
                 onChange={(e) => { setFilterVendedor(e.target.value); setCurrentPage(1); }}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-700 cursor-pointer"
+                className="tf-campo cursor-pointer"
               >
                 <option value="">TODOS LOS VENDEDORES</option>
                 {vendedoresDisponibles.map(vend => (
@@ -495,7 +496,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             <div className="relative" ref={refCalendarioMobile}>
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Fecha</label>
               <div 
-                className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold cursor-pointer text-slate-700" 
+                className="tf-campo flex items-center gap-1 cursor-pointer" 
                 onClick={() => setMostrarCalendario(!mostrarCalendario)}
               >
                 <CalendarIcon size={14} className="text-slate-400 shrink-0" />
@@ -505,13 +506,13 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                 )}
               </div>
               {mostrarCalendario && (
-                <div className="absolute right-0 mt-2 z-40 bg-white border border-slate-200 shadow-2xl rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+                <div className="absolute right-0 mt-2 z-40 bg-white shadow-[var(--tf-shadow-card)] rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
                   <div className="flex items-center justify-between mb-4">
-                    <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
+                    <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-xl font-black text-slate-600">&lt;</button>
                     <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
                       {mesActual.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
                     </span>
-                    <button type="button" onClick={() => cambiarMes(1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&gt;</button>
+                    <button type="button" onClick={() => cambiarMes(1)} className="hover:bg-slate-100 p-1.5 rounded-xl font-black text-slate-600">&gt;</button>
                   </div>
                   <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-slate-400 mb-2">
                     <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
@@ -541,10 +542,10 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       </div>
 
       {/* CONTROLES DE FILTROS DESKTOP (visible en >= md) */}
-      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 mb-6 bg-white p-6 rounded-3xl shadow-[var(--tf-shadow-card)]">
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Resultado</label>
-          <select value={filterResultado} onChange={(e) => { setFilterResultado(e.target.value); setCurrentPage(1); }} className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer">
+          <select value={filterResultado} onChange={(e) => { setFilterResultado(e.target.value); setCurrentPage(1); }} className="tf-campo cursor-pointer">
             <option value="">TODOS LOS RESULTADOS</option>
             {resultadosDisponibles.map(resultado => <option key={resultado} value={resultado}>{etiquetaResultadoSolicitud(resultado).toUpperCase()}</option>)}
           </select>
@@ -556,7 +557,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             placeholder="Escribe para buscar..." 
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
+            className="tf-campo"
           />
         </div>
         <div>
@@ -564,7 +565,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
           <select 
             value={filterEstado} 
             onChange={(e) => { setFilterEstado(e.target.value); setCurrentPage(1); }}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+            className="tf-campo cursor-pointer"
           >
             <option value="">TODOS LOS ESTADOS</option>
             {estadosDisponibles.map(est => (
@@ -577,7 +578,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
           <select 
             value={filterVendedor} 
             onChange={(e) => { setFilterVendedor(e.target.value); setCurrentPage(1); }}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+            className="tf-campo cursor-pointer"
           >
             <option value="">TODOS LOS VENDEDORES</option>
             {vendedoresDisponibles.map(vend => (
@@ -589,7 +590,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
         {/* Rango de Fecha Calendario Popover */}
         <div className="relative" ref={refCalendario}>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Fecha</label>
-          <div className="flex items-center gap-1 bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold cursor-pointer text-slate-700" onClick={() => setMostrarCalendario(!mostrarCalendario)}>
+          <div className="tf-campo flex items-center gap-1 cursor-pointer" onClick={() => setMostrarCalendario(!mostrarCalendario)}>
             <CalendarIcon size={14} className="text-slate-400 shrink-0" />
             <span className="truncate flex-1 select-none">{formattedRangoText()}</span>
             {(fechaInicio || fechaFin) && (
@@ -598,13 +599,13 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
           </div>
 
           {mostrarCalendario && (
-            <div className="absolute right-0 mt-2 z-30 bg-white border border-slate-200 shadow-2xl rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+            <div className="absolute right-0 mt-2 z-30 bg-white shadow-[var(--tf-shadow-card)] rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
               <div className="flex items-center justify-between mb-4">
-                <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
+                <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-xl font-black text-slate-600">&lt;</button>
                 <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
                   {mesActual.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
                 </span>
-                <button type="button" onClick={() => cambiarMes(1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&gt;</button>
+                <button type="button" onClick={() => cambiarMes(1)} className="hover:bg-slate-100 p-1.5 rounded-xl font-black text-slate-600">&gt;</button>
               </div>
 
               {/* Días de la Semana */}
@@ -666,7 +667,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       {/* VISTA MÓVIL: TARJETAS DETALLADAS Y ESPACIOSAS (< md) */}
       <div className="space-y-3.5 md:hidden mb-6">
         {paginatedSolicitudes.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center text-slate-400 font-bold text-xs border border-slate-200">
+          <div className="bg-white rounded-2xl p-8 text-center text-slate-400 font-bold text-xs shadow-[var(--tf-shadow-card)]">
             No se encontraron cotizaciones con los filtros aplicados.
           </div>
         ) : (
@@ -705,7 +706,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                     abrirVistaCotizacion(s);
                   }
                 }}
-                className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer relative active:scale-[0.98] touch-manipulation"
+                className="bg-white rounded-2xl p-4 shadow-[var(--tf-shadow-card)] hover:shadow-md transition-all cursor-pointer relative active:scale-[0.98] touch-manipulation"
               >
                 {/* Header: Correlativo (Izq) y Estado (Der) */}
                 <div className="flex items-start justify-between mb-1.5">
@@ -725,7 +726,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                             abrirConsultaVentaPerdida(s);
                           }}
                           title="Ver motivo de venta perdida"
-                          className="hidden md:inline-flex p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                          className="hidden md:inline-flex p-0.5 rounded-xl text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
                         >
                           <MessageCircleQuestion size={13} />
                         </button>
@@ -744,7 +745,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                                 abrirConsultaDecision(s);
                               }}
                               title="Ver motivo de la decisión (anulación, rechazo o denegación)"
-                              className="hidden md:inline-flex p-0.5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+                              className="hidden md:inline-flex p-0.5 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
                             >
                               <MessageCircleQuestion size={13} />
                             </button>
@@ -757,7 +758,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                                 abrirConsultaVentaPerdida(s);
                               }}
                               title="Ver motivo de venta perdida"
-                              className="hidden md:inline-flex p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                              className="hidden md:inline-flex p-0.5 rounded-xl text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
                             >
                               <MessageCircleQuestion size={13} />
                             </button>
@@ -926,7 +927,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                       <button
                         type="button"
                         onClick={() => setModalAnulacionGlobal({ open: true, rfqId: s.id, rfqData: s, motivo: '', enviando: false })}
-                        className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors ml-1"
+                        className="p-1.5 rounded-xl text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors ml-1"
                         title="Anular Solicitud Completa"
                       >
                         <Ban size={16} />
@@ -972,10 +973,10 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       </div>
 
       {/* VISTA DESKTOP: TABLA CLÁSICA (hidden en < md, visible en >= md) */}
-      <div className="hidden md:block tf-surface-panel overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-175">
+      <div className="hidden md:block tf-tabla-card overflow-x-auto">
+        <table className="tf-tabla text-left min-w-175">
           <thead>
-            <tr className="tf-table-head-dark text-[10px] uppercase font-black tracking-widest">
+            <tr className="tf-tabla-head">
               <th className="p-4">Referencia / Cliente</th>
               <th className="p-4">Vendedor</th>
               <th className="p-4">Fechas (Solicitud / Respuesta)</th>
@@ -984,7 +985,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
               <th className="p-4 text-center">Acción</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody>
             {paginatedSolicitudes.map((s) => {
               const itemsConPrecio = calcularItemsCotizados(s);
               const tienePendientesPorCotizar = tieneItemsPendientesPorCotizar(s);
@@ -1006,7 +1007,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                 const esPedidoManualTerminado = s.tipo === 'Pedido Manual' && s.productos && s.productos.length > 0 && s.productos.every(p => ['Pedido', 'Comprado', 'Denegado', 'Cancelado', 'Rechazado'].includes(p.estadoItem));
 
               return (
-                <tr key={s.id} className="hover:bg-slate-50 transition-colors">
+                <tr key={s.id}>
                   <td className="p-4">
                     <span className="block font-black text-slate-800 text-lg leading-none">{s.correlativo}</span>
                     <span className="text-[10px] font-bold text-blue-600 uppercase italic">{s.cliente}</span>
@@ -1054,7 +1055,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                               abrirConsultaVentaPerdida(s);
                             }}
                             title="Ver motivo de venta perdida"
-                            className="hidden md:inline-flex p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                            className="hidden md:inline-flex p-0.5 rounded-xl text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
                           >
                             <MessageCircleQuestion size={13} />
                           </button>
@@ -1073,7 +1074,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                                   abrirConsultaDecision(s);
                                 }}
                                 title="Ver motivo de la decisión (anulación, rechazo o denegación)"
-                                className="hidden md:inline-flex p-0.5 rounded text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+                                className="hidden md:inline-flex p-0.5 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
                               >
                                 <MessageCircleQuestion size={13} />
                               </button>
@@ -1086,7 +1087,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                                   abrirConsultaVentaPerdida(s);
                                 }}
                                 title="Ver motivo de venta perdida"
-                                className="hidden md:inline-flex p-0.5 rounded text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                                className="hidden md:inline-flex p-0.5 rounded-xl text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
                               >
                                 <MessageCircleQuestion size={13} />
                               </button>
@@ -1205,7 +1206,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setModalAnulacionGlobal({ open: true, rfqId: s.id, rfqData: s, motivo: '', enviando: false }); }}
-                          className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors ml-1"
+                          className="p-1.5 rounded-xl text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors ml-1"
                           title="Anular Solicitud Completa"
                         >
                           <Ban size={16} />
@@ -1220,32 +1221,13 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
         </table>
       </div>
 
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-6 p-4 sm:px-6 bg-slate-900 rounded-2xl sm:rounded-3xl text-white select-none">
-          <div className="flex items-center justify-between w-full sm:w-auto gap-3">
-            <button
-              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-              disabled={safeCurrentPage === 1}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer"
-            >
-              Anterior
-            </button>
-            <span className="sm:hidden text-[11px] font-bold text-slate-300">
-              {safeCurrentPage} de {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
-              disabled={safeCurrentPage === totalPages}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer"
-            >
-              Siguiente
-            </button>
-          </div>
-          <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-widest text-slate-300">
-            Página {safeCurrentPage} de {totalPages} ({sortedSolicitudes.length} solicitudes)
-          </span>
-        </div>
-      )}
+      <TablePagination
+        page={safeCurrentPage}
+        totalPages={totalPages}
+        totalItems={sortedSolicitudes.length}
+        noun="solicitudes"
+        onPageChange={setCurrentPage}
+      />
 
       {solicitudVista && (
         <ModalVistaPrevia referencia={solicitudVista.correlativo} onImprimir={imprimirVistaCotizacion} onCerrar={cerrarVistaCotizacion}>
@@ -1264,7 +1246,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
         onClose={() => setConsultaDecisionData(null)}
         data={consultaDecisionData}
       />
-    </div>
+    </PageContainer>
   );
 };
 

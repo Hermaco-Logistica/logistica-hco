@@ -6,6 +6,7 @@ import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 import { Etiqueta } from '../../components/Etiqueta';
+import { TablePagination } from '../../components/ui/TablePagination';
 
 export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
   const { filtro } = useParams();
@@ -204,7 +205,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
       </div>
 
       {/* BUSCADOR */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+      <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
         <div className="relative w-full md:w-80">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -254,7 +255,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
       {/* TABLA DE ÓRDENES */}
       <div className="flex flex-col gap-3">
         {paginatedOrdenes.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl border border-slate-200/80 shadow-xs">
+          <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl shadow-[var(--tf-shadow-card)]">
             No se encontraron órdenes con los filtros seleccionados.
           </div>
         ) : (
@@ -267,7 +268,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
                 const numOC = oc.numeroOC || oc.numero || oc.ocRef || 'S/N';
                 
                 return (
-                  <div key={oc.id} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 relative">
+                  <div key={oc.id} className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3 relative">
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col">
                         <span className="font-mono text-sm font-bold text-slate-800">{numOC}</span>
@@ -312,7 +313,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
             </div>
 
             {/* VISTA DESKTOP (Tabla original) */}
-            <div className="hidden md:flex bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex-col">
+            <div className="hidden md:flex bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden flex-col">
               <div
                 ref={scrollContainerRef}
                 onMouseDown={handleDragStart}
@@ -324,7 +325,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
               >
                 <table className="min-w-full w-max text-left text-xs">
                   <thead className="sticky top-0 z-10">
-                    <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                    <tr className="tf-tabla-head">
                       <th className="py-2.5 px-3.5 whitespace-nowrap"># OC</th>
                       <th className="py-2.5 px-3.5 whitespace-nowrap">Proveedor</th>
                       <th className="py-2.5 px-3.5 whitespace-nowrap">Tracking</th>
@@ -391,31 +392,13 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
         )}
       </div>
 
-      {/* PAGINACIÓN DE 10 EN 10 */}
-      {totalPages > 1 && (
-        <div className="p-3 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
-          <button 
-            type="button"
-            onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-            disabled={safeCurrentPage === 1}
-            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-          >
-            Anterior
-          </button>
-          <span className="text-[11px] font-medium text-slate-400 text-center px-2">
-            Página <span className="font-bold text-slate-600">{safeCurrentPage}</span> de {totalPages} <br className="sm:hidden" />
-            <span className="hidden sm:inline">({paginatedOrdenes.length} regs)</span>
-          </span>
-          <button 
-            type="button"
-            onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
-            disabled={safeCurrentPage === totalPages}
-            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-          >
-            Siguiente
-          </button>
-        </div>
-      )}
+      <TablePagination
+        page={safeCurrentPage}
+        totalPages={totalPages}
+        totalItems={ordenesFiltradas.length}
+        noun="órdenes"
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };

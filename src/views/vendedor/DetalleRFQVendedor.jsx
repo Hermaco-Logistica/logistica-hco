@@ -693,14 +693,6 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         setMensajePedido('Enviando correo...');
         const { ok } = await enviarEvento('pedido_confirmado', { pedido, solicitud: { ...rfq, id } }, { attachments });
         if (ok) await updateDoc(doc(db, 'solicitudes', id), { pedidoEmailEnviado: true });
-      } else if (indicesVentaPerdida.length > 0) {
-        // Solo ventas perdidas (sin pedido): Compras también debe enterarse.
-        setMensajePedido('Enviando correo...');
-        await enviarEvento('venta_perdida', {
-          solicitud: { ...rfq, id },
-          items: indicesVentaPerdida.map((idx) => productosActualizadosParaRFQ[idx]),
-          registradoPor: auth.currentUser?.email || ''
-        });
       }
 
       alert("Operación completada con éxito.");

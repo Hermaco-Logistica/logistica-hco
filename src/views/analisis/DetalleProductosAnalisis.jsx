@@ -15,6 +15,7 @@ import {
   getHoyElSalvador,
   cargarFiltroPeriodoStorage
 } from '../../utils/dateValidation';
+import { TablePagination } from '../../components/ui/TablePagination';
 
 export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();
@@ -271,7 +272,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
       </div>
 
       {/* BUSCADOR Y FILTROS CONTEXTUALES */}
-      <div className="bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+      <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full md:w-80">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -356,7 +357,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
       </div>
 
       {paginatedProductos.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl border border-slate-200/80 shadow-xs">
+        <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl shadow-[var(--tf-shadow-card)]">
           No se encontraron productos con los criterios seleccionados.
         </div>
       ) : (
@@ -366,7 +367,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
             {paginatedProductos.map((p, idx) => {
               const numGlobal = (currentPage - 1) * itemsPerPage + idx + 1;
               return (
-                <div key={p.id} className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3 relative">
+                <div key={p.id} className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3 relative">
                   <div className="flex justify-between items-start">
                     <div 
                       className="flex items-center gap-3 cursor-pointer group"
@@ -429,23 +430,23 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
           </div>
 
           {/* VISTA DESKTOP (Tabla original) */}
-          <div className="hidden md:flex bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden flex-col">
+          <div className="hidden md:flex bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden flex-col">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    <th className="py-2.5 px-3.5">#</th>
-                    <th className="py-2.5 px-3.5">Descripción del Producto</th>
-                    <th className="py-2.5 px-3.5">Marca</th>
-                    <th className="py-2.5 px-3.5 text-center">Veces Cotizado</th>
-                    <th className="py-2.5 px-3.5 text-center">Anulaciones</th>
-                    <th className="py-2.5 px-3.5 text-center">Ventas perdidas</th>
-                    <th className="py-2.5 px-3.5 text-center">Rechazos</th>
-                    <th className="py-2.5 px-3.5 text-center">Unidades Cotizadas</th>
+                  <tr className="tf-tabla-head">
+                    <th className="py-2.5 px-3.5 whitespace-normal">#</th>
+                    <th className="py-2.5 px-3.5 whitespace-normal">Descripción del Producto</th>
+                    <th className="py-2.5 px-3.5 whitespace-normal">Marca</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Veces Cotizado</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Anulaciones</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Ventas perdidas</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Rechazos</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Unidades Cotizadas</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Cotizaciones Ganadas</th>
-                    <th className="py-2.5 px-3.5 text-center">Unidades Pedidas</th>
-                    <th className="py-2.5 px-3.5 text-center">Clientes</th>
-                    <th className="py-2.5 px-3.5 text-right">Historial</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Unidades Pedidas</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Clientes</th>
+                    <th className="py-2.5 px-3.5 text-right whitespace-normal">Historial</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -521,31 +522,13 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
         </>
       )}
 
-      {/* PAGINACIÓN DE 10 EN 10 */}
-      {totalPages > 1 && (
-        <div className="p-3 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex items-center justify-between">
-          <button 
-            type="button"
-            onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-            disabled={safeCurrentPage === 1}
-            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-          >
-            Anterior
-          </button>
-          <span className="text-[11px] font-medium text-slate-400 text-center px-2">
-            Página <span className="font-bold text-slate-600">{safeCurrentPage}</span> de {totalPages} <br className="sm:hidden" />
-            <span className="hidden sm:inline">({productosFiltrados.length} productos)</span>
-          </span>
-          <button 
-            type="button"
-            onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
-            disabled={safeCurrentPage === totalPages}
-            className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-          >
-            Siguiente
-          </button>
-        </div>
-      )}
+      <TablePagination
+        page={safeCurrentPage}
+        totalPages={totalPages}
+        totalItems={productosFiltrados.length}
+        noun="productos"
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 };

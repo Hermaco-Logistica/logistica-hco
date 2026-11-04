@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { TablePagination } from '../../components/ui/TablePagination';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { collection, query, onSnapshot, doc, updateDoc, orderBy, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {
@@ -334,7 +337,7 @@ export const GestionOC = ({ readOnly = false }) => {
         </div>
 
         {/* CONTENEDOR PRINCIPAL */}
-        <div className="bg-white rounded-3xl sm:rounded-[2.5rem] shadow-xl md:shadow-2xl border border-slate-100 overflow-hidden">
+        <div className="bg-white rounded-3xl sm:rounded-[2.5rem] shadow-[var(--tf-shadow-card)] md:shadow-[var(--tf-shadow-card)] overflow-hidden">
           
           {/* HEADER ESCRITORIO (>= md) */}
           <div className="hidden md:flex bg-slate-900 p-8 lg:p-10 flex-col md:flex-row justify-between md:items-end gap-6">
@@ -446,13 +449,13 @@ export const GestionOC = ({ readOnly = false }) => {
 
             {/* Resumen Móvil (< md): Tarjetas de Total y Partidas */}
             <div className="md:hidden grid grid-cols-2 gap-2.5 mb-3.5">
-              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+              <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)]">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Total de la Orden</span>
                 <span className="text-base font-black text-slate-900 font-mono block truncate">
                   ${totalOrden.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-2xs">
+              <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)]">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Partidas</span>
                 <div className="flex items-baseline gap-1 mt-0.5">
                   <span className="text-base font-black text-slate-900 font-mono">
@@ -531,7 +534,7 @@ export const GestionOC = ({ readOnly = false }) => {
                   return (
                     <div
                       key={idx}
-                      className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs space-y-3 transition-all"
+                      className="bg-white rounded-2xl p-4 shadow-[var(--tf-shadow-card)] space-y-3 transition-all"
                     >
                       {/* Fila 1: Cantidad + Marca + Total de línea */}
                       <div className="flex items-center justify-between gap-2">
@@ -582,7 +585,7 @@ export const GestionOC = ({ readOnly = false }) => {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full border-separate border-spacing-y-2">
                   <thead>
-                    <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                    <tr className="tf-tabla-head">
                       <th className="text-left px-6 py-4">Ítem / Descripción</th>
                       <th className="text-center px-6 py-4">Cant.</th>
                       <th className="text-right px-6 py-4">FOB Unit.</th>
@@ -612,11 +615,11 @@ export const GestionOC = ({ readOnly = false }) => {
 
   // ─── VISTA DE TABLA PRINCIPAL ────────────────────────────────────────────────
   return (
-    <div className="max-w-7xl mx-auto animate-in fade-in duration-500">
-      <div className="mb-6 md:mb-10">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-slate-800 italic uppercase tracking-tighter">Gestión de Órdenes</h1>
-        <p className="text-slate-400 font-bold text-[10px] sm:text-[11px] uppercase tracking-[0.3em]">Bandeja Logística de Compras</p>
-      </div>
+    <PageContainer className="animate-in fade-in duration-500">
+      <PageHeader
+        title="Gestión de Órdenes"
+        subtitle="Bandeja Logística de Compras"
+      />
 
       {/* Controles de Filtros Mobile (< md) */}
       <div className="md:hidden space-y-3 mb-4">
@@ -650,13 +653,13 @@ export const GestionOC = ({ readOnly = false }) => {
         </div>
 
         {showMobileFilters && (
-          <div ref={refCalendarioMobile} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div ref={refCalendarioMobile} className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
             <div>
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Proveedor</label>
               <select 
                 value={filterProveedor} 
                 onChange={(e) => setFilterProveedor(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none text-slate-700"
+                className="tf-campo"
               >
                 <option value="">TODOS LOS PROVEEDORES</option>
                 {proveedoresDisponibles.map(prov => (
@@ -669,7 +672,7 @@ export const GestionOC = ({ readOnly = false }) => {
               <select 
                 value={filterEstadoLogistica} 
                 onChange={(e) => setFilterEstadoLogistica(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold outline-none text-slate-700"
+                className="tf-campo"
               >
                 <option value="">TODOS LOS ESTADOS</option>
                 {estadosLogisticaDisponibles.map(est => (
@@ -697,7 +700,7 @@ export const GestionOC = ({ readOnly = false }) => {
                 )}
               </div>
               {mostrarCalendario && (
-                <div className="absolute right-0 mt-2 z-40 bg-white border border-slate-200 shadow-2xl rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+                <div className="absolute right-0 mt-2 z-40 bg-white shadow-[var(--tf-shadow-card)] rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
                     <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
@@ -748,7 +751,7 @@ export const GestionOC = ({ readOnly = false }) => {
       </div>
 
       {/* Controles de Filtros Desktop (>= md) */}
-      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6 bg-white p-6 rounded-3xl shadow-[var(--tf-shadow-card)]">
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (OC / Item / Tracking)</label>
           <input 
@@ -756,7 +759,7 @@ export const GestionOC = ({ readOnly = false }) => {
             placeholder="N° OC, ítem, tracking..." 
             value={searchOCNum}
             onChange={(e) => setSearchOCNum(e.target.value)}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700"
+            className="tf-campo"
           />
         </div>
         <div>
@@ -764,7 +767,7 @@ export const GestionOC = ({ readOnly = false }) => {
           <select 
             value={filterProveedor} 
             onChange={(e) => setFilterProveedor(e.target.value)}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+            className="tf-campo cursor-pointer"
           >
             <option value="">TODOS LOS PROVEEDORES</option>
             {proveedoresDisponibles.map(prov => (
@@ -777,7 +780,7 @@ export const GestionOC = ({ readOnly = false }) => {
           <select 
             value={filterEstadoLogistica} 
             onChange={(e) => setFilterEstadoLogistica(e.target.value)}
-            className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold outline-none focus:border-slate-300 transition-all text-slate-700 cursor-pointer"
+            className="tf-campo cursor-pointer"
           >
             <option value="">TODOS LOS ESTADOS</option>
             {estadosLogisticaDisponibles.map(est => (
@@ -789,7 +792,7 @@ export const GestionOC = ({ readOnly = false }) => {
         {/* Popover Rango de Fecha Creación */}
         <div className="relative" ref={refCalendario}>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fecha Creación</label>
-          <div className="flex items-center gap-1 bg-slate-50 border-2 border-slate-100 rounded-xl p-3 text-xs font-bold cursor-pointer text-slate-700" onClick={() => setMostrarCalendario(!mostrarCalendario)}>
+          <div className="tf-campo flex items-center gap-1 cursor-pointer" onClick={() => setMostrarCalendario(!mostrarCalendario)}>
             <CalendarIcon size={14} className="text-slate-400 shrink-0" />
             <span className="truncate flex-1 select-none">{formattedRangoText()}</span>
             {(fechaInicio || fechaFin) && (
@@ -798,7 +801,7 @@ export const GestionOC = ({ readOnly = false }) => {
           </div>
 
           {mostrarCalendario && (
-            <div className="absolute right-0 mt-2 z-30 bg-white border border-slate-200 shadow-2xl rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+            <div className="absolute right-0 mt-2 z-30 bg-white shadow-[var(--tf-shadow-card)] rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
               <div className="flex items-center justify-between mb-4">
                 <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
                 <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
@@ -859,7 +862,7 @@ export const GestionOC = ({ readOnly = false }) => {
       {/* Vista Móvil (< md): Tarjetas Detalladas y Espaciosas con toda la información de escritorio */}
       <div className="md:hidden space-y-3.5">
         {paginatedOrdenes.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center text-slate-400 border border-slate-200 font-bold text-xs">
+          <div className="bg-white rounded-2xl p-8 text-center text-slate-400 font-bold text-xs shadow-[var(--tf-shadow-card)]">
             No se encontraron órdenes con los filtros aplicados.
           </div>
         ) : (
@@ -872,7 +875,7 @@ export const GestionOC = ({ readOnly = false }) => {
               <div
                 key={oc.id}
                 onClick={() => setOcSeleccionada(oc)}
-                className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-sm hover:border-slate-300 transition-all cursor-pointer space-y-3 active:scale-[0.99] touch-manipulation"
+                className="bg-white rounded-2xl p-4 shadow-[var(--tf-shadow-card)] hover:shadow-md transition-all cursor-pointer space-y-3 active:scale-[0.99] touch-manipulation"
               >
                 {/* Bloque 1: N° OC + Estado Logístico + Proveedor */}
                 <div className="flex items-start justify-between gap-3">
@@ -960,27 +963,27 @@ export const GestionOC = ({ readOnly = false }) => {
       </div>
 
       {/* Vista Escritorio (>= md): Tabla tradicional */}
-      <div className="hidden md:block bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden">
+      <div className="hidden md:block tf-tabla-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+          <table className="tf-tabla">
             <thead>
-              <tr className="bg-slate-900 text-white">
-                <th className="text-left px-8 py-6 text-[10px] font-black uppercase tracking-widest">Orden No.</th>
-                <th className="text-left px-8 py-6 text-[10px] font-black uppercase tracking-widest">Proveedor</th>
-                <th className="text-center px-8 py-6 text-[10px] font-black uppercase tracking-widest">Fecha</th>
-                <th className="text-center px-8 py-6 text-[10px] font-black uppercase tracking-widest">Últ. Cambio</th>
-                <th className="text-center px-8 py-6 text-[10px] font-black uppercase tracking-widest">Guía/BL</th>
-                <th className="text-center px-8 py-6 text-[10px] font-black uppercase tracking-widest">Logística</th>
-                <th className="text-right px-8 py-6 text-[10px] font-black uppercase tracking-widest">Monto</th>
-                <th className="px-8 py-6"></th>
+              <tr className="tf-tabla-head">
+                <th className="text-left px-8 py-3">Orden No.</th>
+                <th className="text-left px-8 py-3">Proveedor</th>
+                <th className="text-center px-8 py-3">Fecha</th>
+                <th className="text-center px-8 py-3">Últ. cambio</th>
+                <th className="text-center px-8 py-3">Guía/BL</th>
+                <th className="text-center px-8 py-3">Logística</th>
+                <th className="text-right px-8 py-3">Monto</th>
+                <th className="px-8 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody>
               {paginatedOrdenes.map(oc => (
                 <tr
                   key={oc.id}
                   onClick={() => setOcSeleccionada(oc)}
-                  className="hover:bg-slate-50 transition-all cursor-pointer group"
+                  className="cursor-pointer group"
                 >
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-3">
@@ -1025,32 +1028,13 @@ export const GestionOC = ({ readOnly = false }) => {
       </div>
 
       {/* Controles de Paginación */}
-      {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-6 p-4 sm:px-6 bg-slate-900 rounded-2xl sm:rounded-3xl text-white select-none">
-          <div className="flex items-center justify-between w-full sm:w-auto gap-3">
-            <button
-              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-              disabled={safeCurrentPage === 1}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer"
-            >
-              Anterior
-            </button>
-            <span className="sm:hidden text-[11px] font-bold text-slate-300">
-              {safeCurrentPage} de {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
-              disabled={safeCurrentPage === totalPages}
-              className="flex-1 sm:flex-none px-4 py-2.5 text-xs font-black uppercase tracking-wider bg-slate-800 hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-all cursor-pointer"
-            >
-              Siguiente
-            </button>
-          </div>
-          <span className="hidden sm:inline-block text-xs font-bold uppercase tracking-widest text-slate-300">
-            Página {safeCurrentPage} de {totalPages} ({filteredOrdenes.length} órdenes)
-          </span>
-        </div>
-      )}
-    </div>
+      <TablePagination
+        page={safeCurrentPage}
+        totalPages={totalPages}
+        totalItems={filteredOrdenes.length}
+        noun="órdenes"
+        onPageChange={setCurrentPage}
+      />
+    </PageContainer>
   );
 };

@@ -11,7 +11,6 @@ import { useHideOnScroll } from './hooks/useHideOnScroll';
 
 // Componentes y Vistas
 import { Sidebar } from './components/Sidebar';
-import { ProrrogasBell } from './components/seguimiento/ProrrogasBell';
 import { ProrrogasPage } from './views/seguimiento/ProrrogasPage';
 import { Login } from './views/auth/Login';
 import { DashboardCompras } from './views/comprador/DashboardCompras';
@@ -119,6 +118,10 @@ function App() {
     }
     setMostrarNovedades(false);
   };
+
+  useEffect(() => {
+    document.body.dataset.role = role || 'default';
+  }, [role]);
 
   useEffect(() => {
     import('./services/apiClient').then(({ apiClient }) => {
@@ -397,17 +400,20 @@ function App() {
               </button>
             </div>
 
-            <div className="flex shrink-0 items-center gap-1">
-              <ProrrogasBell count={prorrogasPendientes} className="text-white/75 hover:bg-white/10 hover:text-white" />
-              <button
+            <button
               type="button"
               onClick={() => setMobileDrawerOpen(true)}
-              className="p-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer shrink-0"
-              aria-label="Abrir menú de navegación"
+              className="relative p-2 rounded-xl text-white/70 hover:text-white hover:bg-white/10 active:scale-95 transition-all cursor-pointer shrink-0"
+              aria-label={`Abrir menú de navegación${prorrogasPendientes > 0 ? `, ${prorrogasPendientes} prórrogas por atender` : ''}`}
             >
               <Menu size={22} />
-              </button>
-            </div>
+              {prorrogasPendientes > 0 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute right-1.5 top-1.5 size-2.5 rounded-full border-2 border-slate-900 bg-rose-600"
+                />
+              )}
+            </button>
           </header>
 
           <Sidebar 
@@ -426,7 +432,7 @@ function App() {
             style={{
               paddingBottom: 'calc(var(--bottom-dock-h, 0px) + 16px)'
             }}
-            className="flex-1 min-h-0 min-w-0 md:h-full overflow-y-auto overscroll-y-contain p-3.5 sm:p-5 md:p-6 lg:p-8 md:pb-8 w-full @container/main"
+            className="tf-scroll tf-gutter-x flex-1 min-h-0 min-w-0 md:h-full overflow-y-auto overscroll-y-contain pt-3.5 sm:pt-5 md:pt-6 lg:pt-8 md:pb-8 w-full @container/main"
           >
             <Routes>
               {isComprador ? (
@@ -527,7 +533,7 @@ function App() {
             hidden={isMainHidden}
           />
         </div>
-        {mostrarNovedades && <ReleaseNotesModal role={role} onConfirm={confirmarNovedades} />}
+        {mostrarNovedades &&<ReleaseNotesModal role={role} onConfirm={confirmarNovedades} />}
         </>
       )}
         </BottomDockProvider>

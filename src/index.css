@@ -1,46 +1,79 @@
 @import "tailwindcss";
+@import "./styles/tokens.css";
+
+/* Escala de radios (REDISENO_COHERENCIA_UI.md §3): 12 control, 14 inner, 24 card, píldora.
+   En Tailwind v4 el tema vive en CSS (@theme); tailwind.config.js no se carga sin @config.
+   rounded-2xl pasa de 16 a 14px; rounded-xl (12) y rounded-3xl (24) ya coinciden con la escala. */
+@theme {
+  --radius-2xl: 14px;
+}
 
 @layer base {
   :root {
     --tf-font-sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-    --tf-color-bg-app: #f8fafc;
-    --tf-color-sidebar: #0f172a;
-    --tf-color-text-primary: #1e293b;
-    --tf-color-text-muted: #64748b;
-    --tf-color-brand: #10b981;
-    --tf-color-brand-strong: #059669;
-    --tf-color-surface: #ffffff;
-    --tf-color-border: #e2e8f0;
+    --tf-color-text-primary: var(--color-foreground);
+    --tf-color-text-muted: var(--color-foreground-muted);
+    --tf-color-surface: var(--color-surface);
+    --tf-color-border: var(--color-border);
+    --tf-color-surface-muted: var(--color-surface-muted);
     --tf-radius-panel: 1.5rem;
     --tf-shadow-panel: 0 16px 30px rgba(15, 23, 42, 0.08);
-    --detalle-bg: #f5f6f7;
-    --detalle-surface: #ffffff;
-    --detalle-surface-muted: #f8f9fa;
-    --detalle-border: #d9dee5;
-    --detalle-border-strong: #aeb7c2;
-    --detalle-text: #202833;
+    /* Sombra de tarjeta: anillo de 1px + elevación + profundidad ambiente (sustituye al borde). */
+    --tf-shadow-card:
+      0 0 0 1px oklch(0 0 0 / 0.05),
+      0 1px 2px -1px oklch(0 0 0 / 0.06),
+      0 4px 16px -4px oklch(0 0 0 / 0.06);
+    --detalle-surface: var(--color-surface);
+    --detalle-surface-muted: var(--color-surface-muted);
+    --detalle-border: var(--color-border);
+    --detalle-border-strong: var(--color-border-strong);
+    --detalle-text: var(--color-foreground);
     --detalle-text-muted: #586575;
-    --detalle-text-subtle: #697586;
-    --detalle-accent-info: #1d5e87;
-    --detalle-accent-warning: #8a5a00;
-    --detalle-accent-danger: #a42b32;
-    --detalle-accent-success: #176b45;
-    --detalle-bg-warning: #fff7e8;
-    --detalle-bg-danger: #fff0f0;
-    --detalle-bg-success: #eef8f2;
-    --detalle-bg-info: #eff6fa;
+    --detalle-text-subtle: var(--color-foreground-muted);
+    --detalle-accent-info: var(--color-info);
+    --detalle-accent-warning: var(--color-warning);
+    --detalle-accent-danger: var(--color-danger);
+    --detalle-accent-success: var(--color-success);
+    --detalle-bg-warning: var(--color-warning-soft);
+    --detalle-bg-danger: var(--color-danger-soft);
+    --detalle-bg-success: var(--color-success-soft);
+    --detalle-bg-info: var(--color-info-soft);
     --detalle-bg-selected: #f0f5f5;
     --detalle-bg-row-success: #f1f7f3;
     --detalle-bg-row-danger: #fff5f4;
     --detalle-shadow-float: 0 -4px 18px rgb(15 23 42 / 12%);
-    --detalle-success-hover: #105b39;
-    --detalle-accent-neutral: #4b5566;
-    --detalle-bg-neutral: #f0f2f5;
-    --detalle-air: #247a9b;
-    --detalle-sea: #536f9b;
-    --detalle-radius-control: 6px;
-    --detalle-radius-card: 10px;
+    --detalle-success-hover: var(--color-success-strong);
+    --detalle-accent-neutral: var(--color-status-neutral);
+    --detalle-bg-neutral: var(--color-status-neutral-soft);
+    --detalle-air: var(--color-mode-air);
+    --detalle-sea: var(--color-mode-sea);
+    --detalle-radius-control: var(--radius-control);
+    --detalle-radius-card: var(--radius-card);
+    --detalle-radius-inner: var(--radius-inner);
     --detalle-control-height: 36px;
+
+    /* Radios */
+    --radius-control: 12px;  /* inputs, selects, botones, encabezado interno de tabla, hover de fila */
+    --radius-inner: 14px;    /* sub-bloques dentro de una tarjeta, ítems de menú, tiles */
+    --radius-card: 24px;     /* tarjetas */
+    --radius-pill: 999px;    /* chips, segmentados, badges */
+
+    /* Espaciado (base 4) */
+    --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+    --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+
+    /* Layout */
+    --content-max: 1440px;
+    --content-max-form: 896px;   /* PageContainer size="form" */
+    --content-max-wide: 1700px;  /* PageContainer size="wide" */
+    --content-gap: 20px;         /* separación vertical entre bloques de página */
+    --summary-col: 340px;        /* columna de resumen en detalles */
+
+    /* Alturas */
+    --control-h: 44px;           /* filtros y formularios */
+    --control-h-row: 36px;       /* inputs dentro de filas de tabla */
+    --row-h: 60px;
+    --header-row-h: 44px;
   }
 
   html, body, #root {
@@ -193,38 +226,38 @@
 }
 
 @layer components {
+  /* Carcasa sin marco: fondo plano a pantalla completa. La barra lateral va pegada al borde izquierdo y a todo
+     el alto; a la derecha, la banda superior (sin superficie propia) y el contenido, que scrollea. Las tarjetas
+     van directamente sobre el fondo. --tf-pad-x es el único padding horizontal: lo comparten la banda superior
+     y el contenido, así el título y las tarjetas arrancan en el mismo x (y terminan en el mismo x). */
   .tf-app-shell {
+    --tf-pad-x: 0.875rem;
     background-color: var(--tf-color-bg-app);
     font-family: var(--tf-font-sans);
   }
+  @media (min-width: 640px) { .tf-app-shell { --tf-pad-x: 1.25rem; } }
+  @media (min-width: 768px) { .tf-app-shell { --tf-pad-x: 1.5rem; } }
+  @media (min-width: 1024px) { .tf-app-shell { --tf-pad-x: 2rem; } }
 
-  .role-comprador {
-    --tf-color-bg-app: #eef4ff;
-    --tf-color-sidebar: #0b2545;
-    --tf-color-brand: #3b82f6;
-    --tf-color-brand-strong: #2563eb;
+  .tf-gutter-x {
+    padding-left: var(--tf-pad-x);
+    padding-right: var(--tf-pad-x);
   }
 
-  .role-vendedor {
-    --tf-color-bg-app: #f4f0ff;
-    --tf-color-sidebar: #312e81;
-    --tf-color-brand: #8b5cf6;
-    --tf-color-brand-strong: #7c3aed;
+  /* Scrollbar delgado (8px) para el área de contenido. */
+  .tf-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--color-foreground-muted) 35%, transparent) transparent;
   }
+  .tf-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+  .tf-scroll::-webkit-scrollbar-track { background: transparent; }
+  .tf-scroll::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--color-foreground-muted) 35%, transparent);
+    border-radius: 999px;
+  }
+  .tf-scroll::-webkit-scrollbar-thumb:hover { background-color: color-mix(in srgb, var(--color-foreground-muted) 55%, transparent); }
 
-  .role-gerente {
-    --tf-color-bg-app: #edfdf4;
-    --tf-color-sidebar: #14532d;
-    --tf-color-brand: #10b981;
-    --tf-color-brand-strong: #059669;
-  }
-
-  .role-administrador {
-    --tf-color-bg-app: #fff4f4;
-    --tf-color-sidebar: #7f1d2d;
-    --tf-color-brand: #b45366;
-    --tf-color-brand-strong: #9f3650;
-  }
+  /* Valores y alias por rol: ver styles/tokens.css. Abajo solo quedan los remapeos de utilidades por rol. */
 
   .role-comprador .bg-slate-900,
   .role-vendedor .bg-slate-900,
@@ -274,42 +307,82 @@
 
   .tf-sidebar-shell {
     background-color: var(--tf-color-sidebar);
-    color: #ffffff;
-  }
-
-  .tf-brand-accent {
-    color: var(--tf-color-brand);
-  }
-
-  .tf-title {
-    color: var(--tf-color-text-primary);
-    font-weight: 900;
-  }
-
-  .tf-subtitle {
-    color: var(--tf-color-text-muted);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    color: var(--color-sidebar-foreground);
   }
 
   .tf-surface-panel {
     background-color: var(--tf-color-surface);
-    border: 1px solid var(--tf-color-border);
     border-radius: var(--tf-radius-panel);
-    box-shadow: var(--tf-shadow-panel);
+    box-shadow: var(--tf-shadow-card);
   }
 
-  .tf-table-head-dark {
-    background-color: var(--tf-color-sidebar);
-    color: #ffffff;
+  /* Campo de filtro/formulario en las vistas: misma forma que los campos de los modales
+     (gris suave, borde de 1px casi invisible, al enfocar se aclara y aparece un anillo de 4px). */
+  .tf-campo {
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid #e5e5e5;
+    background-color: var(--tf-color-surface-muted);
+    padding: 0.625rem 0.875rem;
+    font-size: 13px;
+    font-weight: 500;
+    color: #171717;
+    outline: none;
+    transition-property: background-color, border-color, box-shadow;
+    transition-duration: 150ms;
   }
-}
+  .tf-campo:focus {
+    background-color: var(--color-surface);
+    border-color: var(--color-foreground-muted);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-foreground-muted) 20%, transparent);
+  }
+  .tf-campo:disabled { cursor: not-allowed; opacity: 0.6; }
+  @media (prefers-reduced-motion: reduce) {
+    .tf-campo { transition-duration: 0.01ms; }
+  }
+
+  /* Tablas de listado: tarjeta con padding de 12px, así el encabezado (radio 12px) es concéntrico con
+     la tarjeta (radio 24px). Sin cuadrícula: solo una línea fina entre filas y hover redondeado. */
+  .tf-tabla-card {
+    background-color: var(--tf-color-surface);
+    border-radius: var(--tf-radius-panel);
+    box-shadow: var(--tf-shadow-card);
+    padding: 0.75rem;
+  }
+  .tf-tabla {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  .tf-tabla-head > th {
+    background-color: var(--color-primary-soft);
+    color: color-mix(in srgb, var(--tf-color-brand-strong) 50%, var(--tf-color-sidebar));
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .tf-tabla-head > th:first-child { border-radius: 12px 0 0 12px; }
+  .tf-tabla-head > th:last-child { border-radius: 0 12px 12px 0; }
+  .tf-tabla tbody > tr + tr > td { border-top: 1px solid var(--color-border-subtle); }
+  .tf-tabla tbody > tr > td {
+    transition-property: background-color, box-shadow;
+    transition-duration: 150ms;
+  }
+  /* Hover: una capa semitransparente (sombra interior) que se SUMA al fondo del <tr> y de la <td>, en vez de reemplazarlo,
+     para que el color de estado de la fila siga visible. Respeta el radio de las celdas extremas.
+     --color-surface-hover (tokens.css) hoy no se usa: el hover usa color-mix de --color-border al 22 %. */
+  .tf-tabla tbody > tr:hover > td { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--color-border) 22%, transparent); border-top-color: transparent; }
+  .tf-tabla tbody > tr:hover + tr > td { border-top-color: transparent; }
+  .tf-tabla tbody > tr:hover > td:first-child { border-radius: 12px 0 0 12px; }
+  .tf-tabla tbody > tr:hover > td:last-child { border-radius: 0 12px 12px 0; }
+  @media (prefers-reduced-motion: reduce) {
+    .tf-tabla tbody > tr > td { transition-duration: 0.01ms; }
+  }}
 
 /* Esto asegura que el sidebar se vea profesional incluso si Tailwind tarda un milisegundo en cargar */
 aside {
   background-color: var(--tf-color-sidebar);
-  color: #ffffff;
+  color: var(--color-sidebar-foreground);
 }
 
 @media print {

@@ -1,8 +1,19 @@
 import { CORREO_COMPRAS, CORREOS_EXCLUIDOS, DESTINO_PRUEBAS, REMITENTE_COMPRAS, REMITENTE_SISTEMA, emailConfig } from './config';
 
-/** True cuando la app corre en localhost: ahí los correos se desvían a DESTINO_PRUEBAS. */
+const HOSTS_LOCALES = ['localhost', '127.0.0.1'];
+// Previews de Netlify: deploy-preview-N--sitio.netlify.app y branch deploys (rama--sitio.netlify.app). El dominio de
+// producción (sitio.netlify.app o uno propio) no lleva "--" delante, así que no coincide.
+const HOST_PREVIEW_NETLIFY = /^[a-z0-9-]+--[a-z0-9-]+\.netlify\.app$/;
+
+/** True para localhost, 127.0.0.1 y los previews de Netlify; false para cualquier otro hostname (producción). */
+export const esHostDePruebas = (hostname) => {
+  const host = String(hostname || '').toLowerCase();
+  return HOSTS_LOCALES.includes(host) || HOST_PREVIEW_NETLIFY.test(host);
+};
+
+/** True cuando la app corre en localhost o en un preview de Netlify: ahí los correos se desvían a DESTINO_PRUEBAS. */
 export const esEntornoLocal = () => (
-  typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname)
+  typeof window !== 'undefined' && esHostDePruebas(window.location.hostname)
 );
 
 const normalizar = (correo) => String(correo || '').trim().toLowerCase();

@@ -37,7 +37,7 @@ export const PropuestaPrecioCard = ({ mensaje, currentUser, onAceptar, onContrao
   };
 
   return (
-    <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm w-full max-w-[280px] my-1">
+    <div className="bg-white rounded-2xl p-3 shadow-[var(--tf-shadow-card)] w-full max-w-[280px] my-1">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
           Propuesta de precio

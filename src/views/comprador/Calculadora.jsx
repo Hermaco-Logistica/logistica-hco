@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, getDocFromServer } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -481,7 +483,7 @@ export const Calculadora = ({ onGuardar }) => {
   );
 
   return (
-    <div className="@container max-w-[99%] mx-auto animate-in fade-in duration-500">
+    <PageContainer size="wide" className="@container animate-in fade-in duration-500">
 
       {modalAnulacion.open && (
         <ModalMotivo
@@ -500,6 +502,22 @@ export const Calculadora = ({ onGuardar }) => {
       {motivoAnulacionVisible !== null && (
         <ModalConsultaTexto titulo="Motivo de anulación" icono={Ban} texto={motivoAnulacionVisible} onCerrar={() => setMotivoAnulacionVisible(null)} />
       )}
+
+      <PageHeader
+        title="Calculadora de Márgenes"
+        subtitle={
+          <div className="flex flex-wrap items-center gap-1.5 text-xs uppercase font-bold text-slate-500 mt-0.5">
+            <span className="font-mono text-slate-800">{rfq?.correlativo}</span>
+            <span>—</span>
+            <span className="truncate max-w-[190px] sm:max-w-xs md:max-w-md" title={rfq?.cliente}>{rfq?.cliente}</span>
+            {rfq?.validez && (
+              <span className="text-[10px] text-slate-400 block sm:inline w-full sm:w-auto mt-0.5 sm:mt-0">
+                <span className="hidden sm:inline"> — </span>Validez: {rfq.validez}
+              </span>
+            )}
+          </div>
+        }
+      />
 
       {/* ── Banner de Anulación ── */}
       {esAnulado && (
@@ -535,20 +553,7 @@ export const Calculadora = ({ onGuardar }) => {
       )}
 
       {/* Panel de Control de Costos (Separado en móvil, unificado en desktop) */}
-      <div className="mb-4 md:mb-6 flex flex-col gap-4 md:gap-5 xl:flex-row xl:items-center xl:gap-8 md:bg-white md:p-5 md:rounded-2xl md:shadow-sm md:border md:border-slate-200">
-        <div className="flex-1 min-w-0 px-1 md:px-0">
-          <h2 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight italic">Calculadora de Márgenes</h2>
-          <div className="flex flex-wrap items-center gap-1.5 text-xs uppercase font-bold text-slate-500 mt-0.5">
-            <span className="font-mono text-slate-800">{rfq?.correlativo}</span>
-            <span>—</span>
-            <span className="truncate max-w-[190px] sm:max-w-xs md:max-w-md" title={rfq?.cliente}>{rfq?.cliente}</span>
-            {rfq?.validez && (
-              <span className="text-[10px] text-slate-400 block sm:inline w-full sm:w-auto mt-0.5 sm:mt-0">
-                <span className="hidden sm:inline"> — </span>Validez: {rfq.validez}
-              </span>
-            )}
-          </div>
-        </div>
+      <div className="mb-4 md:mb-6 flex flex-col gap-4 md:gap-5 xl:flex-row xl:items-center xl:gap-8 md:bg-white md:p-5 md:rounded-2xl md:shadow-[var(--tf-shadow-card)]">
 
         {/* MÓVIL (< md): Cinturón limpio de parámetros globales */}
         <div className="md:hidden w-full bg-slate-100 p-3 rounded-2xl border border-slate-200 shadow-xs space-y-2.5">
@@ -752,7 +757,7 @@ export const Calculadora = ({ onGuardar }) => {
         </div>
       </div>
       {/* Gastos Adicionales Aéreos (Desktop) */}
-      <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 mb-4 md:mb-6 overflow-hidden">
+      <div className="hidden md:block bg-white rounded-2xl shadow-[var(--tf-shadow-card)] mb-4 md:mb-6 overflow-hidden">
         <div
           className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 flex items-center justify-between cursor-pointer select-none"
           onClick={() => setGastosExpandidos(prev => !prev)}
@@ -802,7 +807,7 @@ export const Calculadora = ({ onGuardar }) => {
       </div>
 
       {/* Cotizador de Flete Internacional (Desktop) */}
-      <div ref={cotizadorRef} className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 mb-4 md:mb-6 overflow-hidden">
+      <div ref={cotizadorRef} className="hidden md:block bg-white rounded-2xl shadow-[var(--tf-shadow-card)] mb-4 md:mb-6 overflow-hidden">
         <div
           className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2 cursor-pointer select-none"
           onClick={() => setCotizadorExpandido(prev => !prev)}
@@ -1015,9 +1020,11 @@ export const Calculadora = ({ onGuardar }) => {
         </div>
       </div>
 
+      {/* Tarjeta de productos: en escritorio (md+) agrupa título, toggle Picard y tabla; en móvil no genera caja (contents) */}
+      <div className="contents md:block tf-tabla-card md:mb-8">
       {/* Cabecera de Tabla con Toggle Picard */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 mt-2">
-        <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider">Productos de la Solicitud</h3>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 mt-2 md:mb-0 md:mt-0 md:px-4 md:pb-3 md:pt-2">
+        <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider md:font-medium md:normal-case md:tracking-normal md:text-foreground">Productos de la Solicitud</h3>
         <div className="flex items-center gap-2 flex-wrap">
           {mostrarPicard && (
             <div ref={costosPicardRef} className={`relative overflow-hidden rounded-xl border transition-all duration-300 ease-out ${costosPicardExpandidos ? 'w-[18.5rem] border-amber-300 bg-amber-50 shadow-sm' : 'w-32 border-amber-200 bg-amber-50/70'}`}>
@@ -1463,39 +1470,39 @@ export const Calculadora = ({ onGuardar }) => {
       </div>
 
       {/* Vista Escritorio (>= md): Tabla de Productos tradicional */}
-      <div className="hidden md:block bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden mb-8">
+      <div className="hidden md:block">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse table-fixed">
-            <thead className="bg-slate-800 text-white text-[9px] uppercase font-bold">
-              <tr>
+          <table className="tf-tabla text-left table-fixed">
+            <thead>
+              <tr className="tf-tabla-head">
                 <th className="p-3 w-10 text-center">Sel</th>
                 <th className="p-3 w-48">Producto / Marca</th>
                 <th className="p-3 w-12 text-center">Cant</th>
                 {mostrarPicard ? (
                   <>
-                    <th className="p-3 w-20 text-center bg-slate-900/40">FOB SKF</th>
-                    <th className="p-3 w-24 text-center bg-emerald-900/40 font-black text-emerald-400">Venta (A)</th>
-                    <th className="p-3 w-20 text-center bg-emerald-900/40">Costo SKF</th>
-                    <th className="p-3 w-20 text-center bg-emerald-900/60">FV SKF</th>
-                    <th className="p-3 w-20 text-center bg-amber-900/30 font-black text-amber-400">FOB Picard</th>
-                    <th className="p-3 w-20 text-center bg-amber-900/40 font-black text-amber-400">Costo Picard</th>
-                    <th className="p-3 w-20 text-center bg-amber-900/50 font-black text-amber-400">FV Picard</th>
+                    <th className="p-3 w-20 text-center">FOB SKF</th>
+                    <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />Venta (A)</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />Costo SKF</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />FV SKF</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-amber-700"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-amber-700" />FOB Picard</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-amber-700"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-amber-700" />Costo Picard</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-amber-700"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-amber-700" />FV Picard</span></th>
                   </>
                 ) : (
                   <>
                     <th className="p-3 w-20 text-center">FOB Unit</th>
-                    <th className="p-3 w-24 text-center bg-emerald-900/40 font-black text-emerald-400">Venta (A)</th>
-                    <th className="p-3 w-16 text-center bg-emerald-900/60">% Renta</th>
+                    <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />Venta (A)</span></th>
+                    <th className="px-1.5 py-3 w-16 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />% Renta</span></th>
                   </>
                 )}
-                <th className="p-3 w-24 text-center bg-blue-900/40 font-black text-blue-400">Venta (M)</th>
-                <th className="p-3 w-16 text-center bg-blue-900/60">% Renta</th>
+                <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-blue-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-blue-600" />Venta (M)</span></th>
+                <th className="px-1.5 py-3 w-16 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-blue-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-blue-600" />% Renta</span></th>
                 <th className="p-3 w-32">Entrega (A/M)</th>
                 <th className="p-3 w-32">Notas</th>
-                <th className="p-3 w-12 text-center">Acción</th>
+                <th className="py-3 px-1 w-12 text-center">Acción</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-[11px]">
+            <tbody className="text-[11px]">
               {items.map((p, idx) => {
                 const currentFob = Number(p.fob || 0);
                 const isSelected = p.selected;
@@ -1763,6 +1770,7 @@ export const Calculadora = ({ onGuardar }) => {
             </tbody>
           </table>
         </div>
+      </div>
       </div>
 
       {/* ACCIONES INFERIORES RESPONSIVAS (Móvil vía BottomDock, Escritorio vía sticky en flujo) */}
@@ -2070,7 +2078,7 @@ export const Calculadora = ({ onGuardar }) => {
         onClose={() => setConsultaVentaPerdidaData(null)}
         data={consultaVentaPerdidaData}
       />
-    </div>
+    </PageContainer>
   );
 };
 

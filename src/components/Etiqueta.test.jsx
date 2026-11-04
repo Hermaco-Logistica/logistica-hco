@@ -10,7 +10,7 @@ describe('Etiqueta', () => {
     const { container } = render(<Etiqueta dominio="faseSeguimiento" valor="vencida" />);
     const chip = container.firstChild;
     expect(chip.textContent).toBe('Vencida');
-    expect(chip.className).toContain('bg-rose-100');
+    expect(chip.className).toContain('bg-tag-peligro-soft');
     expect(chip.className).not.toContain('border');
     expect(chip.querySelector('svg')).not.toBeNull();
   });

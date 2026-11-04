@@ -10,15 +10,10 @@ export const ROLE_THEMES = {
   comprador: {
     key: 'comprador',
     label: 'Compras & Logística',
-    brandHex: '#2563eb',
-    textAccent: 'text-blue-600',
+    textAccent: 'text-analysis-accent',
     textAccentHover: 'hover:text-blue-700',
-    bgSubtle: 'bg-blue-50/70',
-    borderAccent: 'border-blue-200',
-    activeTab: 'bg-slate-900 text-white shadow-xs',
-    activePeriod: 'bg-blue-600 text-white shadow-xs',
-    kpiRing: 'group-hover:border-blue-300',
-    redirectorHover: 'hover:text-blue-600 hover:border-blue-300',
+    linkClass: 'text-analysis-accent hover:text-blue-700',
+    activePeriod: 'bg-analysis-accent-active text-white shadow-xs',
     flujoEstados: {
       pendiente: {
         color: 'bg-amber-500',
@@ -55,15 +50,10 @@ export const ROLE_THEMES = {
   vendedor: {
     key: 'vendedor',
     label: 'Ventas Comercial',
-    brandHex: '#7c3aed',
-    textAccent: 'text-purple-600',
+    textAccent: 'text-analysis-accent',
     textAccentHover: 'hover:text-purple-700',
-    bgSubtle: 'bg-purple-50/70',
-    borderAccent: 'border-purple-200',
-    activeTab: 'bg-slate-900 text-white shadow-xs',
-    activePeriod: 'bg-purple-600 text-white shadow-xs',
-    kpiRing: 'group-hover:border-purple-300',
-    redirectorHover: 'hover:text-purple-600 hover:border-purple-300',
+    linkClass: 'text-analysis-accent hover:text-purple-700',
+    activePeriod: 'bg-analysis-accent-active text-white shadow-xs',
     flujoEstados: {
       pendiente: {
         color: 'bg-amber-500',
@@ -100,15 +90,10 @@ export const ROLE_THEMES = {
   gerente: {
     key: 'gerente',
     label: 'Gerencia General',
-    brandHex: '#059669',
-    textAccent: 'text-emerald-600',
+    textAccent: 'text-analysis-accent',
     textAccentHover: 'hover:text-emerald-700',
-    bgSubtle: 'bg-emerald-50/70',
-    borderAccent: 'border-emerald-200',
-    activeTab: 'bg-slate-900 text-white shadow-xs',
-    activePeriod: 'bg-emerald-600 text-white shadow-xs',
-    kpiRing: 'group-hover:border-emerald-300',
-    redirectorHover: 'hover:text-emerald-600 hover:border-emerald-300',
+    linkClass: 'text-analysis-accent hover:text-emerald-700',
+    activePeriod: 'bg-analysis-accent-active text-white shadow-xs',
     flujoEstados: {
       pendiente: {
         color: 'bg-amber-500',
@@ -145,15 +130,10 @@ export const ROLE_THEMES = {
   administrador: {
     key: 'administrador',
     label: 'Administración',
-    brandHex: '#9f1239',
-    textAccent: 'text-rose-700',
+    textAccent: 'text-analysis-accent',
     textAccentHover: 'hover:text-rose-800',
-    bgSubtle: 'bg-rose-50/70',
-    borderAccent: 'border-rose-200',
-    activeTab: 'bg-slate-900 text-white shadow-xs',
-    activePeriod: 'bg-rose-700 text-white shadow-xs',
-    kpiRing: 'group-hover:border-rose-300',
-    redirectorHover: 'hover:text-rose-700 hover:border-rose-300',
+    linkClass: 'text-analysis-accent hover:text-rose-800',
+    activePeriod: 'bg-analysis-accent-active text-white shadow-xs',
     flujoEstados: {
       pendiente: {
         color: 'bg-amber-500',
@@ -190,15 +170,10 @@ export const ROLE_THEMES = {
   default: {
     key: 'default',
     label: 'Análisis Operativo',
-    brandHex: '#0f172a',
-    textAccent: 'text-slate-800',
+    textAccent: 'text-analysis-accent',
     textAccentHover: 'hover:text-slate-900',
-    bgSubtle: 'bg-slate-50',
-    borderAccent: 'border-slate-200',
-    activeTab: 'bg-slate-900 text-white shadow-xs',
-    activePeriod: 'bg-slate-900 text-white shadow-xs',
-    kpiRing: 'group-hover:border-slate-400',
-    redirectorHover: 'hover:text-slate-900 hover:border-slate-300',
+    linkClass: 'text-analysis-accent hover:text-slate-900',
+    activePeriod: 'bg-analysis-accent-active text-white shadow-xs',
     flujoEstados: {
       pendiente: {
         color: 'bg-amber-500',

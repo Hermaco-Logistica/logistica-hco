@@ -50,6 +50,7 @@ import {
   parseFinDiaElSalvador,
   cargarFiltroPeriodoStorage
 } from '../../utils/dateValidation';
+import { TablePagination } from '../../components/ui/TablePagination';
 
 const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGanada, irADetalle, onMostrarMotivo, soloAnulados = false, decisionFilter = 'anulados' }) => {
   const [expanded, setExpanded] = useState(false);
@@ -667,7 +668,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
 
       {/* TARJETAS RESUMEN DEL CLIENTE */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <Package size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Productos</span>
@@ -682,7 +683,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <Package size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Unid. Solicitadas</span>
@@ -697,7 +698,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <DollarSign size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Valor Neto Total</span>
@@ -712,7 +713,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between">
+        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <DollarSign size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Total (IVA 13%)</span>
@@ -727,7 +728,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-sm flex flex-col justify-between col-span-2 lg:col-span-1">
+        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <TrendingUp size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Efectividad</span>
@@ -748,7 +749,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
       </div>
 
       {/* FILTROS Y BÚSQUEDA */}
-      <div className="bg-white p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border border-slate-200/60 shadow-sm flex flex-col sm:flex-row gap-2 sm:gap-3 items-center justify-between">
+      <div className="bg-white p-2.5 sm:p-3 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col sm:flex-row gap-2 sm:gap-3 items-center justify-between">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -843,9 +844,9 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
       </div>
 
       {/* TABLA DE PRODUCTOS HISTÓRICOS DEL CLIENTE */}
-      <div className="bg-transparent sm:bg-white sm:rounded-2xl sm:border sm:border-slate-200/80 sm:shadow-xs overflow-hidden flex flex-col">
+      <div className="bg-transparent sm:bg-white sm:rounded-2xl sm:shadow-[var(--tf-shadow-card)] overflow-hidden flex flex-col">
         {paginatedMovimientos.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200/80 text-slate-400 text-xs font-medium mt-2">
+          <div className="text-center py-16 bg-white rounded-2xl text-slate-400 text-xs font-medium mt-2 shadow-[var(--tf-shadow-card)]">
             No se registraron productos o movimientos con los filtros seleccionados.
           </div>
         ) : (
@@ -880,7 +881,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           >
             <table className="min-w-full w-max text-left text-xs">
               <thead className="sticky top-0 z-10">
-                <tr className="border-b border-slate-200/80 bg-slate-50 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <tr className="tf-tabla-head">
                   <th className="py-2.5 px-3 whitespace-nowrap">RFQ</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Sol.</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Resp.</th>
@@ -1105,31 +1106,14 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           </>
         )}
 
-        {/* PAGINACIÓN DE 10 EN 10 */}
-        {totalPages > 1 && (
-          <div className="p-3 border-t border-slate-100 flex items-center justify-between">
-            <button 
-              type="button"
-              onClick={() => setCurrentPage(Math.max(safeCurrentPage - 1, 1))}
-              disabled={safeCurrentPage === 1}
-              className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-            >
-              Anterior
-            </button>
-            <span className="text-[11px] font-medium text-slate-400">
-              Página {safeCurrentPage} de {totalPages} ({movimientosFiltrados.length} productos)
-            </span>
-            <button 
-              type="button"
-              onClick={() => setCurrentPage(Math.min(safeCurrentPage + 1, totalPages))}
-              disabled={safeCurrentPage === totalPages}
-              className="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 disabled:opacity-40 disabled:hover:bg-white text-slate-700 font-medium text-xs rounded-lg transition-all cursor-pointer"
-            >
-              Siguiente
-            </button>
-          </div>
-        )}
       </div>
+      <TablePagination
+        page={safeCurrentPage}
+        totalPages={totalPages}
+        totalItems={movimientosFiltrados.length}
+        noun="productos"
+        onPageChange={setCurrentPage}
+      />
       </div>
     </>
   );

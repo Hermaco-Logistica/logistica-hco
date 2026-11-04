@@ -1,4 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { TablePagination } from '../../components/ui/TablePagination';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock3, Filter, History, Search, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
@@ -222,19 +225,12 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
   };
 
   return (
-    <div className="prorrogas-page animate-in fade-in duration-500 mx-auto max-w-7xl space-y-5 pb-8">
+    <PageContainer className="prorrogas-page animate-in fade-in duration-500 space-y-5 pb-8">
       {/* Cabecera y KPIs (A) */}
-      <header className="prorrogas-header">
-        <div className="prorrogas-header__intro">
-          <h1 className="prorrogas-title">
-            Prórrogas<span className="prorrogas-title__dot">.</span>
-          </h1>
-          <p className="prorrogas-subtitle">
-            Prórrogas pendientes, decisiones atendidas y constancia de las solicitudes mantenidas en revisión.
-          </p>
-        </div>
-
-        {/* Tarjeta única con 3 celdas */}
+      <PageHeader
+        title={<>Prórrogas<span className="prorrogas-title__dot">.</span></>}
+        subtitle="Prórrogas pendientes, decisiones atendidas y constancia de las solicitudes mantenidas en revisión."
+        actions={
         <div className="prorrogas-kpis">
           <div className="prorrogas-kpi-cell">
             <span className="prorrogas-kpi-label">
@@ -258,7 +254,8 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
             <strong className="prorrogas-kpi-value">{historial.length}</strong>
           </div>
         </div>
-      </header>
+        }
+      />
 
       {/* Un solo contenedor para Filtros + Tabs + Tabla (B) */}
       <div className="@container/prorrogas prorrogas-box w-full min-w-0">
@@ -513,8 +510,8 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
                     <col key={indice} style={{ width: `${ancho}%` }} />
                   ))}
                 </colgroup>
-                <thead className="prorrogas-thead">
-                  <tr>
+                <thead>
+                  <tr className="tf-tabla-head">
                     <th>Solicitud</th>
                     {!esVendedor && <th>Vendedor</th>}
                     <th>Estado</th>
@@ -543,34 +540,13 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
         )}
       </div>
 
-      {/* Paginación Sobria (D) */}
-      {totalPaginas > 1 && (
-        <nav className="prorrogas-pagination" aria-label="Paginación de prórrogas">
-          <p className="prorrogas-pagination-text">
-            Página {paginaSegura} de {totalPaginas} · {inicioPagina + 1}–{Math.min(inicioPagina + elementosPorPagina, visibles.length)} de {visibles.length} registros
-          </p>
-          <div className="prorrogas-pagination-controls">
-            <button
-              type="button"
-              onClick={() => setPaginacion({ clave: claveFiltros, pagina: Math.max(1, paginaSegura - 1) })}
-              disabled={paginaSegura === 1}
-              className="prorrogas-pagination-btn"
-              aria-label="Página anterior"
-            >
-              <ChevronLeft size={14} /> Anterior
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaginacion({ clave: claveFiltros, pagina: Math.min(totalPaginas, paginaSegura + 1) })}
-              disabled={paginaSegura === totalPaginas}
-              className="prorrogas-pagination-btn"
-              aria-label="Página siguiente"
-            >
-              Siguiente <ChevronRight size={14} />
-            </button>
-          </div>
-        </nav>
-      )}
+      <TablePagination
+        page={paginaSegura}
+        totalPages={totalPaginas}
+        totalItems={visibles.length}
+        noun="registros"
+        onPageChange={(pagina) => setPaginacion({ clave: claveFiltros, pagina })}
+      />
 
       <ModalRespuestaProrroga
         key={respuesta ? `${respuesta.solicitud.id}-${respuesta.prorroga.ronda}-${respuesta.accion}` : 'sin-respuesta'}
@@ -581,6 +557,6 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
         onClose={() => setRespuesta(null)}
         onConfirmar={responderProrroga}
       />
-    </div>
+    </PageContainer>
   );
 };

@@ -43,13 +43,13 @@
   flex-wrap: wrap;
   gap: 5px;
   margin-top: 7px;
-  color: #64748b;
+  color: var(--color-foreground-muted);
   font-size: 10px;
   font-weight: 700;
 }
 
 .seguimiento-prorroga strong {
-  color: #1e293b;
+  color: var(--color-foreground);
   font-weight: 850;
 }
 
@@ -76,7 +76,7 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 10px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
   padding-top: 10px;
 }
 
@@ -86,7 +86,7 @@
 
 .prorrogas-compras__dato span {
   display: block;
-  color: #64748b;
+  color: var(--color-foreground-muted);
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -96,7 +96,7 @@
 .prorrogas-compras__dato strong {
   display: block;
   margin-top: 3px;
-  color: #1e293b;
+  color: var(--color-foreground);
   font-size: 12px;
   font-weight: 800;
 }
@@ -127,7 +127,7 @@
 .pedido-item-seguimiento {
   grid-column: 1 / -1;
   padding-top: 10px;
-  border-top: 1px dashed #e2e8f0;
+  border-top: 1px dashed var(--color-border);
   text-align: left;
 }
 
