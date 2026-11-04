@@ -164,11 +164,11 @@ export const TrackingModal = ({
                     let colorText = 'text-slate-400 font-bold';
 
                     if (esPasado) {
-                      colorCircle = 'bg-emerald-500 border-emerald-500 text-white shadow-xs shadow-emerald-500/30';
-                      colorText = 'text-emerald-700 font-black';
+                      colorCircle = 'bg-primary border-primary text-primary-foreground shadow-xs shadow-primary/30';
+                      colorText = 'text-primary-strong font-black';
                     } else if (esActual) {
-                      colorCircle = 'bg-slate-900 border-slate-900 text-white shadow-sm';
-                      colorText = 'text-slate-900 font-black';
+                      colorCircle = 'bg-secondary border-secondary text-white shadow-sm';
+                      colorText = 'text-secondary font-black';
                     }
 
                     return (
