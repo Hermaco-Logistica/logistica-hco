@@ -160,17 +160,17 @@
   /* Valores por rol */
   .role-comprador,
   body[data-role="comprador"] {
-    --color-primary: #3b82f6;
-    --color-primary-strong: #2563eb;
-    --color-secondary: #0b2545;
-    --color-background: #eef4ff;
-    --color-nav-accent: var(--color-blue-500);
-    --color-nav-accent-text: var(--color-blue-300);
-    --color-nav-accent-strong: var(--color-blue-600);
-    --color-nav-accent-hover: var(--color-blue-700);
-    --color-nav-glow: rgb(37 99 235 / 0.18);
-    --color-analysis-accent: var(--color-blue-600);
-    --color-analysis-accent-active: var(--color-blue-600);
+    --color-primary: #3b46f2;
+    --color-primary-strong: #2635d9;
+    --color-secondary: #1b2452;
+    --color-background: #f7f8fc;
+    --color-nav-accent: var(--color-primary);
+    --color-nav-accent-text: #aaaff3;
+    --color-nav-accent-strong: var(--color-primary-strong);
+    --color-nav-accent-hover: #212fbf;
+    --color-nav-glow: rgb(38 53 217 / 0.18);
+    --color-analysis-accent: var(--color-primary-strong);
+    --color-analysis-accent-active: var(--color-primary-strong);
   }
 
   .role-vendedor,
