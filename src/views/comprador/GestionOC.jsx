@@ -584,7 +584,7 @@ export const GestionOC = ({ readOnly = false }) => {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full border-separate border-spacing-y-2">
                   <thead>
-                    <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                    <tr className="tf-tabla-head">
                       <th className="text-left px-6 py-4">Ítem / Descripción</th>
                       <th className="text-center px-6 py-4">Cant.</th>
                       <th className="text-right px-6 py-4">FOB Unit.</th>

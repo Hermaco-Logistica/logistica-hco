@@ -331,17 +331,17 @@ export const NuevaRFQView = ({ viewModel }) => {
           </div>
 
           {/* Vista Escritorio (>= md): Tabla tradicional */}
-          <div className="p-2 hidden md:block">
-            <table className="w-full">
-              <thead className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                <tr>
+          <div className="p-3 hidden md:block">
+            <table className="tf-tabla">
+              <thead>
+                <tr className="tf-tabla-head">
                   <th className="p-4 text-left">Descripción del Repuesto</th>
                   <th className="p-4 text-left">Marca / Referencia</th>
                   <th className="p-4 text-center w-24">Cant.</th>
                   <th className="p-4 w-10"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {productos.map((p, idx) => (
                   <tr key={idx} className="group hover:bg-slate-50/50 transition-colors">
                     <td className="p-2">

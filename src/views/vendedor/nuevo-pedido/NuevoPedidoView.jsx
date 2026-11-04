@@ -178,20 +178,20 @@ export const NuevoPedidoView = ({ viewModel }) => {
           </div>
 
           {/* Vista Escritorio (>= xl): Tabla tradicional */}
-          <div className="hidden xl:block p-2">
-            <table className="w-full min-w-[880px] table-fixed">
-              <thead className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-                <tr>
+          <div className="hidden xl:block p-3">
+            <table className="tf-tabla min-w-[880px] table-fixed">
+              <thead>
+                <tr className="tf-tabla-head">
                   <th className="p-4 text-left w-[29%]">Descripción del Repuesto</th>
                   <th className="p-3 w-[18%] text-left">Marca</th>
                   <th className="p-3 w-[9%] text-center">Cant.</th>
-                  <th className="p-3 w-[13%] text-left">Precio Venta (OC)</th>
-                  <th className="p-3 w-[14%] text-left">T. Entrega Solicitado</th>
+                  <th className="p-3 w-[13%] text-left whitespace-normal">Precio Venta (OC)</th>
+                  <th className="p-3 w-[14%] text-left whitespace-normal">T. Entrega Solicitado</th>
                   <th className="p-3 w-[13%] text-left">Modalidad</th>
                   <th className="p-4 w-[4%]"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {productos.map((p, idx) => (
                   <tr key={idx} className="group hover:bg-slate-50/50 transition-colors">
                     <td className="p-2">
