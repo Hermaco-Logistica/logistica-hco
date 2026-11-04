@@ -379,24 +379,24 @@ export const DetalleRFQVista = ({ viewModel }) => {
 
         {totalGeneralA > 0 || totalGeneralM > 0 ? (
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
-            <div className="bg-emerald-50/60 rounded-xl p-2.5 border border-emerald-100 flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+            <div className="bg-mode-air-soft/60 rounded-xl p-2.5 border border-mode-air-100 flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-mode-air-100 text-mode-air-strong flex items-center justify-center shrink-0">
                 <Plane size={14} />
               </div>
               <div className="min-w-0">
-                <span className="text-[9px] font-black text-emerald-600 uppercase block leading-none">Total Aéreo</span>
+                <span className="text-[9px] font-black text-mode-air uppercase block leading-none">Total Aéreo</span>
                 <span className="font-mono font-black text-xs text-slate-900 tracking-tight block mt-0.5">
                   ${totalGeneralA.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
 
-            <div className="bg-blue-50/60 rounded-xl p-2.5 border border-blue-100 flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+            <div className="bg-mode-sea-soft/60 rounded-xl p-2.5 border border-mode-sea-100 flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-mode-sea-100 text-mode-sea-strong flex items-center justify-center shrink-0">
                 <Ship size={14} />
               </div>
               <div className="min-w-0">
-                <span className="text-[9px] font-black text-blue-600 uppercase block leading-none">Total Marítimo</span>
+                <span className="text-[9px] font-black text-mode-sea uppercase block leading-none">Total Marítimo</span>
                 <span className="font-mono font-black text-xs text-slate-900 tracking-tight block mt-0.5">
                   ${totalGeneralM.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
@@ -536,13 +536,13 @@ export const DetalleRFQVista = ({ viewModel }) => {
 
             {/* Desglose Aéreo / Marítimo */}
             <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="bg-emerald-50/50 rounded-xl p-3 border border-emerald-100/80">
-                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest block mb-1">Aéreo</span>
-                <span className="font-mono text-sm font-black text-emerald-900">${desgloseVendedor.aereo.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              <div className="bg-mode-air-soft/50 rounded-xl p-3 border border-mode-air-100/80">
+                <span className="text-[9px] font-black text-mode-air uppercase tracking-widest block mb-1">Aéreo</span>
+                <span className="font-mono text-sm font-black text-mode-air-900">${desgloseVendedor.aereo.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
               </div>
-              <div className="bg-blue-50/50 rounded-xl p-3 border border-blue-100/80">
-                <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest block mb-1">Marítimo</span>
-                <span className="font-mono text-sm font-black text-blue-900">${desgloseVendedor.maritimo.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              <div className="bg-mode-sea-soft/50 rounded-xl p-3 border border-mode-sea-100/80">
+                <span className="text-[9px] font-black text-mode-sea uppercase tracking-widest block mb-1">Marítimo</span>
+                <span className="font-mono text-sm font-black text-mode-sea-900">${desgloseVendedor.maritimo.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
 
