@@ -344,7 +344,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                 periodoLabel: filtrosActivos.join(' | ')
               });
             }}
-            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
             title="Exportar todos los movimientos de productos a Excel"
           >
             <Download size={13} />
@@ -377,7 +377,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                         <Package size={20} />
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-900 text-sm line-clamp-2 group-hover:text-blue-600 transition-colors uppercase">{p.desc}</h3>
+                        <h3 className="font-bold text-slate-900 text-sm line-clamp-2 group-hover:text-primary-strong transition-colors uppercase">{p.desc}</h3>
                         <p className="text-[10px] text-slate-500 line-clamp-1">{p.marcaPrincipal}</p>
                       </div>
                     </div>
@@ -400,7 +400,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-emerald-600/70 font-medium">Und. Pedidas</span>
-                      <span className="font-bold font-mono text-emerald-700">{p.unidadesPedidas.toLocaleString()}</span>
+                      <span className="font-bold font-mono text-slate-800">{p.unidadesPedidas.toLocaleString()}</span>
                     </div>
                   </div>
                   
@@ -465,7 +465,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                             <div className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-[10px] shrink-0 group-hover/item:bg-slate-800 group-hover/item:text-white transition-colors">
                               <Package size={12} />
                             </div>
-                            <span className="font-semibold text-slate-800 text-xs max-w-sm truncate group-hover/item:text-blue-600 transition-colors uppercase" title={p.desc}>
+                            <span className="font-semibold text-slate-800 text-xs max-w-sm truncate group-hover/item:text-primary-strong transition-colors uppercase" title={p.desc}>
                               {p.desc}
                             </span>
                           </div>
@@ -497,7 +497,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                             )}
                           </Etiqueta>
                         </td>
-                        <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700">
+                        <td className="py-2.5 px-3.5 text-center font-mono font-bold text-slate-800">
                           {p.unidadesPedidas.toLocaleString()}
                         </td>
                         <td className="py-2.5 px-3.5 text-center font-mono text-slate-500">
