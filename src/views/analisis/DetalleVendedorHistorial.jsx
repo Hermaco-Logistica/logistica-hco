@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { Etiqueta } from '../../components/Etiqueta';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
 import { normalizarDecisionFilter, obtenerConfiguracionDecision, obtenerEstadoDecision } from './utils/decisionFilter';
 import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
@@ -680,59 +682,44 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
         onClose={() => setConsultaMotivoData(null)}
         data={consultaMotivoData?.data}
       />
-      <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
-      {/* CABECERA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-start sm:items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/analisis/vendedores')}
-            className="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200/80 transition-colors shadow-xs cursor-pointer shrink-0 mt-1 sm:mt-0"
-            title="Volver a Rendimiento por Vendedor"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-1.5">
-              <Etiqueta dominio="rol" valor={theme.key}>
-                {soloAnulados ? `${obtenerConfiguracionDecision(decisionFilter).titulo} de Vendedor` : 'Historial de Vendedor'}
-              </Etiqueta>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 w-full">
-              <div className="min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none mb-2.5 truncate">
-                  {infoVendedor.nombre}
-                </h1>
-                {soloAnulados && (
-                  <p className="text-xs font-medium text-rose-600 mb-2.5">
-                    Vista exclusiva de {obtenerConfiguracionDecision(decisionFilter).sustantivo}
-                  </p>
-                )}
-                
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                  {infoVendedor.email && (
-                    <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
-                      <Mail size={13} className="text-slate-400" />
-                      {infoVendedor.email}
-                    </span>
-                  )}
-                  <div className="h-3 w-px bg-slate-200 hidden sm:block"></div>
-                  <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
-                    <Building size={13} className="text-slate-400" />
-                    <strong className="text-slate-700">{infoVendedor.totalRfqs}</strong> {infoVendedor.totalRfqs === 1 ? 'RFQ' : 'RFQs'}
-                  </span>
-                  <div className="h-3 w-px bg-slate-200 hidden sm:block"></div>
-                  <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
-                    <Users size={13} className="text-slate-400" />
-                    <strong className="text-slate-700">{infoVendedor.totalClientes}</strong> {infoVendedor.totalClientes === 1 ? 'cliente' : 'clientes'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageContainer className="animate-in fade-in duration-300 space-y-5 pb-12">
+      <PageHeader
+        onBack={() => navigate('/analisis/vendedores')}
+        backLabel="Volver a Rendimiento por Vendedor"
+        title={infoVendedor.nombre}
+        statusChip={
+          <Etiqueta dominio="rol" valor={theme.key}>
+            {soloAnulados ? `${obtenerConfiguracionDecision(decisionFilter).titulo} de Vendedor` : 'Historial de Vendedor'}
+          </Etiqueta>
+        }
+        subtitle={
+          <>
+          {soloAnulados && (
+            <span className="block text-xs font-medium text-rose-600 mb-1">
+              Vista exclusiva de {obtenerConfiguracionDecision(decisionFilter).sustantivo}
+            </span>
+          )}
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {infoVendedor.email && (
+              <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+                <Mail size={13} className="text-slate-400" />
+                {infoVendedor.email}
+              </span>
+            )}
+            <span className="h-3 w-px bg-slate-200 hidden sm:block"></span>
+            <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+              <Building size={13} className="text-slate-400" />
+              <strong className="text-slate-700">{infoVendedor.totalRfqs}</strong> {infoVendedor.totalRfqs === 1 ? 'RFQ' : 'RFQs'}
+            </span>
+            <span className="h-3 w-px bg-slate-200 hidden sm:block"></span>
+            <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+              <Users size={13} className="text-slate-400" />
+              <strong className="text-slate-700">{infoVendedor.totalClientes}</strong> {infoVendedor.totalClientes === 1 ? 'cliente' : 'clientes'}
+            </span>
+          </span>
+          </>
+        }
+      />
 
       {/* TARJETAS RESUMEN DEL VENDEDOR */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
@@ -1206,7 +1193,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
         noun="movimientos"
         onPageChange={setCurrentPage}
       />
-      </div>
+      </PageContainer>
     </>
   );
 };
