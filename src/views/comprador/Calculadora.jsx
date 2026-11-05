@@ -764,7 +764,7 @@ export const Calculadora = ({ onGuardar }) => {
           onClick={() => setGastosExpandidos(prev => !prev)}
         >
           <div>
-            <h3 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-wide">Gastos Adicionales Aéreos</h3>
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider md:font-medium md:normal-case md:tracking-normal md:text-foreground">Gastos Adicionales Aéreos</h3>
             <p className="text-[10px] md:text-[11px] text-slate-400 font-semibold mt-0.5">Trámite, Scan, Adimex, Manejos, Seguro, Entrega Local, Otros</p>
           </div>
           <span className={`w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 transition-transform duration-200 ${gastosExpandidos ? 'rotate-180' : ''}`}>
@@ -775,31 +775,31 @@ export const Calculadora = ({ onGuardar }) => {
           <div className="overflow-hidden">
             <div className="p-3.5 md:p-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5 md:gap-4 bg-slate-50">
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Trámite Aduanal</label>
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Trámite Aduanal</label>
                 <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={tramiteAduanal} onChange={handleNumericInput(setTramiteAduanal)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Scan</label>
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Scan</label>
                 <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={scan} onChange={handleNumericInput(setScan)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Adimex</label>
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Adimex</label>
                 <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={adimex} onChange={handleNumericInput(setAdimex)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Manejos</label>
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Manejos</label>
                 <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={manejos} onChange={handleNumericInput(setManejos)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Seguro</label>
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Seguro</label>
                 <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={seguro} onChange={handleNumericInput(setSeguro)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Entrega Local</label>
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Entrega Local</label>
                 <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={entregaLocal} onChange={handleNumericInput(setEntregaLocal)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Otros</label>
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Otros</label>
                 <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={otrosGastos} onChange={handleNumericInput(setOtrosGastos)} onFocus={(e) => e.target.select()} />
               </div>
             </div>
@@ -814,12 +814,12 @@ export const Calculadora = ({ onGuardar }) => {
           onClick={() => setCotizadorExpandido(prev => !prev)}
         >
           <div>
-            <h3 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-wide">Cotizador de Flete Internacional</h3>
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider md:font-medium md:normal-case md:tracking-normal md:text-foreground">Cotizador de Flete Internacional</h3>
             <p className="text-[10px] md:text-[11px] text-slate-400 font-semibold mt-0.5">Calcula el costo con cada courier y aplica el resultado como Flete Aéreo</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <span className="text-[9px] block text-slate-400 font-black uppercase tracking-widest">Fuente activa</span>
+              <span className="text-[11px] block text-slate-500 font-medium">Fuente activa</span>
               <span className="text-xs font-black text-primary-strong uppercase">
                 {activeProvider === 'dhl' ? 'DHL Express Bélgica' : activeProvider === 'qs' ? 'QS USA' : 'Ninguna'}
               </span>
@@ -847,7 +847,7 @@ export const Calculadora = ({ onGuardar }) => {
                 <p className="text-[9px] text-slate-400 font-semibold">Peso volumétrico (kg)</p>
               </div>
               <div className="text-right shrink-0">
-                <span className="block text-[8px] text-slate-400 font-black uppercase">Costo estimado</span>
+                <span className="block text-[11px] text-slate-500 font-medium">Costo estimado</span>
                 <span className="text-sm font-black text-slate-800">${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : '0.00'}</span>
               </div>
               {activeProvider === 'dhl' && (
@@ -867,7 +867,7 @@ export const Calculadora = ({ onGuardar }) => {
                 <p className="text-[9px] text-slate-400 font-semibold">Tarifa por libra, mínimo $10.00</p>
               </div>
               <div className="text-right shrink-0">
-                <span className="block text-[8px] text-slate-400 font-black uppercase">Costo estimado</span>
+                <span className="block text-[11px] text-slate-500 font-medium">Costo estimado</span>
                 <span className="text-sm font-black text-slate-800">${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : '0.00'}</span>
               </div>
               {activeProvider === 'qs' && (
@@ -909,7 +909,7 @@ export const Calculadora = ({ onGuardar }) => {
 
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div className="flex flex-col">
-                <label className={`text-[10px] font-black uppercase mb-1 ${activeProvider === 'dhl' ? 'text-slate-500' : 'text-slate-400'}`}>Peso base (kg)</label>
+                <label className={`text-[11px] font-medium mb-1 ${activeProvider === 'dhl' ? 'text-slate-500' : 'text-slate-400'}`}>Peso base (kg)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -921,7 +921,7 @@ export const Calculadora = ({ onGuardar }) => {
                 />
               </div>
               <div className="flex flex-col">
-                <label className={`text-[10px] font-black uppercase mb-1 ${activeProvider === 'dhl' ? 'text-slate-500' : 'text-slate-400'}`}>Zona DHL</label>
+                <label className={`text-[11px] font-medium mb-1 ${activeProvider === 'dhl' ? 'text-slate-500' : 'text-slate-400'}`}>Zona DHL</label>
                 <div className={`p-2.5 border rounded-lg font-bold text-sm flex items-center justify-between h-9.5 ${activeProvider === 'dhl' ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-white/60 border-slate-200 text-slate-400'}`}>
                   <span>Zona {dhlZoneId}</span>
                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Auto</span>
@@ -931,11 +931,11 @@ export const Calculadora = ({ onGuardar }) => {
 
             <div className={`rounded-xl border p-3.5 flex items-center gap-4 ${activeProvider === 'dhl' ? 'bg-white border-slate-200' : 'bg-white/50 border-slate-200'}`}>
               <div className="flex-1">
-                <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Facturable</span>
+                <span className="text-[11px] block text-slate-500 font-medium">Facturable</span>
                 <span className={`text-sm font-black ${activeProvider === 'dhl' ? 'text-slate-700' : 'text-slate-400'}`}>{dhlResults.chargeableWeight ? Number(dhlResults.chargeableWeight).toFixed(2) : "0.00"} kg</span>
               </div>
               <div className="flex-1 text-right">
-                <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Costo estimado</span>
+                <span className="text-[11px] block text-slate-500 font-medium">Costo estimado</span>
                 <span className={`text-lg font-black ${activeProvider === 'dhl' ? 'text-slate-900' : 'text-slate-400'}`}>${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : "0.00"}</span>
               </div>
               <Button
@@ -982,7 +982,7 @@ export const Calculadora = ({ onGuardar }) => {
 
             <div className="grid grid-cols-1 gap-3 mb-3">
               <div className="flex flex-col max-w-[calc(50%-0.375rem)]">
-                <label className={`text-[10px] font-black uppercase mb-1 ${activeProvider === 'qs' ? 'text-slate-500' : 'text-slate-400'}`}>Peso base (lbs)</label>
+                <label className={`text-[11px] font-medium mb-1 ${activeProvider === 'qs' ? 'text-slate-500' : 'text-slate-400'}`}>Peso base (lbs)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -997,11 +997,11 @@ export const Calculadora = ({ onGuardar }) => {
 
             <div className={`rounded-xl border p-3.5 flex items-center gap-4 ${activeProvider === 'qs' ? 'bg-white border-slate-200' : 'bg-white/50 border-slate-200'}`}>
               <div className="flex-1">
-                <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Tarifa aplicada</span>
+                <span className="text-[11px] block text-slate-500 font-medium">Tarifa aplicada</span>
                 <span className={`text-sm font-black ${activeProvider === 'qs' ? 'text-slate-700' : 'text-slate-400'}`}>{parseFloat(qsWeight) > 10 ? '$2.80 / lb' : 'Mínimo fijo'}</span>
               </div>
               <div className="flex-1 text-right">
-                <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Costo estimado</span>
+                <span className="text-[11px] block text-slate-500 font-medium">Costo estimado</span>
                 <span className={`text-lg font-black ${activeProvider === 'qs' ? 'text-slate-900' : 'text-slate-400'}`}>${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : "0.00"}</span>
               </div>
               <Button
