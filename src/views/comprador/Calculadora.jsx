@@ -844,10 +844,10 @@ export const Calculadora = ({ onGuardar }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] font-black text-slate-700 uppercase truncate">DHL Express Bélgica</p>
-                <p className="text-[9px] text-slate-400 font-semibold">Peso volumétrico (kg)</p>
+                <p className="text-[9px] text-slate-600 font-semibold">Peso volumétrico (kg)</p>
               </div>
               <div className="text-right shrink-0">
-                <span className="block text-[11px] text-slate-500 font-medium">Costo estimado</span>
+                <span className="block text-[11px] text-slate-600 font-medium">Costo estimado</span>
                 <span className="text-sm font-black text-slate-800">${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : '0.00'}</span>
               </div>
               {activeProvider === 'dhl' && (
@@ -864,10 +864,10 @@ export const Calculadora = ({ onGuardar }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] font-black text-slate-700 uppercase truncate">QS USA</p>
-                <p className="text-[9px] text-slate-400 font-semibold">Tarifa por libra, mínimo $10.00</p>
+                <p className="text-[9px] text-slate-600 font-semibold">Tarifa por libra, mínimo $10.00</p>
               </div>
               <div className="text-right shrink-0">
-                <span className="block text-[11px] text-slate-500 font-medium">Costo estimado</span>
+                <span className="block text-[11px] text-slate-600 font-medium">Costo estimado</span>
                 <span className="text-sm font-black text-slate-800">${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : '0.00'}</span>
               </div>
               {activeProvider === 'qs' && (
@@ -900,7 +900,7 @@ export const Calculadora = ({ onGuardar }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className={`text-xs font-black uppercase tracking-wide ${activeProvider === 'dhl' ? 'text-slate-800' : 'text-slate-400'}`}>DHL Express Bélgica</h4>
-                <p className={`text-[10px] font-semibold ${activeProvider === 'dhl' ? 'text-slate-400' : 'text-slate-400/70'}`}>Tarifa por peso volumétrico (kg)</p>
+                <p className={`text-[10px] font-semibold ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-400/70'}`}>Tarifa por peso volumétrico (kg)</p>
               </div>
               {activeProvider === 'dhl' && (
                 <Etiqueta tono="info" className="shrink-0">En uso</Etiqueta>
@@ -973,7 +973,7 @@ export const Calculadora = ({ onGuardar }) => {
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className={`text-xs font-black uppercase tracking-wide ${activeProvider === 'qs' ? 'text-slate-800' : 'text-slate-400'}`}>QS USA</h4>
-                <p className={`text-[10px] font-semibold ${activeProvider === 'qs' ? 'text-slate-400' : 'text-slate-400/70'}`}>Tarifa por libra, mínimo $10.00</p>
+                <p className={`text-[10px] font-semibold ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-400/70'}`}>Tarifa por libra, mínimo $10.00</p>
               </div>
               {activeProvider === 'qs' && (
                 <Etiqueta tono="info" className="shrink-0">En uso</Etiqueta>
@@ -1651,7 +1651,7 @@ export const Calculadora = ({ onGuardar }) => {
                          <td className="p-2 text-center bg-mode-air-soft/20">
                            <div className="font-black text-mode-air text-sm">{ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}</div>
                            <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
-                             <span className="text-slate-400 font-bold italic">FVA:</span>
+                             <span className="text-slate-600 font-bold italic">FVA:</span>
                              <input type="number" step="0.01" min="0" disabled={isRowDisabled} className="w-8 border-b outline-none text-center bg-transparent font-bold disabled:opacity-70" value={p.fva} onChange={(e) => handleTableNumericInput(idx, 'fva', e.target.value)} onFocus={(e) => e.target.select()} />
                            </div>
                          </td>
@@ -1714,7 +1714,7 @@ export const Calculadora = ({ onGuardar }) => {
                         <td className="p-2 text-center bg-mode-air-soft/20">
                            <div className="font-black text-mode-air text-sm">{ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}</div>
                            <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
-                              <span className="text-slate-400 font-bold italic">FVA:</span>
+                              <span className="text-slate-600 font-bold italic">FVA:</span>
                               <input type="number" step="0.01" min="0" disabled={isRowDisabled} className="w-8 border-b outline-none text-center bg-transparent font-bold disabled:opacity-70" 
                                      value={p.fva} onChange={(e) => handleTableNumericInput(idx, 'fva', e.target.value)}
                                      onFocus={(e) => e.target.select()} />
@@ -1732,7 +1732,7 @@ export const Calculadora = ({ onGuardar }) => {
                     <td className="p-2 text-center bg-mode-sea-soft/20">
                        <div className="font-black text-mode-sea text-sm">{ventaM > 0 ? `$${ventaM.toFixed(2)}` : '—'}</div>
                        <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
-                          <span className="text-slate-400 font-bold italic">FVM:</span>
+                          <span className="text-slate-600 font-bold italic">FVM:</span>
                           <input type="number" step="0.01" min="0" disabled={isRowDisabled} className="w-8 border-b outline-none text-center bg-transparent font-bold disabled:opacity-70" 
                                  value={p.fvm} onChange={(e) => handleTableNumericInput(idx, 'fvm', e.target.value)}
                                  onFocus={(e) => e.target.select()} />
@@ -1948,7 +1948,7 @@ export const Calculadora = ({ onGuardar }) => {
                     </div>
                     <div>
                       <h4 className="text-xs font-black text-slate-800 uppercase">DHL Express Bélgica</h4>
-                      <p className="text-[9px] text-slate-400 font-bold">Tarifa por peso volumétrico (kg)</p>
+                      <p className="text-[9px] text-slate-600 font-bold">Tarifa por peso volumétrico (kg)</p>
                     </div>
                   </div>
                   {appliedProvider === 'dhl' && (
@@ -2016,7 +2016,7 @@ export const Calculadora = ({ onGuardar }) => {
                     </div>
                     <div>
                       <h4 className="text-xs font-black text-slate-800 uppercase">QS USA</h4>
-                      <p className="text-[9px] text-slate-400 font-bold">$2.80/lb (mínimo $10.00)</p>
+                      <p className="text-[9px] text-slate-600 font-bold">$2.80/lb (mínimo $10.00)</p>
                     </div>
                   </div>
                   {appliedProvider === 'qs' && (
