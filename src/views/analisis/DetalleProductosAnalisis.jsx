@@ -400,7 +400,14 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     {p.enSeguimiento > 0 && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500">En seguimiento</span>
-                        <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(p.fasesSeguimiento)}>{p.enSeguimiento > 0 ? `${p.enSeguimiento} ítems` : null}</Etiqueta>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}?seguimiento=1`)}
+                          aria-label={`Ver ${p.enSeguimiento} ítems en seguimiento de ${p.desc}`}
+                          className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        >
+                          <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(p.fasesSeguimiento)}>{p.enSeguimiento > 0 ? `${p.enSeguimiento} ítems` : null}</Etiqueta>
+                        </button>
                       </div>
                     )}
                     <div className="flex items-center justify-between">
@@ -476,7 +483,14 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                         </td>
                         <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
                           {p.enSeguimiento > 0
-                            ? <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(p.fasesSeguimiento)}>{p.enSeguimiento > 0 ? `${p.enSeguimiento}` : null}</Etiqueta>
+                            ? <button
+                                type="button"
+                                onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}?seguimiento=1`)}
+                                aria-label={`Ver ${p.enSeguimiento} ítems en seguimiento de ${p.desc}`}
+                                className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                              >
+                                <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(p.fasesSeguimiento)}>{p.enSeguimiento > 0 ? `${p.enSeguimiento}` : null}</Etiqueta>
+                              </button>
                             : <span className="font-mono text-slate-300 text-xs">---</span>}
                         </td>
                         <DecisionSummaryColumns counts={p} basePath={`/analisis/producto/${encodeURIComponent(p.desc)}`} navigate={navigate} />
