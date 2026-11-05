@@ -142,7 +142,7 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
                       <th className="px-4 py-3">Tiempo</th>
                       <th className="px-4 py-3 text-right">Aéreo</th>
                       <th className="px-4 py-3 text-right">Marítimo</th>
-                      <th className="px-4 py-3 text-right">Acción</th>
+                      <th className="px-4 py-3 text-center">Acción</th>
                     </tr>
                   </thead>
                   <tbody className="text-[13px]">
