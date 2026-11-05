@@ -4,6 +4,8 @@ import { ArrowLeft, Search, Building, Download } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { Etiqueta } from '../../components/Etiqueta';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { acumularFaseSeguimiento, describirFasesSeguimiento, obtenerFaseSolicitudCacheada } from '../../utils/faseSeguimiento';
 import { getRoleTheme } from './theme';
 import { contarDecisiones } from './utils/decisionMetrics';
@@ -192,34 +194,18 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
   }
 
   return (
-    <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
-      {/* CABECERA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/analisis')}
-            className="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200/80 transition-colors shadow-xs cursor-pointer"
-            title="Volver a Análisis"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Etiqueta dominio="rol" valor={theme.key}>
-                Directorio
-              </Etiqueta>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Directorio de Clientes
-            </h1>
-            <p className="text-slate-400 text-xs font-medium mt-0.5">
-              Análisis consolidado por cliente ({todosLosClientes.length} empresas registradas)
-            </p>
-          </div>
-        </div>
-
-        {/* ORDENAMIENTO */}
+    <PageContainer className="animate-in fade-in duration-300 space-y-5 pb-12">
+      <PageHeader
+        onBack={() => navigate('/analisis')}
+        backLabel="Volver a Análisis"
+        title="Directorio de Clientes"
+        statusChip={
+          <Etiqueta dominio="rol" valor={theme.key}>
+            Directorio
+          </Etiqueta>
+        }
+        subtitle={<>Análisis consolidado por cliente ({todosLosClientes.length} empresas registradas)</>}
+        actions={
         <div className="flex overflow-x-auto whitespace-nowrap items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <span className="text-[10px] font-medium text-slate-400 ml-2 shrink-0">Ordenar:</span>
           {[
@@ -244,7 +230,9 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
             </button>
           ))}
         </div>
-      </div>
+        }
+      />
+
 
       {/* BUSCADOR */}
       <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
@@ -460,6 +448,6 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
         noun="clientes"
         onPageChange={setCurrentPage}
       />
-    </div>
+    </PageContainer>
   );
 };
