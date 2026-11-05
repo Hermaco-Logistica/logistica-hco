@@ -817,7 +817,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         <button
           type="button"
           onClick={exportarMovimientos}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
           title="Exportar todos los movimientos a Excel"
         >
           <Download size={13} />
@@ -862,7 +862,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
             aria-expanded={mostrarFiltrosMobile}
             className={`flex items-center gap-1 px-3 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
               filtrosActivosCount > 0
-                ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                ? 'bg-primary-soft border-primary/30 text-primary-strong'
                 : 'bg-slate-50 border-slate-200 text-slate-600'
             }`}
           >
@@ -931,7 +931,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
             <button
               type="button"
               onClick={exportarMovimientos}
-              className="inline-flex items-center justify-center gap-1.5 w-full px-3 py-2.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
+              className="inline-flex items-center justify-center gap-1.5 w-full px-3 py-2.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
             >
               <Download size={13} />
               <span>Exportar Excel</span>
@@ -1438,7 +1438,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                           <div className="w-6 h-6 rounded-md bg-slate-900 text-white font-mono font-bold text-[10px] flex items-center justify-center shrink-0 shadow-2xs group-hover:bg-blue-600 transition-colors">
                             {c.cliente ? c.cliente.charAt(0).toUpperCase() : 'C'}
                           </div>
-                          <span className="font-semibold text-slate-800 truncate group-hover:text-blue-600 transition-colors" title={c.cliente}>
+                          <span className="font-semibold text-slate-800 truncate group-hover:text-primary-strong transition-colors" title={c.cliente}>
                             <span className="text-slate-400 font-mono text-[10px] mr-1">#{idx + 1}</span>
                             {c.cliente}
                           </span>
