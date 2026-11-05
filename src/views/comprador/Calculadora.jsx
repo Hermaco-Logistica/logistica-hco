@@ -1331,21 +1331,21 @@ export const Calculadora = ({ onGuardar }) => {
               <div className="px-3 py-2 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   {!esPedidoPrevio && (
-                    <label className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-bold transition-colors cursor-pointer select-none ${
-                      p.enConsulta ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-white border-slate-200 text-slate-500'
-                    }`}>
-                      <input
-                        type="checkbox"
-                        checked={!!p.enConsulta}
-                        disabled={isRowDisabled}
-                        onChange={(e) => {
-                          updateItem(idx, 'enConsulta', e.target.checked);
-                          setActiveItemIndex(idx);
-                        }}
-                        className="w-3.5 h-3.5 accent-amber-600 rounded cursor-pointer"
-                      />
-                      <HelpCircle size={11} className="text-amber-500 shrink-0" />
-                      <span>En consulta</span>
+                    <label className="inline-flex cursor-pointer select-none">
+                      <Etiqueta tono={p.enConsulta ? 'aviso' : 'neutral'} tamano="compacta" sinIcono>
+                        <input
+                          type="checkbox"
+                          checked={!!p.enConsulta}
+                          disabled={isRowDisabled}
+                          onChange={(e) => {
+                            updateItem(idx, 'enConsulta', e.target.checked);
+                            setActiveItemIndex(idx);
+                          }}
+                          className="w-3.5 h-3.5 accent-amber-600 rounded cursor-pointer"
+                        />
+                        <HelpCircle size={11} className="shrink-0" />
+                        <span>En consulta</span>
+                      </Etiqueta>
                     </label>
                   )}
                 </div>
