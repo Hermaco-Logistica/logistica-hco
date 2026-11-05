@@ -17,7 +17,7 @@ export const FormularioOferta = ({ ofertaDraft, originalOferta, onChange, onCanc
             type="number"
             step="0.01"
             min="0.01"
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
             value={ofertaDraft.precio !== undefined ? ofertaDraft.precio : ''}
             onChange={(e) => onChange({ ...ofertaDraft, precio: e.target.value })}
             disabled={disabled}
@@ -30,7 +30,7 @@ export const FormularioOferta = ({ ofertaDraft, originalOferta, onChange, onCanc
             type="number"
             min="1"
             step="1"
-            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none"
+            className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
             value={ofertaDraft.tiempoEntrega}
             onChange={(e) => onChange({ ...ofertaDraft, tiempoEntrega: e.target.value })}
             placeholder="Ej: 5"
@@ -42,7 +42,7 @@ export const FormularioOferta = ({ ofertaDraft, originalOferta, onChange, onCanc
           <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Modalidad</label>
           <div className="relative">
             <select
-              className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 pl-8 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all outline-none appearance-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 pl-8 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none appearance-none"
               value={ofertaDraft.modalidad || 'Aéreo'}
               onChange={(e) => onChange({ ...ofertaDraft, modalidad: e.target.value })}
               disabled={disabled}
