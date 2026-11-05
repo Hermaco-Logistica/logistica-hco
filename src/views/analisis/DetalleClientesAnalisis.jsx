@@ -311,7 +311,6 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                     <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-blue-600/70 font-medium">Cotizadas</span>
                       <span className="font-bold font-mono text-blue-700">{c.cotizadas}</span>
-                      <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)} className="mt-1">{c.enSeguimiento > 0 ? `${c.enSeguimiento} en seg.` : null}</Etiqueta>
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-emerald-600/70 font-medium">Pedidos</span>
@@ -332,6 +331,12 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                     navigate={navigate}
                   />
                   <div className="space-y-1.5 border-t border-slate-100 pt-2 text-[11px]">
+                    {c.enSeguimiento > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">En seguimiento de cliente</span>
+                        <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento} solicitudes` : null}</Etiqueta>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Volumen Estimado</span>
                       <span className="font-mono font-bold text-slate-800">{formatearDinero(c.montoTotal)}</span>
@@ -365,6 +370,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                     <th className="py-2.5 px-3.5 whitespace-normal">Cliente</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Total RFQs</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Cotizadas</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-nowrap" title="Solicitudes cotizadas en revisión, prórroga o vencidas">En seguimiento</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Anulaciones</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Ventas perdidas</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Rechazos</th>
@@ -405,7 +411,11 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         </td>
                         <td className="py-2.5 px-3.5 text-center font-mono text-slate-600">
                           {c.cotizadas}
-                          <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)} className="block mt-0.5 mx-auto w-fit">{c.enSeguimiento > 0 ? `${c.enSeguimiento} en seguimiento` : null}</Etiqueta>
+                        </td>
+                        <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
+                          {c.enSeguimiento > 0
+                            ? <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento}` : null}</Etiqueta>
+                            : <span className="font-mono text-slate-300 text-xs">---</span>}
                         </td>
                         <DecisionSummaryColumns counts={c} basePath={`/analisis/cliente/${encodeURIComponent(c.cliente)}`} navigate={navigate} />
                         <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
