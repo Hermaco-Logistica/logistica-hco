@@ -684,12 +684,12 @@ export const Calculadora = ({ onGuardar }) => {
         {/* ESCRITORIO (>= md): Bloques tradicionales */}
         <div className="hidden md:flex w-full gap-4 bg-slate-900 p-4 rounded-xl shadow-lg shadow-slate-200 sm:w-auto shrink-0">
           <div className="flex flex-col">
-            <label className="text-[9px] font-black text-slate-400 uppercase">Flete Aéreo ($)</label>
+            <label className="text-[9px] font-black text-white/70 uppercase">Flete Aéreo ($)</label>
             <input 
               type="number" 
               min="0"
               disabled={esSoloLectura}
-              className="bg-transparent font-bold text-white outline-none w-20 text-lg border-b border-slate-700 focus:border-emerald-500 disabled:opacity-70" 
+              className="bg-transparent font-bold text-white outline-none w-20 text-lg border-b border-slate-700 focus:border-nav-accent-text disabled:opacity-70" 
               value={flete} 
               onChange={(e) => {
                 handleNumericInput(setFlete)(e);
@@ -699,8 +699,8 @@ export const Calculadora = ({ onGuardar }) => {
             />
           </div>
           <div className="flex flex-col border-l border-slate-700 pl-4 relative group cursor-help">
-            <label className="text-[9px] font-black text-slate-400 uppercase">Aduana Aéreo ($)</label>
-            <div className="font-bold text-emerald-400 text-lg mt-1">
+            <label className="text-[9px] font-black text-white/70 uppercase">Aduana Aéreo ($)</label>
+            <div className="font-bold text-nav-accent-text text-lg mt-1">
               {aduana.toFixed(2)}
             </div>
             {/* Tooltip */}
