@@ -909,7 +909,7 @@ export const Calculadora = ({ onGuardar }) => {
 
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div className="flex flex-col">
-                <label className={`text-[11px] font-medium mb-1 ${activeProvider === 'dhl' ? 'text-slate-500' : 'text-slate-400'}`}>Peso base (kg)</label>
+                <label className={`text-[11px] font-medium mb-1 ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-400'}`}>Peso base (kg)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -921,7 +921,7 @@ export const Calculadora = ({ onGuardar }) => {
                 />
               </div>
               <div className="flex flex-col">
-                <label className={`text-[11px] font-medium mb-1 ${activeProvider === 'dhl' ? 'text-slate-500' : 'text-slate-400'}`}>Zona DHL</label>
+                <label className={`text-[11px] font-medium mb-1 ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-400'}`}>Zona DHL</label>
                 <div className={`p-2.5 border rounded-lg font-bold text-sm flex items-center justify-between h-9.5 ${activeProvider === 'dhl' ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-white/60 border-slate-200 text-slate-400'}`}>
                   <span>Zona {dhlZoneId}</span>
                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Auto</span>
@@ -931,11 +931,11 @@ export const Calculadora = ({ onGuardar }) => {
 
             <div className={`rounded-xl border p-3.5 flex items-center gap-4 ${activeProvider === 'dhl' ? 'bg-white border-slate-200' : 'bg-white/50 border-slate-200'}`}>
               <div className="flex-1">
-                <span className="text-[11px] block text-slate-500 font-medium">Facturable</span>
+                <span className={`text-[11px] block ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-500'} font-medium`}>Facturable</span>
                 <span className={`text-sm font-black ${activeProvider === 'dhl' ? 'text-slate-700' : 'text-slate-400'}`}>{dhlResults.chargeableWeight ? Number(dhlResults.chargeableWeight).toFixed(2) : "0.00"} kg</span>
               </div>
               <div className="flex-1 text-right">
-                <span className="text-[11px] block text-slate-500 font-medium">Costo estimado</span>
+                <span className={`text-[11px] block ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-500'} font-medium`}>Costo estimado</span>
                 <span className={`text-lg font-black ${activeProvider === 'dhl' ? 'text-slate-900' : 'text-slate-400'}`}>${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : "0.00"}</span>
               </div>
               <Button
@@ -982,7 +982,7 @@ export const Calculadora = ({ onGuardar }) => {
 
             <div className="grid grid-cols-1 gap-3 mb-3">
               <div className="flex flex-col max-w-[calc(50%-0.375rem)]">
-                <label className={`text-[11px] font-medium mb-1 ${activeProvider === 'qs' ? 'text-slate-500' : 'text-slate-400'}`}>Peso base (lbs)</label>
+                <label className={`text-[11px] font-medium mb-1 ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-400'}`}>Peso base (lbs)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -997,11 +997,11 @@ export const Calculadora = ({ onGuardar }) => {
 
             <div className={`rounded-xl border p-3.5 flex items-center gap-4 ${activeProvider === 'qs' ? 'bg-white border-slate-200' : 'bg-white/50 border-slate-200'}`}>
               <div className="flex-1">
-                <span className="text-[11px] block text-slate-500 font-medium">Tarifa aplicada</span>
+                <span className={`text-[11px] block ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-500'} font-medium`}>Tarifa aplicada</span>
                 <span className={`text-sm font-black ${activeProvider === 'qs' ? 'text-slate-700' : 'text-slate-400'}`}>{parseFloat(qsWeight) > 10 ? '$2.80 / lb' : 'Mínimo fijo'}</span>
               </div>
               <div className="flex-1 text-right">
-                <span className="text-[11px] block text-slate-500 font-medium">Costo estimado</span>
+                <span className={`text-[11px] block ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-500'} font-medium`}>Costo estimado</span>
                 <span className={`text-lg font-black ${activeProvider === 'qs' ? 'text-slate-900' : 'text-slate-400'}`}>${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : "0.00"}</span>
               </div>
               <Button
@@ -1960,7 +1960,7 @@ export const Calculadora = ({ onGuardar }) => {
 
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500 block mb-1">Peso (kg)</label>
+                    <label className={`text-[11px] font-medium ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-500'} block mb-1`}>Peso (kg)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -1972,7 +1972,7 @@ export const Calculadora = ({ onGuardar }) => {
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-medium text-slate-500 block mb-1">Zona</label>
+                    <label className={`text-[11px] font-medium ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-500'} block mb-1`}>Zona</label>
                     <div className="p-2 border border-slate-200 rounded-lg font-bold text-xs bg-slate-100 text-slate-700 h-9 flex items-center justify-between">
                       <span>Zona {dhlZoneId}</span>
                       <span className="text-[8px] text-slate-400 uppercase">Auto</span>
@@ -1982,11 +1982,11 @@ export const Calculadora = ({ onGuardar }) => {
 
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
                   <div>
-                    <span className="text-[11px] font-medium text-slate-500 block">Facturable</span>
+                    <span className={`text-[11px] font-medium ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-500'} block`}>Facturable</span>
                     <span className="text-xs font-black text-slate-700">{dhlResults.chargeableWeight ? Number(dhlResults.chargeableWeight).toFixed(2) : '0.00'} kg</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[11px] font-medium text-slate-500 block">Costo DHL</span>
+                    <span className={`text-[11px] font-medium ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-500'} block`}>Costo DHL</span>
                     <span className="text-base font-black text-slate-900">${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : '0.00'}</span>
                   </div>
                   <Button
@@ -2027,7 +2027,7 @@ export const Calculadora = ({ onGuardar }) => {
                 </div>
 
                 <div className="mb-3">
-                  <label className="text-[11px] font-medium text-slate-500 block mb-1">Peso (libras)</label>
+                  <label className={`text-[11px] font-medium ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-500'} block mb-1`}>Peso (libras)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -2041,11 +2041,11 @@ export const Calculadora = ({ onGuardar }) => {
 
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
                   <div>
-                    <span className="text-[11px] font-medium text-slate-500 block">Tarifa</span>
+                    <span className={`text-[11px] font-medium ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-500'} block`}>Tarifa</span>
                     <span className="text-xs font-black text-slate-700">{parseFloat(qsWeight) > 10 ? '$2.80/lb' : 'Mínimo fijo'}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[11px] font-medium text-slate-500 block">Costo QS</span>
+                    <span className={`text-[11px] font-medium ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-500'} block`}>Costo QS</span>
                     <span className="text-base font-black text-slate-900">${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : '0.00'}</span>
                   </div>
                   <Button
