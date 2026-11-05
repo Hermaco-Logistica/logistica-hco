@@ -774,13 +774,13 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                                     <>
                                       {/* Acciones Principales: Aceptar y Contraofertar */}
                                       <div className="pedido-item-action-buttons">
-                                        <AccionItemButton id="aceptar" label={`Aceptar oferta vigente de $${Number(currentFob).toFixed(2)}`} text="Aceptar" icon={<Check size={14} />} className="border-transparent bg-success text-white hover:bg-success-strong focus-visible:ring-success" onConfirm={() => actions.aceptar(idx, versionEsperada)} />
-                                        <AccionItemButton id="contraofertar" label="Contraofertar" text="Contraofertar" icon={<ArrowLeftRight size={14} />} className="border-transparent bg-amber-200 text-warning hover:bg-amber-300 focus-visible:ring-warning" onConfirm={() => updateBorrador(idx, { precio: currentFob, tiempoEntrega, modalidad: neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo' })} />
+                                        <AccionItemButton id="aceptar" label={`Aceptar oferta vigente de $${Number(currentFob).toFixed(2)}`} text="Aceptar" icon={<Check size={14} />} variant="approve" onConfirm={() => actions.aceptar(idx, versionEsperada)} />
+                                        <AccionItemButton id="contraofertar" label="Contraofertar" text="Contraofertar" icon={<ArrowLeftRight size={14} />} variant="counter" onConfirm={() => updateBorrador(idx, { precio: currentFob, tiempoEntrega, modalidad: neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo' })} />
                                       </div>
 
                                       {/* Rechazar oferta de Compras (negociación interna) */}
                                       <div className="flex justify-center pt-0.5">
-                                        <AccionItemButton id="rechazar" label="Rechazar oferta de Compras" text="Rechazar" icon={<X size={13} />} className="border-transparent bg-slate-100 text-slate-600 hover:bg-slate-200 focus-visible:ring-slate-500" onConfirm={() => handleAbrirModalRechazar(idx, versionEsperada)} />
+                                        <AccionItemButton id="rechazar" label="Rechazar oferta de Compras" text="Rechazar" icon={<X size={13} />} variant="reject" onConfirm={() => handleAbrirModalRechazar(idx, versionEsperada)} />
                                       </div>
                                     </>
                                   ) : (
@@ -798,7 +798,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
 
                               {/* Acción Comercial: Venta Perdida */}
                               {puedeRegistrarVentaPerdida && !esCerrado && !stagedVP && (
-                                <AccionItemButton id="venta-perdida" label={esItemEstancado(p, solicitudBase) ? 'Registrar Venta Perdida comercial (>5 días hábiles sin cierre)' : 'Registrar Venta Perdida de este ítem'} text="Venta perdida" icon={<TrendingDown size={12} />} className="border-transparent bg-danger text-white hover:bg-danger/90 focus-visible:ring-danger" onConfirm={() => handleAbrirVentaPerdida([idx])} />
+                                <AccionItemButton id="venta-perdida" label={esItemEstancado(p, solicitudBase) ? 'Registrar Venta Perdida comercial (>5 días hábiles sin cierre)' : 'Registrar Venta Perdida de este ítem'} text="Venta perdida" icon={<TrendingDown size={12} />} variant="lost" onConfirm={() => handleAbrirVentaPerdida([idx])} />
                               )}
                             </>
                           )}

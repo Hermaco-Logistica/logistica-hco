@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { VARIANTES_ACCION } from './variantesAccion';
 
 const AccionesContext = createContext(null);
 
@@ -47,7 +48,7 @@ export const AccionesItemInteractiva = ({ children, className = '' }) => {
 };
 
 /** Botón compacto con estado de preselección y confirmación al segundo toque. */
-export const AccionItemButton = ({ id, label, text, icon, onConfirm, className = '', disabled = false }) => {
+export const AccionItemButton = ({ id, label, text, icon, onConfirm, variant, className = '', disabled = false }) => {
   const context = useContext(AccionesContext);
   if (!context) throw new Error('AccionItemButton debe usarse dentro de AccionesItemInteractiva');
 
@@ -63,9 +64,10 @@ export const AccionItemButton = ({ id, label, text, icon, onConfirm, className =
       disabled={disabled}
       aria-label={estaActiva ? `${label}. Vuelve a tocar para confirmar.` : label}
       aria-pressed={estaActiva}
+      aria-expanded={estaActiva}
       title={estaActiva ? `Vuelve a tocar para ${label.toLowerCase()}` : label}
       style={estaActiva ? { width: anchoExpandido } : hayOtraActiva ? { width: '26px' } : undefined}
-      className={`pedido-item-action-button inline-flex h-8 w-8 shrink-0 items-center justify-center gap-1.5 rounded-md border transition-[width,opacity,background-color,color,border-color] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${estaActiva ? 'pedido-item-action-button--active px-2' : hayOtraActiva ? 'opacity-50' : ''} ${disabled ? 'cursor-not-allowed opacity-40' : ''} ${className}`}
+      className={`pedido-item-action-button inline-flex h-8 w-8 shrink-0 items-center justify-center gap-1.5 rounded-md border transition-[width,opacity,background-color,color,border-color] duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${estaActiva ? 'pedido-item-action-button--active px-2' : hayOtraActiva ? 'opacity-50' : ''} ${disabled ? 'cursor-not-allowed opacity-40' : ''} ${variant ? VARIANTES_ACCION[variant] : ''} ${className}`}
     >
       {icon}
       <span className={`pedido-item-action-label whitespace-nowrap text-[10px] font-bold transition-[opacity,transform] duration-200 ${estaActiva ? 'translate-x-0 opacity-100' : 'pointer-events-none w-0 -translate-x-1 overflow-hidden opacity-0'}`} aria-hidden="true">
