@@ -30,7 +30,8 @@ import { normalizarDecisionFilter, obtenerConfiguracionDecision, obtenerEstadoDe
 import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
 import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
 import { DecisionBadge } from './components/DecisionBadge';
-import { obtenerFaseItemCacheada } from '../../utils/faseSeguimiento';
+import { obtenerFaseItemCacheada, itemEnSeguimiento } from '../../utils/faseSeguimiento';
+import { BotonSeguimiento, AvisoSeguimiento } from './components/FiltroSeguimiento';
 import {
   prepararDatosConsultaMovimiento,
   obtenerTextoConsultaMovimiento,
@@ -217,8 +218,9 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
 };
 
 export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra = [], soloAnulados = false }) => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const decisionFilter = soloAnulados ? normalizarDecisionFilter(searchParams.get('decision')) : null;
+  const soloSeguimiento = !soloAnulados && searchParams.get('seguimiento') === '1';
   const params = useParams();
   const productId = params.productId || params['*'] || '';
   const navigate = useNavigate();
@@ -236,6 +238,14 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
   const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [clienteFilter, setClienteFilter] = useSessionState('analisis_cliente_search', '');
   const [currentPage, setCurrentPage] = useState(1);
+  const cambiarSeguimiento = (activo) => {
+    setSearchParams((previo) => {
+      const siguiente = new URLSearchParams(previo);
+      if (activo) siguiente.set('seguimiento', '1'); else siguiente.delete('seguimiento');
+      return siguiente;
+    });
+    setCurrentPage(1);
+  };
   const [consultaMotivoData, setConsultaMotivoData] = useState(null);
   const abrirConsultaMotivo = useCallback((movimiento) => {
     setConsultaMotivoData(prepararDatosConsultaMovimiento(movimiento));
@@ -377,6 +387,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
       if (!Array.isArray(s.productos)) return;
 
       s.productos.forEach((p, idx) => {
+        if (soloSeguimiento && !itemEnSeguimiento(s, idx)) return;
         const desc = (p.desc || p.descripcion || '').trim();
         const pSku = desc.toUpperCase();
 
@@ -493,7 +504,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
         marca: Array.from(marcasSet).join(', ') || 'Sin marca especificada'
       }
     };
-  }, [solicitudes, targetSku, decodedSearch, mapFechasOC, vendedorFilter, clienteFilter, soloAnulados, decisionFilter, filtroPeriodo, rangoEsteMes]);
+  }, [solicitudes, targetSku, decodedSearch, mapFechasOC, vendedorFilter, clienteFilter, soloAnulados, soloSeguimiento, decisionFilter, filtroPeriodo, rangoEsteMes]);
 
   const estadosDisponibles = useMemo(() => obtenerOpcionesMovimiento(movimientos, 'estado'), [movimientos]);
 
@@ -619,6 +630,9 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
         }
         subtitle={
           <>
+          {soloSeguimiento && (
+            <AvisoSeguimiento items={metricas.totalMovimientos} filtroPeriodo={filtroPeriodo} vendedor={vendedorFilter} cliente={clienteFilter} />
+          )}
           <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
               <Package size={13} className="text-slate-400" />
@@ -785,13 +799,14 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                 <option key={mod} value={mod}>{mod}</option>
               ))}
             </select>
+            {!soloAnulados && <BotonSeguimiento activo={soloSeguimiento} onChange={cambiarSeguimiento} />}
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-2 mt-1 sm:mt-0">
-            {(filterEstado || filterModalidad || searchTerm) && (
+            {(filterEstado || filterModalidad || searchTerm || soloSeguimiento) && (
               <button
                 type="button"
-                onClick={() => { setFilterEstado(''); setFilterModalidad(''); setSearchTerm(''); }}
+                onClick={() => { setFilterEstado(''); setFilterModalidad(''); setSearchTerm(''); if (soloSeguimiento) cambiarSeguimiento(false); }}
                 className="text-xs font-medium text-slate-500 hover:text-rose-600 px-2 py-1 transition-colors"
               >
                 Limpiar
@@ -804,6 +819,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                 const filtrosActivos = ['Historial Completo'];
                 if (filterEstado) filtrosActivos.push(`Estado: ${filterEstado}`);
                 if (filterModalidad) filtrosActivos.push(`Modalidad: ${filterModalidad}`);
+                if (soloSeguimiento) filtrosActivos.push('En seguimiento');
                 if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
 
                 const dataConProd = movimientosFiltrados.map(m => ({
