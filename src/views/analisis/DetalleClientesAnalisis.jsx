@@ -273,7 +273,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                 periodoLabel
               });
             }}
-            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
             title="Exportar todos los movimientos de clientes a Excel"
           >
             <Download size={13} />
@@ -309,7 +309,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         <Building size={20} />
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-blue-600 transition-colors">{c.cliente}</h3>
+                        <h3 className="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-primary-strong transition-colors">{c.cliente}</h3>
                       </div>
                     </div>
                     <Etiqueta tono="neutral" mono className="shrink-0">#{numGlobal}</Etiqueta>
@@ -350,7 +350,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Conversión</span>
-                      <span className="font-mono font-bold text-blue-600">{convPct}%</span>
+                      <span className="font-mono font-bold text-slate-800">{convPct}%</span>
                     </div>
                   </div>
 
