@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { Etiqueta } from '../../components/Etiqueta';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
 import { normalizarDecisionFilter, obtenerConfiguracionDecision, obtenerEstadoDecision } from './utils/decisionFilter';
 import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
@@ -624,47 +626,32 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
         onClose={() => setConsultaMotivoData(null)}
         data={consultaMotivoData?.data}
       />
-      <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
-      {/* CABECERA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-start sm:items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/analisis/clientes')}
-            className="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200/80 transition-colors shadow-xs cursor-pointer shrink-0 mt-1 sm:mt-0"
-            title="Volver a Directorio de Clientes"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-1.5">
-              <Etiqueta dominio="rol" valor={theme.key}>
-                {soloAnulados ? `${obtenerConfiguracionDecision(decisionFilter).titulo} de Cliente` : 'Historial de Cliente'}
-              </Etiqueta>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 w-full">
-              <div className="min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none mb-2.5 truncate">
-                  {infoCliente.nombre}
-                </h1>
-                {soloAnulados && (
-                  <p className="text-xs font-medium text-rose-600 mb-2.5">
-                    Vista exclusiva de {obtenerConfiguracionDecision(decisionFilter).sustantivo}
-                  </p>
-                )}
-                
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
-                    <Building size={13} className="text-slate-400" />
-                    <strong className="text-slate-700">{infoCliente.totalRfqs}</strong> {infoCliente.totalRfqs === 1 ? 'RFQ' : 'RFQs'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageContainer className="animate-in fade-in duration-300 space-y-5 pb-12">
+      <PageHeader
+        onBack={() => navigate('/analisis/clientes')}
+        backLabel="Volver a Directorio de Clientes"
+        title={infoCliente.nombre}
+        statusChip={
+          <Etiqueta dominio="rol" valor={theme.key}>
+            {soloAnulados ? `${obtenerConfiguracionDecision(decisionFilter).titulo} de Cliente` : 'Historial de Cliente'}
+          </Etiqueta>
+        }
+        subtitle={
+          <>
+          {soloAnulados && (
+            <span className="block text-xs font-medium text-rose-600 mb-1">
+              Vista exclusiva de {obtenerConfiguracionDecision(decisionFilter).sustantivo}
+            </span>
+          )}
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+              <Building size={13} className="text-slate-400" />
+              <strong className="text-slate-700">{infoCliente.totalRfqs}</strong> {infoCliente.totalRfqs === 1 ? 'RFQ' : 'RFQs'}
+            </span>
+          </span>
+          </>
+        }
+      />
 
       {/* TARJETAS RESUMEN DEL CLIENTE */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
@@ -1114,7 +1101,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
         noun="productos"
         onPageChange={setCurrentPage}
       />
-      </div>
+      </PageContainer>
     </>
   );
 };
