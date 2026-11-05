@@ -459,7 +459,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                   <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Monto en Pedidos</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap" title="Tiempo promedio que toma compras en cotizar la solicitud (Creación → Cotización / Avances)">Resp. Comprador</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap" title="Tiempo promedio que toma el vendedor en cerrar la venta desde la cotización (Cotización → Pedido)">Cierre Vendedor</th>
-                  <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Acción</th>
+                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -571,7 +571,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                           </span>
                         )}
                       </td>
-                      <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                      <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => navigate(`/analisis/vendedor/${encodeURIComponent(v.vendedor)}`)}
