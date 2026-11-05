@@ -4,6 +4,8 @@ import { ArrowLeft, Search, Package, ExternalLink, Calendar, User, Building, Lin
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { MotivoAnulacionModal } from '../../components/MotivoAnulacionModal';
 import { Etiqueta } from '../../components/Etiqueta';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, evaluarEstadoGanada } from './theme';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
@@ -283,55 +285,40 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
   return (
     <>
       <MotivoAnulacionModal movimientos={itemsMotivo} onClose={() => setItemsMotivo([])} />
-      <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
-      {/* CABECERA: título arriba y filtro de estado debajo */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/analisis')}
-            className="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200/80 transition-colors shadow-xs cursor-pointer"
-            title="Volver a Análisis"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Etiqueta dominio="rol" valor={theme.key}>
-                Solicitudes
-              </Etiqueta>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Detalle de Solicitudes
-            </h1>
-            <p className="text-slate-400 text-xs font-medium mt-0.5">
-              Explorador del flujo de estados — RFQs y Pedidos Manuales
-            </p>
-          </div>
-        </div>
+      <PageContainer className="animate-in fade-in duration-300 space-y-5 pb-12">
+      <PageHeader
+        onBack={() => navigate('/analisis')}
+        backLabel="Volver a Análisis"
+        title="Detalle de Solicitudes"
+        statusChip={
+          <Etiqueta dominio="rol" valor={theme.key}>
+            Solicitudes
+          </Etiqueta>
+        }
+        subtitle="Explorador del flujo de estados — RFQs y Pedidos Manuales"
+      />
 
-        {/* TABS DE ESTADO (Sticky en móvil) */}
-        <div className="sticky top-0 z-20 bg-slate-50/80 backdrop-blur-md pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 sm:bg-transparent">
-          <div className="flex overflow-x-auto whitespace-nowrap gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                id={`tab-sol-${t.id}`}
-                type="button"
-                onClick={() => { setTabActual(t.id); setCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
-                  tabActual === t.id 
-                    ? 'bg-slate-900 text-white shadow-xs font-semibold' 
-                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                }`}
-              >
-                {t.dot && (
-                  <span className={`w-2 h-2 rounded-full ${t.dot}`} />
-                )}
-                {t.label}
-              </button>
-            ))}
-          </div>
+      {/* TABS DE ESTADO (Sticky en móvil) */}
+      <div className="sticky top-0 z-20 bg-slate-50/80 backdrop-blur-md pb-2 -mx-[var(--tf-pad-x)] px-[var(--tf-pad-x)] sm:mx-0 sm:px-0 sm:pb-0 sm:bg-transparent">
+        <div className="flex overflow-x-auto whitespace-nowrap gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              id={`tab-sol-${t.id}`}
+              type="button"
+              onClick={() => { setTabActual(t.id); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
+                tabActual === t.id 
+                  ? 'bg-slate-900 text-white shadow-xs font-semibold' 
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              }`}
+            >
+              {t.dot && (
+                <span className={`w-2 h-2 rounded-full ${t.dot}`} />
+              )}
+              {t.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -703,7 +690,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
         noun="solicitudes"
         onPageChange={setCurrentPage}
       />
-      </div>
+      </PageContainer>
     </>
   );
 };
