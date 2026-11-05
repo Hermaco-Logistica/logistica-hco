@@ -181,7 +181,7 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
                 <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
                   <span className="text-slate-500">OC Ref</span>
                   {m.ocRef.startsWith('http') ? (
-                    <a href={m.ocRef} target="_blank" rel="noopener noreferrer" className="font-mono text-blue-600 hover:underline flex items-center gap-1">
+                    <a href={m.ocRef} target="_blank" rel="noopener noreferrer" className="font-mono text-primary-strong hover:text-nav-accent-hover hover:underline flex items-center gap-1">
                       <LinkIcon size={10} /> Link
                     </a>
                   ) : (
@@ -719,7 +719,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Total (IVA 13%)</span>
           </div>
           <div>
-            <div className="text-base sm:text-xl font-bold font-mono text-emerald-600 tracking-tight truncate" title={formatMoneda(metricas.sumaTotalConIva)}>
+            <div className="text-base sm:text-xl font-bold font-mono text-slate-800 tracking-tight truncate" title={formatMoneda(metricas.sumaTotalConIva)}>
               {formatMoneda(metricas.sumaTotalConIva)}
             </div>
             <div className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate">
@@ -833,7 +833,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                   }
                 );
               }}
-              className="inline-flex justify-center items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60 rounded-lg text-xs font-bold transition-all shadow-sm w-full sm:w-auto"
+              className="inline-flex justify-center items-center gap-1.5 px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-sm w-full sm:w-auto"
               title="Exportar movimientos a Excel"
             >
               <Download size={13} />
@@ -960,7 +960,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                           <button
                             type="button"
                             onClick={() => navigate(`/analisis/producto/${encodeURIComponent(m.producto)}`)}
-                            className="font-semibold text-slate-800 hover:text-blue-600 transition-colors text-left truncate max-w-[220px] cursor-pointer uppercase text-xs"
+                            className="font-semibold text-slate-800 hover:text-primary-strong transition-colors text-left truncate max-w-[220px] cursor-pointer uppercase text-xs"
                             title={`Ver historial de este producto: ${m.producto}`}
                           >
                             {truncarTexto(m.producto, 28)}
@@ -986,7 +986,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                           <button
                             type="button"
                             onClick={() => navigate(`/analisis/vendedor/${encodeURIComponent(m.vendedor)}`)}
-                            className="font-medium text-slate-700 hover:text-blue-600 transition-colors text-left cursor-pointer"
+                            className="font-medium text-slate-700 hover:text-primary-strong transition-colors text-left cursor-pointer"
                             title={`Ver historial de ${m.vendedor}`}
                           >
                             {m.vendedor}
@@ -1027,7 +1027,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                       </td>
 
                       {/* Total con IVA (13%) */}
-                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-emerald-700 whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-800 whitespace-nowrap">
                         {formatMoneda(m.totalConIva)}
                       </td>
 
@@ -1039,7 +1039,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                               href={m.ocRef}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-blue-600 hover:underline bg-blue-50 px-2 py-0.5 rounded-md whitespace-nowrap"
+                              className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-primary-strong hover:text-nav-accent-hover hover:underline bg-primary-soft px-2 py-0.5 rounded-md whitespace-nowrap"
                             >
                               <LinkIcon size={11} /> Ver OC
                             </a>
