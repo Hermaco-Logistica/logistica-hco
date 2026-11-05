@@ -376,7 +376,6 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-slate-400 font-medium">Cotizados</span>
                       <span className="font-bold font-mono text-slate-700">{p.vecesCotizado} <span className="text-[9px] font-normal">veces</span></span>
-                      <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(p.fasesSeguimiento)} className="mt-1">{p.enSeguimiento > 0 ? `${p.enSeguimiento} en seg.` : null}</Etiqueta>
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-emerald-600/70 font-medium">Ganados</span>
@@ -398,6 +397,12 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     navigate={navigate}
                   />
                   <div className="space-y-1.5 border-t border-slate-100 pt-2 text-[11px]">
+                    {p.enSeguimiento > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">En seguimiento</span>
+                        <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(p.fasesSeguimiento)}>{p.enSeguimiento > 0 ? `${p.enSeguimiento} ítems` : null}</Etiqueta>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Clientes</span>
                       <span className="font-mono font-bold text-slate-800">{p.totalClientes}</span>
@@ -426,15 +431,16 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     <th className="py-2.5 px-3.5 whitespace-normal">#</th>
                     <th className="py-2.5 px-3.5 whitespace-normal">Descripción del Producto</th>
                     <th className="py-2.5 px-3.5 whitespace-normal">Marca</th>
-                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Veces Cotizado</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Veces Cotizado</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal" title="Ítems en revisión, prórroga o vencidos">En seguimiento</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Anulaciones</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Ventas perdidas</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Rechazos</th>
-                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Unidades Cotizadas</th>
-                    <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Cotizaciones Ganadas</th>
-                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Unidades Pedidas</th>
-                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Clientes</th>
-                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Historial</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Unidades Cotizadas</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Cotizaciones Ganadas</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Unidades Pedidas</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Clientes</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Historial</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -463,19 +469,23 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                             {p.marcaPrincipal}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3.5 text-center">
+                        <td className="py-2.5 px-2.5 text-center">
                           <Etiqueta tono="neutral" tamano="normal" mono>
                             {p.vecesCotizado} RFQ{p.vecesCotizado > 1 ? 's' : ''}
                           </Etiqueta>
-                          <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(p.fasesSeguimiento)} className="block mt-0.5 mx-auto w-fit">{p.enSeguimiento > 0 ? `${p.enSeguimiento} ítems en seguimiento` : null}</Etiqueta>
+                        </td>
+                        <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
+                          {p.enSeguimiento > 0
+                            ? <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(p.fasesSeguimiento)}>{p.enSeguimiento > 0 ? `${p.enSeguimiento}` : null}</Etiqueta>
+                            : <span className="font-mono text-slate-300 text-xs">---</span>}
                         </td>
                         <DecisionSummaryColumns counts={p} basePath={`/analisis/producto/${encodeURIComponent(p.desc)}`} navigate={navigate} />
-                        <td className="py-2.5 px-3.5 text-center">
+                        <td className="py-2.5 px-2.5 text-center">
                           <span className="inline-block font-mono text-slate-800 font-semibold text-xs">
                             {p.unidadesCotizadas.toLocaleString()}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3.5 text-center">
+                        <td className="py-2.5 px-2.5 text-center">
                           <Etiqueta tono="exito" tamano="normal" mono>
                             {p.vecesPedido}
                             {p.vecesCotizado > 0 && (
@@ -485,13 +495,13 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                             )}
                           </Etiqueta>
                         </td>
-                        <td className="py-2.5 px-3.5 text-center font-mono font-bold text-slate-800">
+                        <td className="py-2.5 px-2.5 text-center font-mono font-bold text-slate-800">
                           {p.unidadesPedidas.toLocaleString()}
                         </td>
-                        <td className="py-2.5 px-3.5 text-center font-mono text-slate-500">
+                        <td className="py-2.5 px-2.5 text-center font-mono text-slate-500">
                           {p.totalClientes}
                         </td>
-                        <td className="py-2.5 px-3.5 text-center">
+                        <td className="py-2.5 px-2.5 text-center">
                           <button
                             type="button"
                             onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}`)}
