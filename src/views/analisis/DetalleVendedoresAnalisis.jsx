@@ -4,6 +4,8 @@ import { ArrowLeft, Search, Zap, Clock, Download } from 'lucide-react';
 import { extraerTodosLosMovimientos, exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { Etiqueta } from '../../components/Etiqueta';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { getRoleTheme, formatearTiempoRespuesta, formatearTiempoCierre } from './theme';
 import { contarDecisiones } from './utils/decisionMetrics';
 import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
@@ -245,34 +247,18 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
   }
 
   return (
-    <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
-      {/* CABECERA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/analisis')}
-            className="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200/80 transition-colors shadow-xs cursor-pointer"
-            title="Volver a Análisis"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Etiqueta dominio="rol" valor={theme.key}>
-                Comercial
-              </Etiqueta>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Rendimiento por Vendedor
-            </h1>
-            <p className="text-slate-400 text-xs font-medium mt-0.5">
-              Métricas de conversión y volumen comercial
-            </p>
-          </div>
-        </div>
-
-        {/* ORDENAMIENTO */}
+    <PageContainer className="animate-in fade-in duration-300 space-y-5 pb-12">
+      <PageHeader
+        onBack={() => navigate('/analisis')}
+        backLabel="Volver a Análisis"
+        title="Rendimiento por Vendedor"
+        statusChip={
+          <Etiqueta dominio="rol" valor={theme.key}>
+            Comercial
+          </Etiqueta>
+        }
+        subtitle="Métricas de conversión y volumen comercial"
+        actions={
         <div className="flex overflow-x-auto whitespace-nowrap items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <span className="text-[10px] font-medium text-slate-400 ml-2 shrink-0">Ordenar:</span>
           {[
@@ -297,7 +283,9 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
             </button>
           ))}
         </div>
-      </div>
+        }
+      />
+
 
       {/* BUSCADOR */}
       <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
@@ -597,6 +585,6 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
         noun="vendedores"
         onPageChange={setCurrentPage}
       />
-    </div>
+    </PageContainer>
   );
 };
