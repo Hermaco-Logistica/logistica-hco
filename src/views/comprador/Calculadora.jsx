@@ -711,10 +711,10 @@ export const Calculadora = ({ onGuardar }) => {
         </div>
 
         <div className="hidden md:flex w-full flex-wrap gap-4 xl:w-auto xl:flex-nowrap shrink-0">
-          <div className="min-w-60 flex-1 text-right px-5 py-2 bg-mode-air-soft rounded-xl border border-mode-air-100 xl:flex-none">
-            <span className="text-[9px] block text-mode-air font-black uppercase tracking-widest">Factor Aéreo Aplicado</span>
+          <div className="min-w-60 flex-1 text-right px-5 py-2 bg-mode-air-100 rounded-xl xl:flex-none">
+            <span className="text-[9px] block text-mode-air-900 font-black uppercase tracking-widest">Factor Aéreo Aplicado</span>
             {!mostrarFactoresAereosFijados ? (
-              <span className="text-2xl font-black text-mode-air-strong">{factorA.toFixed(2)}</span>
+              <span className="text-2xl font-black text-mode-air-900">{factorA.toFixed(2)}</span>
             ) : (
               <div ref={factoresRef} className="relative mt-1">
                 <button
@@ -742,14 +742,14 @@ export const Calculadora = ({ onGuardar }) => {
               </div>
             )}
           </div>
-          <div className="text-right px-5 py-2 bg-mode-sea-soft rounded-xl border border-mode-sea-100 flex flex-col items-end">
-            <span className="text-[9px] block text-mode-sea font-black uppercase tracking-widest">Factor Marítimo Aplicado</span>
+          <div className="text-right px-5 py-2 bg-mode-sea-100 rounded-xl flex flex-col items-end">
+            <span className="text-[9px] block text-mode-sea-900 font-black uppercase tracking-widest">Factor Marítimo Aplicado</span>
             <input 
               type="number" 
               step="0.01"
               min="0"
               disabled={esSoloLectura}
-              className="bg-transparent font-black text-mode-sea-strong outline-none w-16 text-2xl text-right border-b border-transparent focus:border-primary disabled:opacity-70" 
+              className="bg-transparent font-black text-mode-sea-900 outline-none w-16 text-2xl text-right border-b border-transparent focus:border-primary disabled:opacity-70" 
               value={factorM} 
               onChange={handleNumericInput(setFactorM)} 
               onFocus={(e) => e.target.select()}
