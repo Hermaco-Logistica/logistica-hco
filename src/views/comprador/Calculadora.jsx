@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, getDocFromServer } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -937,18 +938,21 @@ export const Calculadora = ({ onGuardar }) => {
                 <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Costo estimado</span>
                 <span className={`text-lg font-black ${activeProvider === 'dhl' ? 'text-slate-900' : 'text-slate-400'}`}>${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : "0.00"}</span>
               </div>
-              <button
+              <Button
+                variant={appliedProvider === 'dhl' ? 'secondaryBrand' : 'primary'}
+                size="lg"
                 type="button"
                 disabled={!(dhlResults.totalUsd > 0)}
                 onClick={() => {
                   setFlete(Number(dhlResults.totalUsd.toFixed(2)));
                   setAppliedProvider('dhl');
                 }}
-                className={`${appliedProvider === 'dhl' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'} disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-[10px] font-black px-4 py-2.5 rounded-lg uppercase tracking-wide transition-colors shrink-0`}
+                className="shrink-0"
                 title="Aplicar como Flete Aéreo"
               >
+                {appliedProvider === 'dhl' && <Check size={12} aria-hidden="true" />}
                 {appliedProvider === 'dhl' ? 'Aplicado' : 'Aplicar'}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -1000,18 +1004,21 @@ export const Calculadora = ({ onGuardar }) => {
                 <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Costo estimado</span>
                 <span className={`text-lg font-black ${activeProvider === 'qs' ? 'text-slate-900' : 'text-slate-400'}`}>${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : "0.00"}</span>
               </div>
-              <button
+              <Button
+                variant={appliedProvider === 'qs' ? 'secondaryBrand' : 'primary'}
+                size="lg"
                 type="button"
                 disabled={!(qsResults.totalUsd > 0)}
                 onClick={() => {
                   setFlete(Number(qsResults.totalUsd.toFixed(2)));
                   setAppliedProvider('qs');
                 }}
-                className={`${appliedProvider === 'qs' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'} disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-[10px] font-black px-4 py-2.5 rounded-lg uppercase tracking-wide transition-colors shrink-0`}
+                className="shrink-0"
                 title="Aplicar como Flete Aéreo"
               >
+                {appliedProvider === 'qs' && <Check size={12} aria-hidden="true" />}
                 {appliedProvider === 'qs' ? 'Aplicado' : 'Aplicar'}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -1973,7 +1980,9 @@ export const Calculadora = ({ onGuardar }) => {
                     <span className="text-[8px] font-black text-slate-400 uppercase block">Costo DHL</span>
                     <span className="text-base font-black text-slate-900">${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : '0.00'}</span>
                   </div>
-                  <button
+                  <Button
+                    variant={appliedProvider === 'dhl' ? 'secondaryBrand' : 'primary'}
+                    size="md"
                     type="button"
                     disabled={!(dhlResults.totalUsd > 0)}
                     onClick={() => {
@@ -1982,10 +1991,10 @@ export const Calculadora = ({ onGuardar }) => {
                       setActiveProvider('dhl');
                       setModalCotizadorMobile(false);
                     }}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-[10px] font-black px-3.5 py-2 rounded-lg uppercase tracking-wide transition-colors"
                   >
+                    {appliedProvider === 'dhl' && <Check size={12} aria-hidden="true" />}
                     {appliedProvider === 'dhl' ? 'Aplicado' : 'Aplicar'}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -2030,7 +2039,9 @@ export const Calculadora = ({ onGuardar }) => {
                     <span className="text-[8px] font-black text-slate-400 uppercase block">Costo QS</span>
                     <span className="text-base font-black text-slate-900">${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : '0.00'}</span>
                   </div>
-                  <button
+                  <Button
+                    variant={appliedProvider === 'qs' ? 'secondaryBrand' : 'primary'}
+                    size="md"
                     type="button"
                     disabled={!(qsResults.totalUsd > 0)}
                     onClick={() => {
@@ -2039,10 +2050,10 @@ export const Calculadora = ({ onGuardar }) => {
                       setActiveProvider('qs');
                       setModalCotizadorMobile(false);
                     }}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-[10px] font-black px-3.5 py-2 rounded-lg uppercase tracking-wide transition-colors"
                   >
+                    {appliedProvider === 'qs' && <Check size={12} aria-hidden="true" />}
                     {appliedProvider === 'qs' ? 'Aplicado' : 'Aplicar'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
