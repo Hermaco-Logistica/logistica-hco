@@ -1034,10 +1034,10 @@ export const Calculadora = ({ onGuardar }) => {
         <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider md:font-medium md:normal-case md:tracking-normal md:text-foreground">Productos de la Solicitud</h3>
         <div className="flex items-center gap-2 flex-wrap">
           {mostrarPicard && (
-            <div ref={costosPicardRef} className={`relative overflow-hidden rounded-xl border transition-all duration-300 ease-out ${costosPicardExpandidos ? 'w-[18.5rem] border-amber-300 bg-amber-50 shadow-sm' : 'w-32 border-amber-200 bg-amber-50/70'}`}>
+            <div ref={costosPicardRef} className={`relative overflow-hidden rounded-xl border transition-all duration-300 ease-out ${costosPicardExpandidos ? 'w-[18.5rem] border-amber-300 bg-amber-50 shadow-sm' : 'w-32 border-transparent'}`}>
               {!costosPicardExpandidos ? (
-                <button type="button" onClick={() => setCostosPicardExpandidos(true)} className="w-full px-3 py-2 text-[9px] font-black uppercase tracking-wide text-amber-700 transition-colors hover:bg-amber-100">
-                  Otros Gastos Picard
+                <button type="button" onClick={() => setCostosPicardExpandidos(true)} className="block w-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-warning">
+                  <Etiqueta tono="aviso" tamano="compacta" className="w-full justify-center">Otros Gastos Picard</Etiqueta>
                 </button>
               ) : (
                 <div className="flex items-end gap-2 p-2 animate-in fade-in zoom-in-95 duration-200">
