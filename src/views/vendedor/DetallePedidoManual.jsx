@@ -630,7 +630,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                 <th className="p-4">Producto</th>
                 <th className="p-4 text-center">Mensajes</th>
                 <th className="p-4 text-center">Estado</th>
-                {mostrarColumnaAcciones && <th className="p-4 text-right">Acciones</th>}
+                {mostrarColumnaAcciones && <th className="p-4 text-center">Acciones</th>}
               </tr>
             </thead>
             <tbody>
