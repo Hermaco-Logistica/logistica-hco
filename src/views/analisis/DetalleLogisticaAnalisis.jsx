@@ -332,7 +332,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
                       <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Estado Logístico</th>
                       <th className="py-2.5 px-3.5 whitespace-nowrap">Fecha Creación</th>
                       <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ítems</th>
-                      <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Acción</th>
+                      <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Acción</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -372,7 +372,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
                           <td className="py-2.5 px-3.5 text-center font-mono text-slate-700 whitespace-nowrap">
                             {cantItems}
                           </td>
-                          <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                          <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => navigate('/gestion-oc')}
