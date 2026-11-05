@@ -302,8 +302,8 @@ export const HiloComentariosItem = ({
               <div className="w-12 h-12 rounded-full bg-primary-soft text-primary flex items-center justify-center mb-2">
                 <Send size={20} className="ml-0.5" />
               </div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Aún no hay mensajes en este ítem</p>
-              <p className="text-xs text-slate-400 mt-1">Escribe una nota o propuesta para iniciar la negociación.</p>
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">Aún no hay mensajes en este ítem</p>
+              <p className="text-xs text-slate-600 mt-1">Escribe una nota o propuesta para iniciar la negociación.</p>
             </div>
           ) : (
             mensajes.map((m, index) => {
