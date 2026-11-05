@@ -514,7 +514,7 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
                     <th>Estado</th>
                     <th>Motivo</th>
                     <th>Plazo</th>
-                    <th style={{ textAlign: 'right' }}>Acción</th>
+                    <th style={{ textAlign: 'center' }}>Acción</th>
                   </tr>
                 </thead>
                 <tbody className="prorrogas-tbody">
