@@ -21,7 +21,7 @@ const VARIANTES = {
   primary: 'bg-primary hover:bg-primary-strong text-primary-foreground',
   secondary: 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50',
   secondaryBrand: 'bg-primary-soft text-primary-strong hover:bg-primary/15',
-  danger: 'bg-danger hover:bg-danger/90 text-white',
+  danger: 'bg-danger hover:bg-danger-strong text-white',
   dangerSoft: 'bg-danger-soft text-danger hover:bg-danger/10',
   link: 'bg-transparent text-analysis-accent hover:text-nav-accent-hover disabled:bg-transparent',
 };
