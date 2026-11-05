@@ -17,6 +17,7 @@ export const PageHeader = ({ title, subtitle, onBack, backLabel = 'Volver', stat
           type="button"
           onClick={onBack}
           aria-label={backLabel}
+          title={backLabel}
           className="mt-0.5 flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-slate-700 shadow-[var(--tf-shadow-card)] transition-[background-color,scale] duration-150 hover:bg-slate-50 active:scale-[0.96]"
         >
           <ArrowLeft size={18} aria-hidden="true" />
