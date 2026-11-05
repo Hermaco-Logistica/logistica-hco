@@ -851,7 +851,7 @@ export const Calculadora = ({ onGuardar }) => {
                 <span className="text-sm font-black text-slate-800">${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : '0.00'}</span>
               </div>
               {activeProvider === 'dhl' && (
-                <Etiqueta tono="azul" className="shrink-0">En uso</Etiqueta>
+                <Etiqueta tono="info" className="shrink-0">En uso</Etiqueta>
               )}
             </button>
             <button
@@ -871,7 +871,7 @@ export const Calculadora = ({ onGuardar }) => {
                 <span className="text-sm font-black text-slate-800">${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : '0.00'}</span>
               </div>
               {activeProvider === 'qs' && (
-                <Etiqueta tono="azul" className="shrink-0">En uso</Etiqueta>
+                <Etiqueta tono="info" className="shrink-0">En uso</Etiqueta>
               )}
             </button>
           </div>
@@ -884,7 +884,7 @@ export const Calculadora = ({ onGuardar }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
 
           {/* Cotizador DHL Belgium */}
-          <div className={`p-4 md:p-6 transition-all duration-200 ${activeProvider === 'dhl' ? 'bg-primary-soft ring-2 ring-inset ring-primary/30' : 'bg-slate-100/80 hover:bg-slate-100'}`}>
+          <div className={`p-4 md:p-6 transition-all duration-200 ${activeProvider === 'dhl' ? 'bg-primary-soft border border-primary/40' : 'bg-slate-100/80 hover:bg-slate-100 border border-transparent'}`}>
             <div
               className="flex items-center gap-3 mb-5 cursor-pointer group"
               onClick={() => seleccionarProvider('dhl')}
@@ -892,8 +892,8 @@ export const Calculadora = ({ onGuardar }) => {
               aria-checked={activeProvider === 'dhl'}
               tabIndex={0}
             >
-              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'dhl' ? 'border-primary-strong' : 'border-slate-300 group-hover:border-slate-400'}`}>
-                {activeProvider === 'dhl' && <span className="w-2 h-2 rounded-full bg-primary-strong" />}
+              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'dhl' ? 'border-primary' : 'border-slate-300 group-hover:border-slate-400'}`}>
+                {activeProvider === 'dhl' && <span className="w-2 h-2 rounded-full bg-primary" />}
               </span>
               <div className={`w-9 h-9 rounded-lg border flex items-center justify-center overflow-hidden shrink-0 transition-colors ${activeProvider === 'dhl' ? 'bg-white border-slate-200' : 'bg-slate-200/70 border-slate-200'}`}>
                 <img src="/dhl.svg" alt="DHL" className="w-8 h-auto object-contain" />
@@ -903,7 +903,7 @@ export const Calculadora = ({ onGuardar }) => {
                 <p className={`text-[10px] font-semibold ${activeProvider === 'dhl' ? 'text-slate-400' : 'text-slate-400/70'}`}>Tarifa por peso volumétrico (kg)</p>
               </div>
               {activeProvider === 'dhl' && (
-                <Etiqueta tono="azul" className="shrink-0">En uso</Etiqueta>
+                <Etiqueta tono="info" className="shrink-0">En uso</Etiqueta>
               )}
             </div>
 
@@ -957,7 +957,7 @@ export const Calculadora = ({ onGuardar }) => {
           </div>
 
           {/* Cotizador QS USA */}
-          <div className={`p-6 transition-all duration-200 ${activeProvider === 'qs' ? 'bg-primary-soft ring-2 ring-inset ring-primary/30' : 'bg-slate-100/80 hover:bg-slate-100'}`}>
+          <div className={`p-6 transition-all duration-200 ${activeProvider === 'qs' ? 'bg-primary-soft border border-primary/40' : 'bg-slate-100/80 hover:bg-slate-100 border border-transparent'}`}>
             <div
               className="flex items-center gap-3 mb-5 cursor-pointer group"
               onClick={() => seleccionarProvider('qs')}
@@ -965,8 +965,8 @@ export const Calculadora = ({ onGuardar }) => {
               aria-checked={activeProvider === 'qs'}
               tabIndex={0}
             >
-              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'qs' ? 'border-primary-strong' : 'border-slate-300 group-hover:border-slate-400'}`}>
-                {activeProvider === 'qs' && <span className="w-2 h-2 rounded-full bg-primary-strong" />}
+              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'qs' ? 'border-primary' : 'border-slate-300 group-hover:border-slate-400'}`}>
+                {activeProvider === 'qs' && <span className="w-2 h-2 rounded-full bg-primary" />}
               </span>
               <div className={`w-9 h-9 rounded-lg border flex items-center justify-center overflow-hidden shrink-0 transition-colors ${activeProvider === 'qs' ? 'bg-white border-slate-200' : 'bg-slate-200/70 border-slate-200'}`}>
                 <img src="/quickshipping.png" alt="QS" className="w-8 h-auto object-contain" />
@@ -976,7 +976,7 @@ export const Calculadora = ({ onGuardar }) => {
                 <p className={`text-[10px] font-semibold ${activeProvider === 'qs' ? 'text-slate-400' : 'text-slate-400/70'}`}>Tarifa por libra, mínimo $10.00</p>
               </div>
               {activeProvider === 'qs' && (
-                <Etiqueta tono="azul" className="shrink-0">En uso</Etiqueta>
+                <Etiqueta tono="info" className="shrink-0">En uso</Etiqueta>
               )}
             </div>
 
@@ -1943,7 +1943,7 @@ export const Calculadora = ({ onGuardar }) => {
                     </div>
                   </div>
                   {appliedProvider === 'dhl' && (
-                    <Etiqueta tono="azul">
+                    <Etiqueta tono="info">
                       En uso
                     </Etiqueta>
                   )}
@@ -2011,7 +2011,7 @@ export const Calculadora = ({ onGuardar }) => {
                     </div>
                   </div>
                   {appliedProvider === 'qs' && (
-                    <Etiqueta tono="azul">
+                    <Etiqueta tono="info">
                       En uso
                     </Etiqueta>
                   )}
