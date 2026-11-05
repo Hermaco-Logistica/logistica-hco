@@ -1021,7 +1021,7 @@ export const GestionOC = ({ readOnly = false }) => {
                   <td className="px-8 py-6 text-right font-black text-xs text-slate-900">
                     ${calcularTotalOC(oc.items).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </td>
-                  <td className="px-8 py-6 text-right">
+                  <td className="px-8 py-6 text-center">
                     <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-800 transition-all group-hover:translate-x-1" />
                   </td>
                 </tr>
