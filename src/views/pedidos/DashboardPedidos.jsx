@@ -1410,7 +1410,7 @@ export const DashboardPedidos = ({ role }) => {
                   </td>
                   {(role === 'comprador' || role === 'administrador') && (
                     <td className="p-6 bg-slate-50/50">
-                      <div className="flex items-center gap-1 border-2 border-slate-200 rounded-lg p-1 bg-white">
+                      <div className="flex items-center justify-center gap-1 border-2 border-slate-200 rounded-lg p-1 bg-white">
                         <span className="text-[9px] font-bold text-slate-400">$</span>
                         <input type="number" value={item.fobReal} disabled={!!item.numOC} onChange={(e) => handleFobChange(uId, e.target.value)} className="w-16 text-[11px] font-black outline-none bg-transparent" />
                       </div>
