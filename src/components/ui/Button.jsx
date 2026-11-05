@@ -33,6 +33,7 @@ const TAMANOS = {
   cta: 'font-bold px-4 py-2.5 sm:px-5 rounded-xl text-[11px] sm:text-xs uppercase tracking-wider shadow-sm gap-2 active:scale-95',
   block: 'font-bold w-full py-2 rounded-xl text-xs gap-2',
   pill: 'font-bold px-5 py-2.5 rounded-full text-[10px] uppercase tracking-wider shadow-sm gap-2 active:scale-95',
+  xl: 'font-black px-4 sm:px-8 py-2.5 sm:py-3 rounded-xl text-xs uppercase tracking-wide shadow-lg leading-none min-h-[48px]',
   icon: 'font-bold w-10 h-10 rounded-xl',
   iconSm: 'font-bold w-[34px] h-[34px] rounded-xl',
 };

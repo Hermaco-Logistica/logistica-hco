@@ -1832,14 +1832,23 @@ export const Calculadora = ({ onGuardar }) => {
               ) : (
                 <div className="flex items-center gap-2 shrink-0">
                   <button onClick={() => navigate('/compras')} className="hidden sm:inline text-slate-400 hover:text-slate-600 font-bold transition-colors text-xs px-2 min-h-[48px] cursor-pointer">Descartar</button>
-                  <button 
-                    onClick={ejecutarGuardado}
-                    className={`${
-                      tienePendientesGlobales ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-900 hover:bg-emerald-600'
-                    } text-white px-4 sm:px-8 py-2.5 sm:py-3 rounded-xl font-black transition-all flex flex-col items-center justify-center leading-none shadow-lg text-xs uppercase tracking-wide shrink-0 min-h-[48px] cursor-pointer`}
-                  >
-                    <span>{tienePendientesGlobales ? 'Guardar Parcial' : 'Finalizar y Enviar'}</span>
-                  </button>
+                  {tienePendientesGlobales ? (
+                    <Button
+                      variant="primary"
+                      size="xl"
+                      onClick={ejecutarGuardado}
+                      className="shrink-0"
+                    >
+                      <span>Guardar Parcial</span>
+                    </Button>
+                  ) : (
+                    <button 
+                      onClick={ejecutarGuardado}
+                      className="bg-slate-900 hover:bg-emerald-600 text-white px-4 sm:px-8 py-2.5 sm:py-3 rounded-xl font-black transition-all flex flex-col items-center justify-center leading-none shadow-lg text-xs uppercase tracking-wide shrink-0 min-h-[48px] cursor-pointer"
+                    >
+                      <span>Finalizar y Enviar</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>

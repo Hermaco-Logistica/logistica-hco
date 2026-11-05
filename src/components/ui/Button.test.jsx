@@ -20,6 +20,7 @@ const TAMANOS = {
   lg: ['px-5', 'py-2', 'rounded-xl', 'text-[10px]', 'font-black', 'uppercase'],
   cta: ['px-4', 'py-2.5', 'sm:px-5', 'rounded-xl', 'text-[11px]', 'sm:text-xs', 'uppercase', 'tracking-wider', 'shadow-sm'],
   block: ['w-full', 'py-2', 'rounded-xl', 'text-xs'],
+  xl: ['px-4', 'sm:px-8', 'py-2.5', 'sm:py-3', 'rounded-xl', 'text-xs', 'font-black', 'uppercase', 'tracking-wide', 'shadow-lg', 'min-h-[48px]'],
   pill: ['px-5', 'py-2.5', 'rounded-full', 'text-[10px]', 'uppercase', 'tracking-wider', 'shadow-sm'],
   icon: ['w-10', 'h-10', 'rounded-xl'],
   iconSm: ['w-[34px]', 'h-[34px]', 'rounded-xl'],
