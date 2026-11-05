@@ -1797,10 +1797,9 @@ export const Calculadora = ({ onGuardar }) => {
           <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2.5 sm:gap-3 max-w-7xl mx-auto p-2.5 sm:p-3 md:p-0">
             <div className="flex items-center gap-2 min-w-0">
               {tienePendientesGlobales && (
-                <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 text-[10px] font-black uppercase truncate">
-                  <Info className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <Etiqueta tono="info" tamano="normal" icono={Info} className="min-w-0 max-w-full">
                   <span className="truncate">Ítems sin precio: Se guardará COTIZACIÓN PARCIAL.</span>
-                </div>
+                </Etiqueta>
               )}
             </div>
 
