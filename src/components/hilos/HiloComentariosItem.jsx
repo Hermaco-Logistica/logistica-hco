@@ -319,7 +319,7 @@ export const HiloComentariosItem = ({
                         <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-xs ${
                           esPropio 
                             ? 'bg-primary-strong text-white rounded-tr-xs' 
-                            : 'bg-primary-soft text-slate-800 border border-primary/25 rounded-tl-xs'
+                            : 'bg-primary-soft text-slate-800 border border-primary/40 rounded-tl-xs'
                         }`}>
                           <div className="flex items-center gap-2 mb-0.5">
                             <p className={`text-[11px] font-bold ${esPropio ? 'text-white/80' : 'text-primary-strong'}`}>{m.autor?.nombre || 'Usuario'}</p>
@@ -400,13 +400,13 @@ export const HiloComentariosItem = ({
                     <div className={`px-4 py-2.5 text-sm leading-relaxed shadow-xs ${
                       esPropio 
                         ? 'bg-primary-strong text-white rounded-2xl rounded-tr-xs' 
-                        : 'bg-primary-soft border border-primary/25 text-slate-800 rounded-2xl rounded-tl-xs'
+                        : 'bg-primary-soft border border-primary/40 text-slate-800 rounded-2xl rounded-tl-xs'
                     }`}>
                       <p className="whitespace-pre-wrap">{m.texto}</p>
                     </div>
 
                     {formatearHoraMensaje(m.createdAt) && (
-                      <span className="text-[9px] text-slate-500 font-medium mt-1 px-1">
+                      <span className="text-[9px] text-slate-600 font-medium mt-1 px-1">
                         {formatearHoraMensaje(m.createdAt)}
                       </span>
                     )}
