@@ -231,7 +231,7 @@ export const DetallePedidoMobileCard = ({
             </>
           )}
           {!isMyTurn && neg.sinNotificar && neg.ultimoCambio?.rol === 'vendedor' && (
-            <button type="button" onClick={() => actions.deshacer(idx, versionEsperada)} className="pedido-mobile-action pedido-mobile-action--neutral" aria-label="Deshacer cambios">
+            <button type="button" onClick={() => actions.deshacer(idx, versionEsperada)} className={`pedido-mobile-action ${VARIANTES_ACCION.reject}`} aria-label="Deshacer cambios">
               <Undo2 size={16} /><span>Deshacer</span>
             </button>
           )}
@@ -241,7 +241,7 @@ export const DetallePedidoMobileCard = ({
             </button>
           )}
           {stagedVP && onDeshacerVentaPerdida && (
-            <button type="button" onClick={onDeshacerVentaPerdida} className="pedido-mobile-action pedido-mobile-action--neutral" aria-label="Deshacer venta perdida pendiente">
+            <button type="button" onClick={onDeshacerVentaPerdida} className={`pedido-mobile-action ${VARIANTES_ACCION.reject}`} aria-label="Deshacer venta perdida pendiente">
               <Undo2 size={16} /><span>Deshacer VP</span>
             </button>
           )}

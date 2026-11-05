@@ -604,13 +604,13 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                                   <button 
                                     onClick={() => actions.ajustar(idx, versionEsperada, draft)} 
                                     disabled={!draft.precio} 
-                                    className="px-3 py-2 bg-amber-500 text-white hover:bg-amber-600 rounded-lg font-black text-[10px] uppercase transition-colors shadow-sm disabled:opacity-50"
+                                    className={`px-3 py-2 rounded-lg font-black text-[10px] uppercase transition-colors shadow-sm disabled:opacity-50 ${VARIANTES_ACCION.counter}`}
                                   >
                                     Enviar Ajuste
                                   </button>
                                   <button 
                                     onClick={() => clearBorrador(idx)} 
-                                    className="px-3 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg font-black text-[10px] uppercase transition-colors"
+                                    className={`px-3 py-2 rounded-lg font-black text-[10px] uppercase transition-colors ${VARIANTES_ACCION.reject}`}
                                   >
                                     Descartar
                                   </button>

@@ -763,7 +763,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                           {stagedVP ? (
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-bold text-rose-600 uppercase">Venta Perdida pendiente</span>
-                              <AccionItemButton id="cancelar-vp" label="Deshacer venta perdida pendiente" text="Deshacer VP" icon={<Undo2 size={14} />} className="border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-rose-700" onConfirm={() => handleCancelarVentaPerdidaPendiente(idx)} />
+                              <AccionItemButton id="cancelar-vp" label="Deshacer venta perdida pendiente" text="Deshacer VP" icon={<Undo2 size={14} />} variant="reject" onConfirm={() => handleCancelarVentaPerdidaPendiente(idx)} />
                             </div>
                           ) : (
                             <>
@@ -785,14 +785,14 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                                     </>
                                   ) : (
                                     <div className="pedido-item-action-buttons">
-                                      <AccionItemButton id="enviar-contraoferta" label="Enviar contraoferta" text="Enviar" icon={<Check size={13} />} className="border-amber-600 bg-amber-500 text-white hover:bg-amber-600" disabled={!draft.precio || isUnchanged} onConfirm={() => { actions.contraofertar(idx, versionEsperada, draft); clearBorrador(idx); }} />
-                                      <AccionItemButton id="cancelar-borrador" label="Cancelar borrador de contraoferta" text="Cancelar" icon={<RotateCcw size={13} />} className="border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200" onConfirm={() => clearBorrador(idx)} />
+                                      <AccionItemButton id="enviar-contraoferta" label="Enviar contraoferta" text="Enviar" icon={<Check size={13} />} variant="counter" disabled={!draft.precio || isUnchanged} onConfirm={() => { actions.contraofertar(idx, versionEsperada, draft); clearBorrador(idx); }} />
+                                      <AccionItemButton id="cancelar-borrador" label="Cancelar borrador de contraoferta" text="Cancelar" icon={<RotateCcw size={13} />} variant="reject" onConfirm={() => clearBorrador(idx)} />
                                     </div>
                                   )}
                                 </div>
                               ) : neg.sinNotificar && neg.ultimoCambio?.rol === currentUser.rol && !draft ? (
                                 <div className="flex justify-center">
-                                  <AccionItemButton id="deshacer" label="Deshacer cambios" text="Deshacer" icon={<Undo2 size={14} />} className="border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200" onConfirm={() => actions.deshacer(idx, versionEsperada)} />
+                                  <AccionItemButton id="deshacer" label="Deshacer cambios" text="Deshacer" icon={<Undo2 size={14} />} variant="reject" onConfirm={() => actions.deshacer(idx, versionEsperada)} />
                                 </div>
                               ) : null}
 
