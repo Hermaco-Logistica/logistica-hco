@@ -389,7 +389,14 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                     {v.enSeguimiento > 0 && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500">En seguimiento de cliente</span>
-                        <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(v.fasesSeguimiento)}>{v.enSeguimiento > 0 ? `${v.enSeguimiento} solicitudes` : null}</Etiqueta>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/analisis/vendedor/${encodeURIComponent(v.vendedor)}?seguimiento=1`)}
+                          aria-label={`Ver ${v.enSeguimiento} solicitudes en seguimiento de ${v.vendedor}`}
+                          className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        >
+                          <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(v.fasesSeguimiento)}>{v.enSeguimiento > 0 ? `${v.enSeguimiento} solicitudes` : null}</Etiqueta>
+                        </button>
                       </div>
                     )}
                     <div className="flex items-center justify-between">
@@ -504,7 +511,14 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                       </td>
                       <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                         {v.enSeguimiento > 0
-                          ? <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(v.fasesSeguimiento)}>{v.enSeguimiento > 0 ? `${v.enSeguimiento}` : null}</Etiqueta>
+                          ? <button
+                              type="button"
+                              onClick={() => navigate(`/analisis/vendedor/${encodeURIComponent(v.vendedor)}?seguimiento=1`)}
+                              aria-label={`Ver ${v.enSeguimiento} solicitudes en seguimiento de ${v.vendedor}`}
+                              className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                            >
+                              <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(v.fasesSeguimiento)}>{v.enSeguimiento > 0 ? `${v.enSeguimiento}` : null}</Etiqueta>
+                            </button>
                           : <span className="font-mono text-slate-300 text-xs">---</span>}
                       </td>
                       <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
