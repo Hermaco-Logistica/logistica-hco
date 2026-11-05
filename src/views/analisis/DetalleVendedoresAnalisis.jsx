@@ -330,7 +330,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                 periodoLabel
               });
             }}
-            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
             title="Exportar todos los movimientos de vendedores a Excel"
           >
             <Download size={13} />
@@ -410,11 +410,11 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Monto Ganado</span>
-                      <span className="font-mono font-bold text-emerald-700">{formatearDinero(v.montoPedidos)}</span>
+                      <span className="font-mono font-bold text-slate-800">{formatearDinero(v.montoPedidos)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Efectividad</span>
-                      <span className="font-mono font-bold text-blue-600">{efPct}%</span>
+                      <span className="font-mono font-bold text-slate-800">{efPct}%</span>
                     </div>
                   </div>
 
@@ -495,7 +495,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                             <button
                               type="button"
                               onClick={() => navigate(`/analisis/vendedor/${encodeURIComponent(v.vendedor)}`)}
-                              className="font-semibold text-slate-800 hover:text-blue-600 text-xs block text-left transition-colors cursor-pointer"
+                              className="font-semibold text-slate-800 hover:text-primary-strong text-xs block text-left transition-colors cursor-pointer"
                               title={`Ver historial de ${v.vendedor}`}
                             >
                               {v.vendedor}
@@ -534,7 +534,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                       <td className="py-2.5 px-3.5 text-right font-mono font-semibold text-slate-900 whitespace-nowrap">
                         {formatearDinero(v.montoCotizado)}
                       </td>
-                      <td className="py-2.5 px-3.5 text-right font-mono font-semibold text-emerald-700 whitespace-nowrap">
+                      <td className="py-2.5 px-3.5 text-right font-mono font-semibold text-slate-800 whitespace-nowrap">
                         {formatearDinero(v.montoPedidos)}
                       </td>
                       <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
