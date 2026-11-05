@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Button } from '../../components/ui/Button';
+import { VARIANTES_ACCION } from '../../components/pedidos/negociacion/variantesAccion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
@@ -453,7 +454,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                 <th className="p-4 w-[40%]">Condiciones</th>
                 <th className="p-4 w-28 text-center">Mensajes</th>
                 <th className="p-4 w-[20%] text-center">Estado</th>
-                {mostrarColumnaAcciones && <th className="p-4 text-right">Acciones</th>}
+                {mostrarColumnaAcciones && <th className="p-4 text-center">Acciones</th>}
               </tr>
             </thead>
             {filteredItems.length === 0 && (
@@ -585,7 +586,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                       </td>
 
                       {mostrarColumnaAcciones && <td className="p-4 align-top">
-                        <div className="flex flex-col items-end gap-3">
+                        <div className="flex flex-col items-center gap-3">
                           {role === 'comprador' && ['Cotizado', 'Pedido'].includes(p.estadoItem) && !p.numOC && !esCerrado && unnotifiedCount === 0 && (
                             <button
                               type="button"
@@ -597,7 +598,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                             </button>
                           )}
                           {isPending ? (
-                            <div className="flex flex-wrap justify-end gap-1.5 w-full mt-2">
+                            <div className="flex flex-wrap justify-center gap-1.5 w-full mt-2">
                               {!isUnchanged ? (
                                 <>
                                   <button 
@@ -618,14 +619,15 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
                                 <>
                                   <button 
                                     onClick={() => actions.aprobar(idx, versionEsperada)} 
-                                    className="px-3 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-lg font-black text-[10px] uppercase transition-colors flex items-center gap-1 shadow-sm"
+                                    className={`px-3 py-2.5 rounded-lg font-black text-[10px] uppercase transition-colors flex items-center gap-1 shadow-sm ${VARIANTES_ACCION.approve}`}
                                   >
                                     <Check size={14} /> Aprobar
                                   </button>
                                   <button 
                                     onClick={() => setModalDenegar({ open: true, index: idx, versionEsperada, motivo: '' })} 
-                                    className="px-2 py-2 bg-slate-100 text-slate-500 hover:bg-rose-100 hover:text-rose-700 rounded-lg font-black text-[10px] uppercase transition-colors"
+                                    className={`px-2 py-2 rounded-lg font-black text-[10px] uppercase transition-colors ${VARIANTES_ACCION.reject}`}
                                     title="Denegar"
+                                    aria-label="Denegar"
                                   >
                                     <X size={14} />
                                   </button>
