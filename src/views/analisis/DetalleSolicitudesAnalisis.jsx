@@ -409,7 +409,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                 }
               );
             }}
-            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
             title="Exportar todos los movimientos de las solicitudes filtradas a Excel"
           >
             <Download size={13} />
@@ -457,7 +457,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                         onClick={() => s.cliente && navigate(`/analisis/cliente/${encodeURIComponent(s.cliente)}`)}
                       >
                         <Building size={12} className="text-slate-400 shrink-0" />
-                        <span className="font-medium text-xs truncate group-hover:text-blue-600 transition-colors">
+                        <span className="font-medium text-xs truncate group-hover:text-primary-strong transition-colors">
                           {s.cliente || 'Consumidor Final'}
                         </span>
                       </div>
@@ -466,7 +466,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                         onClick={() => s.vendedorNombre && navigate(`/analisis/vendedor/${encodeURIComponent(s.vendedorNombre)}`)}
                       >
                         <User size={12} className="text-slate-400 shrink-0" />
-                        <span className="font-medium text-[11px] truncate group-hover:text-blue-600 transition-colors">
+                        <span className="font-medium text-[11px] truncate group-hover:text-primary-strong transition-colors">
                           {s.vendedorNombre || 'Sin asignar'}
                         </span>
                       </div>
@@ -509,7 +509,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                             href={s.linkOC}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold text-blue-600 hover:underline bg-blue-50 px-2 py-0.5 rounded-md"
+                            className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold text-primary-strong hover:text-nav-accent-hover hover:underline bg-primary-soft px-2 py-0.5 rounded-md"
                           >
                             <LinkIcon size={10} /> Ver archivo
                           </a>
@@ -578,7 +578,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                               <button
                                 type="button"
                                 onClick={() => s.cliente && navigate(`/analisis/cliente/${encodeURIComponent(s.cliente)}`)}
-                                className="font-medium text-slate-800 hover:text-blue-600 transition-colors text-left truncate max-w-[200px] cursor-pointer"
+                                className="font-medium text-slate-800 hover:text-primary-strong transition-colors text-left truncate max-w-[200px] cursor-pointer"
                                 title={`Ver historial de ${s.cliente || 'Consumidor Final'}`}
                               >
                                 {s.cliente || 'Consumidor Final'}
@@ -591,7 +591,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                               <button
                                 type="button"
                                 onClick={() => s.vendedorNombre && navigate(`/analisis/vendedor/${encodeURIComponent(s.vendedorNombre)}`)}
-                                className="font-medium text-slate-700 hover:text-blue-600 transition-colors text-left truncate max-w-[150px] cursor-pointer"
+                                className="font-medium text-slate-700 hover:text-primary-strong transition-colors text-left truncate max-w-[150px] cursor-pointer"
                                 title={`Ver historial de ${s.vendedorNombre || 'Sin asignar'}`}
                               >
                                 {s.vendedorNombre || 'Sin asignar'}
@@ -631,7 +631,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                                     href={s.linkOC}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-blue-600 hover:underline bg-blue-50 px-2 py-0.5 rounded-md"
+                                    className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-primary-strong hover:text-nav-accent-hover hover:underline bg-primary-soft px-2 py-0.5 rounded-md"
                                     title="Ver archivo de OC"
                                   >
                                     <LinkIcon size={11} />
@@ -643,7 +643,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                                 href={s.linkOC}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-blue-600 hover:underline bg-blue-50 px-2 py-0.5 rounded-md"
+                                className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-primary-strong hover:text-nav-accent-hover hover:underline bg-primary-soft px-2 py-0.5 rounded-md"
                               >
                                 <LinkIcon size={11} /> Ver OC
                               </a>
