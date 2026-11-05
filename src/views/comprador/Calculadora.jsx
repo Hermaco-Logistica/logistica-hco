@@ -560,10 +560,10 @@ export const Calculadora = ({ onGuardar }) => {
           {/* Fila superior: 4 tarjetas con fondo blanco limpio */}
           <div className="grid grid-cols-2 gap-2">
             {/* Tarjeta 1: Flete Aéreo ($) */}
-            <div className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all">
+            <div className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
               <div className="flex items-center justify-between text-slate-500">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <Plane size={14} className="text-blue-600 shrink-0" />
+                  <Plane size={14} className="text-slate-500 shrink-0" />
                   <span className="text-[10px] font-black uppercase tracking-tight truncate">Flete Aéreo</span>
                 </div>
                 <span className="text-[9px] font-bold text-slate-400">$</span>
@@ -590,16 +590,16 @@ export const Calculadora = ({ onGuardar }) => {
             <button
               type="button"
               onClick={() => setModalGastosMobile(true)}
-              className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between text-left hover:border-emerald-400 hover:bg-emerald-50/20 transition-all cursor-pointer touch-manipulation"
+              className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between text-left hover:border-primary/40 hover:bg-primary-soft/40 transition-all cursor-pointer touch-manipulation"
             >
               <div className="flex items-center justify-between text-slate-500">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <Receipt size={14} className="text-emerald-600 shrink-0" />
+                  <Receipt size={14} className="text-slate-500 shrink-0" />
                   <span className="text-[10px] font-black uppercase tracking-tight truncate">Aduana</span>
                 </div>
                 <Etiqueta tono="exito">Editar</Etiqueta>
               </div>
-              <div className="mt-1.5 font-mono font-black text-emerald-700 text-sm sm:text-base truncate">
+              <div className="mt-1.5 font-mono font-black text-slate-800 text-sm sm:text-base truncate">
                 ${aduana.toFixed(2)}
               </div>
             </button>
@@ -666,15 +666,15 @@ export const Calculadora = ({ onGuardar }) => {
               onClick={() => setModalGastosMobile(true)}
               className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-black flex items-center justify-center gap-2 border border-slate-200 shadow-2xs transition-colors touch-manipulation cursor-pointer"
             >
-              <Receipt size={14} className="text-emerald-600 shrink-0" />
+              <Receipt size={14} className="text-slate-500 shrink-0" />
               <span>Desglose Aduana</span>
             </button>
             <button
               type="button"
               onClick={() => setModalCotizadorMobile(true)}
-              className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-slate-50 text-blue-700 text-[11px] font-black flex items-center justify-center gap-2 border border-blue-200 shadow-2xs transition-colors touch-manipulation cursor-pointer"
+              className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-black flex items-center justify-center gap-2 border border-slate-200 shadow-2xs transition-colors touch-manipulation cursor-pointer"
             >
-              <Calculator size={14} className="text-blue-600 shrink-0" />
+              <Calculator size={14} className="text-slate-500 shrink-0" />
               <span>Cotizar Flete</span>
             </button>
           </div>
@@ -719,7 +719,7 @@ export const Calculadora = ({ onGuardar }) => {
                 <button
                   type="button"
                   onClick={() => setFactoresExpandidos(prev => !prev)}
-                  className="border-b border-emerald-300 pb-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-700 transition-colors hover:border-emerald-600 hover:text-emerald-900"
+                  className="border-b border-primary/40 pb-0.5 text-[10px] font-black uppercase tracking-wide text-primary-strong transition-colors hover:border-primary-strong hover:text-nav-accent-hover"
                 >
                   {factoresExpandidos ? 'Cerrar' : 'Ver más'}
                 </button>
@@ -748,7 +748,7 @@ export const Calculadora = ({ onGuardar }) => {
               step="0.01"
               min="0"
               disabled={esSoloLectura}
-              className="bg-transparent font-black text-mode-sea-strong outline-none w-16 text-2xl text-right border-b border-transparent focus:border-blue-500 disabled:opacity-70" 
+              className="bg-transparent font-black text-mode-sea-strong outline-none w-16 text-2xl text-right border-b border-transparent focus:border-primary disabled:opacity-70" 
               value={factorM} 
               onChange={handleNumericInput(setFactorM)} 
               onFocus={(e) => e.target.select()}
@@ -775,31 +775,31 @@ export const Calculadora = ({ onGuardar }) => {
             <div className="p-3.5 md:p-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5 md:gap-4 bg-slate-50">
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Trámite Aduanal</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={tramiteAduanal} onChange={handleNumericInput(setTramiteAduanal)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={tramiteAduanal} onChange={handleNumericInput(setTramiteAduanal)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Scan</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={scan} onChange={handleNumericInput(setScan)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={scan} onChange={handleNumericInput(setScan)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Adimex</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={adimex} onChange={handleNumericInput(setAdimex)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={adimex} onChange={handleNumericInput(setAdimex)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Manejos</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={manejos} onChange={handleNumericInput(setManejos)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={manejos} onChange={handleNumericInput(setManejos)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Seguro</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={seguro} onChange={handleNumericInput(setSeguro)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={seguro} onChange={handleNumericInput(setSeguro)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Entrega Local</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={entregaLocal} onChange={handleNumericInput(setEntregaLocal)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={entregaLocal} onChange={handleNumericInput(setEntregaLocal)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
                 <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Otros</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={otrosGastos} onChange={handleNumericInput(setOtrosGastos)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={otrosGastos} onChange={handleNumericInput(setOtrosGastos)} onFocus={(e) => e.target.select()} />
               </div>
             </div>
           </div>
@@ -819,7 +819,7 @@ export const Calculadora = ({ onGuardar }) => {
           <div className="flex items-center gap-3">
             <div className="text-right">
               <span className="text-[9px] block text-slate-400 font-black uppercase tracking-widest">Fuente activa</span>
-              <span className="text-xs font-black text-blue-600 uppercase">
+              <span className="text-xs font-black text-primary-strong uppercase">
                 {activeProvider === 'dhl' ? 'DHL Express Bélgica' : activeProvider === 'qs' ? 'QS USA' : 'Ninguna'}
               </span>
             </div>
@@ -836,7 +836,7 @@ export const Calculadora = ({ onGuardar }) => {
             <button
               type="button"
               onClick={() => seleccionarProvider('dhl')}
-              className={`p-4 flex items-center gap-3 text-left transition-colors ${activeProvider === 'dhl' ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+              className={`p-4 flex items-center gap-3 text-left transition-colors ${activeProvider === 'dhl' ? 'bg-primary-soft' : 'hover:bg-slate-50'}`}
             >
               <div className="w-8 h-8 rounded-lg border flex items-center justify-center overflow-hidden bg-white border-slate-200 shrink-0">
                 <img src="/dhl.svg" alt="DHL" className="w-7 h-auto object-contain" />
@@ -856,7 +856,7 @@ export const Calculadora = ({ onGuardar }) => {
             <button
               type="button"
               onClick={() => seleccionarProvider('qs')}
-              className={`p-4 flex items-center gap-3 text-left transition-colors ${activeProvider === 'qs' ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+              className={`p-4 flex items-center gap-3 text-left transition-colors ${activeProvider === 'qs' ? 'bg-primary-soft' : 'hover:bg-slate-50'}`}
             >
               <div className="w-8 h-8 rounded-lg border flex items-center justify-center overflow-hidden bg-white border-slate-200 shrink-0">
                 <img src="/quickshipping.png" alt="QS" className="w-7 h-auto object-contain" />
@@ -883,7 +883,7 @@ export const Calculadora = ({ onGuardar }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
 
           {/* Cotizador DHL Belgium */}
-          <div className={`p-4 md:p-6 transition-all duration-200 ${activeProvider === 'dhl' ? 'bg-blue-50 ring-2 ring-inset ring-blue-200' : 'bg-slate-100/80 hover:bg-slate-100'}`}>
+          <div className={`p-4 md:p-6 transition-all duration-200 ${activeProvider === 'dhl' ? 'bg-primary-soft ring-2 ring-inset ring-primary/30' : 'bg-slate-100/80 hover:bg-slate-100'}`}>
             <div
               className="flex items-center gap-3 mb-5 cursor-pointer group"
               onClick={() => seleccionarProvider('dhl')}
@@ -891,8 +891,8 @@ export const Calculadora = ({ onGuardar }) => {
               aria-checked={activeProvider === 'dhl'}
               tabIndex={0}
             >
-              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'dhl' ? 'border-blue-600' : 'border-slate-300 group-hover:border-slate-400'}`}>
-                {activeProvider === 'dhl' && <span className="w-2 h-2 rounded-full bg-blue-600" />}
+              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'dhl' ? 'border-primary-strong' : 'border-slate-300 group-hover:border-slate-400'}`}>
+                {activeProvider === 'dhl' && <span className="w-2 h-2 rounded-full bg-primary-strong" />}
               </span>
               <div className={`w-9 h-9 rounded-lg border flex items-center justify-center overflow-hidden shrink-0 transition-colors ${activeProvider === 'dhl' ? 'bg-white border-slate-200' : 'bg-slate-200/70 border-slate-200'}`}>
                 <img src="/dhl.svg" alt="DHL" className="w-8 h-auto object-contain" />
@@ -913,7 +913,7 @@ export const Calculadora = ({ onGuardar }) => {
                   type="number"
                   step="0.01"
                   min="0"
-                  className={`p-2.5 border rounded-lg font-bold outline-none text-sm transition-shadow ${activeProvider === 'dhl' ? 'bg-white border-slate-200 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10' : 'bg-white/60 border-slate-200 text-slate-500'}`}
+                  className={`p-2.5 border rounded-lg font-bold outline-none text-sm transition-shadow ${activeProvider === 'dhl' ? 'bg-white border-slate-200 text-slate-800 focus:border-primary focus:ring-2 focus:ring-primary/10' : 'bg-white/60 border-slate-200 text-slate-500'}`}
                   value={dhlWeight}
                   onChange={handleNumericInput(setDhlWeight)}
                   onFocus={(e) => e.target.select()}
@@ -953,7 +953,7 @@ export const Calculadora = ({ onGuardar }) => {
           </div>
 
           {/* Cotizador QS USA */}
-          <div className={`p-6 transition-all duration-200 ${activeProvider === 'qs' ? 'bg-blue-50 ring-2 ring-inset ring-blue-200' : 'bg-slate-100/80 hover:bg-slate-100'}`}>
+          <div className={`p-6 transition-all duration-200 ${activeProvider === 'qs' ? 'bg-primary-soft ring-2 ring-inset ring-primary/30' : 'bg-slate-100/80 hover:bg-slate-100'}`}>
             <div
               className="flex items-center gap-3 mb-5 cursor-pointer group"
               onClick={() => seleccionarProvider('qs')}
@@ -961,8 +961,8 @@ export const Calculadora = ({ onGuardar }) => {
               aria-checked={activeProvider === 'qs'}
               tabIndex={0}
             >
-              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'qs' ? 'border-blue-600' : 'border-slate-300 group-hover:border-slate-400'}`}>
-                {activeProvider === 'qs' && <span className="w-2 h-2 rounded-full bg-blue-600" />}
+              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'qs' ? 'border-primary-strong' : 'border-slate-300 group-hover:border-slate-400'}`}>
+                {activeProvider === 'qs' && <span className="w-2 h-2 rounded-full bg-primary-strong" />}
               </span>
               <div className={`w-9 h-9 rounded-lg border flex items-center justify-center overflow-hidden shrink-0 transition-colors ${activeProvider === 'qs' ? 'bg-white border-slate-200' : 'bg-slate-200/70 border-slate-200'}`}>
                 <img src="/quickshipping.png" alt="QS" className="w-8 h-auto object-contain" />
@@ -983,7 +983,7 @@ export const Calculadora = ({ onGuardar }) => {
                   type="number"
                   step="0.01"
                   min="0"
-                  className={`p-2.5 border rounded-lg font-bold outline-none text-sm transition-shadow ${activeProvider === 'qs' ? 'bg-white border-slate-200 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10' : 'bg-white/60 border-slate-200 text-slate-500'}`}
+                  className={`p-2.5 border rounded-lg font-bold outline-none text-sm transition-shadow ${activeProvider === 'qs' ? 'bg-white border-slate-200 text-slate-800 focus:border-primary focus:ring-2 focus:ring-primary/10' : 'bg-white/60 border-slate-200 text-slate-500'}`}
                   value={qsWeight}
                   onChange={handleNumericInput(setQsWeight)}
                   onFocus={(e) => e.target.select()}
@@ -1095,7 +1095,7 @@ export const Calculadora = ({ onGuardar }) => {
           return (
             <div
               key={idx}
-              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${esAnuladoItem || esVentaPerdidaItem ? 'bg-slate-100 border-slate-300 opacity-60' : isActive ? 'bg-white border-emerald-400 shadow-md ring-2 ring-emerald-500/10' : isSelected ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-50 border-slate-200/80 opacity-70'} ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}
+              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${esAnuladoItem || esVentaPerdidaItem ? 'bg-slate-100 border-slate-300 opacity-60' : isActive ? 'bg-white border-primary/60 shadow-md ring-2 ring-primary/10' : isSelected ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-50 border-slate-200/80 opacity-70'} ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}
             >
               {/* Encabezado del Producto: Producto Principal (SKU) */}
               <div className="p-4 bg-white flex flex-col gap-3">
@@ -1178,7 +1178,7 @@ export const Calculadora = ({ onGuardar }) => {
                   <div className="flex items-center justify-between mt-2 gap-2">
                     <div className="flex items-center gap-1.5 text-[10px] flex-wrap min-w-0 pr-2">
                       {p.marca ? (
-                        <span className="font-bold text-blue-700 uppercase truncate italic flex items-center gap-1">
+                        <span className="font-bold text-primary-strong uppercase truncate italic flex items-center gap-1">
                           <Tag size={10} className="shrink-0" /> <span className="truncate">{p.marca}</span>
                         </span>
                       ) : (
@@ -1216,7 +1216,7 @@ export const Calculadora = ({ onGuardar }) => {
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-wide">
                     FOB Unitario
                   </span>
-                  <div className="flex items-center bg-white border border-slate-200 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/20 rounded-lg px-2.5 py-1 transition-all shadow-xs">
+                  <div className="flex items-center bg-white border border-slate-200 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 rounded-lg px-2.5 py-1 transition-all shadow-xs">
                     <span className="text-xs font-bold text-slate-400 mr-1">$</span>
                     <input
                       type="number"
@@ -1224,7 +1224,7 @@ export const Calculadora = ({ onGuardar }) => {
                       step="0.01"
                       disabled={isRowDisabled}
                       placeholder="0.00"
-                      className="w-20 text-right font-mono font-black text-sm text-emerald-700 bg-transparent outline-none disabled:opacity-70"
+                      className="w-20 text-right font-mono font-black text-sm text-slate-800 bg-transparent outline-none disabled:opacity-70"
                       value={p.fob}
                       onFocus={(e) => {
                         e.target.select();
@@ -1258,14 +1258,14 @@ export const Calculadora = ({ onGuardar }) => {
                   </div>
 
                   <div className="flex items-center justify-between pt-1 border-t border-mode-air-border/60 text-[10px]">
-                    <span className="font-bold text-emerald-700/80">Factor Venta</span>
+                    <span className="font-bold text-mode-air-strong/80">Factor Venta</span>
                     <div className="flex items-center gap-1">
                       <input
                         type="number"
                         step="0.01"
                         min="0"
                         disabled={isRowDisabled}
-                        className="w-12 text-center font-mono font-bold text-xs bg-white border border-emerald-300 rounded-md py-0.5 text-slate-800 outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-70"
+                        className="w-12 text-center font-mono font-bold text-xs bg-white border border-emerald-300 rounded-md py-0.5 text-slate-800 outline-none focus:ring-1 focus:ring-primary disabled:opacity-70"
                         value={p.fva}
                         onFocus={(e) => {
                           e.target.select();
@@ -1422,7 +1422,7 @@ export const Calculadora = ({ onGuardar }) => {
                       <input
                         type="text"
                         disabled={isRowDisabled}
-                        className="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-800 outline-none focus:border-emerald-500"
+                        className="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-800 outline-none focus:border-primary"
                         placeholder="Ej: 10 d.h."
                         value={p.entregaA}
                         onChange={(e) => handleTableIntegerInput(idx, 'entregaA', e.target.value)}
@@ -1454,7 +1454,7 @@ export const Calculadora = ({ onGuardar }) => {
                     <label className="block text-[9px] font-black text-slate-500 uppercase mb-1">Notas del Repuesto</label>
                     <textarea
                       disabled={isRowDisabled}
-                      className="w-full text-xs border border-slate-200 rounded-lg p-2.5 outline-none bg-white text-slate-800 disabled:bg-slate-100 disabled:opacity-70 focus:border-emerald-500"
+                      className="w-full text-xs border border-slate-200 rounded-lg p-2.5 outline-none bg-white text-slate-800 disabled:bg-slate-100 disabled:opacity-70 focus:border-primary"
                       rows="2"
                       value={p.notas}
                       onChange={(e) => updateItem(idx, 'notas', e.target.value)}
@@ -1549,7 +1549,7 @@ export const Calculadora = ({ onGuardar }) => {
                              disabled={isRowDisabled}
                              value={p.desc || p.descripcion} onChange={(e) => updateItem(idx, 'desc', e.target.value)}
                              onFocus={(e) => e.target.select()} />
-                       <input type="text" className="text-[10px] text-blue-600 w-full outline-none bg-transparent italic font-bold disabled:opacity-80" 
+                       <input type="text" className="text-[10px] text-primary-strong w-full outline-none bg-transparent italic font-bold disabled:opacity-80" 
                              disabled={isRowDisabled}
                              value={p.marca} onChange={(e) => updateItem(idx, 'marca', e.target.value)} placeholder="Indicar marca..."
                              onFocus={(e) => e.target.select()} />
@@ -1636,7 +1636,7 @@ export const Calculadora = ({ onGuardar }) => {
                       <>
                         {/* FOB SKF */}
                          <td className="p-2 bg-slate-50/20 text-center">
-                          <input type="number" min="0" disabled={isRowDisabled} className="w-full p-1 border rounded text-center font-bold text-emerald-600 bg-white disabled:bg-slate-100 disabled:opacity-70" 
+                          <input type="number" min="0" disabled={isRowDisabled} className="w-full p-1 border rounded text-center font-bold text-slate-800 bg-white disabled:bg-slate-100 disabled:opacity-70" 
                                  value={p.fob} onChange={(e) => handleTableNumericInput(idx, 'fob', e.target.value)}
                                  onFocus={(e) => e.target.select()} />
                          </td>
@@ -1699,7 +1699,7 @@ export const Calculadora = ({ onGuardar }) => {
                       <>
                         {/* FOB Unit */}
                         <td className="p-2">
-                          <input type="number" min="0" disabled={isRowDisabled} className="w-full p-1 border rounded text-center font-bold text-emerald-600 bg-white disabled:bg-slate-100 disabled:opacity-70" 
+                          <input type="number" min="0" disabled={isRowDisabled} className="w-full p-1 border rounded text-center font-bold text-slate-800 bg-white disabled:bg-slate-100 disabled:opacity-70" 
                                  value={p.fob} onChange={(e) => handleTableNumericInput(idx, 'fob', e.target.value)}
                                  onFocus={(e) => e.target.select()} />
                         </td>
@@ -1870,32 +1870,32 @@ export const Calculadora = ({ onGuardar }) => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col">
                   <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Trámite Aduanal</label>
-                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={tramiteAduanal} onChange={handleNumericInput(setTramiteAduanal)} onFocus={(e) => e.target.select()} />
+                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={tramiteAduanal} onChange={handleNumericInput(setTramiteAduanal)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
                   <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Scan</label>
-                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={scan} onChange={handleNumericInput(setScan)} onFocus={(e) => e.target.select()} />
+                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={scan} onChange={handleNumericInput(setScan)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
                   <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Adimex</label>
-                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={adimex} onChange={handleNumericInput(setAdimex)} onFocus={(e) => e.target.select()} />
+                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={adimex} onChange={handleNumericInput(setAdimex)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
                   <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Manejos</label>
-                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={manejos} onChange={handleNumericInput(setManejos)} onFocus={(e) => e.target.select()} />
+                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={manejos} onChange={handleNumericInput(setManejos)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
                   <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Seguro</label>
-                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={seguro} onChange={handleNumericInput(setSeguro)} onFocus={(e) => e.target.select()} />
+                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={seguro} onChange={handleNumericInput(setSeguro)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
                   <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Entrega Local</label>
-                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={entregaLocal} onChange={handleNumericInput(setEntregaLocal)} onFocus={(e) => e.target.select()} />
+                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={entregaLocal} onChange={handleNumericInput(setEntregaLocal)} onFocus={(e) => e.target.select()} />
                 </div>
               </div>
               <div className="flex flex-col">
                 <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Otros Gastos</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={otrosGastos} onChange={handleNumericInput(setOtrosGastos)} onFocus={(e) => e.target.select()} />
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={otrosGastos} onChange={handleNumericInput(setOtrosGastos)} onFocus={(e) => e.target.select()} />
               </div>
 
               <div className="pt-2">
@@ -1925,7 +1925,7 @@ export const Calculadora = ({ onGuardar }) => {
             {/* Selector Tabs */}
             <div className="p-4 overflow-y-auto space-y-4">
               {/* DHL Section */}
-              <div className={`p-4 rounded-2xl border transition-all ${activeProvider === 'dhl' ? 'bg-blue-50/70 border-blue-300 ring-1 ring-blue-300' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`p-4 rounded-2xl border transition-all ${activeProvider === 'dhl' ? 'bg-primary-soft/70 border-primary/40 ring-1 ring-primary/40' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center">
@@ -1950,7 +1950,7 @@ export const Calculadora = ({ onGuardar }) => {
                       type="number"
                       step="0.01"
                       min="0"
-                      className="w-full p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-800 outline-none focus:border-blue-500"
+                      className="w-full p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-800 outline-none focus:border-primary"
                       value={dhlWeight}
                       onChange={handleNumericInput(setDhlWeight)}
                       onFocus={(e) => e.target.select()}
@@ -1991,7 +1991,7 @@ export const Calculadora = ({ onGuardar }) => {
               </div>
 
               {/* QS USA Section */}
-              <div className={`p-4 rounded-2xl border transition-all ${activeProvider === 'qs' ? 'bg-blue-50/70 border-blue-300 ring-1 ring-blue-300' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`p-4 rounded-2xl border transition-all ${activeProvider === 'qs' ? 'bg-primary-soft/70 border-primary/40 ring-1 ring-primary/40' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center">
@@ -2015,7 +2015,7 @@ export const Calculadora = ({ onGuardar }) => {
                     type="number"
                     step="0.01"
                     min="0"
-                    className="w-full p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-800 outline-none focus:border-blue-500"
+                    className="w-full p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-800 outline-none focus:border-primary"
                     value={qsWeight}
                     onChange={handleNumericInput(setQsWeight)}
                     onFocus={(e) => e.target.select()}
