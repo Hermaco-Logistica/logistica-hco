@@ -206,17 +206,17 @@
 
   .role-gerente,
   body[data-role="gerente"] {
-    --color-primary: #10b981;
-    --color-primary-strong: #059669;
-    --color-secondary: #14532d;
-    --color-background: #edfdf4;
-    --color-nav-accent: var(--color-primary); /* #10b981: el color de marca que hoy impone el remapeo de bg-emerald-500 */
-    --color-nav-accent-text: var(--color-emerald-300);
-    --color-nav-accent-strong: var(--color-emerald-600);
-    --color-nav-accent-hover: var(--color-emerald-700);
-    --color-nav-glow: rgb(5 150 105 / 0.18);
-    --color-analysis-accent: var(--color-emerald-600);
-    --color-analysis-accent-active: var(--color-emerald-600);
+    --color-primary: #547e52;
+    --color-primary-strong: #40613f;
+    --color-secondary: #243119;
+    --color-background: #f6faf5;
+    --color-nav-accent: var(--color-primary);
+    --color-nav-accent-text: #aceca1;
+    --color-nav-accent-strong: var(--color-primary-strong);
+    --color-nav-accent-hover: #344e33;
+    --color-nav-glow: rgb(64 97 63 / 0.18);
+    --color-analysis-accent: var(--color-primary-strong);
+    --color-analysis-accent-active: var(--color-primary-strong);
   }
 
   .role-administrador,
