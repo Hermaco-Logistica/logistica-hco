@@ -553,7 +553,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                       <th className="py-2.5 px-3.5 whitespace-nowrap">OC Ref</th>
                       <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Estado</th>
                       <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Resultado</th>
-                      <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Acción</th>
+                      <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Acción</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -675,7 +675,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                               )}
                             </div>
                           </td>
-                          <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                          <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => irADetalle(s)}
