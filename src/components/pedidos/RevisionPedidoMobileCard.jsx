@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, X, MessageSquare, ArrowLeftRight, Ban, MessageCircleQuestion } from 'lucide-react';
 import { auth } from '../../firebase';
 import { Button } from '../ui/Button';
+import { VARIANTES_ACCION } from './negociacion/variantesAccion';
 import { HiloComentariosItem } from '../hilos/HiloComentariosItem';
 import { EstadoItemChip } from './negociacion/EstadoItemChip';
 import { FormularioOferta } from './negociacion/FormularioOferta';
@@ -142,20 +143,21 @@ export const RevisionPedidoMobileCard = ({
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => actions.aprobar(idx, versionEsperada)} 
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 rounded-xl font-black text-[10px] uppercase transition-colors shadow-sm min-h-[38px] cursor-pointer"
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 active:scale-95 rounded-xl font-black text-[10px] uppercase transition-colors shadow-sm min-h-[38px] cursor-pointer ${VARIANTES_ACCION.approve}`}
               >
                 <Check size={14} /> Aprobar
               </button>
               <button 
                 onClick={() => setShowAdjustForm(true)} 
-                className="flex-[0.8] flex items-center justify-center gap-1.5 px-3 py-2.5 bg-amber-100 text-amber-700 hover:bg-amber-200 active:scale-95 rounded-xl font-black text-[10px] uppercase transition-colors min-h-[38px] cursor-pointer"
+                className={`flex-[0.8] flex items-center justify-center gap-1.5 px-3 py-2.5 active:scale-95 rounded-xl font-black text-[10px] uppercase transition-colors min-h-[38px] cursor-pointer ${VARIANTES_ACCION.counter}`}
               >
                 <ArrowLeftRight size={14} /> Ajustar
               </button>
               <button 
                 onClick={() => onDenegar ? onDenegar(idx, versionEsperada) : null} 
-                className="w-10 flex items-center justify-center px-0 py-2.5 bg-slate-100 text-slate-400 hover:bg-rose-100 hover:text-rose-700 active:scale-95 rounded-xl transition-colors min-h-[38px] cursor-pointer"
+                className={`w-10 flex items-center justify-center px-0 py-2.5 active:scale-95 rounded-xl transition-colors min-h-[38px] cursor-pointer ${VARIANTES_ACCION.reject}`}
                 title="Denegar"
+                aria-label="Denegar"
               >
                 <X size={14} />
               </button>
