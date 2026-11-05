@@ -383,7 +383,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                     <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ganadas (Pedidos)</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Conversión</th>
                     <th className="py-2.5 px-3.5 text-right whitespace-normal">Volumen Estimado</th>
-                    <th className="py-2.5 px-3.5 text-right whitespace-normal">Detalle</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Detalle</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -434,7 +434,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         <td className="py-2.5 px-3.5 text-right font-mono font-semibold text-slate-900">
                           {formatearDinero(c.montoTotal)}
                         </td>
-                        <td className="py-2.5 px-3.5 text-right">
+                        <td className="py-2.5 px-3.5 text-center">
                           <button
                             type="button"
                             onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}`)}
