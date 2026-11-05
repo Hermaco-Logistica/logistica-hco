@@ -990,7 +990,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
                   {!soloAnulados && <th className="py-2.5 px-3 text-center whitespace-nowrap">Estado</th>}
                   {!soloAnulados && <th className="py-2.5 px-3 text-center whitespace-nowrap">Resultado</th>}
                   <th className="py-2.5 px-3 text-center whitespace-nowrap">Motivo</th>
-                  <th className="py-2.5 px-3 text-right whitespace-nowrap">Acción</th>
+                  <th className="py-2.5 px-3 text-center whitespace-nowrap">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -1180,7 +1180,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
                         ) : <span className="text-slate-300">---</span>}
                       </td>
 
-                      <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => irADetalle(m)}
