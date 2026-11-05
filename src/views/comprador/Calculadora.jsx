@@ -1876,7 +1876,7 @@ export const Calculadora = ({ onGuardar }) => {
             titulo="Gastos adicionales"
             subtitulo={`Total aduana: $${aduana.toFixed(2)}`}
             icono={Receipt}
-            tono="exito"
+            tono="rol"
             onCerrar={() => setModalGastosMobile(false)}
           />
 
@@ -1884,32 +1884,32 @@ export const Calculadora = ({ onGuardar }) => {
             <div className="p-5 overflow-y-auto space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Trámite Aduanal</label>
+                  <label className="text-[11px] font-medium text-slate-500 mb-1">Trámite Aduanal</label>
                   <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={tramiteAduanal} onChange={handleNumericInput(setTramiteAduanal)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Scan</label>
+                  <label className="text-[11px] font-medium text-slate-500 mb-1">Scan</label>
                   <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={scan} onChange={handleNumericInput(setScan)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Adimex</label>
+                  <label className="text-[11px] font-medium text-slate-500 mb-1">Adimex</label>
                   <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={adimex} onChange={handleNumericInput(setAdimex)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Manejos</label>
+                  <label className="text-[11px] font-medium text-slate-500 mb-1">Manejos</label>
                   <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={manejos} onChange={handleNumericInput(setManejos)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Seguro</label>
+                  <label className="text-[11px] font-medium text-slate-500 mb-1">Seguro</label>
                   <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={seguro} onChange={handleNumericInput(setSeguro)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Entrega Local</label>
+                  <label className="text-[11px] font-medium text-slate-500 mb-1">Entrega Local</label>
                   <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={entregaLocal} onChange={handleNumericInput(setEntregaLocal)} onFocus={(e) => e.target.select()} />
                 </div>
               </div>
               <div className="flex flex-col">
-                <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Otros Gastos</label>
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Otros Gastos</label>
                 <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={otrosGastos} onChange={handleNumericInput(setOtrosGastos)} onFocus={(e) => e.target.select()} />
               </div>
 
@@ -1933,14 +1933,14 @@ export const Calculadora = ({ onGuardar }) => {
             titulo="Cotizador de flete"
             subtitulo="DHL Bélgica o QuickShipping USA"
             icono={Calculator}
-            tono="azul"
+            tono="rol"
             onCerrar={() => setModalCotizadorMobile(false)}
           />
 
             {/* Selector Tabs */}
             <div className="p-4 overflow-y-auto space-y-4">
               {/* DHL Section */}
-              <div className={`p-4 rounded-2xl border transition-all ${activeProvider === 'dhl' ? 'bg-primary-soft/70 border-primary/40 ring-1 ring-primary/40' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`p-4 rounded-2xl border transition-all ${activeProvider === 'dhl' ? 'bg-primary-soft border-primary/40' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center">
@@ -1960,7 +1960,7 @@ export const Calculadora = ({ onGuardar }) => {
 
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div>
-                    <label className="text-[9px] font-black text-slate-500 uppercase block mb-1">Peso (kg)</label>
+                    <label className="text-[11px] font-medium text-slate-500 block mb-1">Peso (kg)</label>
                     <input
                       type="number"
                       step="0.01"
@@ -1972,7 +1972,7 @@ export const Calculadora = ({ onGuardar }) => {
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] font-black text-slate-500 uppercase block mb-1">Zona</label>
+                    <label className="text-[11px] font-medium text-slate-500 block mb-1">Zona</label>
                     <div className="p-2 border border-slate-200 rounded-lg font-bold text-xs bg-slate-100 text-slate-700 h-9 flex items-center justify-between">
                       <span>Zona {dhlZoneId}</span>
                       <span className="text-[8px] text-slate-400 uppercase">Auto</span>
@@ -1982,11 +1982,11 @@ export const Calculadora = ({ onGuardar }) => {
 
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
                   <div>
-                    <span className="text-[8px] font-black text-slate-400 uppercase block">Facturable</span>
+                    <span className="text-[11px] font-medium text-slate-500 block">Facturable</span>
                     <span className="text-xs font-black text-slate-700">{dhlResults.chargeableWeight ? Number(dhlResults.chargeableWeight).toFixed(2) : '0.00'} kg</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[8px] font-black text-slate-400 uppercase block">Costo DHL</span>
+                    <span className="text-[11px] font-medium text-slate-500 block">Costo DHL</span>
                     <span className="text-base font-black text-slate-900">${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : '0.00'}</span>
                   </div>
                   <Button
@@ -2008,7 +2008,7 @@ export const Calculadora = ({ onGuardar }) => {
               </div>
 
               {/* QS USA Section */}
-              <div className={`p-4 rounded-2xl border transition-all ${activeProvider === 'qs' ? 'bg-primary-soft/70 border-primary/40 ring-1 ring-primary/40' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`p-4 rounded-2xl border transition-all ${activeProvider === 'qs' ? 'bg-primary-soft border-primary/40' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center">
@@ -2027,7 +2027,7 @@ export const Calculadora = ({ onGuardar }) => {
                 </div>
 
                 <div className="mb-3">
-                  <label className="text-[9px] font-black text-slate-500 uppercase block mb-1">Peso (libras)</label>
+                  <label className="text-[11px] font-medium text-slate-500 block mb-1">Peso (libras)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -2041,11 +2041,11 @@ export const Calculadora = ({ onGuardar }) => {
 
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
                   <div>
-                    <span className="text-[8px] font-black text-slate-400 uppercase block">Tarifa</span>
+                    <span className="text-[11px] font-medium text-slate-500 block">Tarifa</span>
                     <span className="text-xs font-black text-slate-700">{parseFloat(qsWeight) > 10 ? '$2.80/lb' : 'Mínimo fijo'}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[8px] font-black text-slate-400 uppercase block">Costo QS</span>
+                    <span className="text-[11px] font-medium text-slate-500 block">Costo QS</span>
                     <span className="text-base font-black text-slate-900">${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : '0.00'}</span>
                   </div>
                   <Button
