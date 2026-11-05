@@ -334,7 +334,14 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                     {c.enSeguimiento > 0 && (
                       <div className="flex items-center justify-between">
                         <span className="text-slate-500">En seguimiento de cliente</span>
-                        <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento} solicitudes` : null}</Etiqueta>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}?seguimiento=1`)}
+                          aria-label={`Ver ${c.enSeguimiento} solicitudes en seguimiento de ${c.cliente}`}
+                          className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        >
+                          <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento} solicitudes` : null}</Etiqueta>
+                        </button>
                       </div>
                     )}
                     <div className="flex items-center justify-between">
@@ -414,7 +421,14 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         </td>
                         <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                           {c.enSeguimiento > 0
-                            ? <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento}` : null}</Etiqueta>
+                            ? <button
+                                type="button"
+                                onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}?seguimiento=1`)}
+                                aria-label={`Ver ${c.enSeguimiento} solicitudes en seguimiento de ${c.cliente}`}
+                                className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                              >
+                                <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento}` : null}</Etiqueta>
+                              </button>
                             : <span className="font-mono text-slate-300 text-xs">---</span>}
                         </td>
                         <DecisionSummaryColumns counts={c} basePath={`/analisis/cliente/${encodeURIComponent(c.cliente)}`} navigate={navigate} />
