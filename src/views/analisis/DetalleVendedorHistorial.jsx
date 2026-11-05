@@ -31,7 +31,8 @@ import { normalizarDecisionFilter, obtenerConfiguracionDecision, obtenerEstadoDe
 import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
 import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
 import { DecisionBadge } from './components/DecisionBadge';
-import { obtenerFaseItemCacheada } from '../../utils/faseSeguimiento';
+import { obtenerFaseItemCacheada, itemEnSeguimiento } from '../../utils/faseSeguimiento';
+import { BotonSeguimiento, AvisoSeguimiento } from './components/FiltroSeguimiento';
 import {
   prepararDatosConsultaMovimiento,
   obtenerTextoConsultaMovimiento,
@@ -227,8 +228,9 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
 
 export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra = [], soloAnulados = false }) => {
   const { vendedorId } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const decisionFilter = soloAnulados ? normalizarDecisionFilter(searchParams.get('decision')) : null;
+  const soloSeguimiento = !soloAnulados && searchParams.get('seguimiento') === '1';
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
 
@@ -244,6 +246,14 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
   const [filterCliente, setFilterCliente] = useSessionState('analisis_vend_hist_cliente', '');
   const [clienteFilter, setClienteFilter] = useSessionState('analisis_cliente_search', '');
   const [currentPage, setCurrentPage] = useState(1);
+  const cambiarSeguimiento = (activo) => {
+    setSearchParams((previo) => {
+      const siguiente = new URLSearchParams(previo);
+      if (activo) siguiente.set('seguimiento', '1'); else siguiente.delete('seguimiento');
+      return siguiente;
+    });
+    setCurrentPage(1);
+  };
   const [consultaMotivoData, setConsultaMotivoData] = useState(null);
   const abrirConsultaMotivo = useCallback((movimiento) => {
     setConsultaMotivoData(prepararDatosConsultaMovimiento(movimiento));
@@ -421,6 +431,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
           : productosLista;
 
         productosVisibles.forEach((p, idx) => {
+          if (soloSeguimiento && !itemEnSeguimiento(s, idx)) return;
           const descProducto = (p.desc || p.descripcion || 'Sin descripción').trim().toUpperCase();
           const marcaProducto = (p.marca || '').trim();
 
@@ -527,7 +538,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
         totalClientes: clientesMap.size
       },
     };
-  }, [solicitudes, targetKey, decodedSearch, vendedorId, mapFechasOC, clienteFilter, soloAnulados, decisionFilter, filtroPeriodo, rangoEsteMes]);
+  }, [solicitudes, targetKey, decodedSearch, vendedorId, mapFechasOC, clienteFilter, soloAnulados, soloSeguimiento, decisionFilter, filtroPeriodo, rangoEsteMes]);
 
   // Opciones del filtro alineadas con los filtros visibles actuales.
   // Se excluye filterCliente para conservar todas las opciones disponibles.
@@ -698,6 +709,9 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
             <span className="block text-xs font-medium text-rose-600 mb-1">
               Vista exclusiva de {obtenerConfiguracionDecision(decisionFilter).sustantivo}
             </span>
+          )}
+          {soloSeguimiento && (
+            <AvisoSeguimiento solicitudes={metricas.rfqsUnicas} items={metricas.totalMovimientos} filtroPeriodo={filtroPeriodo} cliente={clienteFilter} />
           )}
           <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
             {infoVendedor.email && (
@@ -872,10 +886,11 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
                 <option key={mod} value={mod}>{mod}</option>
               ))}
             </select>
+            {!soloAnulados && <BotonSeguimiento activo={soloSeguimiento} onChange={cambiarSeguimiento} />}
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-2 mt-1 sm:mt-0">
-            {(filterEstado || filterModalidad || filterCliente || searchTerm) && (
+            {(filterEstado || filterModalidad || filterCliente || searchTerm || soloSeguimiento) && (
               <button
                 type="button"
                 onClick={() => { 
@@ -883,6 +898,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
                   setFilterModalidad(''); 
                   setFilterCliente(''); 
                   setSearchTerm(''); 
+                  if (soloSeguimiento) cambiarSeguimiento(false);
                 }}
                 className="text-xs font-medium text-slate-500 hover:text-rose-600 px-2 py-1 transition-colors"
               >
@@ -897,6 +913,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
                 if (filterCliente) filtrosActivos.push(`Cliente: ${filterCliente}`);
                 if (filterEstado) filtrosActivos.push(`Estado: ${filterEstado}`);
                 if (filterModalidad) filtrosActivos.push(`Modalidad: ${filterModalidad}`);
+                if (soloSeguimiento) filtrosActivos.push('En seguimiento');
                 if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
 
                 exportarMovimientosExcel(
