@@ -6,6 +6,8 @@ import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 import { Etiqueta } from '../../components/Etiqueta';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { TablePagination } from '../../components/ui/TablePagination';
 
 export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
@@ -155,54 +157,40 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
   ];
 
   return (
-    <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
-      {/* CABECERA: título arriba y filtro de estado debajo */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/analisis')}
-            className="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200/80 transition-colors shadow-xs cursor-pointer"
-            title="Volver a Análisis"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Etiqueta dominio="rol" valor={theme.key}>
-                Logística
-              </Etiqueta>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Monitoreo Logístico de OCs
-            </h1>
-            <p className="text-slate-400 text-xs font-medium mt-0.5">
-              Estado de órdenes de compra y embarques ({ordenes.length} registradas)
-            </p>
-          </div>
-        </div>
+    <PageContainer className="animate-in fade-in duration-300 space-y-5 pb-12">
+      <PageHeader
+        onBack={() => navigate('/analisis')}
+        backLabel="Volver a Análisis"
+        title="Monitoreo Logístico de OCs"
+        statusChip={
+          <Etiqueta dominio="rol" valor={theme.key}>
+            Logística
+          </Etiqueta>
+        }
+        subtitle={<>Estado de órdenes de compra y embarques ({ordenes.length} registradas)</>}
+      />
 
-        {/* TABS DE ESTADO LOGÍSTICO (Sticky en móvil) */}
-        <div className="sticky top-0 z-20 bg-slate-50/80 backdrop-blur-md pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 sm:bg-transparent">
-          <div className="flex overflow-x-auto whitespace-nowrap gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                id={`tab-log-${t.id}`}
-                type="button"
-                onClick={() => { setTabActual(t.id); setCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
-                  tabActual === t.id 
-                    ? 'bg-slate-900 text-white shadow-xs font-semibold' 
-                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+      {/* TABS DE ESTADO LOGÍSTICO (Sticky en móvil) */}
+      <div className="sticky top-0 z-20 bg-slate-50/80 backdrop-blur-md pb-2 -mx-[var(--tf-pad-x)] px-[var(--tf-pad-x)] sm:mx-0 sm:px-0 sm:pb-0 sm:bg-transparent">
+        <div className="flex overflow-x-auto whitespace-nowrap gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              id={`tab-log-${t.id}`}
+              type="button"
+              onClick={() => { setTabActual(t.id); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
+                tabActual === t.id 
+                  ? 'bg-slate-900 text-white shadow-xs font-semibold' 
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
       </div>
+
 
       {/* BUSCADOR */}
       <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
@@ -399,7 +387,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
         noun="órdenes"
         onPageChange={setCurrentPage}
       />
-    </div>
+    </PageContainer>
   );
 };
 
