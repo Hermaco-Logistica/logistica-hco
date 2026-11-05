@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Check, X, MessageSquare, ArrowLeftRight, TrendingDown, MessageCircleQuestion, Undo2 } from 'lucide-react';
 import { auth } from '../../firebase';
+import { VARIANTES_ACCION } from './negociacion/variantesAccion';
 import { HiloComentariosItem } from '../hilos/HiloComentariosItem';
 import { EstadoItemChip } from './negociacion/EstadoItemChip';
 import { FormularioOferta } from './negociacion/FormularioOferta';
@@ -210,10 +211,10 @@ export const DetallePedidoMobileCard = ({
         <div className="order-5 pedido-mobile-actions-grid" aria-label="Acciones del ítem">
           {isMyTurn && puedeResponder && !esCerrado && !stagedVP && (
             <>
-              <button type="button" onClick={() => actions.aceptar(idx, versionEsperada)} className="pedido-mobile-action pedido-mobile-action--accept" aria-label={`Aceptar oferta vigente de $${Number(currentFob).toFixed(2)}`}>
+              <button type="button" onClick={() => actions.aceptar(idx, versionEsperada)} className={`pedido-mobile-action ${VARIANTES_ACCION.approve}`} aria-label={`Aceptar oferta vigente de $${Number(currentFob).toFixed(2)}`}>
                 <Check size={16} /><span>Aceptar</span>
               </button>
-              <button type="button" onClick={() => setShowAdjustForm(true)} className="pedido-mobile-action pedido-mobile-action--counter" aria-label="Contraofertar">
+              <button type="button" onClick={() => setShowAdjustForm(true)} className={`pedido-mobile-action ${VARIANTES_ACCION.counter}`} aria-label="Contraofertar">
                 <ArrowLeftRight size={16} /><span>Contraofertar</span>
               </button>
               <button type="button" onClick={() => {
@@ -224,7 +225,7 @@ export const DetallePedidoMobileCard = ({
                   if (!motivo.trim()) { alert('Debes ingresar un motivo para rechazar la oferta.'); return; }
                   actions.rechazar(idx, versionEsperada, motivo.trim());
                 }
-              }} className="pedido-mobile-action pedido-mobile-action--reject" aria-label="Rechazar oferta de Compras">
+              }} className={`pedido-mobile-action ${VARIANTES_ACCION.reject}`} aria-label="Rechazar oferta de Compras">
                 <X size={16} /><span>Rechazar</span>
               </button>
             </>
@@ -235,7 +236,7 @@ export const DetallePedidoMobileCard = ({
             </button>
           )}
           {puedeRegistrarVentaPerdida && !esCerrado && !stagedVP && (
-            <button type="button" onClick={onVentaPerdida} className="pedido-mobile-action pedido-mobile-action--loss" aria-label="Registrar venta perdida" title={esEstancado ? 'Registrar Venta Perdida comercial (>5 días hábiles)' : 'Registrar Venta Perdida de este ítem'}>
+            <button type="button" onClick={onVentaPerdida} className={`pedido-mobile-action ${VARIANTES_ACCION.lost}`} aria-label="Registrar venta perdida" title={esEstancado ? 'Registrar Venta Perdida comercial (>5 días hábiles)' : 'Registrar Venta Perdida de este ítem'}>
               <TrendingDown size={16} /><span>Venta perdida</span>
             </button>
           )}
