@@ -44,7 +44,7 @@ export const AvisoSeguimiento = ({ solicitudes, items, filtroPeriodo, vendedor, 
   ].filter(Boolean);
   return (
     <span className="mb-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-      <Etiqueta tono="violeta">Vista exclusiva de ítems en seguimiento</Etiqueta>
+      <Etiqueta tono="seguimiento">Vista exclusiva de ítems en seguimiento</Etiqueta>
       <span className="text-xs font-medium text-slate-600">
         {solicitudes !== undefined && `${solicitudes} ${solicitudes === 1 ? 'solicitud' : 'solicitudes'} · `}
         {items} {items === 1 ? 'ítem' : 'ítems'} · {contexto.join(' · ')}

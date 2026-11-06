@@ -338,9 +338,9 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                           type="button"
                           onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}?seguimiento=1`)}
                           aria-label={`Ver ${c.enSeguimiento} solicitudes en seguimiento de ${c.cliente}`}
-                          className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                          className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                         >
-                          <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento} solicitudes` : null}</Etiqueta>
+                          <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento} solicitudes` : null}</Etiqueta>
                         </button>
                       </div>
                     )}
@@ -425,9 +425,9 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                                 type="button"
                                 onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}?seguimiento=1`)}
                                 aria-label={`Ver ${c.enSeguimiento} solicitudes en seguimiento de ${c.cliente}`}
-                                className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                                className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                               >
-                                <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento}` : null}</Etiqueta>
+                                <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento}` : null}</Etiqueta>
                               </button>
                             : <span className="font-mono text-slate-300 text-xs">---</span>}
                         </td>
