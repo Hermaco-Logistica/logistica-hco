@@ -14,6 +14,7 @@ Componentes de `src/components/filtros/` (import: `from '../components/filtros'`
 | `BotonLimpiar` | `activos`, `onClick`, `etiqueta` | — (no se pinta si `activos` ≤ 0) |
 | `ContadorResultados` | `total`, `filtrados`, `unidad` | — |
 | `BotonExportar` | `onClick`, `etiqueta`, `disabled` | — |
+| `FiltroFechasContenedor` | `abierto`, `onCerrar`, `titulo`, hijos = calendario existente | — |
 
 `BotonSeguimiento` (Análisis) mantiene su API `{ activo, onChange }` y ahora usa `FiltroConmutador`.
 
@@ -36,6 +37,18 @@ Es una `surface` (sin borde, sombra de reposo). Orden: `encabezado` (fila superi
   filtrosActivos={n}
 />
 ```
+
+## Móvil
+- Filtros abiertos: cuadrícula de 2 columnas (controles de 44 px); el segmentado ocupa las 2; un hijo propio ancho lleva `col-span-2`. El panel tiene scroll interno hasta 60 vh. En escritorio el panel es `md:contents` (los hijos fluyen en la fila).
+- `FiltroSelect` mide 160 px (`md:w-40`). Con valor elegido, el prefijo pasa a una línea pequeña encima del valor ("Vendedor" / "Carlos Rivera Hern…"); con "Todos" va en línea. El `<select>` nativo y su `aria-label` no cambian.
+- `FiltroConmutador` activo: `bg-primary-strong` con `text-primary-soft` (color del rol).
+
+## Calendario emergente (`FiltroFechasContenedor`)
+La vista conserva su disparador, su estado `abierto`, su `relative` y la lógica de rango; pasa como hijo solo la cabecera de mes y la cuadrícula de días (sin `surface-flotante`, `absolute` ni `w-72`).
+- ≥ md: desplegable absoluto `right-0 mt-2 z-30` (igual que antes).
+- < md: hoja inferior en un portal a `<body>` (`z-[80]`), fondo oscurecido, botón de cerrar y Escape, `surface-flotante`, apoyada en `bottom: var(--bottom-dock-h)` y alto máximo `100dvh - dock - 1rem`.
+- Por qué: `<main>` usa `@container` (contención de layout = contexto de apilamiento), así que un `z-40` dentro de `main` nunca supera al `BottomDock` (`fixed z-40`, hermano posterior). Un `fixed` dentro de `main` tampoco sirve: la contención lo ancla a `main`. De ahí el portal.
+- El portal detiene `mousedown` para que el "clic fuera" de la vista (listener en `document`) no cierre el calendario al tocar un día.
 
 ## Reglas
 - Sin etiqueta visible encima: cada control lleva `aria-label` y, si hace falta, un prefijo interno ("Estado: Todos").

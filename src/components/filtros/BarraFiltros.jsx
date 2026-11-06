@@ -17,7 +17,7 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, limpiar, extremo, 
     <section aria-label="Filtros" className={`surface p-3.5 md:p-4 ${className}`}>
       {encabezado && <div className="mb-3 flex flex-wrap items-center justify-between gap-2">{encabezado}</div>}
       <div className="flex flex-wrap items-center gap-2">
-        {busqueda && <div className="min-w-0 max-md:order-1 max-md:flex-1 md:w-72 md:max-w-full">{busqueda}</div>}
+        {busqueda && <div className="min-w-0 max-md:order-1 max-md:min-w-[8.5rem] max-md:flex-1 md:w-72 md:max-w-full">{busqueda}</div>}
         {filtros && (
           <>
             <button
@@ -31,7 +31,7 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, limpiar, extremo, 
               <span>Filtros{filtrosActivos > 0 ? ` (${filtrosActivos})` : ''}</span>
               {abierto ? <ChevronUp size={14} aria-hidden="true" /> : <ChevronDown size={14} aria-hidden="true" />}
             </button>
-            <div id={idPanel} className={`${abierto ? 'flex' : 'hidden'} basis-full flex-wrap items-center gap-2 max-md:order-4 md:contents`}>{filtros}</div>
+            <div id={idPanel} className={`${abierto ? 'grid' : 'hidden'} basis-full grid-cols-2 gap-2 max-md:order-4 max-md:-m-0.5 max-md:max-h-[60vh] max-md:overflow-y-auto max-md:p-0.5 max-md:[&>*]:min-w-0 md:contents`}>{filtros}</div>
           </>
         )}
         {(limpiar || extremo) && (

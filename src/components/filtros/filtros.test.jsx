@@ -3,7 +3,7 @@ import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import {
-  BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroConmutador, FiltroPestanas, FiltroSegmentado, FiltroSelect
+  BarraFiltros, BotonExportar, FiltroFechasContenedor, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroConmutador, FiltroPestanas, FiltroSegmentado, FiltroSelect
 } from './index';
 import { BotonSeguimiento } from '../../views/analisis/components/FiltroSeguimiento';
 
@@ -74,6 +74,13 @@ describe('FiltroConmutador y BotonSeguimiento', () => {
     expect(b.getAttribute('aria-pressed')).toBe('false');
     fireEvent.click(b);
     expect(onChange).toHaveBeenCalledWith(true);
+  });
+  it('activo usa el color del rol (primary-strong con texto primary-soft), no slate-900', () => {
+    render(<FiltroConmutador activo onChange={() => {}} etiqueta="X" />);
+    const c = screen.getByRole('button', { name: 'X' }).className;
+    expect(c).toContain('bg-primary-strong');
+    expect(c).toContain('text-primary-soft');
+    expect(c).not.toContain('slate-900');
   });
   it('BotonSeguimiento conserva su API (activo, onChange) y su texto', () => {
     const onChange = vi.fn();
@@ -163,5 +170,55 @@ describe('BarraFiltros', () => {
     const { container } = render(<BarraFiltros busqueda={<input aria-label="b" />} />);
     expect(container.querySelector('[aria-expanded]')).toBeNull();
     expect(container.querySelector('.md\\:ml-auto')).toBeNull();
+  });
+});
+
+describe('FiltroSelect con valor largo', () => {
+  it('con valor elegido apila el prefijo (línea pequeña) y conserva <select> y aria-label', () => {
+    const { container } = render(<FiltroSelect value="Carlos Rivera Hernández" onChange={() => {}} opciones={['Carlos Rivera Hernández']} prefijo="Vendedor:" ariaLabel="Filtrar por vendedor" />);
+    expect(screen.getByRole('combobox', { name: 'Filtrar por vendedor' }).tagName).toBe('SELECT');
+    const pref = container.querySelector('span[aria-hidden="true"].absolute');
+    expect(pref.textContent).toBe('Vendedor');
+  });
+});
+
+describe('FiltroFechasContenedor', () => {
+  const mm = (matches) => { window.matchMedia = () => ({ matches, addEventListener() {}, removeEventListener() {} }); };
+  it('cerrado no pinta nada', () => {
+    mm(false);
+    const { container } = render(<FiltroFechasContenedor abierto={false} onCerrar={() => {}}>x</FiltroFechasContenedor>);
+    expect(container.firstChild).toBeNull();
+  });
+  it('escritorio: desplegable absoluto en línea con surface-flotante', () => {
+    mm(false);
+    const { container } = render(<FiltroFechasContenedor abierto onCerrar={() => {}}><i>cal</i></FiltroFechasContenedor>);
+    const d = container.querySelector('[data-fechas-contenedor]');
+    expect(d.className).toContain('absolute');
+    expect(d.className).toContain('surface-flotante');
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+  it('móvil: hoja en portal a body, apoyada sobre el dock, con cerrar y Escape', () => {
+    mm(true);
+    const onCerrar = vi.fn();
+    const { container } = render(<FiltroFechasContenedor abierto onCerrar={onCerrar}><i>cal</i></FiltroFechasContenedor>);
+    expect(container.firstChild).toBeNull();
+    const dlg = screen.getByRole('dialog', { name: 'Filtrar por fecha' });
+    expect(document.body.contains(dlg)).toBe(true);
+    expect(dlg.className).toContain('surface-flotante');
+    expect(dlg.className).toContain('bottom-[var(--bottom-dock-h,0px)]');
+    expect(dlg.className).toContain('max-h-[calc(100dvh-var(--bottom-dock-h,0px)-1rem)]');
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar calendario' }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onCerrar).toHaveBeenCalledTimes(3);
+  });
+  it('móvil: mousedown dentro de la hoja no llega al listener del documento ("clic fuera" de la vista)', () => {
+    mm(true);
+    const fuera = vi.fn();
+    document.addEventListener('mousedown', fuera);
+    render(<FiltroFechasContenedor abierto onCerrar={() => {}}><button type="button">día 28</button></FiltroFechasContenedor>);
+    fireEvent.mouseDown(screen.getByRole('button', { name: 'día 28' }));
+    document.removeEventListener('mousedown', fuera);
+    expect(fuera).not.toHaveBeenCalled();
   });
 });
