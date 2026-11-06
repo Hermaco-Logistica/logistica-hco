@@ -450,13 +450,13 @@ export const GestionOC = ({ readOnly = false }) => {
 
             {/* Resumen Móvil (< md): Tarjetas de Total y Partidas */}
             <div className="md:hidden grid grid-cols-2 gap-2.5 mb-3.5">
-              <div className="surface p-3 rounded-2xl">
+              <div className="surface-plana p-3 rounded-2xl">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Total de la Orden</span>
                 <span className="text-base font-black text-slate-900 font-mono block truncate">
                   ${totalOrden.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="surface p-3 rounded-2xl">
+              <div className="surface-plana p-3 rounded-2xl">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Partidas</span>
                 <div className="flex items-baseline gap-1 mt-0.5">
                   <span className="text-base font-black text-slate-900 font-mono">
@@ -535,7 +535,7 @@ export const GestionOC = ({ readOnly = false }) => {
                   return (
                     <div
                       key={idx}
-                      className="surface rounded-2xl p-4 space-y-3 transition-all"
+                      className="surface-plana rounded-2xl p-4 space-y-3 transition-all"
                     >
                       {/* Fila 1: Cantidad + Marca + Total de línea */}
                       <div className="flex items-center justify-between gap-2">

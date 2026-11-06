@@ -849,7 +849,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
       {/* TABLA DE MOVIMIENTOS HISTÓRICOS */}
       <div className="bg-transparent sm:bg-white sm:rounded-2xl sm:shadow-[var(--tf-shadow-card)] overflow-hidden flex flex-col">
         {paginatedMovimientos.length === 0 ? (
-          <div className="surface text-center py-16 rounded-2xl text-slate-400 text-xs font-medium mt-2">
+          <div className="surface-plana text-center py-16 rounded-2xl text-slate-400 text-xs font-medium mt-2">
             No se registraron movimientos con los filtros seleccionados.
           </div>
         ) : (

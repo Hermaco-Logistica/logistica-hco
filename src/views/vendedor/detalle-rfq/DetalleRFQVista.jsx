@@ -568,7 +568,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
 
                 {/* Modalidad por ítem */}
                 {/* Modalidad por ítem */}
-                <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                <div className="surface-plana rounded-xl overflow-hidden">
                   <button 
                     type="button"
                     onClick={() => setModalidadesOpen(!modalidadesOpen)}

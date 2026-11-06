@@ -248,7 +248,7 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
                   return (
                     <article
                       key={c.id}
-                      className="space-y-2 rounded-[14px] border border-[var(--detalle-border)] bg-[var(--detalle-surface)] p-3"
+                      className="surface-plana space-y-2 rounded-[14px] p-3"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-mono text-[13px] font-semibold text-[var(--detalle-text)]">

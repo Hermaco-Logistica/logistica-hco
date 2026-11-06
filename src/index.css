@@ -4,7 +4,8 @@
 /* REGLA DE SUPERFICIES: al usar `surface` o <Card> no añadas bg-*, shadow-* ni border decorativo. En el CSS compilado
    .bg-white y .shadow-* van DESPUÉS de .surface y la sobrescriben. Quedan permitidos: radio propio si la pieza lo necesita
    distinto (rounded-2xl = 14px en tarjetas pequeñas), bordes de estado (selección, error, foco, dashed, border-primary),
-   separadores (border-t/b/l/r, divide-*). Lo flotante (modales, menús, popovers) usa surface-flotante.
+   separadores (border-t/b/l/r, divide-*). Lo flotante (modales, menús, popovers) usa surface-flotante. Una superficie DENTRO de otra superficie
+   o de un modal/menú/popover usa surface-plana (sin sombra ni borde decorativo).
    DENTRO de modales, menús y popovers las superficies son PLANAS (sin sombra de reposo ni borde; p. ej. tf-tabla-card--plana):
    la elevación la pone el contenedor. Los botones llevan --shadow-boton (shadow-boton, hover:shadow-boton-hover) y no borde;
    Etiqueta, StatusChip, inputs, selects y segmentos de filtro no llevan sombra de botón. */
@@ -22,6 +23,11 @@
   background-color: var(--color-surface);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-reposo);
+}
+/* Superficie anidada: dentro de otra superficie, de un modal, menú o popover. Plana: sin sombra ni borde, sobre el fondo de su contenedor. */
+@utility surface-plana {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-card);
 }
 @utility surface-flotante {
   background-color: var(--color-surface);
@@ -363,6 +369,7 @@
   }
   /* Dentro de modales, menús y popovers las superficies son planas: la elevación la pone el contenedor. */
   .tf-tabla-card--plana {
+    @apply surface-plana;
     box-shadow: none;
   }
   .tf-tabla {
