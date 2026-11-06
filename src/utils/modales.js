@@ -105,7 +105,7 @@ export const AYUDA = 'mt-1.5 text-[12.5px] leading-snug text-neutral-500';
 export const AYUDA_ERROR = 'mt-1.5 text-[12.5px] leading-snug text-rose-700';
 
 /** Botones del pie. `primario` toma el color del tono del modal; `peligro` es siempre rojo (acción destructiva). */
-export const BOTON_BASE = 'inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-[14.5px] font-semibold transition-colors duration-150 disabled:cursor-not-allowed';
+export const BOTON_BASE = 'inline-flex h-11 items-center justify-center gap-2 rounded-xl px-5 text-[14.5px] font-semibold transition-all duration-150 shadow-boton hover:shadow-boton-hover hover:-translate-y-px active:translate-y-0 active:shadow-boton-activo disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0';
 export const BOTONES = {
   secundario: 'bg-neutral-200/70 text-neutral-700 hover:bg-neutral-200 disabled:bg-neutral-200/60 disabled:text-neutral-400',
   primario: 'text-white disabled:!bg-neutral-200 disabled:text-neutral-400',
@@ -116,7 +116,7 @@ export const BOTONES = {
 export const CAMPO = 'w-full rounded-xl border border-neutral-200 bg-neutral-100 px-3.5 text-[15px] text-neutral-900 outline-none transition-colors duration-150 placeholder:text-[#8A8A8A] focus:bg-white focus:ring-4 disabled:cursor-not-allowed disabled:opacity-60';
 export const CAMPO_ERROR = '!border-rose-400 focus:!border-rose-500 focus:!ring-rose-500/20';
 export const CAMPO_ALTURA = { texto: 'h-12', area: 'min-h-[110px] resize-none py-3 leading-[1.45]' };
-export const BOTON_PASO = 'flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-neutral-200/70 text-neutral-600 transition-colors duration-150 hover:bg-neutral-200 disabled:opacity-40';
+export const BOTON_PASO = 'flex size-8 shrink-0 items-center justify-center rounded-[10px] bg-neutral-200/70 text-neutral-600 shadow-boton transition-all duration-150 hover:bg-neutral-200 hover:shadow-boton-hover disabled:opacity-40 disabled:shadow-none';
 
 /** Control segmentado (pestañas): pista gris y pastilla blanca que se desliza. */
 export const PESTANAS = {

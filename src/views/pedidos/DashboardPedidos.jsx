@@ -871,7 +871,7 @@ export const DashboardPedidos = ({ role }) => {
         actions={role === 'comprador' && seleccionados.length > 0 && (
            <button 
              onClick={() => setShowAsignador(!showAsignador)} 
-             className="hidden md:flex justify-center bg-primary text-primary-foreground px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20 items-center gap-3 active:scale-95 transition-all cursor-pointer"
+             className="hidden md:flex justify-center bg-primary text-primary-foreground px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-boton hover:shadow-boton-hover items-center gap-3 active:scale-95 transition-all cursor-pointer"
            >
              <LinkIcon size={16} /> Vincular Selección ({seleccionados.length})
            </button>
@@ -1498,7 +1498,7 @@ export const DashboardPedidos = ({ role }) => {
               <button
                 type="button"
                 onClick={() => setShowAsignador(true)}
-                className="bg-primary hover:bg-primary-strong text-primary-foreground rounded-full px-6 py-3 shadow-xl shadow-primary/25 flex items-center gap-3 font-black text-xs uppercase tracking-widest active:scale-95 transition-transform min-h-[48px] cursor-pointer"
+                className="bg-primary hover:bg-primary-strong text-primary-foreground rounded-full px-6 py-3 shadow-boton hover:shadow-boton-hover flex items-center gap-3 font-black text-xs uppercase tracking-widest active:scale-95 transition-transform min-h-[48px] cursor-pointer"
               >
                 <LinkIcon size={18} />
                 Vincular Selección ({seleccionados.length})

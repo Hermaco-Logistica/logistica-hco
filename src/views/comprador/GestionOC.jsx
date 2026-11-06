@@ -367,7 +367,7 @@ export const GestionOC = ({ readOnly = false }) => {
                     disabled={readOnly}
                     className={`px-4 py-2 rounded-xl font-black text-[10px] uppercase transition-all duration-200 text-center ${
                       ocSeleccionada.estado === est
-                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/40 -translate-y-0.5'
+                        ? 'bg-emerald-500 text-white shadow-boton-hover -translate-y-0.5'
                         : 'bg-slate-800 text-slate-500 hover:text-slate-300'
                     }`}
                   >

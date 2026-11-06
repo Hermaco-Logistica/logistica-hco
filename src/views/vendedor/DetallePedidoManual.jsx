@@ -432,7 +432,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
             type="button"
             onClick={() => handleAbrirVentaPerdida()}
             aria-label={`Registrar ventas perdidas (${totalItemsSeleccionados})`}
-            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-600 px-4 text-xs font-black uppercase tracking-wide text-white shadow-xl shadow-rose-900/20 transition-transform active:scale-[0.98]"
+            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-rose-600 px-4 text-xs font-black uppercase tracking-wide text-white shadow-boton hover:shadow-boton-hover transition-all active:scale-[0.98]"
           >
             <TrendingDown size={16} aria-hidden="true" />
             <span>VP ({totalItemsSeleccionados})</span>

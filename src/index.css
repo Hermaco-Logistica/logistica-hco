@@ -35,8 +35,7 @@
     --tf-color-surface-muted: var(--color-surface-muted);
     --tf-radius-panel: 1.5rem;
     --tf-shadow-panel: 0 16px 30px rgba(15, 23, 42, 0.08);
-    /* Alias de la sombra de reposo (tokens.css): sin anillo de 1px, solo sombra difuminada. */
-    --tf-shadow-card: var(--shadow-reposo);
+    /* --tf-shadow-card: alias de --shadow-reposo; se declara en tokens.css ("Derivados por ámbito") para que siga al rol. */
     --detalle-surface: var(--color-surface);
     --detalle-surface-muted: var(--color-surface-muted);
     --detalle-border: var(--color-border);

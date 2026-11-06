@@ -251,7 +251,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
                   onClick={() => setVerPreview(true)}
                   aria-label="Ver cotización o imprimir"
                   title="Ver cotización o imprimir"
-                  className={`flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-900 py-2 text-[9px] font-black uppercase tracking-widest text-white shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 md:min-h-0 md:px-4 md:py-2.5 ${accionMovilExpandida === 'exportar' ? 'min-w-[6rem] px-3' : 'min-w-9 px-2.5'}`}
+                  className={`flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-full bg-slate-900 py-2 text-[9px] font-black uppercase tracking-widest text-white shadow-boton hover:shadow-boton-hover transition-all hover:bg-slate-800 md:min-h-0 md:px-4 md:py-2.5 ${accionMovilExpandida === 'exportar' ? 'min-w-[6rem] px-3' : 'min-w-9 px-2.5'}`}
                 >
                   <Printer size={14} /> <span className="hidden md:inline">Ver Cotización / Imprimir</span><span className="sr-only md:hidden">Exportar</span>
                   {accionMovilExpandida === 'exportar' && <span className="md:hidden">Exportar</span>}
@@ -633,10 +633,10 @@ export const DetalleRFQVista = ({ viewModel }) => {
             <button 
               onClick={handleCrearPedido}
               disabled={enviandoPedido || !puedeConfirmarOEnviar}
-              className={`rfq-summary-action rfq-summary-action--primary py-4 px-5 sm:px-6 rounded-2xl font-black uppercase tracking-wider shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[48px] text-xs sm:text-sm ${
+              className={`rfq-summary-action rfq-summary-action--primary py-4 px-5 sm:px-6 rounded-2xl font-black uppercase tracking-wider shadow-boton hover:shadow-boton-hover disabled:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[48px] text-xs sm:text-sm ${
                 totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
-                  ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-900/20'
-                  : 'bg-primary hover:bg-primary-strong text-primary-foreground shadow-secondary/20'
+                  ? 'bg-rose-600 hover:bg-rose-700 text-white'
+                  : 'bg-primary hover:bg-primary-strong text-primary-foreground'
               }`}
             >
               {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0 ? (
@@ -717,10 +717,10 @@ export const DetalleRFQVista = ({ viewModel }) => {
                   type="button"
                   onClick={handleCrearPedido}
                   disabled={enviandoPedido || !puedeConfirmarOEnviar}
-                  className={`active:scale-95 text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 shadow-md disabled:opacity-50 whitespace-nowrap min-h-[48px] ${
+                  className={`active:scale-95 text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 shadow-boton hover:shadow-boton-hover disabled:shadow-none disabled:opacity-50 whitespace-nowrap min-h-[48px] ${
                     totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
-                      ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/20'
-                      : 'bg-primary hover:bg-primary-strong shadow-primary/20'
+                      ? 'bg-rose-600 hover:bg-rose-700'
+                      : 'bg-primary hover:bg-primary-strong'
                   }`}
                 >
                   {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0 ? (
