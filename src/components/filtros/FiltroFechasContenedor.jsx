@@ -1,33 +1,38 @@
-import React, { useEffect, useSyncExternalStore } from 'react';
+import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-
-const MQ_MOVIL = '(max-width: 767px)';
-const suscribir = (cb) => {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {};
-  const m = window.matchMedia(MQ_MOVIL);
-  m.addEventListener('change', cb);
-  return () => m.removeEventListener('change', cb);
-};
-const esMovil = () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(MQ_MOVIL).matches;
+import { useModoFiltro, useMovil } from './contexto';
 
 /**
  * Contenedor del calendario emergente de fechas. No contiene lógica de rango: los hijos son el calendario existente (cabecera de mes
  * + cuadrícula de días). La vista conserva su disparador, su estado `abierto` y su `relative` en escritorio.
- *   - escritorio (≥ md): desplegable absoluto bajo el disparador (`surface-flotante`, `right-0`, `w-72`), igual que hoy.
- *   - móvil (< md): hoja inferior en un portal a <body> (fuera del contexto de apilamiento de <main>, que dejaba el calendario
- *     detrás del BottomDock), con fondo oscurecido, botón de cerrar y `surface-flotante`. Se apoya sobre el dock
- *     (`bottom: var(--bottom-dock-h)`) y su alto máximo respeta esa altura.
+ *   - dentro de la hoja móvil de BarraFiltros: en línea bajo la fila "Fecha", con altura animada (grid-template-rows 0fr → 1fr);
+ *     cerrado queda `inert` y oculto a lectores de pantalla.
+ *   - escritorio (≥ md): desplegable absoluto bajo el disparador (`surface-flotante`, `right-0`, `w-72`).
+ *   - móvil fuera de BarraFiltros: hoja inferior en un portal a <body> (fuera del contexto de apilamiento de <main>, que dejaba el
+ *     calendario detrás del BottomDock), con fondo oscurecido, botón de cerrar y `surface-flotante`, apoyada sobre el dock
+ *     (`bottom: var(--bottom-dock-h)`).
  * Cierra con el fondo, el botón o Escape (`onCerrar`). El portal detiene `mousedown` para no activar el "clic fuera" de la vista.
  */
 export const FiltroFechasContenedor = ({ abierto, onCerrar, titulo = 'Filtrar por fecha', children }) => {
-  const movil = useSyncExternalStore(suscribir, esMovil, () => false);
+  const enHoja = useModoFiltro() === 'hoja';
+  const movil = useMovil();
   useEffect(() => {
-    if (!abierto) return undefined;
+    if (!abierto || enHoja) return undefined;
     const alTeclear = (e) => { if (e.key === 'Escape') onCerrar(); };
     document.addEventListener('keydown', alTeclear);
     return () => document.removeEventListener('keydown', alTeclear);
-  }, [abierto, onCerrar]);
+  }, [abierto, enHoja, onCerrar]);
+
+  if (enHoja) {
+    return (
+      <div data-fechas-contenedor data-estado={abierto ? 'abierto' : 'cerrado'} inert={!abierto} aria-hidden={!abierto} className={`grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none ${abierto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+        <div className="min-h-0 overflow-hidden">
+          <div className="mx-auto w-full max-w-xs px-4 pb-4 pt-1">{children}</div>
+        </div>
+      </div>
+    );
+  }
   if (!abierto) return null;
   if (!movil) {
     return (

@@ -245,6 +245,25 @@
       animation-duration: 0.01ms !important;
     }
   }
+
+  /* Hoja inferior (variante `hojaInferior`, p. ej. los filtros en móvil): solo transform y opacity. Entra con translateY en
+     280 ms y el fondo con opacidad en 200 ms; sale en 200 ms con ease-in. DURACION_SALIDA_VARIANTE_MS.hojaInferior = 200. */
+  @keyframes hoja-inferior-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes hoja-inferior-out { from { transform: translateY(0); } to { transform: translateY(100%); } }
+  .modal-fondo[data-variante='hojaInferior'] { animation-duration: 0.2s; }
+  .modal-fondo[data-variante='hojaInferior'][data-saliendo='true'] { animation-duration: 0.2s; }
+  .modal-panel[data-variante='hojaInferior'] {
+    animation: hoja-inferior-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+  .modal-panel[data-variante='hojaInferior'][data-saliendo='true'] {
+    animation: hoja-inferior-out 0.2s ease-in forwards;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .modal-fondo[data-variante='hojaInferior'],
+    .modal-fondo[data-variante='hojaInferior'][data-saliendo='true'] { animation-duration: 0.12s !important; }
+    .modal-panel[data-variante='hojaInferior'] { animation: modal-fondo-in 0.12s linear backwards !important; }
+    .modal-panel[data-variante='hojaInferior'][data-saliendo='true'] { animation: modal-fondo-out 0.12s linear forwards !important; }
+  }
 }
 
 @layer components {

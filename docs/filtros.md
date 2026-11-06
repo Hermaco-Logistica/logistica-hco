@@ -5,7 +5,7 @@ Componentes de `src/components/filtros/` (import: `from '../components/filtros'`
 ## Componentes
 | Componente | Props principales | `onChange` recibe |
 | --- | --- | --- |
-| `BarraFiltros` | `encabezado`, `busqueda`, `filtros`, `limpiar`, `extremo`, `filtrosActivos`, `className` | — |
+| `BarraFiltros` | `encabezado`, `busqueda`, `filtros`, `limpiar`, `extremo`, `filtrosActivos`, `resultados`, `busquedaEnBarraMovil`, `className` | — |
 | `FiltroBusqueda` | `value`, `onChange`, `placeholder`, `ariaLabel` | texto |
 | `FiltroSelect` | `value`, `onChange`, `opciones` (`string` o `{value,label}`), `prefijo`, `etiquetaTodos`, `ariaLabel` | valor (`''` = todos) |
 | `FiltroSegmentado` | `opciones [{value,label}]`, `value`, `onChange`, `ariaLabel` | valor |
@@ -14,14 +14,15 @@ Componentes de `src/components/filtros/` (import: `from '../components/filtros'`
 | `BotonLimpiar` | `activos`, `onClick`, `etiqueta` | — (no se pinta si `activos` ≤ 0) |
 | `ContadorResultados` | `total`, `filtrados`, `unidad` | — |
 | `BotonExportar` | `onClick`, `etiqueta`, `disabled` | — |
+| `FiltroFechaCampo` | `texto`, `activo`, `expandido`, `onClick`, `onLimpiar`, `etiqueta` | — |
 | `FiltroFechasContenedor` | `abierto`, `onCerrar`, `titulo`, hijos = calendario existente | — |
 
 `BotonSeguimiento` (Análisis) mantiene su API `{ activo, onChange }` y ahora usa `FiltroConmutador`.
 
 ## Slots de `BarraFiltros`
 Es una `surface` (sin borde, sombra de reposo). Orden: `encabezado` (fila superior opcional: título y acciones) → `busqueda` → `filtros` → bloque final `limpiar` + `extremo`.
-- Escritorio: una sola fila con `flex-wrap`; el bloque final lleva `ml-auto`, así "Limpiar" queda al final de la última fila y nunca solo en una de abajo. El panel `filtros` usa `md:contents` para que sus hijos fluyan en la misma fila.
-- Móvil: primera fila con búsqueda, "Filtros (N)" (`aria-expanded`, `aria-controls`) y limpiar; los filtros se pliegan; `extremo` al final. Mismo marcado, solo clases `max-md:order-*`.
+- Escritorio: una sola fila con `flex-wrap`; el bloque final (`limpiar` + `extremo`) lleva `ml-auto`, así "Limpiar" queda al final de la última fila y nunca solo en una de abajo.
+- Móvil: cada control se pinta una sola vez, dentro de la hoja inferior (ver abajo); la barra solo lleva "Filtros (N)" y `extremo`.
 - `filtrosActivos` solo alimenta el número de "Filtros (N)". El calendario u otros controles propios van como hijo en `filtros`.
 
 ## Ejemplo
@@ -38,22 +39,30 @@ Es una `surface` (sin borde, sombra de reposo). Orden: `encabezado` (fila superi
 />
 ```
 
-## Móvil
-- Filtros abiertos: cuadrícula de 2 columnas (controles de 44 px); el segmentado ocupa las 2; un hijo propio ancho lleva `col-span-2`. El panel tiene scroll interno hasta 60 vh. En escritorio el panel es `md:contents` (los hijos fluyen en la fila).
-- `FiltroSelect` mide 160 px (`md:w-40`). Con valor elegido, el prefijo pasa a una línea pequeña encima del valor ("Vendedor" / "Carlos Rivera Hern…"); con "Todos" va en línea. El `<select>` nativo y su `aria-label` no cambian.
-- `FiltroConmutador` activo: `bg-primary-strong` con `text-primary-soft` (color del rol).
+## Móvil: hoja inferior de filtros
+En < md, `BarraFiltros` no pinta los controles: muestra "Filtros (N)" (`aria-haspopup`, `aria-expanded`, `aria-controls`) y el slot `extremo`. Al tocarlo sube una hoja inferior hecha con `Modal` (`variante="hojaInferior"`, `soloMovil`, `atraparFoco`, `ancho="completo"`): portal a `<body>`, `z-[100]` (por encima del dock), fondo oscurecido que cierra al tocarlo, `surface-flotante`, alto máximo 85 dvh.
+- Cabecera: tirador (solo visual; el gesto de deslizar no existe), X a la izquierda, título "Filtros" y `limpiar` a la derecha ("Limpiar (N)", solo con filtros activos).
+- Cuerpo con scroll interno sobre `bg-background`, en bloques `surface-plana`: la búsqueda arriba y los `filtros` como filas de 44 px (etiqueta a la izquierda, valor a la derecha). Los controles saben dónde están por `ContextoFiltros` (`useModoFiltro`): `FiltroSelect` (el `<select>` nativo cubre la fila, transparente), `FiltroSegmentado`, `FiltroConmutador` (interruptor), `FiltroFechaCampo` y `BotonLimpiar` cambian de forma; en la hoja las etiquetas SÍ son visibles (`etiqueta`, por defecto el prefijo sin ":").
+- Pie: `Button primary` "Ver N resultados" (prop `resultados`; sin ella "Ver resultados"). Los filtros se aplican al instante; el botón solo cierra. No hay estado provisional ni se mueve el estado de la vista.
+- `busquedaEnBarraMovil` deja la búsqueda en la barra móvil en lugar de la hoja.
+- Animación (index.css, solo transform y opacity): entra con translateY(100% → 0) en 280 ms, `cubic-bezier(.2,.8,.2,1)`, fondo 0 → 1 en 200 ms; sale en 200 ms con ease-in y la hoja sigue montada durante la salida (`DURACION_SALIDA_VARIANTE_MS.hojaInferior`). Con `prefers-reduced-motion` solo hay fundido de 120 ms.
+- Accesibilidad: `role="dialog"`, `aria-modal`, `aria-labelledby`; el foco entra en la hoja, queda atrapado (Tab y Shift+Tab) y vuelve al botón al cerrar; Escape cierra; el scroll del fondo se bloquea.
+- Para cerrar con la animación desde dentro de un `<Modal>`: `useCerrarModal()` (`components/modalCierre.js`).
 
-## Calendario emergente (`FiltroFechasContenedor`)
-La vista conserva su disparador, su estado `abierto`, su `relative` y la lógica de rango; pasa como hijo solo la cabecera de mes y la cuadrícula de días (sin `surface-flotante`, `absolute` ni `w-72`).
-- ≥ md: desplegable absoluto `right-0 mt-2 z-30` (igual que antes).
-- < md: hoja inferior en un portal a `<body>` (`z-[80]`), fondo oscurecido, botón de cerrar y Escape, `surface-flotante`, apoyada en `bottom: var(--bottom-dock-h)` y alto máximo `100dvh - dock - 1rem`.
-- Por qué: `<main>` usa `@container` (contención de layout = contexto de apilamiento), así que un `z-40` dentro de `main` nunca supera al `BottomDock` (`fixed z-40`, hermano posterior). Un `fixed` dentro de `main` tampoco sirve: la contención lo ancla a `main`. De ahí el portal.
-- El portal detiene `mousedown` para que el "clic fuera" de la vista (listener en `document`) no cierre el calendario al tocar un día.
+Escritorio: el `FiltroSelect` mide 160 px (`md:w-40`); con valor elegido el prefijo pasa a una línea pequeña encima del valor ("Vendedor" / "Carlos Rivera Hern…"). `FiltroConmutador` activo: `bg-primary-strong` con `text-primary-soft` (color del rol).
+
+## Calendario emergente (`FiltroFechaCampo` + `FiltroFechasContenedor`)
+La vista conserva su estado `abierto`, su `relative`/`ref` de "clic fuera" y la lógica de rango; pasa como hijo solo la cabecera de mes y la cuadrícula de días (sin `surface-flotante`, `absolute` ni `w-72`). `FiltroFechaCampo` es el disparador (`texto`, `activo`, `expandido`, `onClick`, `onLimpiar`).
+- Dentro de la hoja móvil: en línea bajo la fila "Fecha", con altura animada (`grid-template-rows` 0fr → 1fr); cerrado queda `inert` y `aria-hidden`.
+- ≥ md: desplegable absoluto `right-0 mt-2 z-30`.
+- < md fuera de la hoja: hoja inferior propia en un portal a `<body>` (`z-[80]`) apoyada sobre el dock (`bottom: var(--bottom-dock-h)`).
+- Por qué el portal: `<main>` usa `@container` (contención de layout = contexto de apilamiento y ancla de `fixed`), así que un `z-40` dentro de `main` nunca supera al `BottomDock` (`fixed z-40`, hermano posterior).
+- El portal detiene `mousedown` para que el "clic fuera" de la vista no cierre el calendario al tocar un día.
 
 ## Reglas
 - Sin etiqueta visible encima: cada control lleva `aria-label` y, si hace falta, un prefijo interno ("Estado: Todos").
 - Controles (búsqueda, select, conmutador): borde suave `border-border`, sin sombra. Segmentados y pestañas: planos. `BotonLimpiar` y `BotonExportar`: `Button secondary` (sombra de botón, sin borde).
-- Alturas: 44 px en móvil, 36 px desde `md`.
+- Alturas: 44 px en móvil y en las filas de la hoja, 36 px en la barra desde `md`.
 - El select conserva el `<select>` nativo.
 - Solo tokens y las clases de paleta ya usadas (`slate`); `check:colores` y `check:superficies` deben seguir en verde.
 

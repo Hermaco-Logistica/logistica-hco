@@ -22,6 +22,8 @@ export const CAPAS = {
 
 /** Debe coincidir con la duración de salida de .modal-fondo / .modal-panel en index.css. */
 export const DURACION_SALIDA_MS = 180;
+/** Salida propia de ciertas variantes (debe coincidir con su animación en index.css). */
+export const DURACION_SALIDA_VARIANTE_MS = { hojaInferior: 200 };
 
 export const FONDO = 'bg-slate-950/40 backdrop-blur-[6px]';
 
@@ -38,6 +40,8 @@ export const ANCHOS = {
  * - centrado: tarjeta centrada en pantalla (diálogos, formularios, confirmaciones).
  * - hoja: hoja inferior en móvil que sube desde abajo y tarjeta centrada desde `sm`.
  * - pantallaCompleta: ocupa toda la pantalla en móvil y es tarjeta centrada desde `sm` (listados y detalles largos).
+ * - hojaInferior: hoja anclada abajo con alto máximo de 85 dvh, en cualquier ancho (se usa con `soloMovil`). Sube con translateY
+ *   en 280 ms y sale en 200 ms (index.css); con movimiento reducido solo hace fundido.
  */
 export const VARIANTES = {
   centrado: {
@@ -47,6 +51,10 @@ export const VARIANTES = {
   hoja: {
     posicion: 'items-end sm:items-center justify-center p-0 sm:p-4',
     panel: 'rounded-t-3xl sm:rounded-3xl max-h-[90vh]'
+  },
+  hojaInferior: {
+    posicion: 'items-end justify-center p-0',
+    panel: 'rounded-t-3xl max-h-[85dvh]'
   },
   pantallaCompleta: {
     posicion: 'items-center justify-center p-0 sm:p-4',

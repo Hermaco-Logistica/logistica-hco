@@ -8,3 +8,4 @@ export { BotonLimpiar } from './BotonLimpiar';
 export { ContadorResultados } from './ContadorResultados';
 export { BotonExportar } from './BotonExportar';
 export { FiltroFechasContenedor } from './FiltroFechasContenedor';
+export { FiltroFechaCampo } from './FiltroFechaCampo';

@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import {
-  BarraFiltros, BotonExportar, FiltroFechasContenedor, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroConmutador, FiltroPestanas, FiltroSegmentado, FiltroSelect
+  BarraFiltros, BotonExportar, FiltroFechaCampo, FiltroFechasContenedor, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroConmutador, FiltroPestanas, FiltroSegmentado, FiltroSelect
 } from './index';
 import { BotonSeguimiento } from '../../views/analisis/components/FiltroSeguimiento';
 
@@ -124,52 +124,163 @@ describe('ContadorResultados y BotonExportar', () => {
   });
 });
 
-describe('BarraFiltros', () => {
-  const montar = (props = {}) => render(
-    <BarraFiltros
-      encabezado={<h2>Solicitudes</h2>}
-      busqueda={<input aria-label="buscar" />}
-      filtros={<select aria-label="estado"><option value="">Todos</option></select>}
-      limpiar={<button type="button">Limpiar</button>}
-      extremo={<span>20 resultados</span>}
-      filtrosActivos={2}
-      {...props}
-    />
-  );
+const mm = (matches) => { window.matchMedia = () => ({ matches, addEventListener() {}, removeEventListener() {} }); };
+const montarBarra = (props = {}) => render(
+  <BarraFiltros
+    encabezado={<h2>Solicitudes</h2>}
+    busqueda={<FiltroBusqueda value="" onChange={() => {}} ariaLabel="buscar" />}
+    filtros={<>
+      <FiltroSelect value="" onChange={() => {}} opciones={['Cotizado']} prefijo="Estado:" ariaLabel="estado" />
+      <FiltroConmutador activo={false} onChange={() => {}} etiqueta="En seguimiento" />
+    </>}
+    limpiar={<BotonLimpiar activos={2} onClick={props.onLimpiar || (() => {})} />}
+    extremo={<span>20 resultados</span>}
+    filtrosActivos={2}
+    resultados={12}
+    {...props}
+  />
+);
+
+describe('BarraFiltros en escritorio', () => {
   it('es una superficie (surface, sin borde) y ordena los slots: encabezado, búsqueda, filtros y, al final, limpiar + extremo', () => {
-    const { container } = montar();
+    mm(false);
+    const { container } = montarBarra();
     const seccion = container.querySelector('section');
     expect(seccion.className).toContain('surface');
     expect(seccion.className).not.toMatch(/(^|\s)border(\s|$)/);
     const hijos = [...seccion.children];
     expect(hijos[0].textContent).toBe('Solicitudes');
     const fila = hijos[1];
-    const orden = [...fila.children].map((c) => c.textContent || c.querySelector('select, input')?.getAttribute('aria-label'));
-    expect(orden[0]).toBeTruthy();
+    expect(fila.children[0].querySelector('input')).toBeTruthy();
+    expect(fila.children[1].querySelector('select')).toBeTruthy();
     const ultimo = fila.lastElementChild;
-    expect(ultimo.className).toContain('md:ml-auto');
-    expect(ultimo.textContent).toContain('Limpiar');
+    expect(ultimo.className).toContain('ml-auto');
+    expect(ultimo.textContent).toContain('Limpiar filtros (2)');
     expect(ultimo.textContent).toContain('20 resultados');
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(screen.queryByText(/^Filtros/)).toBeNull();
   });
-  it('móvil: "Filtros (N)" con aria-expanded y aria-controls; el panel se pliega y se abre', () => {
-    montar();
-    const toggle = screen.getByRole('button', { name: /Filtros \(2\)/ });
-    expect(toggle.getAttribute('aria-expanded')).toBe('false');
-    const panel = document.getElementById(toggle.getAttribute('aria-controls'));
-    expect(panel.className).toContain('hidden');
-    expect(panel.className).toContain('md:contents');
-    fireEvent.click(toggle);
-    expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(panel.className).not.toMatch(/(^|\s)hidden(\s|$)/);
-  });
-  it('un solo marcado: el select aparece una vez (no hay copia móvil y de escritorio)', () => {
-    montar();
+  it('un solo marcado: cada control aparece una vez', () => {
+    mm(false);
+    montarBarra();
     expect(screen.getAllByLabelText('estado')).toHaveLength(1);
+    expect(screen.getAllByLabelText('buscar')).toHaveLength(1);
   });
-  it('sin filtros activos el botón móvil no lleva número; sin slots opcionales no pinta bloques vacíos', () => {
-    const { container } = render(<BarraFiltros busqueda={<input aria-label="b" />} />);
-    expect(container.querySelector('[aria-expanded]')).toBeNull();
-    expect(container.querySelector('.md\\:ml-auto')).toBeNull();
+});
+
+describe('BarraFiltros en móvil: hoja inferior', () => {
+  it('la barra solo muestra "Filtros (N)" y el extremo; los controles no están hasta abrir', () => {
+    mm(true);
+    montarBarra();
+    const t = screen.getByRole('button', { name: /Filtros \(2\)/ });
+    expect(t.getAttribute('aria-expanded')).toBe('false');
+    expect(t.getAttribute('aria-controls')).toBeTruthy();
+    expect(screen.queryByLabelText('estado')).toBeNull();
+    expect(screen.getByText('20 resultados')).toBeTruthy();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+  it('abre en un portal a body con role dialog, aria-modal, aria-labelledby y el foco dentro; el trigger queda expandido', () => {
+    mm(true);
+    montarBarra();
+    const t = screen.getByRole('button', { name: /Filtros \(2\)/ });
+    fireEvent.click(t);
+    const d = screen.getByRole('dialog', { name: 'Filtros' });
+    expect(document.body.contains(d) && !document.querySelector('section').contains(d)).toBe(true);
+    expect(d.getAttribute('aria-modal')).toBe('true');
+    expect(d.getAttribute('aria-labelledby')).toBeTruthy();
+    expect(d.id).toBe(t.getAttribute('aria-controls'));
+    expect(t.getAttribute('aria-expanded')).toBe('true');
+    expect(d.contains(document.activeElement)).toBe(true);
+    expect(d.getAttribute('data-variante')).toBe('hojaInferior');
+    expect(document.body.style.overflow).toBe('hidden');
+  });
+  it('dentro: búsqueda arriba, filas con etiqueta visible, "Limpiar (N)" en la cabecera y pie con el conteo', () => {
+    mm(true);
+    montarBarra();
+    fireEvent.click(screen.getByRole('button', { name: /Filtros \(2\)/ }));
+    const d = screen.getByRole('dialog');
+    expect(d.querySelector('input[type="search"]')).toBeTruthy();
+    expect(d.textContent).toContain('Estado');
+    expect(d.querySelector('select[aria-label="estado"]')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Limpiar filtros (2 activos)' }).textContent).toBe('Limpiar (2)');
+    expect(screen.getByRole('button', { name: 'Ver 12 resultados' })).toBeTruthy();
+  });
+  it('sin conteo el pie dice "Ver resultados"; con 1 dice "Ver 1 resultado"', () => {
+    mm(true);
+    const { unmount } = montarBarra({ resultados: undefined });
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    expect(screen.getByRole('button', { name: 'Ver resultados' })).toBeTruthy();
+    unmount();
+    montarBarra({ resultados: 1 });
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    expect(screen.getByRole('button', { name: 'Ver 1 resultado' })).toBeTruthy();
+  });
+  it('cierra con el pie, la X, Escape y el fondo; mantiene la hoja montada durante la salida y devuelve el foco al trigger', () => {
+    vi.useFakeTimers();
+    mm(true);
+    montarBarra();
+    const t = screen.getByRole('button', { name: /Filtros \(2\)/ });
+    const abrir = () => { t.focus(); fireEvent.click(t); };
+    const cerrado = () => { act(() => { vi.advanceTimersByTime(250); }); return screen.queryByRole('dialog') === null; };
+    abrir(); fireEvent.click(screen.getByRole('button', { name: 'Ver 12 resultados' }));
+    expect(screen.queryByRole('dialog').getAttribute('data-saliendo')).toBe('true');
+    expect(cerrado()).toBe(true);
+    expect(document.activeElement).toBe(t);
+    abrir(); fireEvent.click(screen.getByRole('button', { name: 'Cerrar filtros' }));
+    expect(cerrado()).toBe(true);
+    abrir(); fireEvent.keyDown(document, { key: 'Escape' });
+    expect(cerrado()).toBe(true);
+    abrir(); const fondo = screen.getByRole('dialog').parentElement;
+    fireEvent.mouseDown(fondo); fireEvent.click(fondo);
+    expect(cerrado()).toBe(true);
+    expect(document.body.style.overflow).toBe('');
+    vi.useRealTimers();
+  });
+  it('atrapa el foco: Tab en el último elemento vuelve al primero y Shift+Tab en el primero va al último', () => {
+    mm(true);
+    montarBarra();
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    const d = screen.getByRole('dialog');
+    const foco = [...d.querySelectorAll('button, select, input')];
+    foco[foco.length - 1].focus();
+    fireEvent.keyDown(document, { key: 'Tab' });
+    expect(document.activeElement).toBe(foco[0]);
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(foco[foco.length - 1]);
+  });
+  it('"Limpiar (N)" llama a la acción de la vista (la hoja no guarda estado propio) y la selección se aplica al instante', () => {
+    mm(true);
+    const onLimpiar = vi.fn();
+    const onChange = vi.fn();
+    montarBarra({ onLimpiar, filtros: <FiltroSelect value="" onChange={onChange} opciones={['Cotizado']} prefijo="Estado:" ariaLabel="estado" /> });
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    fireEvent.change(screen.getByLabelText('estado'), { target: { value: 'Cotizado' } });
+    expect(onChange).toHaveBeenCalledWith('Cotizado');
+    fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros (2 activos)' }));
+    expect(onLimpiar).toHaveBeenCalledTimes(1);
+  });
+  it('fila de fecha: el calendario se despliega en línea dentro de la hoja (sin portal ni segunda hoja)', () => {
+    mm(true);
+    const Fecha = () => {
+      const [ab, setAb] = React.useState(false);
+      return (
+        <div>
+          <FiltroFechaCampo texto="1 nov – 30 nov" expandido={ab} onClick={() => setAb((v) => !v)} />
+          <FiltroFechasContenedor abierto={ab} onCerrar={() => setAb(false)}><button type="button">día 28</button></FiltroFechasContenedor>
+        </div>
+      );
+    };
+    montarBarra({ filtros: <Fecha /> });
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    const hoja = screen.getByRole('dialog');
+    const cont = hoja.querySelector('[data-fechas-contenedor]');
+    expect(cont.getAttribute('data-estado')).toBe('cerrado');
+    expect(cont.hasAttribute('inert')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: /Fecha/ }));
+    expect(cont.getAttribute('data-estado')).toBe('abierto');
+    expect(cont.hasAttribute('inert')).toBe(false);
+    expect(hoja.contains(screen.getByRole('button', { name: 'día 28' }))).toBe(true);
+    expect(screen.getAllByRole('dialog')).toHaveLength(1);
   });
 });
 
@@ -183,7 +294,6 @@ describe('FiltroSelect con valor largo', () => {
 });
 
 describe('FiltroFechasContenedor', () => {
-  const mm = (matches) => { window.matchMedia = () => ({ matches, addEventListener() {}, removeEventListener() {} }); };
   it('cerrado no pinta nada', () => {
     mm(false);
     const { container } = render(<FiltroFechasContenedor abierto={false} onCerrar={() => {}}>x</FiltroFechasContenedor>);
