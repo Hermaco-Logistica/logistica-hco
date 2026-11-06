@@ -8,6 +8,18 @@
   --radius-2xl: 14px;
 }
 
+/* Superficies: fondo, radio de tarjeta y sombra de reposo, sin borde. Para portales y CSS que no puedan usar <Card>.
+   surface-flotante: modales, menús, popovers y tooltips (el radio lo pone cada pieza). */
+@utility surface {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-reposo);
+}
+@utility surface-flotante {
+  background-color: var(--color-surface);
+  box-shadow: var(--shadow-flotante);
+}
+
 @layer base {
   :root {
     --tf-font-sans: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
@@ -18,11 +30,8 @@
     --tf-color-surface-muted: var(--color-surface-muted);
     --tf-radius-panel: 1.5rem;
     --tf-shadow-panel: 0 16px 30px rgba(15, 23, 42, 0.08);
-    /* Sombra de tarjeta: anillo de 1px + elevación + profundidad ambiente (sustituye al borde). */
-    --tf-shadow-card:
-      0 0 0 1px oklch(0 0 0 / 0.05),
-      0 1px 2px -1px oklch(0 0 0 / 0.06),
-      0 4px 16px -4px oklch(0 0 0 / 0.06);
+    /* Alias de la sombra de reposo (tokens.css): sin anillo de 1px, solo sombra difuminada. */
+    --tf-shadow-card: var(--shadow-reposo);
     --detalle-surface: var(--color-surface);
     --detalle-surface-muted: var(--color-surface-muted);
     --detalle-border: var(--color-border);
@@ -311,9 +320,7 @@
   }
 
   .tf-surface-panel {
-    background-color: var(--tf-color-surface);
-    border-radius: var(--tf-radius-panel);
-    box-shadow: var(--tf-shadow-card);
+    @apply surface;
   }
 
   /* Campo de filtro/formulario en las vistas: misma forma que los campos de los modales
@@ -344,9 +351,7 @@
   /* Tablas de listado: tarjeta con padding de 12px, así el encabezado (radio 12px) es concéntrico con
      la tarjeta (radio 24px). Sin cuadrícula: solo una línea fina entre filas y hover redondeado. */
   .tf-tabla-card {
-    background-color: var(--tf-color-surface);
-    border-radius: var(--tf-radius-panel);
-    box-shadow: var(--tf-shadow-card);
+    @apply surface;
     padding: 0.75rem;
   }
   .tf-tabla {

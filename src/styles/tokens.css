@@ -167,8 +167,12 @@
   --color-chart-8: #f97316;
   --color-chart-9: #dc2626;
 
-  /* Sombras: apuntan a las existentes */
-  --shadow-card: var(--tf-shadow-card);
+  /* Sombras. Superficies sin contorno: la separación la da solo la sombra difuminada (sin anillo de 1px).
+     reposo: tarjetas, paneles, tablas en tarjeta y avisos. flotante: modales, menús, popovers y tooltips
+     (capa larga de elevación + capa corta de contacto que define el borde sin dibujar una línea). */
+  --shadow-reposo: 0 2px 6px -1px rgb(0 0 0 / 0.06), 0 12px 32px -8px rgb(0 0 0 / 0.12);
+  --shadow-flotante: 0 24px 64px rgb(0 0 0 / 0.14), 0 2px 8px rgb(0 0 0 / 0.08);
+  --shadow-card: var(--shadow-reposo);
   --shadow-panel: var(--tf-shadow-panel);
   --shadow-float: var(--detalle-shadow-float);
 }
