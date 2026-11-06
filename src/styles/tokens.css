@@ -189,22 +189,22 @@
   --color-seguimiento-borde: color-mix(in srgb, var(--color-primary-strong) 30%, white);
   --color-seguimiento-claro: color-mix(in srgb, var(--color-primary-strong) 55%, white);
 
-  /* Sombras de superficie y de botón: TINTADAS con el tono oscuro del rol (secondary) y escaladas por --sombra-alfa (por rol, iguala el
+  /* Sombras de superficie y de botón: TINTADAS con el color de marca del rol (primary: con el tono oscuro del menú el tinte apenas se distinguía de una sombra negra) y escaladas por --sombra-alfa (por rol, iguala el
      peso visual de los cuatro roles). Se declaran aquí (inline) y en "Derivados por ámbito": en :root solas no seguirían al rol. */
-  --shadow-reposo: 0 2px 5px 0 color-mix(in srgb, var(--color-secondary) calc(7% * var(--sombra-alfa)), transparent), 0 10px 30px -4px color-mix(in srgb, var(--color-secondary) calc(12% * var(--sombra-alfa)), transparent);
-  --shadow-flotante: 0 24px 64px color-mix(in srgb, var(--color-secondary) calc(14% * var(--sombra-alfa)), transparent), 0 2px 8px color-mix(in srgb, var(--color-secondary) calc(8% * var(--sombra-alfa)), transparent);
-  --shadow-boton: 0 1px 2px color-mix(in srgb, var(--color-secondary) calc(8% * var(--sombra-alfa)), transparent), 0 4px 10px -2px color-mix(in srgb, var(--color-secondary) calc(10% * var(--sombra-alfa)), transparent);
-  --shadow-boton-hover: 0 1px 2px color-mix(in srgb, var(--color-secondary) calc(10% * var(--sombra-alfa)), transparent), 0 6px 14px -2px color-mix(in srgb, var(--color-secondary) calc(14% * var(--sombra-alfa)), transparent);
-  --shadow-boton-activo: 0 1px 1px color-mix(in srgb, var(--color-secondary) calc(8% * var(--sombra-alfa)), transparent);
+  --shadow-reposo: 0 2px 5px 0 color-mix(in srgb, var(--color-primary) calc(7% * var(--sombra-alfa)), transparent), 0 10px 30px -4px color-mix(in srgb, var(--color-primary) calc(12% * var(--sombra-alfa)), transparent);
+  --shadow-flotante: 0 24px 64px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent), 0 2px 8px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
+  --shadow-boton: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent), 0 4px 10px -2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent);
+  --shadow-boton-hover: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent), 0 6px 14px -2px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent);
+  --shadow-boton-activo: 0 1px 1px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
 }
 
 @layer base {
-  :root { --sombra-alfa: 1; }
+  :root { --sombra-alfa: 1.08; }
 
   /* Valores por rol */
   .role-comprador,
   body[data-role="comprador"] {
-    --sombra-alfa: 1.08;
+    --sombra-alfa: 0.72;
     --color-primary: #3b46f2;
     --color-primary-strong: #2635d9;
     --color-secondary: #1b2452;
@@ -220,7 +220,7 @@
 
   .role-vendedor,
   body[data-role="vendedor"] {
-    --sombra-alfa: 0.95;
+    --sombra-alfa: 1.45;
     --color-primary: #7964a9;
     --color-primary-strong: #614e8c;
     --color-secondary: #310845;
@@ -236,7 +236,7 @@
 
   .role-gerente,
   body[data-role="gerente"] {
-    --sombra-alfa: 1.1;
+    --sombra-alfa: 1.56;
     --color-primary: #547e52;
     --color-primary-strong: #40613f;
     --color-secondary: #243119;
@@ -252,7 +252,7 @@
 
   .role-administrador,
   body[data-role="administrador"] {
-    --sombra-alfa: 1.13;
+    --sombra-alfa: 1.55;
     --color-primary: #a8606b;
     --color-primary-strong: #83414d;
     --color-secondary: #6b2732;
@@ -280,11 +280,11 @@
     --color-seguimiento-soft: var(--color-primary-soft);
     --color-seguimiento-borde: color-mix(in srgb, var(--color-primary-strong) 30%, white);
     --color-seguimiento-claro: color-mix(in srgb, var(--color-primary-strong) 55%, white);
-    --shadow-reposo: 0 2px 5px 0 color-mix(in srgb, var(--color-secondary) calc(7% * var(--sombra-alfa)), transparent), 0 10px 30px -4px color-mix(in srgb, var(--color-secondary) calc(12% * var(--sombra-alfa)), transparent);
-    --shadow-flotante: 0 24px 64px color-mix(in srgb, var(--color-secondary) calc(14% * var(--sombra-alfa)), transparent), 0 2px 8px color-mix(in srgb, var(--color-secondary) calc(8% * var(--sombra-alfa)), transparent);
-    --shadow-boton: 0 1px 2px color-mix(in srgb, var(--color-secondary) calc(8% * var(--sombra-alfa)), transparent), 0 4px 10px -2px color-mix(in srgb, var(--color-secondary) calc(10% * var(--sombra-alfa)), transparent);
-    --shadow-boton-hover: 0 1px 2px color-mix(in srgb, var(--color-secondary) calc(10% * var(--sombra-alfa)), transparent), 0 6px 14px -2px color-mix(in srgb, var(--color-secondary) calc(14% * var(--sombra-alfa)), transparent);
-    --shadow-boton-activo: 0 1px 1px color-mix(in srgb, var(--color-secondary) calc(8% * var(--sombra-alfa)), transparent);
+    --shadow-reposo: 0 2px 5px 0 color-mix(in srgb, var(--color-primary) calc(7% * var(--sombra-alfa)), transparent), 0 10px 30px -4px color-mix(in srgb, var(--color-primary) calc(12% * var(--sombra-alfa)), transparent);
+    --shadow-flotante: 0 24px 64px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent), 0 2px 8px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
+    --shadow-boton: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent), 0 4px 10px -2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent);
+    --shadow-boton-hover: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent), 0 6px 14px -2px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent);
+    --shadow-boton-activo: 0 1px 1px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
     --tf-shadow-card: var(--shadow-reposo);
   }
 

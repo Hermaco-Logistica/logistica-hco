@@ -9,7 +9,7 @@ Una superficie se separa del fondo **solo con una sombra difuminada**, sin conto
 se eliminó.
 
 ## 2. Tokens (`src/styles/tokens.css`)
-Las sombras llevan el tono oscuro del rol (`--color-secondary`) escalado por `--sombra-alfa` (por rol, iguala el peso visual). Se declaran en el
+Las sombras llevan el color de marca del rol (`--color-primary`; con el tono oscuro del menú el tinte no se distinguía de una sombra negra) escalado por `--sombra-alfa` (por rol, iguala el peso visual). Se declaran en el
 bloque `@theme inline` y se redeclaran en "Derivados por ámbito" (`:root, .role-*, body[data-role]`): en `:root` solas no seguirían al rol.
 
 | Token | Uso | Forma |
@@ -17,11 +17,11 @@ bloque `@theme inline` y se redeclaran en "Derivados por ámbito" (`:root, .role
 | `--shadow-reposo` | tarjetas, paneles, tablas en tarjeta, avisos | `0 2px 5px 0 (7 %)`, `0 10px 30px -4px (12 %)` |
 | `--shadow-flotante` | modales, menús, popovers, tooltips | `0 24px 64px (14 %)`, `0 2px 8px (8 %)` (capa de contacto) |
 | `--shadow-boton`, `-hover`, `-activo` | botones | `0 1px 2px (8 %)` + `0 4px 10px -2px (10 %)`; hover 10 % y 14 % con `0 6px 14px -2px`; activo `0 1px 1px (8 %)` |
-| `--sombra-alfa` | multiplicador por rol | sin rol 1, comprador 1.08, vendedor 0.95, gerente 1.1, administrador 1.13 |
+| `--sombra-alfa` | multiplicador por rol | sin rol 1.08, comprador 0.72, vendedor 1.45, gerente 1.56, administrador 1.55 |
 
 `--tf-shadow-card` es alias de `--shadow-reposo` (se declara también por ámbito). `--tf-shadow-panel` y `--detalle-shadow-float` no se usan y no son equivalentes: se dejaron como estaban.
 
-Medido en Chrome (tarjeta blanca de 160×80 sobre el fondo de cada rol): ΔE al lado izquierdo 5.7 a 6.1 y debajo 9.9 a 10.3.
+Medido en Chrome (tarjeta blanca de 160×80 sobre el fondo de cada rol): ΔE al lado izquierdo 5.5 a 6.2 y debajo 10.2 a 10.5; el tono de la sombra se distingue de una negra equivalente en ΔE 4.3 a 10.
 
 ## 3. Utilidades y componente
 - `@utility surface` (`index.css`): fondo `--color-surface`, `--radius-card` (24 px) y `--shadow-reposo`, sin borde.
