@@ -14,6 +14,7 @@
     "db:push-dhl": "node scripts/push_to_firebase.js",
     "build": "vite build",
     "lint": "eslint .",
+    "check:colores": "node scripts/check-colores.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
