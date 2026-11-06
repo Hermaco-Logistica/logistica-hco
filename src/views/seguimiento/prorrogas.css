@@ -547,10 +547,9 @@
 
 /* ── Tarjetas Móviles (< 768px) ───────────────────────────────────────────── */
 .prorrogas-mobile-card {
-  border: 1px solid var(--detalle-border);
   border-radius: 16px;
   background: var(--detalle-surface);
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  box-shadow: var(--shadow-reposo);
   padding: 16px;
   display: flex;
   flex-direction: column;

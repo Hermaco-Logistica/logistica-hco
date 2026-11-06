@@ -6,7 +6,7 @@
   ],
   "totales": {
     "clases": 998,
-    "literales": 90
+    "literales": 87
   },
   "archivos": {
     "src/App.jsx": {
@@ -87,7 +87,7 @@
     },
     "src/components/seguimiento/seguimiento.css": {
       "clases": 0,
-      "literales": 8
+      "literales": 7
     },
     "src/components/ui/Toast.jsx": {
       "clases": 16,
@@ -199,7 +199,7 @@
     },
     "src/views/seguimiento/prorrogas.css": {
       "clases": 0,
-      "literales": 4
+      "literales": 2
     },
     "src/views/vendedor/DashboardVendedor.jsx": {
       "clases": 35,

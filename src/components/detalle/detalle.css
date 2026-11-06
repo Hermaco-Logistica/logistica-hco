@@ -14,7 +14,7 @@
   gap: 8px;
   min-height: 40px;
   padding: 8px 14px;
-  border: 1px solid var(--detalle-border);
+  box-shadow: var(--shadow-reposo);
   border-radius: var(--detalle-radius-inner);
   background: var(--detalle-surface-muted);
   color: var(--detalle-text-muted);
@@ -28,7 +28,7 @@
   --decision-tone: var(--detalle-accent-info);
   --decision-tone-bg: var(--detalle-bg-info);
   overflow: hidden;
-  border: 1px solid var(--detalle-border);
+  box-shadow: var(--shadow-reposo);
   border-radius: var(--detalle-radius-card);
   background: var(--detalle-surface);
 }
