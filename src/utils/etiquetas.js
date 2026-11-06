@@ -49,6 +49,7 @@ export const TONOS = {
   peligro: 'bg-tag-peligro-soft text-tag-peligro',
   naranja: 'bg-tag-naranja-soft text-tag-naranja',
   violeta: 'bg-tag-violeta-soft text-tag-violeta',
+  seguimiento: 'bg-seguimiento text-seguimiento-soft',
   morado: 'bg-tag-morado-soft text-tag-morado',
   turquesa: 'bg-tag-turquesa-soft text-tag-turquesa',
   amarillo: 'bg-tag-amarillo-soft text-tag-amarillo'
@@ -68,6 +69,7 @@ export const TEXTO_TONO = {
   peligro: 'text-tag-peligro-text',
   naranja: 'text-tag-naranja',
   violeta: 'text-tag-violeta',
+  seguimiento: 'text-seguimiento',
   morado: 'text-tag-morado',
   turquesa: 'text-tag-turquesa-text',
   amarillo: 'text-tag-amarillo'

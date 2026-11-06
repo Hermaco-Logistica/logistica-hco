@@ -120,6 +120,15 @@
   --color-tag-amarillo-soft: var(--color-yellow-100);
   /* "oscuro" no tiene -soft: su fondo sigue siendo bg-slate-800 porque index.css lo remapea por rol (.role-* .bg-slate-800). */
 
+  /* Color único de "en seguimiento" (estado general de seguimiento de cliente; no depende del rol). Se define por color, no por
+     función. La urgencia de cada fase (vencida, cierre requerido...) NO usa este color: sigue en los tonos peligro/info/aviso.
+     borde = seguimiento al 30 % sobre blanco; claro = extremo claro del degradado de la barra del KPI (el otro extremo es el color).
+     Utilidades: bg-seguimiento, text-seguimiento, bg-seguimiento-soft, border-seguimiento/30, from-seguimiento-claro. */
+  --color-seguimiento: #72467c;
+  --color-seguimiento-soft: #e2d8e4;
+  --color-seguimiento-borde: color-mix(in oklab, var(--color-seguimiento) 30%, white);
+  --color-seguimiento-claro: color-mix(in oklab, var(--color-seguimiento) 55%, white);
+
   /* Navegación por rol (Sidebar, tab bar móvil, roleColors.js) y Análisis (theme.js). Valores sin rol = comprador.
      Apuntan a la paleta v4 de Tailwind (valor exacto de las clases que reemplazan). Cada rol los sobrescribe abajo. */
   --color-nav-accent: var(--color-blue-500);          /* Sidebar: ítem activo */
