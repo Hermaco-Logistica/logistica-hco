@@ -22,6 +22,7 @@ const ESTADOS = {
   plazo_vencido:          { label: 'Plazo vencido' },
   cierre_requerido:       { label: 'Cierre requerido' },
   seguimiento_requerido:  { label: 'Seg. requerido' },
+  seguimiento:            { label: 'Seguimiento' },
   prorroga_disponible:    { label: 'Prórroga disponible' },
 
   // Genéricos

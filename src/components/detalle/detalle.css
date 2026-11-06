@@ -172,6 +172,11 @@
   color: var(--color-info);
   background: var(--color-info-soft);
 }
+/* seguimiento: estado general "en seguimiento" (color único de seguimiento; la urgencia sigue en danger/warning/info) */
+.detalle-status[data-status='seguimiento'] {
+  color: var(--color-seguimiento);
+  background: var(--color-seguimiento-soft);
+}
 /* warning-parcial */
 .detalle-status[data-status='parcial'] {
   color: var(--color-warning);
