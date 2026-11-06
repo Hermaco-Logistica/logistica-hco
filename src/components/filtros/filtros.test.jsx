@@ -1,13 +1,25 @@
 // @vitest-environment jsdom
 import React from 'react';
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import {
-  BarraFiltros, BotonExportar, FiltroFechaCampo, FiltroFechasContenedor, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroConmutador, FiltroPestanas, FiltroSegmentado, FiltroSelect
+  BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroConmutador, FiltroFechaCampo, FiltroFechasContenedor,
+  FiltroPestanas, FiltroSegmentado, FiltroSelect
 } from './index';
 import { BotonSeguimiento } from '../../views/analisis/components/FiltroSeguimiento';
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
+
+const mm = (matches) => { window.matchMedia = () => ({ matches, addEventListener() {}, removeEventListener() {} }); };
+const OPC = ['Cotizado', 'Pedido', 'Pedido Parcial', { value: 'perdida', label: 'Venta perdida' }];
+const teclear = (el, key, extra = {}) => fireEvent.keyDown(el, { key, ...extra });
+const montarSelect = (props = {}) => {
+  const onChange = props.onChange || vi.fn();
+  const r = render(<FiltroSelect value="" onChange={onChange} opciones={OPC} prefijo="Estado:" ariaLabel="Filtrar por estado" {...props} />);
+  return { onChange, ...r, boton: screen.getByRole('combobox', { name: 'Filtrar por estado' }) };
+};
+const lista = () => screen.queryByRole('listbox');
 
 describe('FiltroBusqueda', () => {
   it('muestra el valor, nombra el campo con aria-label y devuelve el texto (no el evento)', () => {
@@ -18,19 +30,177 @@ describe('FiltroBusqueda', () => {
     fireEvent.change(campo, { target: { value: 'xyz' } });
     expect(onChange).toHaveBeenCalledWith('xyz');
   });
+  it('con texto usa el estado seleccionado (bg-filtro-activo, texto primary-strong); vacío, no', () => {
+    const { container, rerender } = render(<FiltroBusqueda value="" onChange={() => {}} />);
+    expect(container.firstChild.className).not.toContain('bg-filtro-activo');
+    rerender(<FiltroBusqueda value="bomba" onChange={() => {}} />);
+    expect(container.firstChild.className).toContain('bg-filtro-activo');
+    expect(container.querySelector('input').className).toContain('text-filtro-texto');
+  });
 });
 
-describe('FiltroSelect', () => {
-  const opciones = ['Cotizado', { value: 'Pedido', label: 'Pedido ganado' }];
-  it('conserva el <select> nativo, antepone la opción "todos" y devuelve el valor', () => {
-    const onChange = vi.fn();
-    const { container } = render(<FiltroSelect value="" onChange={onChange} opciones={opciones} prefijo="Estado:" ariaLabel="Filtrar por estado" />);
-    const sel = screen.getByRole('combobox', { name: 'Filtrar por estado' });
-    expect(sel.tagName).toBe('SELECT');
-    expect([...sel.options].map((o) => o.textContent)).toEqual(['Todos', 'Cotizado', 'Pedido ganado']);
+describe('FiltroSelect: select-only combobox', () => {
+  it('ARIA: role combobox, aria-haspopup, aria-expanded, aria-controls y aria-label; no hay <select> nativo', () => {
+    const { boton, container } = montarSelect();
+    expect(container.querySelector('select')).toBeNull();
+    expect(boton.getAttribute('aria-haspopup')).toBe('listbox');
+    expect(boton.getAttribute('aria-expanded')).toBe('false');
+    expect(boton.getAttribute('aria-controls')).toBeTruthy();
+    expect(boton.getAttribute('aria-activedescendant')).toBeNull();
     expect(container.textContent).toContain('Estado:');
-    fireEvent.change(sel, { target: { value: 'Pedido' } });
-    expect(onChange).toHaveBeenCalledWith('Pedido');
+    expect(container.textContent).toContain('Todos');
+  });
+  it('al abrir: listbox en un portal a body, opciones con aria-selected, "Todos" primero y aria-activedescendant en la activa', () => {
+    const { boton, container } = montarSelect({ value: 'Pedido' });
+    fireEvent.click(boton);
+    const l = lista();
+    expect(l).toBeTruthy();
+    expect(container.contains(l)).toBe(false);
+    expect(document.body.contains(l)).toBe(true);
+    expect(boton.getAttribute('aria-expanded')).toBe('true');
+    expect(boton.getAttribute('aria-controls')).toBe(l.id);
+    const ops = within(l).getAllByRole('option');
+    expect(ops.map((o) => o.textContent)).toEqual(['Todos', 'Cotizado', 'Pedido', 'Pedido Parcial', 'Venta perdida']);
+    expect(ops.map((o) => o.getAttribute('aria-selected'))).toEqual(['false', 'false', 'true', 'false', 'false']);
+    expect(boton.getAttribute('aria-activedescendant')).toBe(ops[2].id);
+  });
+  it('clic en una opción: onChange(valor) (no el evento), cierra y devuelve el foco al botón', () => {
+    vi.useFakeTimers();
+    const { boton, onChange } = montarSelect();
+    fireEvent.click(boton);
+    fireEvent.click(screen.getByRole('option', { name: 'Venta perdida' }));
+    expect(onChange).toHaveBeenCalledWith('perdida');
+    expect(boton.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(boton);
+    act(() => { vi.advanceTimersByTime(200); });
+    expect(lista()).toBeNull();
+  });
+  it('teclado cerrado: ↓ abre en la opción elegida; ↑, Enter y Espacio también abren', () => {
+    for (const k of ['ArrowDown', 'ArrowUp', 'Enter', ' ']) {
+      const { boton, unmount } = montarSelect({ value: 'Pedido' });
+      teclear(boton, k);
+      expect(boton.getAttribute('aria-expanded')).toBe('true');
+      expect(screen.getAllByRole('option')[2].id).toBe(boton.getAttribute('aria-activedescendant'));
+      unmount();
+      cleanup();
+    }
+  });
+  it('teclado abierto: flechas, Inicio, Fin, Enter elige; la activa se anuncia con aria-activedescendant', () => {
+    const { boton, onChange } = montarSelect();
+    teclear(boton, 'ArrowDown');
+    const id = (i) => screen.getAllByRole('option')[i].id;
+    expect(boton.getAttribute('aria-activedescendant')).toBe(id(0));
+    teclear(boton, 'ArrowDown'); teclear(boton, 'ArrowDown');
+    expect(boton.getAttribute('aria-activedescendant')).toBe(id(2));
+    teclear(boton, 'ArrowUp');
+    expect(boton.getAttribute('aria-activedescendant')).toBe(id(1));
+    teclear(boton, 'End');
+    expect(boton.getAttribute('aria-activedescendant')).toBe(id(4));
+    teclear(boton, 'ArrowDown');
+    expect(boton.getAttribute('aria-activedescendant')).toBe(id(4));
+    teclear(boton, 'Home');
+    expect(boton.getAttribute('aria-activedescendant')).toBe(id(0));
+    teclear(boton, 'ArrowDown'); teclear(boton, 'Enter');
+    expect(onChange).toHaveBeenCalledWith('Cotizado');
+    expect(boton.getAttribute('aria-expanded')).toBe('false');
+  });
+  it('Espacio elige la opción activa; Escape cierra sin cambiar y no llega al documento; Tab cierra', () => {
+    const { boton, onChange } = montarSelect();
+    teclear(boton, 'ArrowDown'); teclear(boton, 'ArrowDown'); teclear(boton, ' ');
+    expect(onChange).toHaveBeenCalledWith('Cotizado');
+    onChange.mockClear();
+    const enDocumento = vi.fn();
+    document.addEventListener('keydown', enDocumento);
+    teclear(boton, 'ArrowDown');
+    teclear(boton, 'Escape');
+    document.removeEventListener('keydown', enDocumento);
+    expect(boton.getAttribute('aria-expanded')).toBe('false');
+    expect(onChange).not.toHaveBeenCalled();
+    expect(enDocumento.mock.calls.filter(([e]) => e.key === 'Escape')).toHaveLength(0);
+    teclear(boton, 'ArrowDown');
+    teclear(boton, 'Tab');
+    expect(boton.getAttribute('aria-expanded')).toBe('false');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+  it('typeahead: escribir letras salta a la opción; el texto se reinicia a los 500 ms; repetir la letra recorre las que empiezan igual', () => {
+    vi.useFakeTimers();
+    const { boton } = montarSelect();
+    const ops = () => screen.getAllByRole('option');
+    teclear(boton, 'ArrowDown');
+    teclear(boton, 'p');
+    expect(boton.getAttribute('aria-activedescendant')).toBe(ops()[2].id);
+    teclear(boton, 'e'); teclear(boton, 'd'); teclear(boton, 'i'); teclear(boton, 'd'); teclear(boton, 'o'); teclear(boton, ' ');
+    teclear(boton, 'p');
+    expect(boton.getAttribute('aria-expanded')).toBe('true');
+    expect(boton.getAttribute('aria-activedescendant')).toBe(ops()[3].id);
+    act(() => { vi.advanceTimersByTime(600); });
+    teclear(boton, 'v');
+    expect(boton.getAttribute('aria-activedescendant')).toBe(ops()[4].id);
+    act(() => { vi.advanceTimersByTime(600); });
+    teclear(boton, 'c');
+    expect(boton.getAttribute('aria-activedescendant')).toBe(ops()[1].id);
+  });
+  it('cerrado, escribir una letra abre y salta a la opción', () => {
+    const { boton } = montarSelect();
+    teclear(boton, 'v');
+    expect(boton.getAttribute('aria-expanded')).toBe('true');
+    expect(boton.getAttribute('aria-activedescendant')).toBe(screen.getAllByRole('option')[4].id);
+  });
+  it('el clic fuera cierra; el clic dentro del campo o de la lista no', () => {
+    vi.useFakeTimers();
+    const { boton } = montarSelect();
+    fireEvent.click(boton);
+    fireEvent.mouseDown(lista());
+    expect(boton.getAttribute('aria-expanded')).toBe('true');
+    fireEvent.mouseDown(document.body);
+    expect(boton.getAttribute('aria-expanded')).toBe('false');
+    act(() => { vi.advanceTimersByTime(200); });
+    expect(lista()).toBeNull();
+  });
+  it('flip: si no cabe debajo y arriba hay más sitio, se abre hacia arriba y el campo pierde el radio superior', () => {
+    const alto = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollHeight');
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', { configurable: true, get: () => 200 });
+    const innerHeight = window.innerHeight;
+    window.innerHeight = 300;
+    const { boton, container } = montarSelect();
+    const campo = container.querySelector('[data-filtro-select]');
+    campo.getBoundingClientRect = () => ({ top: 250, bottom: 286, left: 10, right: 170, width: 160, height: 36 });
+    fireEvent.click(boton);
+    expect(document.querySelector('[data-menu-anclado]').dataset.dir).toBe('arriba');
+    expect(campo.className).toContain('rounded-t-none');
+    window.innerHeight = innerHeight;
+    if (alto) Object.defineProperty(HTMLElement.prototype, 'scrollHeight', alto); else delete HTMLElement.prototype.scrollHeight;
+  });
+  it('abajo (hay sitio): el campo pierde el radio inferior mientras está abierto y se lee como una pieza con el menú', () => {
+    const { boton, container } = montarSelect();
+    const campo = container.querySelector('[data-filtro-select]');
+    expect(campo.className).not.toContain('rounded-b-none');
+    fireEvent.click(boton);
+    expect(document.querySelector('[data-menu-anclado]').dataset.dir).toBe('abajo');
+    expect(campo.className).toContain('rounded-b-none');
+    expect(campo.className).toContain('bg-surface');
+  });
+  it('estado seleccionado: con valor, bg-filtro-activo y texto primary-strong; "Todos" no se pinta como selección (sin check ni color)', () => {
+    const { container, rerender, boton } = montarSelect();
+    expect(container.querySelector('[data-filtro-select]').className).not.toContain('bg-filtro-activo');
+    fireEvent.click(boton);
+    const todos = screen.getAllByRole('option')[0];
+    expect(todos.getAttribute('aria-selected')).toBe('true');
+    expect(todos.className).not.toContain('text-filtro-texto');
+    expect(todos.querySelector('svg')).toBeNull();
+    fireEvent.keyDown(boton, { key: 'Escape' });
+    rerender(<FiltroSelect value="Pedido" onChange={() => {}} opciones={OPC} prefijo="Estado:" ariaLabel="Filtrar por estado" />);
+    expect(container.querySelector('[data-filtro-select]').className).toContain('bg-filtro-activo');
+    fireEvent.click(screen.getByRole('combobox'));
+    const sel = screen.getAllByRole('option')[2];
+    expect(sel.className).toMatch(/bg-(primary-soft|filtro-activo)/);
+    expect(sel.className).toContain('text-filtro-texto');
+    expect(sel.querySelector('svg')).toBeTruthy();
+  });
+  it('con valor elegido apila el prefijo (línea pequeña); el aria-label no cambia', () => {
+    const { container } = montarSelect({ value: 'Pedido Parcial' });
+    expect(container.querySelector('span.absolute').textContent).toBe('Estado');
+    expect(screen.getByRole('combobox', { name: 'Filtrar por estado' })).toBeTruthy();
   });
   it('sin aria-label usa el prefijo como nombre accesible', () => {
     render(<FiltroSelect value="" onChange={() => {}} opciones={[]} prefijo="Vendedor:" />);
@@ -46,6 +216,13 @@ describe('FiltroSegmentado', () => {
     expect(screen.getByRole('button', { name: 'Todas' }).getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(screen.getByRole('button', { name: 'Propias' }));
     expect(onChange).toHaveBeenCalledWith('propias');
+  });
+  it('con valorNeutro, un valor distinto usa el estado seleccionado', () => {
+    const op = [{ value: '7d', label: '7D' }, { value: '30d', label: '30D' }];
+    const { container, rerender } = render(<FiltroSegmentado ariaLabel="P" value="7d" valorNeutro="7d" onChange={() => {}} opciones={op} />);
+    expect(container.firstChild.className).not.toContain('bg-filtro-activo');
+    rerender(<FiltroSegmentado ariaLabel="P" value="30d" valorNeutro="7d" onChange={() => {}} opciones={op} />);
+    expect(container.firstChild.className).toContain('bg-filtro-activo');
   });
 });
 
@@ -75,11 +252,11 @@ describe('FiltroConmutador y BotonSeguimiento', () => {
     fireEvent.click(b);
     expect(onChange).toHaveBeenCalledWith(true);
   });
-  it('activo usa el color del rol (primary-strong con texto primary-soft), no slate-900', () => {
+  it('activo usa el estado seleccionado del rol (bg-filtro-activo, texto primary-strong), no slate-900', () => {
     render(<FiltroConmutador activo onChange={() => {}} etiqueta="X" />);
     const c = screen.getByRole('button', { name: 'X' }).className;
-    expect(c).toContain('bg-primary-strong');
-    expect(c).toContain('text-primary-soft');
+    expect(c).toContain('bg-filtro-activo');
+    expect(c).toContain('text-filtro-texto');
     expect(c).not.toContain('slate-900');
   });
   it('BotonSeguimiento conserva su API (activo, onChange) y su texto', () => {
@@ -124,7 +301,6 @@ describe('ContadorResultados y BotonExportar', () => {
   });
 });
 
-const mm = (matches) => { window.matchMedia = () => ({ matches, addEventListener() {}, removeEventListener() {} }); };
 const montarBarra = (props = {}) => render(
   <BarraFiltros
     encabezado={<h2>Solicitudes</h2>}
@@ -133,7 +309,7 @@ const montarBarra = (props = {}) => render(
       <FiltroSelect value="" onChange={() => {}} opciones={['Cotizado']} prefijo="Estado:" ariaLabel="estado" />
       <FiltroConmutador activo={false} onChange={() => {}} etiqueta="En seguimiento" />
     </>}
-    limpiar={<BotonLimpiar activos={2} onClick={props.onLimpiar || (() => {})} />}
+    limpiar={<BotonLimpiar activos={props.activos ?? 2} onClick={props.onLimpiar || (() => {})} />}
     extremo={<span>20 resultados</span>}
     filtrosActivos={2}
     resultados={12}
@@ -142,23 +318,29 @@ const montarBarra = (props = {}) => render(
 );
 
 describe('BarraFiltros en escritorio', () => {
-  it('es una superficie (surface, sin borde) y ordena los slots: encabezado, búsqueda, filtros y, al final, limpiar + extremo', () => {
+  it('es una superficie (surface, sin borde) con rejilla; el bloque limpiar + extremo es el último hijo y está siempre reservado', () => {
     mm(false);
-    const { container } = montarBarra();
+    const { container, rerender } = montarBarra();
     const seccion = container.querySelector('section');
     expect(seccion.className).toContain('surface');
     expect(seccion.className).not.toMatch(/(^|\s)border(\s|$)/);
     const hijos = [...seccion.children];
     expect(hijos[0].textContent).toBe('Solicitudes');
-    const fila = hijos[1];
-    expect(fila.children[0].querySelector('input')).toBeTruthy();
-    expect(fila.children[1].querySelector('select')).toBeTruthy();
-    const ultimo = fila.lastElementChild;
-    expect(ultimo.className).toContain('ml-auto');
-    expect(ultimo.textContent).toContain('Limpiar filtros (2)');
-    expect(ultimo.textContent).toContain('20 resultados');
+    const rejilla = hijos[1];
+    expect(rejilla.className).toContain('grid');
+    expect(rejilla.children[0].getAttribute('data-span')).toBe('2');
+    expect(rejilla.children[0].querySelector('input')).toBeTruthy();
+    expect(rejilla.children[1].querySelector('button[role="combobox"]')).toBeTruthy();
+    const bloque = rejilla.lastElementChild;
+    expect(bloque.hasAttribute('data-bloque')).toBe(true);
+    expect(bloque.textContent).toContain('Limpiar filtros (2)');
+    expect(bloque.textContent).toContain('20 resultados');
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(screen.queryByText(/^Filtros/)).toBeNull();
+    rerender(
+      <BarraFiltros busqueda={<FiltroBusqueda value="" onChange={() => {}} />} limpiar={<BotonLimpiar activos={0} onClick={() => {}} />} extremo={<span>20 resultados</span>} />
+    );
+    expect(container.querySelector('[data-bloque]')).toBeTruthy();
+    expect(container.querySelector('[data-bloque]').textContent).toBe('20 resultados');
   });
   it('un solo marcado: cada control aparece una vez', () => {
     mm(false);
@@ -201,7 +383,7 @@ describe('BarraFiltros en móvil: hoja inferior', () => {
     const d = screen.getByRole('dialog');
     expect(d.querySelector('input[type="search"]')).toBeTruthy();
     expect(d.textContent).toContain('Estado');
-    expect(d.querySelector('select[aria-label="estado"]')).toBeTruthy();
+    expect(d.querySelector('button[role="combobox"][aria-label="estado"]')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Limpiar filtros (2 activos)' }).textContent).toBe('Limpiar (2)');
     expect(screen.getByRole('button', { name: 'Ver 12 resultados' })).toBeTruthy();
   });
@@ -234,62 +416,123 @@ describe('BarraFiltros en móvil: hoja inferior', () => {
     fireEvent.mouseDown(fondo); fireEvent.click(fondo);
     expect(cerrado()).toBe(true);
     expect(document.body.style.overflow).toBe('');
-    vi.useRealTimers();
   });
   it('atrapa el foco: Tab en el último elemento vuelve al primero y Shift+Tab en el primero va al último', () => {
     mm(true);
     montarBarra();
     fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
     const d = screen.getByRole('dialog');
-    const foco = [...d.querySelectorAll('button, select, input')];
+    const foco = [...d.querySelectorAll('button, input')].filter((el) => !el.closest('[inert]'));
     foco[foco.length - 1].focus();
     fireEvent.keyDown(document, { key: 'Tab' });
     expect(document.activeElement).toBe(foco[0]);
     fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
     expect(document.activeElement).toBe(foco[foco.length - 1]);
   });
-  it('"Limpiar (N)" llama a la acción de la vista (la hoja no guarda estado propio) y la selección se aplica al instante', () => {
+  it('"Limpiar (N)" llama a la acción de la vista (la hoja no guarda estado propio)', () => {
     mm(true);
     const onLimpiar = vi.fn();
-    const onChange = vi.fn();
-    montarBarra({ onLimpiar, filtros: <FiltroSelect value="" onChange={onChange} opciones={['Cotizado']} prefijo="Estado:" ariaLabel="estado" /> });
+    montarBarra({ onLimpiar });
     fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
-    fireEvent.change(screen.getByLabelText('estado'), { target: { value: 'Cotizado' } });
-    expect(onChange).toHaveBeenCalledWith('Cotizado');
     fireEvent.click(screen.getByRole('button', { name: 'Limpiar filtros (2 activos)' }));
     expect(onLimpiar).toHaveBeenCalledTimes(1);
   });
-  it('fila de fecha: el calendario se despliega en línea dentro de la hoja (sin portal ni segunda hoja)', () => {
-    mm(true);
-    const Fecha = () => {
-      const [ab, setAb] = React.useState(false);
-      return (
-        <div>
-          <FiltroFechaCampo texto="1 nov – 30 nov" expandido={ab} onClick={() => setAb((v) => !v)} />
-          <FiltroFechasContenedor abierto={ab} onCerrar={() => setAb(false)}><button type="button">día 28</button></FiltroFechasContenedor>
-        </div>
-      );
-    };
-    montarBarra({ filtros: <Fecha /> });
-    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
-    const hoja = screen.getByRole('dialog');
-    const cont = hoja.querySelector('[data-fechas-contenedor]');
-    expect(cont.getAttribute('data-estado')).toBe('cerrado');
-    expect(cont.hasAttribute('inert')).toBe(true);
-    fireEvent.click(screen.getByRole('button', { name: /Fecha/ }));
-    expect(cont.getAttribute('data-estado')).toBe('abierto');
-    expect(cont.hasAttribute('inert')).toBe(false);
-    expect(hoja.contains(screen.getByRole('button', { name: 'día 28' }))).toBe(true);
-    expect(screen.getAllByRole('dialog')).toHaveLength(1);
-  });
 });
 
-describe('FiltroSelect con valor largo', () => {
-  it('con valor elegido apila el prefijo (línea pequeña) y conserva <select> y aria-label', () => {
-    const { container } = render(<FiltroSelect value="Carlos Rivera Hernández" onChange={() => {}} opciones={['Carlos Rivera Hernández']} prefijo="Vendedor:" ariaLabel="Filtrar por vendedor" />);
-    expect(screen.getByRole('combobox', { name: 'Filtrar por vendedor' }).tagName).toBe('SELECT');
-    const pref = container.querySelector('span[aria-hidden="true"].absolute');
-    expect(pref.textContent).toBe('Vendedor');
+describe('Acordeón de la hoja móvil', () => {
+  const Vista = ({ onEstado = () => {}, onResultado = () => {}, onFecha = () => {} }) => {
+    const [ab, setAb] = React.useState(false);
+    return (
+      <BarraFiltros
+        busqueda={<FiltroBusqueda value="" onChange={() => {}} ariaLabel="buscar" />}
+        filtros={<>
+          <FiltroSelect value="" onChange={onEstado} opciones={['Cotizado', 'Pedido']} prefijo="Estado:" ariaLabel="estado" />
+          <FiltroSelect value="Parcial" onChange={onResultado} opciones={['Parcial', 'Completo']} prefijo="Resultado:" ariaLabel="resultado" />
+          <FiltroSegmentado ariaLabel="Período" etiqueta="Período" value="7d" onChange={() => {}} opciones={[{ value: '7d', label: '7D' }, { value: '30d', label: '30D' }]} />
+          <FiltroSegmentado ariaLabel="Orden" etiqueta="Orden" value="a" onChange={() => {}} opciones={['a', 'b', 'c', 'd'].map((v) => ({ value: v, label: `Orden ${v}` }))} />
+          <div>
+            <FiltroFechaCampo texto="Elegir" activo={false} expandido={ab} onClick={() => { onFecha(!ab); setAb(!ab); }} />
+            <FiltroFechasContenedor abierto={ab} onCerrar={() => setAb(false)}><button type="button">día 28</button></FiltroFechasContenedor>
+          </div>
+        </>}
+        limpiar={<BotonLimpiar activos={0} onClick={() => {}} />}
+      />
+    );
+  };
+  const abrirHoja = () => { mm(true); const r = render(<Vista />); fireEvent.click(screen.getByRole('button', { name: /Filtros/ })); return r; };
+  const fila = (nombre) => screen.getByRole('combobox', { name: nombre });
+
+  it('las filas con opciones son combobox que se despliegan en línea con la misma lista (listbox dentro de la hoja)', () => {
+    abrirHoja();
+    const hoja = screen.getByRole('dialog');
+    expect(fila('estado').getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(fila('estado'));
+    expect(fila('estado').getAttribute('aria-expanded')).toBe('true');
+    const l = document.getElementById(fila('estado').getAttribute('aria-controls'));
+    expect(hoja.contains(l)).toBe(true);
+    expect(l.closest('.filtro-acordeon').getAttribute('data-abierto')).toBe('true');
+    expect(within(l).getAllByRole('option').map((o) => o.textContent)).toEqual(['Todos', 'Cotizado', 'Pedido']);
+  });
+  it('solo una fila abierta a la vez: abrir otra cierra la anterior', () => {
+    abrirHoja();
+    fireEvent.click(fila('estado'));
+    fireEvent.click(fila('resultado'));
+    expect(fila('estado').getAttribute('aria-expanded')).toBe('false');
+    expect(fila('resultado').getAttribute('aria-expanded')).toBe('true');
+    expect(document.querySelectorAll('.filtro-acordeon[data-abierto="true"]')).toHaveLength(1);
+  });
+  it('elegir una opción cierra el acordeón, llama a onChange(valor) y devuelve el foco a la fila', () => {
+    mm(true);
+    const onEstado = vi.fn();
+    render(<Vista onEstado={onEstado} />);
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    fireEvent.click(fila('estado'));
+    fireEvent.click(screen.getByRole('option', { name: 'Pedido' }));
+    expect(onEstado).toHaveBeenCalledWith('Pedido');
+    expect(fila('estado').getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(fila('estado'));
+  });
+  it('teclado en la fila: flechas y Enter eligen; Escape cierra el acordeón y NO cierra la hoja', () => {
+    mm(true);
+    const onEstado = vi.fn();
+    render(<Vista onEstado={onEstado} />);
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    const f = fila('estado');
+    teclear(f, 'ArrowDown'); teclear(f, 'ArrowDown'); teclear(f, 'Enter');
+    expect(onEstado).toHaveBeenCalledWith('Cotizado');
+    teclear(f, 'ArrowDown');
+    expect(f.getAttribute('aria-expanded')).toBe('true');
+    teclear(f, 'Escape');
+    expect(f.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByRole('dialog').getAttribute('data-saliendo')).toBe('false');
+  });
+  it('el calendario es una fila más del acordeón: abrirlo cierra la fila abierta y abrir una fila cierra el calendario', () => {
+    abrirHoja();
+    fireEvent.click(fila('estado'));
+    fireEvent.click(screen.getByRole('button', { name: /Elegir/ }));
+    expect(document.querySelector('[data-fechas-contenedor]').getAttribute('data-estado')).toBe('abierto');
+    expect(fila('estado').getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(fila('resultado'));
+    expect(document.querySelector('[data-fechas-contenedor]').getAttribute('data-estado')).toBe('cerrado');
+    expect(fila('resultado').getAttribute('aria-expanded')).toBe('true');
+    expect(document.querySelectorAll('.filtro-acordeon[data-abierto="true"]')).toHaveLength(1);
+  });
+  it('criterio del segmentado: con 3 opciones o menos sigue siendo una fila con botones; con más, un acordeón', () => {
+    abrirHoja();
+    expect(screen.getByRole('group', { name: 'Período' })).toBeTruthy();
+    expect(screen.queryByRole('combobox', { name: 'Período' })).toBeNull();
+    expect(fila('Orden')).toBeTruthy();
+    expect(screen.queryByRole('group', { name: 'Orden' })).toBeNull();
+  });
+  it('el estado seleccionado también tiñe la fila de la hoja', () => {
+    abrirHoja();
+    expect(fila('resultado').closest('[data-fila-acordeon]').className).toContain('bg-filtro-activo');
+    expect(fila('estado').closest('[data-fila-acordeon]').className).not.toContain('bg-filtro-activo');
+  });
+  it('las filas desplegadas heredan altura mínima de 44 px y el panel cerrado queda inert', () => {
+    abrirHoja();
+    expect(fila('estado').className).toContain('min-h-11');
+    expect(fila('estado').closest('[data-fila-acordeon]').querySelector('[data-acordeon-panel]').hasAttribute('inert')).toBe(true);
   });
 });
 
@@ -330,5 +573,30 @@ describe('FiltroFechasContenedor', () => {
     fireEvent.mouseDown(screen.getByRole('button', { name: 'día 28' }));
     document.removeEventListener('mousedown', fuera);
     expect(fuera).not.toHaveBeenCalled();
+  });
+});
+
+describe('Tokens de animación (una sola fuente)', () => {
+  const tokens = readFileSync('src/styles/tokens.css', 'utf8');
+  const css = readFileSync('src/index.css', 'utf8');
+  it('tokens.css define abrir, cerrar y las de la hoja', () => {
+    expect(tokens).toMatch(/--anim-abrir:\s*220ms/);
+    expect(tokens).toMatch(/--ease-abrir:\s*cubic-bezier\(0\.2, 0\.8, 0\.2, 1\)/);
+    expect(tokens).toMatch(/--anim-cerrar:\s*140ms/);
+    expect(tokens).toMatch(/--ease-cerrar:\s*cubic-bezier\(0\.4, 0, 1, 1\)/);
+    expect(tokens).toMatch(/--anim-hoja-abrir:\s*280ms/);
+    expect(tokens).toMatch(/--anim-hoja-cerrar:\s*200ms/);
+  });
+  it('la hoja, el desplegable y el acordeón usan los tokens (sin duraciones propias) y el movimiento reducido es un fundido', () => {
+    expect(css).toMatch(/hoja-inferior-in var\(--anim-hoja-abrir\) var\(--ease-abrir\)/);
+    expect(css).toMatch(/hoja-inferior-out var\(--anim-hoja-cerrar\) var\(--ease-cerrar\)/);
+    expect(css).toMatch(/\.menu-anclado \{[^}]*menu-abrir-abajo var\(--anim-abrir\) var\(--ease-abrir\)/);
+    expect(css).toMatch(/menu-cerrar-abajo var\(--anim-cerrar\) var\(--ease-cerrar\)/);
+    expect(css).toMatch(/\.filtro-acordeon \{[^}]*grid-template-rows var\(--anim-cerrar\) var\(--ease-cerrar\)/);
+    expect(css).toMatch(/filtros-fundido-in 0\.12s/);
+  });
+  it('--color-filtro-activo se declara en el bloque inline y en el de derivados por ámbito (sigue al rol)', () => {
+    expect(tokens.match(/--color-filtro-activo:/g)).toHaveLength(2);
+    expect(tokens.match(/--color-filtro-texto:/g)).toHaveLength(2);
   });
 });

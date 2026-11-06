@@ -1,9 +1,11 @@
 import React from 'react';
+import { claseCampo, claseFila } from './estilosCampo';
 import { useModoFiltro } from './contexto';
 
 /**
  * Conmutador de un filtro (activo / inactivo). `onChange(nuevoValor)`. El texto del botón es el nombre.
- * Activo usa el color del rol. En la hoja móvil es una fila con interruptor a la derecha.
+ * Activo usa el estado "seleccionado" (fondo --color-filtro-activo, texto primary-strong). En la hoja móvil es una fila con
+ * interruptor a la derecha (la pista activa va en primary-strong).
  */
 export const FiltroConmutador = ({ activo, onChange, etiqueta, titulo, ariaLabel, className = '' }) => {
   const enHoja = useModoFiltro() === 'hoja';
@@ -15,7 +17,7 @@ export const FiltroConmutador = ({ activo, onChange, etiqueta, titulo, ariaLabel
         aria-label={ariaLabel}
         title={titulo}
         onClick={() => onChange(!activo)}
-        className={`flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 px-4 text-left text-sm font-medium text-slate-700 outline-none focus-visible:bg-surface-muted ${className}`}
+        className={`flex min-h-11 w-full cursor-pointer items-center justify-between gap-3 px-4 text-left text-sm font-medium outline-none focus-visible:bg-surface-muted ${claseFila(activo)} ${activo ? 'text-filtro-texto' : 'text-slate-700'} ${className}`}
       >
         <span>{etiqueta}</span>
         <span aria-hidden="true" className={`flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition-colors ${activo ? 'bg-primary-strong' : 'bg-slate-300'}`}>
@@ -31,7 +33,7 @@ export const FiltroConmutador = ({ activo, onChange, etiqueta, titulo, ariaLabel
       aria-label={ariaLabel}
       title={titulo}
       onClick={() => onChange(!activo)}
-      className={`h-11 cursor-pointer whitespace-nowrap rounded-xl border px-3 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary md:h-9 ${activo ? 'border-primary-strong bg-primary-strong text-primary-soft' : 'border-border bg-surface-muted text-slate-700 hover:bg-surface'} ${className}`}
+      className={`${claseCampo({ seleccionado: activo })} w-full cursor-pointer justify-center whitespace-nowrap px-3 outline-none ${className}`}
     >
       {etiqueta}
     </button>

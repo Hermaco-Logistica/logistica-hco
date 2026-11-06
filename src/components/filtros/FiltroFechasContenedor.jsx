@@ -1,13 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
-import { useModoFiltro, useMovil } from './contexto';
+import { centrarEnCuerpo } from './centrarEnCuerpo';
+import { useFilaAcordeon, useModoFiltro, useMovil } from './contexto';
 
 /**
  * Contenedor del calendario emergente de fechas. No contiene lógica de rango: los hijos son el calendario existente (cabecera de mes
  * + cuadrícula de días). La vista conserva su disparador, su estado `abierto` y su `relative` en escritorio.
- *   - dentro de la hoja móvil de BarraFiltros: en línea bajo la fila "Fecha", con altura animada (grid-template-rows 0fr → 1fr);
- *     cerrado queda `inert` y oculto a lectores de pantalla.
+ *   - dentro de la hoja móvil de BarraFiltros: acordeón en línea bajo la fila "Fecha" (clase .filtro-acordeon, mismos tokens de
+ *     animación que las filas de opciones). Es una fila más del acordeón: solo una abierta a la vez (si se abre un select se cierra
+ *     el calendario llamando a `onCerrar`) y, al abrir, el cuerpo de la hoja la centra. Cerrado queda `inert` y `aria-hidden`.
  *   - escritorio (≥ md): desplegable absoluto bajo el disparador (`surface-flotante`, `right-0`, `w-72`).
  *   - móvil fuera de BarraFiltros: hoja inferior en un portal a <body> (fuera del contexto de apilamiento de <main>, que dejaba el
  *     calendario detrás del BottomDock), con fondo oscurecido, botón de cerrar y `surface-flotante`, apoyada sobre el dock
@@ -17,6 +19,11 @@ import { useModoFiltro, useMovil } from './contexto';
 export const FiltroFechasContenedor = ({ abierto, onCerrar, titulo = 'Filtrar por fecha', children }) => {
   const enHoja = useModoFiltro() === 'hoja';
   const movil = useMovil();
+  const fila = useFilaAcordeon();
+  const contenedorRef = useRef(null);
+  const ultimo = useRef({ abierto, onCerrar });
+  useEffect(() => { ultimo.current = { abierto, onCerrar }; });
+
   useEffect(() => {
     if (!abierto || enHoja) return undefined;
     const alTeclear = (e) => { if (e.key === 'Escape') onCerrar(); };
@@ -24,9 +31,22 @@ export const FiltroFechasContenedor = ({ abierto, onCerrar, titulo = 'Filtrar po
     return () => document.removeEventListener('keydown', alTeclear);
   }, [abierto, enHoja, onCerrar]);
 
+  // Acordeón de la hoja: al abrir el calendario esta fila pasa a ser la abierta y el cuerpo la centra; si otra fila se abre, se cierra.
+  const { abrir: abrirFila } = fila;
+  useEffect(() => {
+    if (!enHoja || !abierto) return undefined;
+    abrirFila(true);
+    const r = requestAnimationFrame(() => requestAnimationFrame(() => centrarEnCuerpo(contenedorRef.current && contenedorRef.current.parentElement)));
+    return () => cancelAnimationFrame(r);
+  }, [abierto, enHoja, abrirFila]);
+  const filaAbierta = fila.abierto;
+  useEffect(() => {
+    if (enHoja && !filaAbierta && ultimo.current.abierto) ultimo.current.onCerrar();
+  }, [filaAbierta, enHoja]);
+
   if (enHoja) {
     return (
-      <div data-fechas-contenedor data-estado={abierto ? 'abierto' : 'cerrado'} inert={!abierto} aria-hidden={!abierto} className={`grid transition-[grid-template-rows] duration-200 ease-out motion-reduce:transition-none ${abierto ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+      <div ref={contenedorRef} data-fechas-contenedor data-acordeon-panel data-estado={abierto ? 'abierto' : 'cerrado'} data-abierto={abierto} inert={!abierto} aria-hidden={!abierto} className="filtro-acordeon">
         <div className="min-h-0 overflow-hidden">
           <div className="mx-auto w-full max-w-xs px-4 pb-4 pt-1">{children}</div>
         </div>

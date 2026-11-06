@@ -1,14 +1,27 @@
 import React from 'react';
+import { FilaAcordeon } from './FilaAcordeon';
 import { useModoFiltro } from './contexto';
 
+/** Hasta este número de opciones el segmentado sigue siendo una fila con botones también en la hoja móvil. */
+const MAX_OPCIONES_SEGMENTADO_EN_HOJA = 3;
+
 /**
- * Selector segmentado plano (pista gris, opción activa en blanco, sin sombra). `opciones`: [{ value, label }]. `onChange(valor)`.
- * En la hoja móvil es una fila con `etiqueta` (por defecto `ariaLabel`) a la izquierda y el segmentado a la derecha.
+ * Selector segmentado plano (pista gris, opción activa en blanco). `opciones`: [{ value, label }]. `onChange(valor)`.
+ * `valorNeutro` (opcional): el valor que equivale a "sin filtro"; si `value` es otro, el segmentado usa el estado "seleccionado".
+ * En la hoja móvil es una fila con `etiqueta` (por defecto `ariaLabel`): con 3 opciones o menos, la fila lleva los botones a la
+ * derecha (un toque, sin desplegar nada); con más, se despliega como acordeón con la misma lista de opciones que los selects.
  */
-export const FiltroSegmentado = ({ opciones = [], value, onChange, ariaLabel, etiqueta, className = '' }) => {
+export const FiltroSegmentado = ({ opciones = [], value, onChange, ariaLabel, etiqueta, valorNeutro, className = '' }) => {
   const enHoja = useModoFiltro() === 'hoja';
+  const seleccionado = valorNeutro !== undefined && value !== valorNeutro;
+  if (enHoja && opciones.length > MAX_OPCIONES_SEGMENTADO_EN_HOJA) {
+    const elegida = opciones.find((o) => o.value === value);
+    return (
+      <FilaAcordeon etiqueta={etiqueta || ariaLabel} textoValor={elegida ? elegida.label : ''} opciones={opciones} value={value} onElegir={onChange} ariaLabel={ariaLabel} seleccionado={seleccionado} className={className} />
+    );
+  }
   const control = (
-    <div role="group" aria-label={ariaLabel} className={`inline-flex items-center gap-0.5 rounded-xl bg-slate-100 p-0.5 ${enHoja ? 'h-9' : `h-11 md:h-9 ${className}`}`}>
+    <div role="group" aria-label={ariaLabel} className={`inline-flex items-center gap-0.5 rounded-xl p-0.5 ${seleccionado ? 'bg-filtro-activo' : 'bg-slate-100'} ${enHoja ? 'h-9' : `h-11 md:h-9 ${className}`}`}>
       {opciones.map((o) => {
         const activo = o.value === value;
         return (
@@ -17,7 +30,7 @@ export const FiltroSegmentado = ({ opciones = [], value, onChange, ariaLabel, et
             type="button"
             aria-pressed={activo}
             onClick={() => onChange(o.value)}
-            className={`h-full cursor-pointer whitespace-nowrap rounded-[10px] px-3 text-xs font-semibold transition-colors ${activo ? 'bg-white text-slate-900' : 'text-slate-500 hover:text-slate-800'}`}
+            className={`h-full cursor-pointer whitespace-nowrap rounded-[10px] px-3 text-xs font-semibold transition-colors ${activo ? `bg-white ${seleccionado ? 'text-filtro-texto' : 'text-slate-900'}` : 'text-slate-500 hover:text-slate-800'}`}
           >
             {o.label}
           </button>
@@ -27,8 +40,8 @@ export const FiltroSegmentado = ({ opciones = [], value, onChange, ariaLabel, et
   );
   if (!enHoja) return control;
   return (
-    <div className={`flex min-h-11 items-center justify-between gap-3 px-4 py-1 ${className}`}>
-      <span className="shrink-0 text-sm font-medium text-slate-700">{etiqueta || ariaLabel}</span>
+    <div className={`flex min-h-11 items-center justify-between gap-3 px-4 py-1 ${seleccionado ? 'bg-filtro-activo' : ''} ${className}`}>
+      <span className={`shrink-0 text-sm font-medium ${seleccionado ? 'text-filtro-texto' : 'text-slate-700'}`}>{etiqueta || ariaLabel}</span>
       {control}
     </div>
   );
