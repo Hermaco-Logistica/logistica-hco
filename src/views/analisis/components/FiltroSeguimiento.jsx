@@ -1,5 +1,6 @@
 import React from 'react';
 import { Etiqueta } from '../../../components/Etiqueta';
+import { FiltroConmutador } from '../../../components/filtros/FiltroConmutador';
 
 const describirPeriodo = ({ periodo, fechaInicio, fechaFin, anioHistorico } = {}) => {
   if (periodo === '7d') return 'últimos 7 días';
@@ -17,19 +18,7 @@ const describirPeriodo = ({ periodo, fechaInicio, fechaFin, anioHistorico } = {}
  * el padre decide cómo editarla en `onChange`.
  */
 export const BotonSeguimiento = ({ activo, onChange }) => (
-  <button
-    type="button"
-    aria-pressed={activo}
-    onClick={() => onChange(!activo)}
-    title="Mostrar solo los ítems en seguimiento de cliente (no cerrados)"
-    className={`w-full sm:w-auto border rounded-lg px-2 py-1.5 text-xs font-medium outline-none cursor-pointer transition-colors focus-visible:ring-2 focus-visible:ring-primary ${
-      activo
-        ? 'bg-slate-900 border-slate-900 text-white'
-        : 'bg-slate-50 border-slate-200/70 text-slate-700 hover:bg-white'
-    }`}
-  >
-    En seguimiento
-  </button>
+  <FiltroConmutador activo={activo} onChange={onChange} etiqueta="En seguimiento" titulo="Mostrar solo los ítems en seguimiento de cliente (no cerrados)" />
 );
 
 /**
