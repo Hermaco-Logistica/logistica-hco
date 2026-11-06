@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "./styles/tokens.css";
 
+/* REGLA DE SUPERFICIES: al usar `surface` o <Card> no añadas bg-*, shadow-* ni border decorativo. En el CSS compilado
+   .bg-white y .shadow-* van DESPUÉS de .surface y la sobrescriben. Quedan permitidos: radio propio si la pieza lo necesita
+   distinto (rounded-2xl = 14px en tarjetas pequeñas), bordes de estado (selección, error, foco, dashed, border-primary),
+   separadores (border-t/b/l/r, divide-*) y la sombra de botones y chips (no son superficies). Lo flotante usa surface-flotante. */
+
 /* Escala de radios (REDISENO_COHERENCIA_UI.md §3): 12 control, 14 inner, 24 card, píldora.
    En Tailwind v4 el tema vive en CSS (@theme); tailwind.config.js no se carga sin @config.
    rounded-2xl pasa de 16 a 14px; rounded-xl (12) y rounded-3xl (24) ya coinciden con la escala. */
@@ -328,7 +333,7 @@
   .tf-campo {
     width: 100%;
     border-radius: 0.75rem;
-    border: 1px solid #e5e5e5;
+    border: 1px solid var(--color-border);
     background-color: var(--tf-color-surface-muted);
     padding: 0.625rem 0.875rem;
     font-size: 13px;

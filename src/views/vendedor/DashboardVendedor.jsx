@@ -195,7 +195,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   ].filter(Boolean).length;
 
   return (
-    <PageContainer className="animate-in fade-in duration-500">
+    <PageContainer className="animate-in fade-in duration-500 pb-2">
       <PageHeader title={title} subtitle="Estado de RFQs enviadas" actions={canCreate && (
           <div className="flex gap-2 w-full sm:w-auto">
             <Button
@@ -219,7 +219,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
 
       {/* Banner único de bloqueo para solicitudes estancadas */}
       {tieneBloqueo && (
-        <div className="mb-5 rounded-[10px] border border-[var(--detalle-border)] bg-[var(--detalle-surface)] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[13px]">
+        <div className="surface mb-5 rounded-[10px] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-[13px]">
           <div className="flex items-start gap-3 min-w-0">
             <div className="inline-flex w-8 h-8 items-center justify-center rounded-[6px] bg-[var(--detalle-bg-warning)] text-[var(--detalle-accent-warning)] shrink-0 mt-0.5">
               <AlertCircle size={16} aria-hidden="true" />
@@ -258,7 +258,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       )}
 
       {/* BARRA DE FILTROS MÓVIL (visible en < md) */}
-      <div className="md:hidden bg-white p-3.5 rounded-2xl shadow-[var(--tf-shadow-card)] mb-4 space-y-3">
+      <div className="surface md:hidden p-3.5 rounded-2xl mb-4 space-y-3">
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <input 
@@ -400,7 +400,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       </div>
 
       {/* CONTROLES DE FILTROS DESKTOP (visible en >= md) */}
-      <div className={`hidden md:grid grid-cols-1 sm:grid-cols-2 ${role === 'vendedor' ? 'md:grid-cols-5' : 'md:grid-cols-6'} gap-4 mb-6 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm`}>
+      <div className={`hidden md:grid grid-cols-1 sm:grid-cols-2 ${role === 'vendedor' ? 'md:grid-cols-5' : 'md:grid-cols-6'} gap-4 mb-6 p-6 surface`}>
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Resultado</label>
           <select value={filterResultado} onChange={(e) => { setFilterResultado(e.target.value); setCurrentPage(1); }} className="tf-campo cursor-pointer">
@@ -536,7 +536,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       {/* VISTA MÓVIL: TARJETAS DETALLADAS Y ESPACIOSAS (< md) */}
       <div className="space-y-3.5 md:hidden mb-6">
         {paginatedSolicitudes.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center text-slate-400 font-bold text-xs shadow-[var(--tf-shadow-card)]">
+          <div className="surface rounded-2xl p-8 text-center text-slate-400 font-bold text-xs">
             No se encontraron solicitudes con los filtros aplicados.
           </div>
         ) : (
@@ -570,7 +570,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               <div
                 key={s.id}
                 onClick={() => navigate(s.tipo === 'Pedido Manual' ? `/vendedor/pedido-manual/${s.id}` : `/vendedor/detalle/${s.id}`)}
-                className="bg-white rounded-2xl p-4 shadow-[var(--tf-shadow-card)] hover:shadow-md transition-all cursor-pointer relative active:scale-[0.98] touch-manipulation"
+                className="surface rounded-2xl p-4 transition-all cursor-pointer relative active:scale-[0.98] touch-manipulation"
               >
                 {/* Header: Correlativo + Alertas (Izq) y Estado (Der) */}
                 <div className="flex items-start justify-between mb-1.5">
