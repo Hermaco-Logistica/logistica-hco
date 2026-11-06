@@ -171,6 +171,15 @@
      Los valores de --shadow-reposo, -flotante y -boton* están en el bloque `@theme inline` de derivados (siguen al rol).
      reposo: tarjetas, paneles, tablas en tarjeta y avisos. flotante: modales, menús, popovers y tooltips (capa larga de
      elevación + capa corta de contacto). boton / boton-hover / boton-activo: botones. */
+  /* Animación de los filtros (una sola fuente: hoja, desplegable y acordeón). Solo clip-path, transform y opacity
+     (el acordeón anima además grid-template-rows). Con prefers-reduced-motion todo queda en un fundido de ~120 ms.
+     abrir: suave, frena al final. cerrar: rápida pero sin corte brusco. hoja: la hoja inferior de filtros (index.css). */
+  --anim-abrir: 220ms;
+  --ease-abrir: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --anim-cerrar: 140ms;
+  --ease-cerrar: cubic-bezier(0.4, 0, 1, 1);
+  --anim-hoja-abrir: 280ms;
+  --anim-hoja-cerrar: 200ms;
   --shadow-card: var(--shadow-reposo);
   --shadow-panel: var(--tf-shadow-panel);
   --shadow-float: var(--detalle-shadow-float);
@@ -180,6 +189,11 @@
 @theme inline static {
   --color-primary-soft: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
   --color-secondary-soft: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
+
+  /* Fondo de un filtro con valor distinto de "Todos" (select, fecha con rango, búsqueda con texto, conmutador activo). Utilidad: bg-filtro-activo. */
+  --color-filtro-activo: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
+  /* Texto del valor de un filtro activo: primary-strong oscurecido un 20 % para llegar a 4,5:1 sobre --color-filtro-activo en todos los roles y sin rol. */
+  --color-filtro-texto: color-mix(in srgb, var(--color-primary-strong) 80%, black);
 
   /* "En seguimiento" con la paleta del rol: relleno oscuro (primary-strong) y letra clara (primary-soft).
      Ciruela fijo anterior: #72467c y #e2d8e4. Utilidades: bg-seguimiento, text-seguimiento, bg-seguimiento-soft,
@@ -193,6 +207,7 @@
      peso visual de los cuatro roles). Se declaran aquí (inline) y en "Derivados por ámbito": en :root solas no seguirían al rol. */
   --shadow-reposo: 0 2px 5px 0 color-mix(in srgb, var(--color-primary) calc(7% * var(--sombra-alfa)), transparent), 0 10px 30px -4px color-mix(in srgb, var(--color-primary) calc(12% * var(--sombra-alfa)), transparent);
   --shadow-flotante: 0 24px 64px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent), 0 2px 8px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
+  --shadow-menu: 0 20px 32px -16px color-mix(in srgb, var(--color-primary) calc(24% * var(--sombra-alfa)), transparent), 0 8px 16px -8px color-mix(in srgb, var(--color-primary) calc(12% * var(--sombra-alfa)), transparent);
   --shadow-boton: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent), 0 4px 10px -2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent);
   --shadow-boton-hover: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent), 0 6px 14px -2px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent);
   --shadow-boton-activo: 0 1px 1px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
@@ -275,6 +290,8 @@
   body[data-role] {
     --color-sidebar: var(--color-secondary);
     --color-primary-soft: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+    --color-filtro-activo: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
+    --color-filtro-texto: color-mix(in srgb, var(--color-primary-strong) 80%, black);
     --color-secondary-soft: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
     --color-seguimiento: var(--color-primary-strong);
     --color-seguimiento-soft: var(--color-primary-soft);
@@ -282,6 +299,7 @@
     --color-seguimiento-claro: color-mix(in srgb, var(--color-primary-strong) 55%, white);
     --shadow-reposo: 0 2px 5px 0 color-mix(in srgb, var(--color-primary) calc(7% * var(--sombra-alfa)), transparent), 0 10px 30px -4px color-mix(in srgb, var(--color-primary) calc(12% * var(--sombra-alfa)), transparent);
     --shadow-flotante: 0 24px 64px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent), 0 2px 8px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
+    --shadow-menu: 0 20px 32px -16px color-mix(in srgb, var(--color-primary) calc(24% * var(--sombra-alfa)), transparent), 0 8px 16px -8px color-mix(in srgb, var(--color-primary) calc(12% * var(--sombra-alfa)), transparent);
     --shadow-boton: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent), 0 4px 10px -2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent);
     --shadow-boton-hover: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent), 0 6px 14px -2px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent);
     --shadow-boton-activo: 0 1px 1px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);

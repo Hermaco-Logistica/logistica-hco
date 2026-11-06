@@ -250,13 +250,68 @@
      280 ms y el fondo con opacidad en 200 ms; sale en 200 ms con ease-in. DURACION_SALIDA_VARIANTE_MS.hojaInferior = 200. */
   @keyframes hoja-inferior-in { from { transform: translateY(100%); } to { transform: translateY(0); } }
   @keyframes hoja-inferior-out { from { transform: translateY(0); } to { transform: translateY(100%); } }
-  .modal-fondo[data-variante='hojaInferior'] { animation-duration: 0.2s; }
-  .modal-fondo[data-variante='hojaInferior'][data-saliendo='true'] { animation-duration: 0.2s; }
+  .modal-fondo[data-variante='hojaInferior'] { animation-duration: var(--anim-hoja-cerrar); }
+  .modal-fondo[data-variante='hojaInferior'][data-saliendo='true'] { animation-duration: var(--anim-hoja-cerrar); }
   .modal-panel[data-variante='hojaInferior'] {
-    animation: hoja-inferior-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation: hoja-inferior-in var(--anim-hoja-abrir) var(--ease-abrir) backwards;
   }
   .modal-panel[data-variante='hojaInferior'][data-saliendo='true'] {
-    animation: hoja-inferior-out 0.2s ease-in forwards;
+    animation: hoja-inferior-out var(--anim-hoja-cerrar) var(--ease-cerrar) forwards;
+  }
+  /* Desplegable de los filtros en escritorio (MenuAnclado): clip-path + un desplazamiento muy corto + opacidad. El clip-path en reposo
+     recorta la sombra por el lado del campo (solo se ve hacia el lado en que se abre). Abre hacia abajo o, si no cabe, hacia arriba. */
+  @keyframes menu-abrir-abajo {
+    from { clip-path: inset(0 -24px 100% -24px); transform: translateY(-5px); opacity: 0; }
+    to { clip-path: inset(0 -24px -48px -24px); transform: translateY(0); opacity: 1; }
+  }
+  @keyframes menu-cerrar-abajo {
+    from { clip-path: inset(0 -24px -48px -24px); transform: translateY(0); opacity: 1; }
+    to { clip-path: inset(0 -24px 100% -24px); transform: translateY(-5px); opacity: 0; }
+  }
+  @keyframes menu-abrir-arriba {
+    from { clip-path: inset(100% -24px 0 -24px); transform: translateY(5px); opacity: 0; }
+    to { clip-path: inset(-48px -24px 0 -24px); transform: translateY(0); opacity: 1; }
+  }
+  @keyframes menu-cerrar-arriba {
+    from { clip-path: inset(-48px -24px 0 -24px); transform: translateY(0); opacity: 1; }
+    to { clip-path: inset(100% -24px 0 -24px); transform: translateY(5px); opacity: 0; }
+  }
+  .menu-anclado {
+    border-radius: 0 0 0.75rem 0.75rem;
+    clip-path: inset(0 -24px -48px -24px);
+    animation: menu-abrir-abajo var(--anim-abrir) var(--ease-abrir) backwards;
+  }
+  .menu-anclado[data-dir='arriba'] {
+    border-radius: 0.75rem 0.75rem 0 0;
+    clip-path: inset(-48px -24px 0 -24px);
+    animation-name: menu-abrir-arriba;
+  }
+  .menu-anclado[data-estado='cerrando'] {
+    animation: menu-cerrar-abajo var(--anim-cerrar) var(--ease-cerrar) forwards;
+  }
+  .menu-anclado[data-estado='cerrando'][data-dir='arriba'] { animation-name: menu-cerrar-arriba; }
+
+  /* Acordeón de la hoja móvil: la altura anima con grid-template-rows (0fr → 1fr). */
+  .filtro-acordeon {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--anim-cerrar) var(--ease-cerrar);
+  }
+  .filtro-acordeon[data-abierto='true'] {
+    grid-template-rows: 1fr;
+    transition-duration: var(--anim-abrir);
+    transition-timing-function: var(--ease-abrir);
+  }
+
+  @keyframes filtros-fundido-in { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes filtros-fundido-out { from { opacity: 1; } to { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .menu-anclado,
+    .menu-anclado[data-dir='arriba'] { animation: filtros-fundido-in 0.12s linear backwards !important; }
+    .menu-anclado[data-estado='cerrando'],
+    .menu-anclado[data-estado='cerrando'][data-dir='arriba'] { animation: filtros-fundido-out 0.12s linear forwards !important; }
+    .filtro-acordeon,
+    .filtro-acordeon[data-abierto='true'] { transition: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     .modal-fondo[data-variante='hojaInferior'],
