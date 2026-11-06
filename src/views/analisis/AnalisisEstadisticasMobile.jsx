@@ -242,7 +242,7 @@ function MobileHeroCard({ metricas, formatearDinero, onVerPedidos }) {
 
   return (
     <div ref={ref}>
-      <div className={`bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs transition-all duration-700 ease-out transform ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div className={`surface p-5 transition-all duration-700 ease-out transform ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         <div className="flex items-center justify-between mb-1">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Conversión a Pedido</p>
@@ -395,7 +395,7 @@ function MobileFlujoCard({ theme, metricas, onVerTodas, onVerEstado }) {
 
   return (
     <div ref={ref}>
-      <div className={`bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs transition-all duration-700 ease-out transform ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div className={`surface p-5 transition-all duration-700 ease-out transform ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-sm font-bold text-slate-900 tracking-tight">Flujo de Solicitudes</h2>
@@ -526,7 +526,7 @@ function MobileTopListCard({ theme, title, subtitle, icon: Icon, items, onVerTod
   const { ref, isInView } = useInView({ threshold: 0.1 });
   return (
     <div ref={ref}>
-      <div className={`bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs transition-all duration-700 ease-out transform ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div className={`surface p-5 transition-all duration-700 ease-out transform ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         <div className="flex items-center justify-between mb-1">
           <div>
             <h2 className="text-sm font-bold text-slate-900 tracking-tight">{title}</h2>
@@ -567,7 +567,7 @@ function MobileProductosScroll({ productos, onSelect, onVerTodos }) {
   const { ref, isInView } = useInView({ threshold: 0.1 });
   return (
     <div ref={ref}>
-      <div className={`bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs transition-all duration-700 ease-out transform ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div className={`surface p-5 transition-all duration-700 ease-out transform ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="text-sm font-bold text-slate-900 tracking-tight">Top Productos</h2>
@@ -642,7 +642,7 @@ function MobileLogisticaCard({ statsLogistica, onVerLogistica }) {
 
   return (
     <div ref={ref}>
-      <div className={`bg-white p-5 rounded-3xl border border-slate-200/80 shadow-xs transition-all duration-700 ease-out transform ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+      <div className={`surface p-5 transition-all duration-700 ease-out transform ${isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="text-sm font-bold text-slate-900 tracking-tight">Estado Logístico</h2>

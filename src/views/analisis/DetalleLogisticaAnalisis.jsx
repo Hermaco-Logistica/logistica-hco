@@ -172,7 +172,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
 
       {/* TABS DE ESTADO LOGÍSTICO (Sticky en móvil) */}
       <div className="sticky top-0 z-20 bg-slate-50/80 backdrop-blur-md pb-2 -mx-[var(--tf-pad-x)] px-[var(--tf-pad-x)] sm:mx-0 sm:px-0 sm:pb-0 sm:bg-transparent">
-        <div className="flex overflow-x-auto whitespace-nowrap gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="surface flex overflow-x-auto whitespace-nowrap gap-1.5 p-1 rounded-xl w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tabs.map((t) => (
             <button
               key={t.id}
@@ -193,7 +193,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
 
 
       {/* BUSCADOR */}
-      <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+      <div className="surface p-3 rounded-2xl flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
         <div className="relative w-full md:w-80">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -243,7 +243,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
       {/* TABLA DE ÓRDENES */}
       <div className="flex flex-col gap-3">
         {paginatedOrdenes.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl shadow-[var(--tf-shadow-card)]">
+          <div className="surface text-center py-16 text-slate-400 text-xs font-medium rounded-2xl">
             No se encontraron órdenes con los filtros seleccionados.
           </div>
         ) : (
@@ -256,7 +256,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
                 const numOC = oc.numeroOC || oc.numero || oc.ocRef || 'S/N';
                 
                 return (
-                  <div key={oc.id} className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3 relative">
+                  <div key={oc.id} className="surface p-4 rounded-2xl space-y-3 relative">
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col">
                         <span className="font-mono text-sm font-bold text-slate-800">{numOC}</span>
@@ -301,7 +301,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
             </div>
 
             {/* VISTA DESKTOP (Tabla original) */}
-            <div className="hidden md:flex bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden flex-col">
+            <div className="surface hidden md:flex rounded-2xl overflow-hidden flex-col">
               <div
                 ref={scrollContainerRef}
                 onMouseDown={handleDragStart}

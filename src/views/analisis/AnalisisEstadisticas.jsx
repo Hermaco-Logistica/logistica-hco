@@ -740,7 +740,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
   const renderFiltros = () => (
     <>
       {/* BARRA DE FILTROS MINIMALISTA */}
-      <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col sm:flex-row gap-3 items-center">
+      <div className="surface p-3 rounded-2xl flex flex-col sm:flex-row gap-3 items-center">
         <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold shrink-0">
           <Filter size={14} className="text-slate-400" />
           <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold">Filtros:</span>
@@ -844,7 +844,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     const claseRotulo = 'text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1';
 
     return (
-      <div className="bg-white p-3.5 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3">
+      <div className="surface p-3.5 rounded-2xl space-y-3">
         <div className="flex items-center gap-2">
           <div className="relative flex-1 min-w-0">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -987,7 +987,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         }
         subtitle="Métricas operativas consolidadas, trazabilidad de solicitudes y rendimiento comercial"
         actions={
-        <div className="inline-flex flex-wrap items-center bg-white p-1 rounded-2xl shadow-[var(--tf-shadow-card)] self-start sm:self-auto">
+        <div className="surface inline-flex flex-wrap items-center p-1 rounded-2xl self-start sm:self-auto">
           {[
             { id: '7d', label: '7D' },
             { id: '30d', label: '30D' },
@@ -1114,7 +1114,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         </div>
 
         {/* KPI 4: Tiempos Operativos (Cierre Vendedor & Respuesta Comprador) */}
-        <div className="bg-white p-5 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+        <div className="surface p-5 rounded-2xl flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tiempos Operativos</span>
@@ -1195,7 +1195,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Embudo de Estados (2 columnas) con enlaces directos */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-[var(--tf-shadow-card)]">
+        <div className="surface lg:col-span-2 p-6 rounded-2xl">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-base font-black text-slate-900 tracking-tight">
@@ -1398,7 +1398,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         </div>
 
         {/* Top 5 Clientes */}
-        <div className="bg-white p-5 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+        <div className="surface p-5 rounded-2xl flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -1497,7 +1497,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       </div>
 
       {/* SECCIÓN NUEVA: TOP PRODUCTOS MÁS COTIZADOS */}
-      <div className="bg-white p-5 rounded-2xl shadow-[var(--tf-shadow-card)]">
+      <div className="surface p-5 rounded-2xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-slate-100/80 text-slate-500 flex items-center justify-center shrink-0">
@@ -1698,7 +1698,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       {/* SECCIÓN INFERIOR: RENDIMIENTO POR VENDEDOR Y MONITOREO LOGÍSTICO */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Rendimiento por Vendedor */}
-        <div className={`${puedeVerLogistica ? 'lg:col-span-2' : 'lg:col-span-3'} bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between`}>
+        <div className={`surface ${puedeVerLogistica ? 'lg:col-span-2' : 'lg:col-span-3'} p-5 rounded-2xl flex flex-col justify-between`}>
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -1806,7 +1806,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
 
         {/* Resumen Logístico de Órdenes de Compra (Solo Comprador y Administrador) */}
         {puedeVerLogistica && (
-          <div className="bg-white p-5 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+          <div className="surface p-5 rounded-2xl flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>

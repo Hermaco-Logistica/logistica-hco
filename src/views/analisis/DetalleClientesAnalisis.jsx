@@ -206,7 +206,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
         }
         subtitle={<>Análisis consolidado por cliente ({todosLosClientes.length} empresas registradas)</>}
         actions={
-        <div className="flex overflow-x-auto whitespace-nowrap items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="surface flex overflow-x-auto whitespace-nowrap items-center gap-1.5 p-1 rounded-xl w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <span className="text-[10px] font-medium text-slate-400 ml-2 shrink-0">Ordenar:</span>
           {[
             { id: 'total', label: 'Más RFQs' },
@@ -235,7 +235,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
 
 
       {/* BUSCADOR */}
-      <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
+      <div className="surface p-3 rounded-2xl flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
         <div className="relative w-full md:w-80">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -274,7 +274,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
       </div>
 
       {paginatedClientes.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl shadow-[var(--tf-shadow-card)]">
+        <div className="surface text-center py-16 text-slate-400 text-xs font-medium rounded-2xl">
           No se encontraron clientes con el filtro aplicado.
         </div>
       ) : (
@@ -287,7 +287,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                 ? Math.round((c.pedidos / c.cotizadas) * 100) 
                 : 0;
               return (
-                <div key={c.cliente} className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3 relative">
+                <div key={c.cliente} className="surface p-4 rounded-2xl space-y-3 relative">
                   <div className="flex justify-between items-start">
                     <div 
                       className="flex items-center gap-3 cursor-pointer group"
@@ -368,7 +368,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
           </div>
 
           {/* VISTA DESKTOP (Tabla original) */}
-          <div className="hidden md:flex bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden flex-col">
+          <div className="surface hidden md:flex rounded-2xl overflow-hidden flex-col">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>

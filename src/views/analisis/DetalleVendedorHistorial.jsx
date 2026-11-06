@@ -63,7 +63,7 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
   const res = evaluarEstadoGanada(m);
 
   return (
-    <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300 group">
+    <div className="surface relative rounded-xl overflow-hidden transition-all duration-300 group">
       
       {/* Marca de agua de fondo con el RFQ (Usando paleta de rol) */}
       <div className={`absolute right-0 bottom-0 pointer-events-none z-0 translate-x-[15%] translate-y-[20%] overflow-hidden opacity-[0.03] ${theme.textAccent}`}>
@@ -737,7 +737,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
 
       {/* TARJETAS RESUMEN DEL VENDEDOR */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+        <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <Users size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Clientes Atend.</span>
@@ -752,7 +752,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+        <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <Package size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Prods. Cotizados</span>
@@ -767,7 +767,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+        <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <DollarSign size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Monto Cotizado</span>
@@ -782,7 +782,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+        <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <DollarSign size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Monto en Pedidos</span>
@@ -797,7 +797,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between col-span-2 lg:col-span-1">
+        <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <TrendingUp size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Efectividad</span>
@@ -818,7 +818,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
       </div>
 
       {/* FILTROS Y BÚSQUEDA */}
-      <div className="bg-white p-2.5 sm:p-3 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col sm:flex-row gap-2 sm:gap-3 items-center justify-between">
+      <div className="surface p-2.5 sm:p-3 rounded-xl sm:rounded-2xl flex flex-col sm:flex-row gap-2 sm:gap-3 items-center justify-between">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -940,7 +940,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
       </div>
 
       {/* TABLA DE RELACIÓN CLIENTES - PRODUCTOS */}
-      <div className="bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden flex flex-col">
+      <div className="surface rounded-2xl overflow-hidden flex flex-col">
         {movimientosFiltrados.length === 0 ? (
           <div className="text-center py-16 text-slate-400 text-xs font-medium">
             No se encontraron movimientos con los filtros seleccionados.
