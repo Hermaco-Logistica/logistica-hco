@@ -629,7 +629,7 @@ export const Calculadora = ({ onGuardar }) => {
                     {!esSoloLectura && tienePendientesGlobales && (
                       <Etiqueta tono="azul" className="justify-between">
                         <span>Nuevos</span>
-                        <span className="text-blue-600/80 bg-white px-1 rounded-sm border border-blue-100 shadow-2xs">FA {factorA.toFixed(2)}</span>
+                        <span className="text-mode-air/80 bg-white px-1 rounded-sm border border-mode-air-100 shadow-2xs">FA {factorA.toFixed(2)}</span>
                       </Etiqueta>
                     )}
                   </div>
