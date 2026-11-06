@@ -15,6 +15,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "check:colores": "node scripts/check-colores.mjs",
+    "check:superficies": "node scripts/check-superficies.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
