@@ -1,57 +1,71 @@
 # Superficies y sombras
 
-Referencia de cómo se pinta una superficie (tarjeta, panel, tabla en tarjeta, aviso, modal, menú) en `logistica-hco`. Rama `superficies-y-filtros`.
-Estado: fases S1 y S2 hechas (tokens, utilidades, `Card`, piloto `DashboardVendedor`); el resto de vistas se migra en S3. La guarda
-`check:superficies` llega en S4.
+Referencia de cómo se pinta una superficie (tarjeta, panel, tabla en tarjeta, aviso, modal, menú) y un botón en `logistica-hco`.
 
 ## 1. Principio
-Una superficie se separa del fondo **solo con una sombra difuminada**, sin contorno decorativo. El anillo de 1 px que tenía `--tf-shadow-card`
-se eliminó.
+Una superficie se separa del fondo **solo con una sombra difuminada**, sin contorno decorativo. Lo que está dentro de otra superficie, de un modal, de un
+menú o de un popover es **plano**: la elevación la pone el contenedor.
 
 ## 2. Tokens (`src/styles/tokens.css`)
-Las sombras llevan el color de marca del rol (`--color-primary`; con el tono oscuro del menú el tinte no se distinguía de una sombra negra) escalado por `--sombra-alfa` (por rol, iguala el peso visual). Se declaran en el
-bloque `@theme inline` y se redeclaran en "Derivados por ámbito" (`:root, .role-*, body[data-role]`): en `:root` solas no seguirían al rol.
-
 | Token | Uso | Forma |
 | --- | --- | --- |
 | `--shadow-reposo` | tarjetas, paneles, tablas en tarjeta, avisos | `0 2px 5px 0 (7 %)`, `0 10px 30px -4px (12 %)` |
 | `--shadow-flotante` | modales, menús, popovers, tooltips | `0 24px 64px (14 %)`, `0 2px 8px (8 %)` (capa de contacto) |
-| `--shadow-boton`, `-hover`, `-activo` | botones | `0 1px 2px (8 %)` + `0 4px 10px -2px (10 %)`; hover 10 % y 14 % con `0 6px 14px -2px`; activo `0 1px 1px (8 %)` |
-| `--sombra-alfa` | multiplicador por rol | sin rol 1.08, comprador 0.72, vendedor 1.45, gerente 1.56, administrador 1.55 |
+| `--shadow-boton` | botones en reposo | `0 1px 2px (8 %)`, `0 4px 10px -2px (10 %)` |
+| `--shadow-boton-hover` | hover (con levante de 1 px) | `0 1px 2px (10 %)`, `0 6px 14px -2px (14 %)` |
+| `--shadow-boton-activo` | active | `0 1px 1px (8 %)` |
+| `--sombra-alfa` | multiplicador de opacidad por rol | sin rol 1.08, comprador 0.72, vendedor 1.45, gerente 1.56, administrador 1.55 |
 
-`--tf-shadow-card` es alias de `--shadow-reposo` (se declara también por ámbito). `--tf-shadow-panel` y `--detalle-shadow-float` no se usan y no son equivalentes: se dejaron como estaban.
+- **Tinte:** el color de la sombra es `color-mix(in srgb, var(--color-primary) calc(N% * var(--sombra-alfa)), transparent)`. Se usa el color de marca del rol (`primary`)
+  y no el tono oscuro del menú (`secondary`): con `secondary` el tinte apenas se distinguía de una sombra negra (ΔE 1.6 a 3.9 contra 4.3 a 10 con `primary`).
+  `--sombra-alfa` iguala el peso visual de los cuatro roles (tarjeta blanca de 160×80: ΔE a la izquierda 5.5 a 6.4 y debajo 10.2 a 10.5).
+- **Por qué se declaran en "Derivados por ámbito":** un token derivado declarado solo en `:root` no sigue al rol (el `var()` se resuelve donde se declara). Las sombras
+  están en el bloque `@theme inline` (la utilidad lleva la expresión completa) **y** se redeclaran en `:root, .role-*, body[data-role]`, que es donde las leen las
+  utilidades `surface*` y los portales. `--tf-shadow-card` es alias de `--shadow-reposo` y también está en ese bloque.
+- `--tf-shadow-panel` y `--detalle-shadow-float` no se usan y no son equivalentes; se dejaron como estaban.
 
-Medido en Chrome (tarjeta blanca de 160×80 sobre el fondo de cada rol): ΔE al lado izquierdo 5.5 a 6.2 y debajo 10.2 a 10.5; el tono de la sombra se distingue de una negra equivalente en ΔE 4.3 a 10.
-
-## 3. Utilidades y componente
-- `@utility surface` (`index.css`): fondo `--color-surface`, `--radius-card` (24 px) y `--shadow-reposo`, sin borde.
-- `@utility surface-flotante`: fondo y `--shadow-flotante`; el radio lo pone cada pieza.
+## 3. Utilidades y componente (`src/index.css`)
+- `surface`: fondo `--color-surface`, `--radius-card` (24 px) y `--shadow-reposo`, sin borde.
+- `surface-flotante`: fondo y `--shadow-flotante`; el radio lo pone cada pieza (`rounded-3xl`, `rounded-xl`…).
+- `surface-plana`: fondo y radio de tarjeta, sin sombra ni borde. Para superficies dentro de otra superficie, de un modal, menú o popover.
+- `.tf-tabla-card`: `surface` con padding de 0.75 rem; `.tf-tabla-card--plana`: la variante sin sombra (dentro de modales). `.tf-surface-panel`: `surface`.
 - `<Card>` (`components/ui/Card.jsx`): usa `surface`; acepta `as`, `className` y `padding` (`none`, `sm`, `md`).
-- `.tf-surface-panel` y `.tf-tabla-card` están escritas sobre `surface`; `.tf-tabla-card--plana` quita la sombra (dentro de modales).
+- Botones: `<Button>`, `AccionItemButton` y `ModalBoton` llevan `shadow-boton hover:shadow-boton-hover active:shadow-boton-activo` (y `disabled:shadow-none`).
 
 ## 4. Reglas
-- Al usar `surface` o `<Card>` no añadas `bg-*`, `shadow-*` ni borde decorativo: en el CSS compilado `.bg-white` y `.shadow-*` van después de `.surface` y la sobrescriben.
-- Radio propio solo si la pieza lo necesita distinto (`rounded-2xl` = 14 px en tarjetas pequeñas; `rounded-[10px]` en avisos).
-- **Dentro de modales, menús y popovers las superficies son planas** (sin sombra de reposo ni borde): la elevación la pone el contenedor.
-- **Los botones llevan `--shadow-boton` y no borde** (`Button`, `AccionItemButton`, `ModalBoton`). `Etiqueta`, `StatusChip`, inputs, selects, buscadores, segmentos y pestañas de filtro no llevan sombra de botón.
+1. **Al usar `surface` o `<Card>` no añadas `bg-*`, `shadow-*` ni borde decorativo.** Orden del CSS compilado: `.surface` va antes que `.rounded-*`, así que un radio propio
+   (`rounded-2xl` = 14 px, `rounded-[10px]`) lo sobrescribe, pero `.bg-white` y `.shadow-sm` van **después** y sobrescriben el fondo y la sombra de `surface`.
+2. **Superficies anidadas, modales, menús y popovers son planas** (`surface-plana`): sin sombra de reposo ni borde. La elevación la pone el contenedor (`surface-flotante`).
+3. **Controles** (inputs, selects, buscadores): borde suave (`.tf-campo`: `1px solid var(--color-border)`) y sin sombra. Segmentos y pestañas de filtro, planos.
+4. **Los botones llevan sombra y no borde.** Etiqueta y StatusChip (estados) no llevan sombra. Los enlaces de texto tampoco.
+5. **Se quedan:** separadores (`border-t/b/l/r`, `divide-*`) y bordes de estado (selección, error, foco, `dashed`, `border-primary`, `rose` y `emerald` de validación).
+6. **Hover de elevación** en tarjetas clicables: `hover:shadow-flotante` (por ejemplo las tarjetas del Gateway y la tarjeta móvil de `DashboardVendedor`).
+7. **Sombras sueltas de color** (`shadow-primary/20`, `shadow-emerald-*`) no se usan: el botón usa el token.
 
-## 5. Qué borde se elimina y cuál se queda
-- **Se elimina (decorativo):** el contorno de tarjetas, avisos, banners, paneles y popovers.
-- **Se queda (estado):** selección, error, foco, `dashed` de zonas de carga, `border-primary`, `border-rose-*` y `border-emerald-*` de validación.
-- **Se queda (separadores):** `border-t/b/l/r` y `divide-*` (filas de tabla, encabezados de panel, pestañas).
-- **Controles:** inputs, selects y campos de búsqueda conservan un borde suave (`.tf-campo`: `1px solid var(--color-border)`) sin sombra.
+## 5. Relleno inferior del `main`
+La sombra de reposo se extiende unos 24 px a los lados y unos 36 px abajo; un ancestro con `overflow` la recorta si su padding es menor. El `main` (`App.jsx`) tiene `pb-[calc(var(--bottom-dock-h,0px)+16px)]` en móvil y **`md:pb-10` (40 px)** desde `md`: con 40 px la sombra de la última tarjeta no se corta (ΔE 0.0; con 16 px era 2.4). Antes un `style` en línea anulaba `md:pb-8`. El único coste es un scroll nuevo para páginas cuyo contenido queda a menos de 24 px de la altura de la ventana.
 
-## 6. Lo flotante
-Modales (`BASE_PANEL` en `utils/modales.js`), menús, calendarios, desplegables de autocompletar, el menú de acciones de Prórrogas, el tooltip propio de la Calculadora y `.hilo-panel` usarán `surface-flotante` (S3, grupo 5). Los `title=` nativos no se tocan.
+## 6. Cómo añadir una superficie nueva
+1. `<Card>` o la clase `surface` (sin `bg-*`, `shadow-*` ni borde decorativo; radio propio solo si hace falta).
+2. Flota (menú, popover, tooltip, modal) → `surface-flotante` más el radio de la pieza.
+3. Dentro de otra superficie o de un modal → `surface-plana`.
+4. Comprueba que ningún ancestro con `overflow` la recorte y que no queda otra clase de fondo o sombra encima.
+5. Si es clicable, `hover:shadow-flotante` y foco visible.
 
-## 7. Recortes por `overflow`
-La sombra de reposo se extiende ~24 px a los lados y ~36 px abajo. Un ancestro con `overflow` (`hidden`, `auto`, `scroll`) la recorta si su padding es menor: hacen falta unos 10 px a los lados y unos 24 px abajo para que el corte no se vea (ΔE ≤ 1). El `main` tiene 16 px de padding inferior (el `style` en línea anula `md:pb-8`): `DashboardVendedor` añade `pb-2` a su contenedor. Casos conocidos: `ModalBloqueoCotizaciones` (cuerpo con `p-2.5` en móvil), los estados vacíos de los Historiales y las tarjetas de `GestionOC` dentro de un contenedor `overflow-hidden`.
+## 7. Guarda (`npm run check:superficies`)
+`scripts/check-superficies.mjs` cuenta por archivo, con tope en `scripts/superficies-baseline.json` que solo puede bajar (`-- --update` fija una mejora):
+- **bordes:** `border` completo que no sea de estado ni separador en una superficie (fondo blanco o `surface` + radio xl o mayor).
+- **sombras:** `shadow-(xs|sm|md|lg|xl|2xl|inner)` y sombras arbitrarias en esa superficie.
+- **sinSurface:** superficie hecha a mano (fondo blanco + radio xl o mayor + sombra) sin `Card`, `surface` ni sus variantes.
+- **css:** reglas con `border`, `background` y `border-radius` a la vez (selectores de botones, campos, chips y pestañas excluidos).
+- **anidadas:** `surface` dentro de otra superficie o de un modal o popover en el mismo archivo.
 
-## 8. Cómo añadir una superficie nueva
-1. Úsala con `<Card>` o con la clase `surface` (sin `bg-*`, `shadow-*` ni borde decorativo).
-2. Si flota (menú, popover), `surface-flotante` más el radio de la pieza; si está dentro de un modal, plana.
-3. Verifica que ningún ancestro con `overflow` la recorte (§7).
-4. Botones: `<Button>`; no añadas sombras de color (`shadow-primary/20`, `shadow-emerald-*`).
+**Exclusiones:** `src/emails/`, `CotizacionDocumento.jsx`, `CotizacionPDF.jsx`, pruebas y `tokens.css`. Solo se miran `div`, `section`, `article`, `aside`, `header`, `footer`, `form`, `main` y `li`: botones, inputs, selects, chips (`span`), avatares y etiquetas quedan fuera. No cuentan los bordes `dashed`, `transparent`, de estado, los separadores, los de variante (`hover:`, `focus:`, `focus-within:`, `group-hover:`, `aria-`, `disabled:`) ni `rounded-full`. Usa `espree` (viene con eslint). `scripts/` está en `.gitignore`: los archivos de la guarda se añadieron con `git add -f`.
 
-## 9. Guarda
-`check:superficies` (S4): tope por archivo, solo puede bajar, para borde completo en superficies, sombras `shadow-(xs|sm|md|lg|xl|2xl|inner)` y arbitrarias, reglas CSS con borde + fondo + radio, y superficies sin `Card` ni `surface`.
+## 8. Pendientes conocidos
+- **Tope inicial** (no es el objetivo): 15 archivos con hallazgos tolerados; los más cargados son `Calculadora.jsx`, `AnalisisEstadisticas.jsx` y `DetalleRFQProductos.jsx`. Muchos son prefijos `sm:` o `md:` de contenedores de tabla, o tarjetas con borde de estado.
+- Bordes de estado dejados: `DetalleRFQProductos:71`, `Calculadora:564` y `:641`, `MetricasRotativas:72`.
+- Sin verificación en pantalla: el detalle de RFQ y el cuerpo completo de la Calculadora (no se pudieron renderizar con datos de ejemplo).
+- `--tf-shadow-panel` y `--detalle-shadow-float`: sin uso; pueden eliminarse.
+- `Card` y `CardHeader`: casi no se usan en vistas; las superficies se hacen con la clase `surface`.
+- Los filtros (directorio `src/components/filtros/`) se harán después.
