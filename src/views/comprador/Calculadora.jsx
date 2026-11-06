@@ -606,7 +606,7 @@ export const Calculadora = ({ onGuardar }) => {
             </button>
 
             {/* Tarjeta 3: Factor Aéreo (Fondo blanco, icono de avión) */}
-            <div className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
+            <div className="surface p-2.5 rounded-xl flex flex-col justify-between">
               <div className="flex items-center justify-between text-slate-500">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Plane size={14} className="text-mode-air shrink-0" />
@@ -758,7 +758,7 @@ export const Calculadora = ({ onGuardar }) => {
         </div>
       </div>
       {/* Gastos Adicionales Aéreos (Desktop) */}
-      <div className="hidden md:block bg-white rounded-2xl shadow-[var(--tf-shadow-card)] mb-4 md:mb-6 overflow-hidden">
+      <div className="surface hidden md:block rounded-2xl mb-4 md:mb-6 overflow-hidden">
         <div
           className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 flex items-center justify-between cursor-pointer select-none"
           onClick={() => setGastosExpandidos(prev => !prev)}
@@ -808,7 +808,7 @@ export const Calculadora = ({ onGuardar }) => {
       </div>
 
       {/* Cotizador de Flete Internacional (Desktop) */}
-      <div ref={cotizadorRef} className="hidden md:block bg-white rounded-2xl shadow-[var(--tf-shadow-card)] mb-4 md:mb-6 overflow-hidden">
+      <div ref={cotizadorRef} className="surface hidden md:block rounded-2xl mb-4 md:mb-6 overflow-hidden">
         <div
           className="px-4 md:px-6 py-3 md:py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2 cursor-pointer select-none"
           onClick={() => setCotizadorExpandido(prev => !prev)}

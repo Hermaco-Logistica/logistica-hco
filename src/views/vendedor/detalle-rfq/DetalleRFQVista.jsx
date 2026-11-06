@@ -357,7 +357,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
       </div>
       ), document.body)}
 
-      <div className="md:hidden bg-white rounded-2xl p-4 shadow-[var(--tf-shadow-card)] mb-4 space-y-3">
+      <div className="surface md:hidden rounded-2xl p-4 mb-4 space-y-3">
         <div>
           <div className="flex items-center justify-between gap-2">
             <span className="font-mono font-black text-base text-slate-900 tracking-tight">
@@ -446,7 +446,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
       <DetalleRFQProductos viewModel={viewModel} />
 
       <div className="rfq-detail-lower-grid">
-        <div className="rfq-documentation-panel bg-white rounded-2xl sm:rounded-[2.5rem] shadow-[var(--tf-shadow-card)] sm:shadow-[var(--tf-shadow-card)] overflow-hidden transition-all duration-300 self-start w-full">
+        <div className="surface rfq-documentation-panel rounded-2xl sm:rounded-[2.5rem] overflow-hidden transition-all duration-300 self-start w-full">
           <button type="button" onClick={() => setDocumentacionOpen(!documentacionOpen)} className="w-full p-4 sm:p-8 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors cursor-pointer text-left focus:outline-none">
             <h2 className="text-sm font-black text-slate-800 uppercase flex items-center gap-2"><LinkIcon size={18} className="text-primary" /> Documentación Extra</h2>
             <div className={`transform transition-transform duration-300 text-slate-400 ${documentacionOpen ? 'rotate-180' : ''}`}><ChevronDown size={20} /></div>
@@ -512,7 +512,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
             </div>
           </div>
         </div>
-        <div className={`@container/resumen rfq-summary-panel bg-white rounded-2xl sm:rounded-[2.5rem] border border-slate-200 shadow-sm sm:shadow-xl flex-col justify-between ${puedeConfirmarPedido ? 'hidden md:flex' : 'flex'} self-start w-full`}>
+        <div className={`surface @container/resumen rfq-summary-panel rounded-2xl sm:rounded-[2.5rem] flex-col justify-between ${puedeConfirmarPedido ? 'hidden md:flex' : 'flex'} self-start w-full`}>
           <div className="flex-1">
             {/* Header del Resumen */}
             <div className="flex justify-between items-center mb-6">

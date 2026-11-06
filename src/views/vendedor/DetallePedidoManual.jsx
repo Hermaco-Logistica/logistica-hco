@@ -507,7 +507,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
         </div>
       )}
 
-      <div className="mb-6 bg-white rounded-3xl shadow-[var(--tf-shadow-card)] overflow-hidden transition-all duration-300">
+      <div className="surface mb-6 overflow-hidden transition-all duration-300">
         <button 
           type="button" 
           onClick={() => setDocumentacionOpen(!documentacionOpen)}
