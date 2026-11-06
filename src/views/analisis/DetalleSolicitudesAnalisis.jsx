@@ -270,7 +270,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
     { id: 'cotizadas', label: 'Cotizadas', dot: theme.flujoEstados?.cotizadas?.dot },
     { id: 'pedidos', label: 'Pedidos', dot: theme.flujoEstados?.pedidos?.dot },
     { id: 'parciales', label: 'Pedidos Parciales', dot: 'bg-sky-500' },
-    { id: 'seguimiento', label: 'En seguimiento', dot: 'bg-violet-500' },
+    { id: 'seguimiento', label: 'En seguimiento', dot: 'bg-seguimiento' },
     { id: 'anuladas', label: 'Anuladas', dot: 'bg-rose-500' },
     { id: 'anuladas-parcial', label: 'Con ítems anulados', dot: 'bg-rose-300' },
     { id: 'ventas-perdidas', label: 'Ventas perdidas / rechazos', dot: 'bg-orange-500' }

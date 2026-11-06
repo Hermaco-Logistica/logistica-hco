@@ -1106,7 +1106,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
               <span className="text-[11px] text-slate-600 font-bold group-hover:text-slate-900 group-hover:underline">Ver catálogo →</span>
             </div>
             {metricas.enSeguimiento.solicitudes > 0 && (
-              <div className="text-[11px] font-medium text-amber-700 mt-0.5 truncate" title="Monto de los ítems en revisión, prórroga o vencidos dentro del volumen cotizado">
+              <div className="text-[11px] font-medium text-seguimiento mt-0.5 truncate" title="Monto de los ítems en revisión, prórroga o vencidos dentro del volumen cotizado">
                 {formatearDinero(metricas.enSeguimiento.monto)} en seguimiento
               </div>
             )}
@@ -1262,10 +1262,10 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 label: 'En seguimiento de cliente',
                 count: metricas.enSeguimiento.solicitudes,
                 icon: Clock,
-                iconBg: 'bg-violet-50 text-violet-600 border-violet-200/80',
-                barGradient: 'from-violet-400 to-violet-600',
-                subGradient: 'from-violet-300 to-violet-500',
-                textColor: 'text-violet-700',
+                iconBg: 'bg-seguimiento-soft text-seguimiento border-seguimiento/30',
+                barGradient: 'from-seguimiento-claro to-seguimiento',
+                subGradient: 'from-seguimiento-soft to-seguimiento-claro',
+                textColor: 'text-seguimiento',
                 desc: 'Solicitudes cotizadas en revisión, prórroga o vencidas (ya incluidas en Cotizadas / Parciales)',
                 completas: metricas.enSeguimiento.solicitudes,
                 parciales: 0,
