@@ -242,7 +242,7 @@ export const HiloComentariosItem = ({
       />
       
       <div 
-        className="hilo-panel fixed inset-0 z-100 bg-white flex flex-col md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[92%] md:max-w-xl md:h-162.5 md:max-h-[88vh] md:rounded-3xl md:shadow-2xl md:border md:border-slate-200/80 overflow-hidden"
+        className="hilo-panel fixed inset-0 z-100 surface-flotante flex flex-col md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[92%] md:max-w-xl md:h-162.5 md:max-h-[88vh] md:rounded-3xl overflow-hidden"
         data-saliendo={saliendo}
         style={offsetY > 0 || isDragging ? {
           transform: `translateY(${offsetY}px)`,

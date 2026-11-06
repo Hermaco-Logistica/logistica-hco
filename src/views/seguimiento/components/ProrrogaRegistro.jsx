@@ -106,7 +106,7 @@ const AccionesDropdown = ({ solicitud, record, onAtender, onResponder }) => {
             right: `${coords.right}px`,
             zIndex: 9999
           }}
-          className="min-w-[150px] rounded-[8px] border border-[var(--detalle-border)] bg-[var(--detalle-surface)] p-1 shadow-xl animate-in fade-in zoom-in-95 duration-100"
+          className="min-w-[150px] surface-flotante rounded-[8px] p-1 animate-in fade-in zoom-in-95 duration-100"
         >
           <button
             type="button"

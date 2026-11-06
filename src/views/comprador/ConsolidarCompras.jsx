@@ -294,7 +294,7 @@ export const ConsolidarCompras = () => {
                 />
 
                 {mostrarSugerenciasProveedor && datosOC.proveedor.trim().length >= 2 && (
-                  <div className="absolute z-20 mt-2 w-full max-h-56 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 shadow-xl">
+                  <div className="absolute z-20 mt-2 w-full max-h-56 overflow-y-auto rounded-xl bg-slate-900 shadow-flotante">
                     {buscandoProveedor && (
                       <div className="px-4 py-3 text-[10px] font-bold text-slate-400">Buscando proveedores guardados...</div>
                     )}

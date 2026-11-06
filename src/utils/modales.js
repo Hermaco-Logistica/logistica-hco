@@ -55,7 +55,7 @@ export const VARIANTES = {
 };
 
 const BASE_FONDO = 'modal-fondo fixed inset-0 flex overflow-y-auto';
-const BASE_PANEL = 'modal-panel flex w-full flex-col overflow-hidden bg-white shadow-[0_24px_64px_rgba(0,0,0,0.14)] outline-none';
+const BASE_PANEL = 'modal-panel flex w-full flex-col overflow-hidden surface-flotante outline-none';
 
 export const clasesFondo = ({ variante = 'centrado', capa = 'modal' } = {}) => (
   `${BASE_FONDO} ${CAPAS[capa] || CAPAS.modal} ${FONDO} ${(VARIANTES[variante] || VARIANTES.centrado).posicion}`

@@ -704,7 +704,7 @@ export const Calculadora = ({ onGuardar }) => {
               {aduana.toFixed(2)}
             </div>
             {/* Tooltip */}
-            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] p-2 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 pointer-events-none shadow-xl border border-slate-700 font-bold uppercase tracking-wide">
+            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] p-2 rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 pointer-events-none shadow-flotante font-bold uppercase tracking-wide">
               Suma de gastos adicionales
             </div>
           </div>
@@ -725,7 +725,7 @@ export const Calculadora = ({ onGuardar }) => {
                   {factoresExpandidos ? 'Cerrar' : 'Ver más'}
                 </button>
                 {factoresExpandidos && (
-                  <div className="absolute right-0 top-full z-50 mt-2 flex w-72 max-w-[calc(100vw-3rem)] flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-xl">
+                  <div className="surface-flotante absolute right-0 top-full z-50 mt-2 flex w-72 max-w-[calc(100vw-3rem)] flex-col gap-2 rounded-xl p-3 text-left">
                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Factores aplicados</span>
                 {factoresAereosFijados.map(({ factor, cantidad }) => (
                   <Etiqueta key={factor} tono="exito" className="flex justify-between">

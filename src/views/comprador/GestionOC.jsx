@@ -702,7 +702,7 @@ export const GestionOC = ({ readOnly = false }) => {
                 )}
               </div>
               {mostrarCalendario && (
-                <div className="absolute right-0 mt-2 z-40 bg-white shadow-[var(--tf-shadow-card)] rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+                <div className="surface-flotante absolute right-0 mt-2 z-40 rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
                     <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
@@ -804,7 +804,7 @@ export const GestionOC = ({ readOnly = false }) => {
           </div>
 
           {mostrarCalendario && (
-            <div className="absolute right-0 mt-2 z-30 bg-white shadow-[var(--tf-shadow-card)] rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+            <div className="surface-flotante absolute right-0 mt-2 z-30 rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
               <div className="flex items-center justify-between mb-4">
                 <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
                 <span className="text-xs font-black uppercase text-slate-700 tracking-wider">

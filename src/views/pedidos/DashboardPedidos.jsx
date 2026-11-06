@@ -977,7 +977,7 @@ export const DashboardPedidos = ({ role }) => {
                 )}
               </div>
               {mostrarCalendarioConfirmado && (
-                <div className="absolute right-0 mt-2 z-40 bg-white shadow-[var(--tf-shadow-card)] rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+                <div className="surface-flotante absolute right-0 mt-2 z-40 rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
                   <div className="flex items-center justify-between mb-4">
                     <button type="button" onClick={() => cambiarMesConfirmado(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
                     <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
@@ -1075,7 +1075,7 @@ export const DashboardPedidos = ({ role }) => {
           </div>
 
           {mostrarCalendarioConfirmado && (
-            <div className="absolute right-0 mt-2 z-30 bg-white shadow-[var(--tf-shadow-card)] rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
+            <div className="surface-flotante absolute right-0 mt-2 z-30 rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
               <div className="flex items-center justify-between mb-4">
                 <button type="button" onClick={() => cambiarMesConfirmado(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
                 <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
@@ -1168,7 +1168,7 @@ export const DashboardPedidos = ({ role }) => {
                   />
 
                   {mostrarSugerenciasProveedor && nuevaOC.proveedor.trim().length >= 2 && (
-                    <div className="absolute z-20 mt-2 w-full max-h-56 overflow-y-auto scrollbar-hide rounded-xl border border-slate-700 bg-slate-900 shadow-xl">
+                    <div className="absolute z-20 mt-2 w-full max-h-56 overflow-y-auto scrollbar-hide rounded-xl bg-slate-900 shadow-flotante">
                       {buscandoProveedor && (
                         <div className="px-4 py-3 text-[10px] font-bold text-slate-400">Buscando proveedores guardados...</div>
                       )}
@@ -1544,7 +1544,7 @@ export const DashboardPedidos = ({ role }) => {
                       onChange={(e) => setNuevaOC({ ...nuevaOC, proveedor: e.target.value.toUpperCase() })}
                     />
                     {mostrarSugerenciasProveedor && nuevaOC.proveedor.trim().length >= 2 && (
-                      <div className="absolute z-20 mt-2 w-full max-h-48 overflow-y-auto scrollbar-hide rounded-xl bg-white shadow-[0_8px_24px_rgba(0,0,0,0.14)]">
+                      <div className="surface-flotante absolute z-20 mt-2 w-full max-h-48 overflow-y-auto scrollbar-hide rounded-xl">
                         {buscandoProveedor && (
                           <div className="px-4 py-3 text-[12.5px] text-neutral-500">Buscando proveedores guardados...</div>
                         )}

@@ -74,7 +74,7 @@ export const NuevoPedidoMobileCard = ({
           )}
 
           {mostrarSugerenciasProducto && String(p.desc || '').trim().length >= 1 && (
-            <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg py-1">
+            <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto surface-flotante rounded-lg py-1">
               {buscandoProducto && (
                 <div className="px-4 py-2 flex items-center gap-2 text-xs font-medium text-slate-400 italic">
                   <Loader2 size={14} className="animate-spin" />
@@ -159,7 +159,7 @@ export const NuevoPedidoMobileCard = ({
             />
 
             {mostrarSugerenciasMarca && String(p.marca || '').trim().length >= 2 && (
-              <div className="absolute z-50 mt-2 w-full max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+              <div className="surface-flotante absolute z-50 mt-2 w-full max-h-64 overflow-y-auto rounded-xl">
                 {buscandoMarca && (
                   <div className="px-4 py-3 text-xs font-bold text-slate-500">Buscando marcas guardadas...</div>
                 )}
