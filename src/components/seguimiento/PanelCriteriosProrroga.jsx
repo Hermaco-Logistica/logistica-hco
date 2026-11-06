@@ -56,7 +56,7 @@ export const PanelCriteriosProrroga = ({ solicitud, resumen }) => {
   ];
 
   return (
-    <section className="mb-6 rounded-3xl bg-white p-5 shadow-[var(--tf-shadow-card)]" aria-label="Criterios para evaluar la prórroga">
+    <section className="surface mb-6 p-5" aria-label="Criterios para evaluar la prórroga">
       <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Criterios de evaluación</h3>
 
       <ul className="mt-3 space-y-1.5">
