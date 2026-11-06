@@ -123,7 +123,7 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
           ) : (
             <>
               {/* Vista Desktop (≥ 768px): fixed layout sin desborde horizontal en ≥ 1100px */}
-              <div className="hidden md:block tf-tabla-card">
+              <div className="hidden md:block tf-tabla-card tf-tabla-card--plana">
                 <table className="tf-tabla text-left" style={{ tableLayout: 'fixed', minWidth: '980px' }}>
                   <colgroup>
                     <col style={{ width: '18%' }} />

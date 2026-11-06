@@ -48,7 +48,7 @@
 .prorrogas-kpis {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border: 1px solid var(--detalle-border);
+  box-shadow: var(--shadow-reposo);
   border-radius: var(--detalle-radius-card);
   background: var(--detalle-surface);
   overflow: hidden;

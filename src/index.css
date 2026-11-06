@@ -4,7 +4,10 @@
 /* REGLA DE SUPERFICIES: al usar `surface` o <Card> no añadas bg-*, shadow-* ni border decorativo. En el CSS compilado
    .bg-white y .shadow-* van DESPUÉS de .surface y la sobrescriben. Quedan permitidos: radio propio si la pieza lo necesita
    distinto (rounded-2xl = 14px en tarjetas pequeñas), bordes de estado (selección, error, foco, dashed, border-primary),
-   separadores (border-t/b/l/r, divide-*) y la sombra de botones y chips (no son superficies). Lo flotante usa surface-flotante. */
+   separadores (border-t/b/l/r, divide-*). Lo flotante (modales, menús, popovers) usa surface-flotante.
+   DENTRO de modales, menús y popovers las superficies son PLANAS (sin sombra de reposo ni borde; p. ej. tf-tabla-card--plana):
+   la elevación la pone el contenedor. Los botones llevan --shadow-boton (shadow-boton, hover:shadow-boton-hover) y no borde;
+   Etiqueta, StatusChip, inputs, selects y segmentos de filtro no llevan sombra de botón. */
 
 /* Escala de radios (REDISENO_COHERENCIA_UI.md §3): 12 control, 14 inner, 24 card, píldora.
    En Tailwind v4 el tema vive en CSS (@theme); tailwind.config.js no se carga sin @config.
@@ -357,6 +360,10 @@
   .tf-tabla-card {
     @apply surface;
     padding: 0.75rem;
+  }
+  /* Dentro de modales, menús y popovers las superficies son planas: la elevación la pone el contenedor. */
+  .tf-tabla-card--plana {
+    box-shadow: none;
   }
   .tf-tabla {
     width: 100%;

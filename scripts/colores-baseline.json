@@ -5,7 +5,7 @@
     "src/utils/etiquetas.js"
   ],
   "totales": {
-    "clases": 1005,
+    "clases": 998,
     "literales": 90
   },
   "archivos": {
@@ -182,7 +182,7 @@
       "literales": 0
     },
     "src/views/comprador/GestionOC.jsx": {
-      "clases": 18,
+      "clases": 17,
       "literales": 0
     },
     "src/views/comprador/RevisionPedidoManual.jsx": {
@@ -206,11 +206,11 @@
       "literales": 0
     },
     "src/views/vendedor/DetallePedidoManual.jsx": {
-      "clases": 19,
+      "clases": 17,
       "literales": 0
     },
     "src/views/vendedor/detalle-rfq/DetalleRFQAcciones.jsx": {
-      "clases": 17,
+      "clases": 15,
       "literales": 0
     },
     "src/views/vendedor/detalle-rfq/DetalleRFQProductos.jsx": {
@@ -218,7 +218,7 @@
       "literales": 0
     },
     "src/views/vendedor/detalle-rfq/DetalleRFQVista.jsx": {
-      "clases": 27,
+      "clases": 25,
       "literales": 0
     },
     "src/views/vendedor/nueva-rfq/NuevaRFQView.jsx": {
