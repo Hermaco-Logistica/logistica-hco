@@ -193,7 +193,7 @@ export const ETIQUETAS_FASE_SEGUIMIENTO = {
   cierre_requerido: { texto: 'Cierre requerido', titulo: 'Agotó revisiones y prórroga: debe cerrarse como pedido o venta perdida.', tono: 'peligro', icono: AlertTriangle },
   vencida: { texto: 'Vencida', titulo: 'Venció y aún no tiene revisión ni prórroga.', tono: 'peligro', icono: AlarmClock },
   prorroga_pendiente: { texto: 'Prórroga pendiente', titulo: 'Compras aún no responde la prórroga solicitada.', tono: 'info', icono: Hourglass },
-  en_prorroga: { texto: 'En prórroga', titulo: 'Tiene una prórroga aprobada vigente.', tono: 'violeta', icono: CalendarClock },
+  en_prorroga: { texto: 'En prórroga', titulo: 'Tiene una prórroga aprobada vigente.', tono: 'info', icono: CalendarClock },
   en_revision: { texto: 'En revisión', titulo: 'Revisión activa con el cliente.', tono: 'aviso', icono: Eye }
 };
 
