@@ -14,6 +14,8 @@ menú o de un popover es **plano**: la elevación la pone el contenedor.
 | `--shadow-boton` | botones en reposo | `0 1px 2px (8 %)`, `0 4px 10px -2px (10 %)` |
 | `--shadow-boton-hover` | hover (con levante de 1 px) | `0 1px 2px (10 %)`, `0 6px 14px -2px (14 %)` |
 | `--shadow-boton-activo` | active | `0 1px 1px (8 %)` |
+| `--shadow-menu` | desplegables anclados a un campo (`MenuAnclado`) | `0 20px 32px -16px (24 %)`, `0 8px 16px -8px (12 %)`: solo hacia el lado en que se abre, sin spread lateral |
+| `--color-filtro-activo` / `--color-filtro-texto` | campo de filtro con valor (no es una superficie: es un estado) | 16 % de `primary` sobre `surface`; `primary-strong` con 20 % de negro |
 | `--sombra-alfa` | multiplicador de opacidad por rol | sin rol 1.08, comprador 0.72, vendedor 1.45, gerente 1.56, administrador 1.55 |
 
 - **Tinte:** el color de la sombra es `color-mix(in srgb, var(--color-primary) calc(N% * var(--sombra-alfa)), transparent)`. Se usa el color de marca del rol (`primary`)
@@ -28,6 +30,7 @@ menú o de un popover es **plano**: la elevación la pone el contenedor.
 - `surface`: fondo `--color-surface`, `--radius-card` (24 px) y `--shadow-reposo`, sin borde.
 - `surface-flotante`: fondo y `--shadow-flotante`; el radio lo pone cada pieza (`rounded-3xl`, `rounded-xl`…).
 - `surface-plana`: fondo y radio de tarjeta, sin sombra ni borde. Para superficies dentro de otra superficie, de un modal, menú o popover.
+- Menús anclados a un campo (`MenuAnclado`, filtros de escritorio): `bg-surface` + `shadow-menu`, sin contorno y sin `surface-flotante` (su sombra lateral de 64 px se recortaría con un `clip-path`). El campo abierto y el menú se leen como una pieza: mismo fondo y sin el radio del lado de unión. Ver docs/filtros.md.
 - `.tf-tabla-card`: `surface` con padding de 0.75 rem; `.tf-tabla-card--plana`: la variante sin sombra (dentro de modales). `.tf-surface-panel`: `surface`.
 - `<Card>` (`components/ui/Card.jsx`): usa `surface`; acepta `as`, `className` y `padding` (`none`, `sm`, `md`).
 - Botones: `<Button>`, `AccionItemButton` y `ModalBoton` llevan `shadow-boton hover:shadow-boton-hover active:shadow-boton-activo` (y `disabled:shadow-none`).
