@@ -195,7 +195,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
   ].filter(Boolean).length;
 
   return (
-    <PageContainer className="animate-in fade-in duration-500 pb-2">
+    <PageContainer className="animate-in fade-in duration-500">
       <PageHeader title={title} subtitle="Estado de RFQs enviadas" actions={canCreate && (
           <div className="flex gap-2 w-full sm:w-auto">
             <Button
@@ -570,7 +570,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               <div
                 key={s.id}
                 onClick={() => navigate(s.tipo === 'Pedido Manual' ? `/vendedor/pedido-manual/${s.id}` : `/vendedor/detalle/${s.id}`)}
-                className="surface rounded-2xl p-4 transition-all cursor-pointer relative active:scale-[0.98] touch-manipulation"
+                className="surface rounded-2xl p-4 hover:shadow-flotante transition-all cursor-pointer relative active:scale-[0.98] touch-manipulation"
               >
                 {/* Header: Correlativo + Alertas (Izq) y Estado (Der) */}
                 <div className="flex items-start justify-between mb-1.5">

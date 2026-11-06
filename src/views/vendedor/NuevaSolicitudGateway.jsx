@@ -31,7 +31,7 @@ export const NuevaSolicitudGateway = ({ role }) => {
         {/* Opción RFQ */}
         <button
           onClick={() => navigate('/vendedor/nueva-rfq')}
-          className="surface group relative border border-transparent p-6 sm:p-8 text-left hover:border-primary transition-all duration-300 overflow-hidden"
+          className="surface group relative border border-transparent p-6 sm:p-8 text-left hover:border-primary hover:shadow-flotante transition-all duration-300 overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300">
             <ArrowRight className="text-primary" size={24} />
@@ -52,7 +52,7 @@ export const NuevaSolicitudGateway = ({ role }) => {
         {/* Opción Pedido Manual */}
         <button
           onClick={() => navigate('/vendedor/nuevo-pedido')}
-          className="surface group relative bg-primary-soft border border-transparent p-6 sm:p-8 text-left hover:border-primary transition-all duration-300 overflow-hidden"
+          className="surface group relative bg-primary-soft border border-transparent p-6 sm:p-8 text-left hover:border-primary hover:shadow-flotante transition-all duration-300 overflow-hidden"
         >
           <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300">
             <ArrowRight className="text-primary-strong" size={24} />
