@@ -1814,11 +1814,11 @@ export const Calculadora = ({ onGuardar }) => {
               <div className="flex gap-3 sm:gap-4 border-r border-slate-200 pr-3 sm:pr-6 text-xs font-bold uppercase text-slate-500">
                 <div className="text-right">
                   <span className="block text-[8px] font-black text-slate-400">Aéreo (+IVA)</span>
-                  <span className="text-xs sm:text-sm font-black text-blue-600">${tAconIva.toFixed(2)}</span>
+                  <span className="text-xs sm:text-sm font-black text-mode-air-strong">${tAconIva.toFixed(2)}</span>
                 </div>
                 <div className="text-right border-l border-slate-100 pl-3 sm:pl-4">
                   <span className="block text-[8px] font-black text-slate-400">Marítimo (+IVA)</span>
-                  <span className="text-xs sm:text-sm font-black text-teal-600">${tMconIva.toFixed(2)}</span>
+                  <span className="text-xs sm:text-sm font-black text-mode-sea-strong">${tMconIva.toFixed(2)}</span>
                 </div>
               </div>
 
