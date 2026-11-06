@@ -429,10 +429,7 @@ function App() {
           />
           <main
             ref={setMainEl}
-            style={{
-              paddingBottom: 'calc(var(--bottom-dock-h, 0px) + 16px)'
-            }}
-            className="tf-scroll tf-gutter-x flex-1 min-h-0 min-w-0 md:h-full overflow-y-auto overscroll-y-contain pt-3.5 sm:pt-5 md:pt-6 lg:pt-8 md:pb-8 w-full @container/main"
+            className="tf-scroll tf-gutter-x flex-1 min-h-0 min-w-0 md:h-full overflow-y-auto overscroll-y-contain pt-3.5 sm:pt-5 md:pt-6 lg:pt-8 pb-[calc(var(--bottom-dock-h,0px)+16px)] md:pb-10 w-full @container/main"
           >
             <Routes>
               {isComprador ? (
