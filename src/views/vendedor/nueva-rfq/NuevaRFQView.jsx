@@ -24,7 +24,7 @@ export const NuevaRFQView = ({ viewModel }) => {
 
       <form id="form-nueva-rfq" onSubmit={guardarRFQ} className="space-y-6">
         {/* Card Cliente */}
-        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl shadow-[var(--tf-shadow-card)]">
+        <div className="surface p-5 sm:p-8 sm:rounded-4xl">
           <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Nombre del Cliente / Empresa</label>
           <div className="relative">
             <input 
@@ -99,7 +99,7 @@ export const NuevaRFQView = ({ viewModel }) => {
           </div>
         </div>
 
-        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl shadow-[var(--tf-shadow-card)]">
+        <div className="surface p-5 sm:p-8 sm:rounded-4xl">
           <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest" htmlFor="comentarios-vendedor">
             Comentarios del Vendedor
           </label>
@@ -115,7 +115,7 @@ export const NuevaRFQView = ({ viewModel }) => {
         </div>
 
         {/* Listado de Productos */}
-        <div className="bg-white rounded-3xl sm:rounded-4xl shadow-[var(--tf-shadow-card)] overflow-visible">
+        <div className="surface sm:rounded-4xl overflow-visible">
           <div className="p-4 sm:p-6 bg-slate-900 flex justify-between items-center rounded-t-3xl sm:rounded-t-4xl">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Items Solicitados</span>
             <button 

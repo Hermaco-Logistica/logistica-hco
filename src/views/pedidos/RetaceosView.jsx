@@ -114,7 +114,7 @@ export const RetaceosView = ({ role }) => {
         subtitle="Desglose de Aduana"
       />
 
-      <div className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="surface p-4 rounded-2xl mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Mes</label>
           <select 

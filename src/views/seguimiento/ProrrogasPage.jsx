@@ -258,7 +258,7 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
       />
 
       {/* Tarjeta de filtros: fechas, buscador y, para gerencia, el filtro de vendedor */}
-      <div className="bg-white p-3.5 rounded-2xl shadow-[var(--tf-shadow-card)] mb-4 md:p-6 md:rounded-3xl md:border md:border-slate-200 md:shadow-sm md:mb-6">
+      <div className="surface p-3.5 rounded-2xl mb-4 md:p-6 md:rounded-3xl md:mb-6">
         {/* Versión móvil (< 768px) */}
         <div className="md:hidden">
           <div className="flex items-center justify-between gap-2">

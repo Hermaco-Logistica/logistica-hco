@@ -338,7 +338,7 @@ export const GestionOC = ({ readOnly = false }) => {
         </div>
 
         {/* CONTENEDOR PRINCIPAL */}
-        <div className="bg-white rounded-3xl sm:rounded-[2.5rem] shadow-[var(--tf-shadow-card)] md:shadow-[var(--tf-shadow-card)] overflow-hidden">
+        <div className="surface sm:rounded-[2.5rem] overflow-hidden">
           
           {/* HEADER ESCRITORIO (>= md) */}
           <div className="hidden md:flex bg-slate-900 p-8 lg:p-10 flex-col md:flex-row justify-between md:items-end gap-6">
@@ -450,13 +450,13 @@ export const GestionOC = ({ readOnly = false }) => {
 
             {/* Resumen Móvil (< md): Tarjetas de Total y Partidas */}
             <div className="md:hidden grid grid-cols-2 gap-2.5 mb-3.5">
-              <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)]">
+              <div className="surface p-3 rounded-2xl">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Total de la Orden</span>
                 <span className="text-base font-black text-slate-900 font-mono block truncate">
                   ${totalOrden.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)]">
+              <div className="surface p-3 rounded-2xl">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Partidas</span>
                 <div className="flex items-baseline gap-1 mt-0.5">
                   <span className="text-base font-black text-slate-900 font-mono">
@@ -535,7 +535,7 @@ export const GestionOC = ({ readOnly = false }) => {
                   return (
                     <div
                       key={idx}
-                      className="bg-white rounded-2xl p-4 shadow-[var(--tf-shadow-card)] space-y-3 transition-all"
+                      className="surface rounded-2xl p-4 space-y-3 transition-all"
                     >
                       {/* Fila 1: Cantidad + Marca + Total de línea */}
                       <div className="flex items-center justify-between gap-2">
@@ -654,7 +654,7 @@ export const GestionOC = ({ readOnly = false }) => {
         </div>
 
         {showMobileFilters && (
-          <div ref={refCalendarioMobile} className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div ref={refCalendarioMobile} className="surface p-4 rounded-2xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
             <div>
               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Proveedor</label>
               <select 
@@ -754,7 +754,7 @@ export const GestionOC = ({ readOnly = false }) => {
       </div>
 
       {/* Controles de Filtros Desktop (>= md) */}
-      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6 bg-white p-6 rounded-3xl shadow-[var(--tf-shadow-card)]">
+      <div className="surface hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6 p-6">
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (OC / Item / Tracking)</label>
           <input 
@@ -866,7 +866,7 @@ export const GestionOC = ({ readOnly = false }) => {
       {/* Vista Móvil (< md): Tarjetas Detalladas y Espaciosas con toda la información de escritorio */}
       <div className="md:hidden space-y-3.5">
         {paginatedOrdenes.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center text-slate-400 font-bold text-xs shadow-[var(--tf-shadow-card)]">
+          <div className="surface rounded-2xl p-8 text-center text-slate-400 font-bold text-xs">
             No se encontraron órdenes con los filtros aplicados.
           </div>
         ) : (

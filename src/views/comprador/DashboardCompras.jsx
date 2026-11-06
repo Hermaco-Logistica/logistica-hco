@@ -416,7 +416,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       />
 
       {/* BARRA DE FILTROS MÓVIL (visible en < md) */}
-      <div className="md:hidden bg-white p-3.5 rounded-2xl shadow-[var(--tf-shadow-card)] mb-4 space-y-3">
+      <div className="surface md:hidden p-3.5 rounded-2xl mb-4 space-y-3">
         <div className="flex items-center gap-2">
           <div className="flex-1">
             <input 
@@ -544,7 +544,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       </div>
 
       {/* CONTROLES DE FILTROS DESKTOP (visible en >= md) */}
-      <div className="hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 mb-6 bg-white p-6 rounded-3xl shadow-[var(--tf-shadow-card)]">
+      <div className="surface hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 mb-6 p-6">
         <div>
           <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Resultado</label>
           <select value={filterResultado} onChange={(e) => { setFilterResultado(e.target.value); setCurrentPage(1); }} className="tf-campo cursor-pointer">
@@ -670,7 +670,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       {/* VISTA MÓVIL: TARJETAS DETALLADAS Y ESPACIOSAS (< md) */}
       <div className="space-y-3.5 md:hidden mb-6">
         {paginatedSolicitudes.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center text-slate-400 font-bold text-xs shadow-[var(--tf-shadow-card)]">
+          <div className="surface rounded-2xl p-8 text-center text-slate-400 font-bold text-xs">
             No se encontraron cotizaciones con los filtros aplicados.
           </div>
         ) : (
