@@ -680,3 +680,22 @@ describe('Hoja móvil: scroll, altura y botón atrás', () => {
     expect(menu.querySelector('ul').className).toContain('scroll-filtros');
   });
 });
+
+describe('FiltroBusqueda con etiqueta en la hoja', () => {
+  it('en la hoja la fila lleva la etiqueta visible; en la barra no', () => {
+    mm(true);
+    render(
+      <BarraFiltros
+        filtros={<FiltroBusqueda value="" onChange={() => {}} placeholder="N° de OC…" etiqueta="N° OC" ariaLabel="Buscar por N° de OC" />}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    const hoja = screen.getByRole('dialog');
+    expect(hoja.textContent).toContain('N° OC');
+    expect(screen.getByLabelText('Buscar por N° de OC').tagName).toBe('INPUT');
+    cleanup();
+    mm(false);
+    const { container } = render(<BarraFiltros filtros={<FiltroBusqueda value="" onChange={() => {}} placeholder="N° de OC…" etiqueta="N° OC" ariaLabel="Buscar por N° de OC" />} />);
+    expect(container.textContent).not.toContain('N° OC');
+  });
+});

@@ -915,6 +915,7 @@ export const DashboardPedidos = ({ role }) => {
               value={searchOCRef}
               onChange={(texto) => { setSearchOCRef(texto); setCurrentPage(1); }}
               placeholder="N° de OC…"
+              etiqueta="N° OC"
               ariaLabel="Buscar por N° de OC"
             />
             {/* Rango de fecha confirmado: el calendario existente (estado y lógica sin cambios) como hijo del contenedor */}
