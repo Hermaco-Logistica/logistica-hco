@@ -196,6 +196,8 @@
   --color-filtro-abierto: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
   /* Texto del valor de un filtro activo: primary-strong oscurecido un 20 % para llegar a 4,5:1 sobre --color-filtro-activo en todos los roles y sin rol. */
   --color-filtro-texto: color-mix(in srgb, var(--color-primary-strong) 80%, black);
+  /* Opción activa de un segmentado: primary-strong oscurecido un 20 % para que el texto primary-soft llegue a 4,5:1 también sin rol. Utilidad: bg-segmento-activo. */
+  --color-segmento-activo: color-mix(in srgb, var(--color-primary-strong) 80%, black);
 
   /* "En seguimiento" con la paleta del rol: relleno oscuro (primary-strong) y letra clara (primary-soft).
      Ciruela fijo anterior: #72467c y #e2d8e4. Utilidades: bg-seguimiento, text-seguimiento, bg-seguimiento-soft,
@@ -295,6 +297,7 @@
     --color-filtro-activo: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
     --color-filtro-abierto: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
     --color-filtro-texto: color-mix(in srgb, var(--color-primary-strong) 80%, black);
+    --color-segmento-activo: color-mix(in srgb, var(--color-primary-strong) 80%, black);
     --color-secondary-soft: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
     --color-seguimiento: var(--color-primary-strong);
     --color-seguimiento-soft: var(--color-primary-soft);

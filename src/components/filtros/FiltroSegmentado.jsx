@@ -6,7 +6,8 @@ import { useModoFiltro } from './contexto';
 const MAX_OPCIONES_SEGMENTADO_EN_HOJA = 3;
 
 /**
- * Selector segmentado plano (pista gris, opción activa en blanco). `opciones`: [{ value, label }]. `onChange(valor)`.
+ * Selector segmentado plano (pista gris suave; opción activa con el tono oscuro del rol: fondo `segmento-activo` (primary-strong un 20 % más oscuro), texto `primary-soft`, negrita;
+ * el fondo cambia con transición suave, sin movimientos bruscos). `opciones`: [{ value, label }]. `onChange(valor)`.
  * `prefijo` (opcional, solo en la barra): nombre del filtro dentro de la pista ("Vendedor:"); en la hoja lo da `etiqueta`.
  * `valorNeutro` (opcional): el valor que equivale a "sin filtro"; si `value` es otro, el segmentado usa el estado "seleccionado".
  * La pista es compacta: ocupa el ancho de su contenido (`w-max`, no se estira a la fila) y cubre TODAS las opciones; los botones
@@ -40,7 +41,7 @@ export const FiltroSegmentado = ({ opciones = [], value, onChange, ariaLabel, et
               type="button"
               aria-pressed={activo}
               onClick={() => onChange(o.value)}
-              className={`inline-flex h-full cursor-pointer items-center justify-center whitespace-nowrap rounded-[10px] px-3 text-xs font-semibold transition-colors ${activo ? `bg-white ${seleccionado ? 'text-filtro-texto' : 'text-slate-900'}` : 'text-slate-500 hover:text-slate-800'}`}
+              className={`inline-flex h-full cursor-pointer items-center justify-center whitespace-nowrap rounded-[10px] px-3 text-xs font-medium transition-colors duration-[var(--anim-cerrar)] ease-[var(--ease-cerrar)] ${activo ? 'bg-segmento-activo font-semibold text-primary-soft' : `text-slate-600 hover:text-slate-900`}`}
             >
               {o.label}
             </button>

@@ -144,11 +144,12 @@ function MobilePeriodStrip({ periodo, setPeriodo, onChange }) {
           key={p.id}
           id={`periodo-btn-${p.id}`}
           type="button"
+          aria-pressed={periodo === p.id}
           onClick={() => { setPeriodo(p.id); onChange?.(); }}
-          className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-bold transition-all ${
+          className={`shrink-0 px-3.5 py-2 rounded-full text-xs transition-colors duration-[var(--anim-cerrar)] ease-[var(--ease-cerrar)] ${
             periodo === p.id
-              ? 'bg-slate-900 text-white shadow-xs'
-              : 'bg-white text-slate-500 border border-slate-200/80'
+              ? 'bg-segmento-activo font-semibold text-primary-soft shadow-xs'
+              : 'bg-white font-medium text-slate-600 border border-slate-200/80'
           }`}
         >
           {p.label}

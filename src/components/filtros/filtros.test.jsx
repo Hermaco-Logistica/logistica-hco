@@ -876,3 +876,16 @@ describe('FiltroSelect sinTodos y acciones de la barra', () => {
     expect(ult.className).toContain('min-h-11');
   });
 });
+
+describe('FiltroSegmentado: estilo de selección', () => {
+  it('la opción activa usa el tono oscuro del rol, negrita y transición; las demás peso medio', () => {
+    mm(false);
+    render(<FiltroSegmentado ariaLabel="Período" opciones={[{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }]} value="a" onChange={() => {}} />);
+    const a = screen.getByRole('button', { name: 'A' }); const b = screen.getByRole('button', { name: 'B' });
+    for (const c of ['bg-segmento-activo', 'text-primary-soft', 'font-semibold', 'transition-colors']) expect(a.className).toContain(c);
+    expect(a.getAttribute('aria-pressed')).toBe('true');
+    expect(b.className).toContain('font-medium');
+    expect(b.className).not.toContain('bg-segmento-activo');
+    expect(b.getAttribute('aria-pressed')).toBe('false');
+  });
+});
