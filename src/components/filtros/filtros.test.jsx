@@ -780,3 +780,65 @@ describe('ContadorResultados: singular y plural', () => {
     expect(container.textContent).toBe('1 resultado');
   });
 });
+
+describe('BarraFiltros con filas y búsqueda aparte (Prórrogas)', () => {
+  const montar = (props = {}) => render(
+    <BarraFiltros
+      filas={props.filas || [[<span key="f">FECHAS</span>], [<span key="v">VENDEDOR</span>]]}
+      busquedaAparte
+      busqueda={<FiltroBusqueda value="" onChange={() => {}} ariaLabel="buscar" />}
+      limpiar={<BotonLimpiar activos={props.activos ?? 2} onClick={() => {}} />}
+      extremo={<ContadorResultados total={5} singular="registro" plural="registros" />}
+      filtrosActivos={1}
+      resultados={5}
+      busquedaEnBarraMovil
+    />
+  );
+  it('escritorio: tarjeta de filtros con las filas apiladas y Limpiar al final de la última, y tarjeta de búsqueda aparte con el contador', () => {
+    mm(false);
+    const { container } = montar();
+    const tarjetas = container.querySelectorAll('section');
+    expect(tarjetas).toHaveLength(2);
+    const filas = tarjetas[0].querySelectorAll(':scope > div > div');
+    expect(filas).toHaveLength(2);
+    expect(filas[0].textContent).toBe('FECHAS');
+    expect(filas[1].textContent).toContain('VENDEDOR');
+    const bloque = filas[1].querySelector('[data-bloque]');
+    expect(bloque.textContent).toContain('Limpiar filtros (2)');
+    expect(bloque.className).toContain('w-44');
+    expect(bloque.textContent).not.toContain('registros');
+    expect(tarjetas[0].querySelector('input')).toBeNull();
+    expect(tarjetas[1].querySelector('input[type="search"]')).toBeTruthy();
+    expect(tarjetas[1].textContent).toContain('5 registros');
+    expect(tarjetas[0].compareDocumentPosition(tarjetas[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+  it('el hueco de Limpiar está siempre reservado (existe aunque no haya filtros activos)', () => {
+    mm(false);
+    const { container } = montar({ activos: 0 });
+    const bloque = container.querySelector('section [data-bloque]');
+    expect(bloque).toBeTruthy();
+    expect(bloque.textContent).toBe('');
+  });
+  it('una sola fila cuando no hay segundo filtro', () => {
+    mm(false);
+    const { container } = montar({ filas: [[<span key="f">FECHAS</span>]] });
+    const filas = container.querySelectorAll('section')[0].querySelectorAll(':scope > div > div');
+    expect(filas).toHaveLength(1);
+    expect(filas[0].querySelector('[data-bloque]')).toBeTruthy();
+  });
+  it('móvil: una tarjeta con búsqueda, "Filtros (N)" (solo lo de la hoja), Limpiar y contador; la hoja sin buscador', () => {
+    mm(true);
+    const { container } = montar();
+    expect(container.querySelectorAll('section')).toHaveLength(1);
+    expect(container.querySelector('input[type="search"]')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Filtros \(1\)/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Limpiar filtros (2 activos)' })).toBeTruthy();
+    expect(container.textContent).toContain('5 registros');
+    fireEvent.click(screen.getByRole('button', { name: /Filtros \(1\)/ }));
+    const hoja = screen.getByRole('dialog');
+    expect(hoja.querySelector('input[type="search"]')).toBeNull();
+    expect(hoja.textContent).toContain('FECHAS');
+    expect(hoja.textContent).toContain('VENDEDOR');
+    expect(screen.getByRole('button', { name: 'Ver 5 resultados' })).toBeTruthy();
+  });
+});

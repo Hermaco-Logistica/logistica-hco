@@ -174,10 +174,17 @@ const repartir = (rejilla) => {
  *   - móvil (< md): la barra muestra "Filtros (N)" (y `extremo`); al tocarlo sube una hoja inferior (Modal, variante `hojaInferior`)
  *     con la búsqueda, los `filtros` como filas con etiqueta visible, "Limpiar (N)" en la cabecera y "Ver N resultados" en el pie.
  *     Los filtros se aplican al instante: el pie solo cierra la hoja. La barra no guarda estado de filtros, solo si la hoja está abierta.
- * `filtrosActivos` es el número de "Filtros (N)"; `resultados` el de "Ver N resultados" (opcional).
- * `busquedaEnBarraMovil` deja la búsqueda en la barra móvil en vez de dentro de la hoja.
+ * `filtrosActivos` es el número de "Filtros (N)" y cuenta SOLO lo que hay dentro de la hoja; "Limpiar (N)" (el `activos` del BotonLimpiar)
+ * cuenta todo, búsqueda incluida, así la búsqueda no se duplica en los dos números.
+ * `resultados` el de "Ver N resultados" (opcional).
+ * `busquedaEnBarraMovil` deja la búsqueda en la barra móvil en vez de dentro de la hoja; en ese caso la barra móvil también lleva
+ * `limpiar` (la hoja lo repite en su cabecera con el mismo número).
+ * `filas` (alternativa a `filtros`, solo escritorio): arreglo de filas, cada una un arreglo de nodos, apiladas con su ancho natural (sin
+ * rejilla que estire); `limpiar` va al final de la última fila con su hueco siempre reservado. En móvil se aplanan dentro de la hoja.
+ * `busquedaAparte` (con `filas`): en escritorio la búsqueda es una segunda tarjeta debajo (campo a ancho completo y, a la derecha, el
+ * `extremo`); en móvil no cambia nada.
  */
-export const BarraFiltros = ({ encabezado, busqueda, filtros, limpiar, extremo, filtrosActivos = 0, resultados, busquedaEnBarraMovil = false, tituloHoja = 'Filtros', className = '' }) => {
+export const BarraFiltros = ({ encabezado, busqueda, filtros, filas, busquedaAparte = false, limpiar, extremo, filtrosActivos = 0, resultados, busquedaEnBarraMovil = false, tituloHoja = 'Filtros', className = '' }) => {
   const movil = useMovil();
   const [abierta, setAbierta] = useState(false);
   const idHoja = useId();
@@ -196,14 +203,19 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, limpiar, extremo, 
   });
   const textoVer = resultados === undefined || resultados === null ? 'Ver resultados' : `Ver ${resultados} ${resultados === 1 ? 'resultado' : 'resultados'}`;
   const busquedaEnHoja = busqueda && !busquedaEnBarraMovil;
+  const filtrosHoja = filas ? <>{filas.flat().map((nodo, i) => <React.Fragment key={i}>{nodo}</React.Fragment>)}</> : filtros;
+  const hayFiltrosHoja = Boolean(filas ? filas.flat().length : filtros);
+  const modoFilas = Boolean(filas) && !movil;
+  const anchoBloque = busquedaAparte ? 'w-44' : 'w-72';
 
   return (
+    <>
     <section aria-label="Filtros" className={`surface p-3.5 md:p-4 ${className}`}>
       {encabezado && <div className="mb-3 flex flex-wrap items-center justify-between gap-2">{encabezado}</div>}
       {movil ? (
         <div className="flex flex-wrap items-center gap-2">
           {busqueda && busquedaEnBarraMovil && <div className="min-w-0 flex-1">{busqueda}</div>}
-          {(filtros || busquedaEnHoja) && (
+          {(hayFiltrosHoja || busquedaEnHoja) && (
             <button
               type="button"
               aria-haspopup="dialog"
@@ -216,7 +228,20 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, limpiar, extremo, 
               <span>Filtros{filtrosActivos > 0 ? ` (${filtrosActivos})` : ''}</span>
             </button>
           )}
+          {busquedaEnBarraMovil && limpiar}
           {extremo && <div className="ml-auto flex items-center gap-2">{extremo}</div>}
+        </div>
+      ) : modoFilas ? (
+        <div className="space-y-2">
+          {busqueda && !busquedaAparte && <div className="min-w-0">{busqueda}</div>}
+          {filas.map((fila, i) => (
+            <div key={i} className="flex flex-wrap items-center gap-2">
+              {fila.map((nodo, k) => <React.Fragment key={k}>{nodo}</React.Fragment>)}
+              {i === filas.length - 1 && (limpiar || extremo) && (
+                <div data-bloque className={`ml-auto flex ${anchoBloque} shrink-0 items-center justify-end gap-2`}>{limpiar}{!busquedaAparte && extremo}</div>
+              )}
+            </div>
+          ))}
         </div>
       ) : (
         <div ref={rejilla} className="-mx-1 grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] items-center gap-y-2">
@@ -236,9 +261,18 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, limpiar, extremo, 
           id={idHoja}
           onCerrar={() => setAbierta(false)}
         >
-          <ContenidoHoja idHoja={idHoja} idTitulo={idTitulo} titulo={tituloHoja} busqueda={busquedaEnHoja ? busqueda : null} filtros={filtros} limpiar={limpiar} textoVer={textoVer} />
+          <ContenidoHoja idHoja={idHoja} idTitulo={idTitulo} titulo={tituloHoja} busqueda={busquedaEnHoja ? busqueda : null} filtros={filtrosHoja} limpiar={limpiar} textoVer={textoVer} />
         </Modal>
       )}
     </section>
+    {modoFilas && busquedaAparte && busqueda && (
+      <section aria-label="Búsqueda" className={`surface p-3.5 md:p-4 ${className}`}>
+        <div className="flex items-center gap-3">
+          <div className="min-w-0 flex-1">{busqueda}</div>
+          {extremo && <div data-bloque className="flex w-40 shrink-0 items-center justify-end">{extremo}</div>}
+        </div>
+      </section>
+    )}
+    </>
   );
 };

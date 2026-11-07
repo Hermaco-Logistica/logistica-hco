@@ -115,7 +115,7 @@ export const FiltroFechas = ({ value, onChange, porDefecto, etiqueta = 'Fecha', 
   return (
     <div data-peso="3" className={`flex min-w-0 flex-wrap items-center gap-2 ${className}`}>
       <FiltroSegmentado ariaLabel={`${ariaLabel}: accesos rápidos`} opciones={ACCESOS} value={acceso} onChange={elegirAcceso} className="shrink-0" />
-      <div className={`${claseCampo({ seleccionado })} min-w-[15rem] flex-1 gap-1 px-3`}>
+      <div className={`${claseCampo({ seleccionado })} w-[22.5rem] max-w-full gap-1 px-3`}>
         <Calendar size={14} aria-hidden="true" className={`shrink-0 ${claseIcono(seleccionado)}`} />
         {entradaDesde('h-full min-w-0 flex-1 bg-transparent text-xs font-medium outline-none')}
         <span aria-hidden="true" className={`shrink-0 ${claseIcono(seleccionado)}`}>→</span>
