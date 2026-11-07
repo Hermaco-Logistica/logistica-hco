@@ -3,6 +3,7 @@ import { PageContainer } from '../../components/ui/PageContainer';
 import { TablePagination } from '../../components/ui/TablePagination';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Button } from '../../components/ui/Button';
+import { BarraFiltros, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroFechaCampo, FiltroFechasContenedor, FiltroSelect } from '../../components/filtros';
 import { collection, onSnapshot, doc, updateDoc, serverTimestamp, getDoc, getDocFromServer, query, where, runTransaction } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { 
@@ -128,7 +129,6 @@ export const DashboardPedidos = ({ role }) => {
   const [filterEstadoLogistico, setFilterEstadoLogistico] = usePersistedState('dp_filterEstadoLogistico', '');
   const [searchOCRef, setSearchOCRef] = usePersistedState('dp_searchOCRef', '');
   const [sortCompra, setSortCompra] = usePersistedState('dp_sortCompra', '');
-  const [mostrarFiltrosMobile, setMostrarFiltrosMobile] = useState(false);
 
   // Estados del calendario popover de fecha confirmado
   const [fechaConfirmadoInicio, setFechaConfirmadoInicio] = useState(null);
@@ -878,248 +878,91 @@ export const DashboardPedidos = ({ role }) => {
         )}
       />
 
-      {/* BARRA DE FILTROS MÓVIL (visible en < md) */}
-      <div className="surface md:hidden p-3.5 rounded-2xl mb-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            <input 
-              type="text" 
-              placeholder="Buscar ítem, ref, cliente..." 
-              value={searchItemRef}
-              onChange={(e) => { setSearchItemRef(e.target.value); setCurrentPage(1); }}
-              className="tf-campo"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => setMostrarFiltrosMobile(!mostrarFiltrosMobile)}
-            className={`flex items-center gap-1 px-3 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
-              filtrosActivosCount > 0 
-                ? 'bg-primary-soft border-primary/30 text-primary-strong' 
-                : 'bg-slate-50 border-slate-200 text-slate-600'
-            }`}
-          >
-            <Filter size={14} />
-            <span>Filtros{filtrosActivosCount > 0 ? ` (${filtrosActivosCount})` : ''}</span>
-            {mostrarFiltrosMobile ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-          {(searchItemRef || filtrosActivosCount > 0) && (
-            <Button
-              variant="secondary"
-              size="iconSm"
-              onClick={() => {
-                setSearchItemRef('');
-                setFilterProveedor('');
-                setFilterEstadoLogistico('');
-                setSearchOCRef('');
-                setFechaConfirmadoInicio(null);
-                setFechaConfirmadoFin(null);
-                setSortCompra('');
-                setCurrentPage(1);
-              }}
-              title="Limpiar filtros"
-            >
-              <Trash2 size={14} />
-            </Button>
-          )}
-        </div>
-
-        {mostrarFiltrosMobile && (
-          <div className="pt-3 border-t border-slate-100 space-y-2.5 animate-in fade-in duration-200">
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar por N° OC</label>
-              <input 
-                type="text" 
-                placeholder="N° de OC..." 
-                value={searchOCRef}
-                onChange={(e) => { setSearchOCRef(e.target.value); setCurrentPage(1); }}
-                className="tf-campo"
-              />
-            </div>
-            {(role === 'comprador' || role === 'administrador') && (
-              <div>
-                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Proveedor</label>
-                <select 
-                  value={filterProveedor} 
-                  onChange={(e) => { setFilterProveedor(e.target.value); setCurrentPage(1); }}
-                  className="tf-campo cursor-pointer"
-                >
-                  <option value="">TODOS LOS PROVEEDORES</option>
-                  {proveedoresDisponibles.map(prov => (
-                    <option key={prov} value={prov}>{prov.toUpperCase()}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Estado Logístico</label>
-              <select 
-                value={filterEstadoLogistico} 
-                onChange={(e) => { setFilterEstadoLogistico(e.target.value); setCurrentPage(1); }}
-                className="tf-campo cursor-pointer"
-              >
-                <option value="">TODOS LOS ESTADOS</option>
-                {estadosLogicosDisponibles.map(est => (
-                  <option key={est} value={est}>{est.toUpperCase()}</option>
-                ))}
-              </select>
-            </div>
-            <div className="relative" ref={refCalendarioConfirmadoMobile}>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fecha Confirmado</label>
-              <div 
-                className="tf-campo flex items-center gap-1 cursor-pointer" 
-                onClick={() => setMostrarCalendarioConfirmado(!mostrarCalendarioConfirmado)}
-              >
-                <Calendar size={14} className="text-slate-400 shrink-0" />
-                <span className="truncate flex-1 select-none">{formattedRangoConfirmadoText()}</span>
-                {(fechaConfirmadoInicio || fechaConfirmadoFin) && (
-                  <button onClick={(e) => { e.stopPropagation(); setFechaConfirmadoInicio(null); setFechaConfirmadoFin(null); setCurrentPage(1); }} className="hover:text-red-500 font-bold p-0.5">&times;</button>
-                )}
-              </div>
-              {mostrarCalendarioConfirmado && (
-                <div className="surface-flotante absolute right-0 mt-2 z-40 rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
-                  <div className="flex items-center justify-between mb-4">
-                    <button type="button" onClick={() => cambiarMesConfirmado(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
-                    <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
-                      {mesActualConfirmado.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
-                    </span>
-                    <button type="button" onClick={() => cambiarMesConfirmado(1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&gt;</button>
-                  </div>
-                  <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-slate-400 mb-2">
-                    <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
-                  </div>
-                  <div className="grid grid-cols-7 gap-1">
-                    {getDiasDelMesConfirmado().map((dia, idx) => {
-                      if (!dia) return <div key={`empty-mobile-c-${idx}`} />;
-                      const timestampDia = dia.getTime();
-                      const isInicio = fechaConfirmadoInicio && timestampDia === fechaConfirmadoInicio.getTime();
-                      const isFin = fechaConfirmadoFin && timestampDia === fechaConfirmadoFin.getTime();
-                      const isRango = fechaConfirmadoInicio && fechaConfirmadoFin && timestampDia > fechaConfirmadoInicio.getTime() && timestampDia < fechaConfirmadoFin.getTime();
-                      let bgClass = 'hover:bg-slate-100 text-slate-700';
-                      if (isInicio || isFin) bgClass = 'bg-slate-900 text-white rounded-full font-black';
-                      if (isRango) bgClass = 'bg-slate-100 text-slate-900 rounded-none';
-                      return (
-                        <button key={idx} type="button" onClick={() => handleSelectDiaConfirmado(dia)} className={`text-center py-1 text-[11px] font-bold rounded-full transition-all ${bgClass}`}>
-                          {dia.getDate()}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* PANEL DE FILTROS DESKTOP (visible en >= md) */}
-      <div className={`surface hidden md:grid grid-cols-1 sm:grid-cols-2 ${(role === 'comprador' || role === 'administrador') ? 'md:grid-cols-6' : 'md:grid-cols-5'} gap-4 mb-8 p-6`}>
-        <div>
-          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (Ítem / Ref / Cliente)</label>
-          <input 
-            type="text" 
-            placeholder="Escribe para buscar..." 
+      {/* FILTROS: un solo marcado; en móvil los controles viven en la hoja inferior de BarraFiltros */}
+      <BarraFiltros
+        className="mb-4 md:mb-8"
+        filtrosActivos={filtrosActivosCount + (searchItemRef ? 1 : 0)}
+        resultados={filteredItems.length}
+        busqueda={(
+          <FiltroBusqueda
             value={searchItemRef}
-            onChange={(e) => { setSearchItemRef(e.target.value); setCurrentPage(1); }}
-            className="tf-campo"
+            onChange={(texto) => { setSearchItemRef(texto); setCurrentPage(1); }}
+            placeholder="Buscar ítem, ref, cliente…"
+            ariaLabel="Buscar por ítem, referencia o cliente"
           />
-        </div>
-        {(role === 'comprador' || role === 'administrador') && (
-          <div>
-            <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Proveedor</label>
-            <select 
-              value={filterProveedor} 
-              onChange={(e) => { setFilterProveedor(e.target.value); setCurrentPage(1); }}
-              className="tf-campo cursor-pointer"
-            >
-              <option value="">TODOS LOS PROVEEDORES</option>
-              {proveedoresDisponibles.map(prov => (
-                <option key={prov} value={prov}>{prov.toUpperCase()}</option>
-              ))}
-            </select>
-          </div>
         )}
-        <div>
-          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Estado Logístico</label>
-          <select 
-            value={filterEstadoLogistico} 
-            onChange={(e) => { setFilterEstadoLogistico(e.target.value); setCurrentPage(1); }}
-            className="tf-campo cursor-pointer"
-          >
-            <option value="">TODOS LOS ESTADOS</option>
-            {estadosLogicosDisponibles.map(est => (
-              <option key={est} value={est}>{est.toUpperCase()}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar por N° OC</label>
-          <input 
-            type="text" 
-            placeholder="N° de OC..." 
-            value={searchOCRef}
-            onChange={(e) => { setSearchOCRef(e.target.value); setCurrentPage(1); }}
-            className="tf-campo"
-          />
-        </div>
-
-        {/* Rango de Fecha Confirmación Calendario Popover */}
-        <div className="relative" ref={refCalendarioConfirmado}>
-          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fecha Confirmado</label>
-          <div className="tf-campo flex items-center gap-1 cursor-pointer" onClick={() => setMostrarCalendarioConfirmado(!mostrarCalendarioConfirmado)}>
-            <Calendar size={14} className="text-slate-400 shrink-0" />
-            <span className="truncate flex-1 select-none">{formattedRangoConfirmadoText()}</span>
-            {(fechaConfirmadoInicio || fechaConfirmadoFin) && (
-              <button onClick={(e) => { e.stopPropagation(); setFechaConfirmadoInicio(null); setFechaConfirmadoFin(null); setCurrentPage(1); }} className="hover:text-red-500 font-bold p-0.5">&times;</button>
+        filtros={(
+          <>
+            {(role === 'comprador' || role === 'administrador') && (
+              <FiltroSelect
+                value={filterProveedor}
+                onChange={(valor) => { setFilterProveedor(valor); setCurrentPage(1); }}
+                opciones={proveedoresDisponibles}
+                prefijo="Proveedor:"
+                ariaLabel="Filtrar por proveedor"
+              />
             )}
-          </div>
-
-          {mostrarCalendarioConfirmado && (
-            <div className="surface-flotante absolute right-0 mt-2 z-30 rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
-              <div className="flex items-center justify-between mb-4">
-                <button type="button" onClick={() => cambiarMesConfirmado(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
-                <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
-                  {mesActualConfirmado.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
-                </span>
-                <button type="button" onClick={() => cambiarMesConfirmado(1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&gt;</button>
-              </div>
-
-              <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-slate-400 mb-2">
-                <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
-              </div>
-
-              <div className="grid grid-cols-7 gap-1">
-                {getDiasDelMesConfirmado().map((dia, idx) => {
-                  if (!dia) return <div key={`empty-c-${idx}`} />;
-                  const timestampDia = dia.getTime();
-                  const isInicio = fechaConfirmadoInicio && timestampDia === fechaConfirmadoInicio.getTime();
-                  const isFin = fechaConfirmadoFin && timestampDia === fechaConfirmadoFin.getTime();
-                  const isRango = fechaConfirmadoInicio && fechaConfirmadoFin && timestampDia > fechaConfirmadoInicio.getTime() && timestampDia < fechaConfirmadoFin.getTime();
-
-                  let bgClass = 'hover:bg-slate-100 text-slate-700';
-                  if (isInicio || isFin) bgClass = 'bg-slate-900 text-white rounded-full font-black';
-                  if (isRango) bgClass = 'bg-slate-100 text-slate-900 rounded-none';
-
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleSelectDiaConfirmado(dia)}
-                      className={`text-center py-1 text-[11px] font-bold rounded-full transition-all ${bgClass}`}
-                    >
-                      {dia.getDate()}
-                    </button>
-                  );
-                })}
-              </div>
+            <FiltroSelect
+              value={filterEstadoLogistico}
+              onChange={(valor) => { setFilterEstadoLogistico(valor); setCurrentPage(1); }}
+              opciones={estadosLogicosDisponibles}
+              prefijo="Estado:"
+              etiqueta="Estado logístico"
+              peso={1.4}
+              ariaLabel="Filtrar por estado logístico"
+            />
+            <FiltroBusqueda
+              value={searchOCRef}
+              onChange={(texto) => { setSearchOCRef(texto); setCurrentPage(1); }}
+              placeholder="N° de OC…"
+              ariaLabel="Buscar por N° de OC"
+            />
+            {/* Rango de fecha confirmado: el calendario existente (estado y lógica sin cambios) como hijo del contenedor */}
+            <div className="relative" ref={refCalendarioConfirmado}>
+              <FiltroFechaCampo
+                texto={formattedRangoConfirmadoText()}
+                activo={Boolean(fechaConfirmadoInicio || fechaConfirmadoFin)}
+                expandido={mostrarCalendarioConfirmado}
+                onClick={() => setMostrarCalendarioConfirmado(!mostrarCalendarioConfirmado)}
+                onLimpiar={() => { setFechaConfirmadoInicio(null); setFechaConfirmadoFin(null); setCurrentPage(1); }}
+                etiqueta="Fecha confirmado"
+                ariaLabel="Filtrar por fecha confirmado"
+              />
+              <FiltroFechasContenedor abierto={mostrarCalendarioConfirmado} onCerrar={() => setMostrarCalendarioConfirmado(false)}>
+                <div className="flex items-center justify-between mb-4">
+                  <button type="button" onClick={() => cambiarMesConfirmado(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
+                  <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
+                    {mesActualConfirmado.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <button type="button" onClick={() => cambiarMesConfirmado(1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&gt;</button>
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-slate-400 mb-2">
+                  <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {getDiasDelMesConfirmado().map((dia, idx) => {
+                    if (!dia) return <div key={`empty-c-${idx}`} />;
+                    const timestampDia = dia.getTime();
+                    const isInicio = fechaConfirmadoInicio && timestampDia === fechaConfirmadoInicio.getTime();
+                    const isFin = fechaConfirmadoFin && timestampDia === fechaConfirmadoFin.getTime();
+                    const isRango = fechaConfirmadoInicio && fechaConfirmadoFin && timestampDia > fechaConfirmadoInicio.getTime() && timestampDia < fechaConfirmadoFin.getTime();
+                    let bgClass = 'hover:bg-slate-100 text-slate-700';
+                    if (isInicio || isFin) bgClass = 'bg-slate-900 text-white rounded-full font-black';
+                    if (isRango) bgClass = 'bg-slate-100 text-slate-900 rounded-none';
+                    return (
+                      <button key={idx} type="button" onClick={() => handleSelectDiaConfirmado(dia)} className={`text-center py-1 text-[11px] font-bold rounded-full transition-all ${bgClass}`}>
+                        {dia.getDate()}
+                      </button>
+                    );
+                  })}
+                </div>
+              </FiltroFechasContenedor>
             </div>
-          )}
-        </div>
-
-        <div className="flex flex-col justify-end w-fit pb-1">
-          <Button
-            variant="secondary"
-            size="icon"
+          </>
+        )}
+        limpiar={(
+          <BotonLimpiar
+            activos={filtrosActivosCount + (searchItemRef ? 1 : 0)}
             onClick={() => {
               setSearchItemRef('');
               setFilterProveedor('');
@@ -1130,12 +973,10 @@ export const DashboardPedidos = ({ role }) => {
               setSortCompra('');
               setCurrentPage(1);
             }}
-            title="Limpiar filtros"
-          >
-            <Trash2 size={16} />
-          </Button>
-        </div>
-      </div>
+          />
+        )}
+        extremo={<ContadorResultados total={filteredItems.length} unidad="ítems" />}
+      />
 
       {/* ASIGNADOR DE OC RESPONSIVO (DESKTOP) */}
       {showAsignador && (
