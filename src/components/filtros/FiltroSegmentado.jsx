@@ -7,11 +7,12 @@ const MAX_OPCIONES_SEGMENTADO_EN_HOJA = 3;
 
 /**
  * Selector segmentado plano (pista gris, opción activa en blanco). `opciones`: [{ value, label }]. `onChange(valor)`.
+ * `prefijo` (opcional, solo en la barra): nombre del filtro dentro de la pista ("Vendedor:"); en la hoja lo da `etiqueta`.
  * `valorNeutro` (opcional): el valor que equivale a "sin filtro"; si `value` es otro, el segmentado usa el estado "seleccionado".
  * En la hoja móvil es una fila con `etiqueta` (por defecto `ariaLabel`): con 3 opciones o menos, la fila lleva los botones a la
  * derecha (un toque, sin desplegar nada); con más, se despliega como acordeón con la misma lista de opciones que los selects.
  */
-export const FiltroSegmentado = ({ opciones = [], value, onChange, ariaLabel, etiqueta, valorNeutro, className = '' }) => {
+export const FiltroSegmentado = ({ opciones = [], value, onChange, ariaLabel, etiqueta, prefijo, valorNeutro, className = '' }) => {
   const enHoja = useModoFiltro() === 'hoja';
   const seleccionado = valorNeutro !== undefined && value !== valorNeutro;
   if (enHoja && opciones.length > MAX_OPCIONES_SEGMENTADO_EN_HOJA) {
@@ -22,6 +23,7 @@ export const FiltroSegmentado = ({ opciones = [], value, onChange, ariaLabel, et
   }
   const control = (
     <div role="group" aria-label={ariaLabel} className={`inline-flex items-center gap-0.5 rounded-xl p-0.5 ${seleccionado ? 'bg-filtro-activo' : 'bg-slate-100'} ${enHoja ? 'h-9' : `h-11 md:h-9 ${className}`}`}>
+      {prefijo && !enHoja && <span aria-hidden="true" className={`shrink-0 pl-2 pr-1 text-xs font-medium ${seleccionado ? 'text-filtro-texto' : 'text-slate-500'}`}>{prefijo}</span>}
       {opciones.map((o) => {
         const activo = o.value === value;
         return (

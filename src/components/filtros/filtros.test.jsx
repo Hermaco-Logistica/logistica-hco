@@ -701,3 +701,42 @@ describe('FiltroBusqueda con etiqueta en la hoja', () => {
     expect(container.textContent).not.toContain('N° OC');
   });
 });
+
+describe('FiltroPestanas: ids, desplazamiento y degradado', () => {
+  const ops = [{ id: 'a', label: 'A', cantidad: 1 }, { id: 'b', label: 'B', cantidad: 2 }];
+  it('prefijoId da el id de cada pestaña y no hay barra de desplazamiento visible', () => {
+    render(<FiltroPestanas opciones={ops} value="a" onChange={() => {}} prefijoId="tab-prorroga-" />);
+    expect(document.getElementById('tab-prorroga-a')).toBeTruthy();
+    const barra = screen.getByRole('tablist');
+    expect(barra.className).toContain('overflow-x-auto');
+    expect(barra.className).toContain('[scrollbar-width:none]');
+    expect(barra.className).toContain('[&::-webkit-scrollbar]:hidden');
+  });
+  it('si hay contenido fuera, los bordes se difuminan según el desplazamiento', () => {
+    render(<FiltroPestanas opciones={ops} value="a" onChange={() => {}} />);
+    const barra = screen.getByRole('tablist');
+    Object.defineProperty(barra, 'clientWidth', { configurable: true, value: 200 });
+    Object.defineProperty(barra, 'scrollWidth', { configurable: true, value: 500 });
+    barra.scrollLeft = 0;
+    fireEvent.scroll(barra);
+    expect(barra.dataset.fadeIzq).toBe('false');
+    expect(barra.dataset.fadeDer).toBe('true');
+    barra.scrollLeft = 100;
+    fireEvent.scroll(barra);
+    expect(barra.dataset.fadeIzq).toBe('true');
+    expect(barra.dataset.fadeDer).toBe('true');
+    barra.scrollLeft = 300;
+    fireEvent.scroll(barra);
+    expect(barra.dataset.fadeIzq).toBe('true');
+    expect(barra.dataset.fadeDer).toBe('false');
+  });
+});
+
+describe('FiltroSegmentado con prefijo', () => {
+  it('muestra el nombre del filtro dentro de la pista en la barra', () => {
+    mm(false);
+    const { container } = render(<FiltroSegmentado ariaLabel="Vendedor" prefijo="Vendedor:" valorNeutro="todas" value="otros" onChange={() => {}} opciones={[{ value: 'todas', label: 'Todos' }, { value: 'propias', label: 'Propias' }, { value: 'otros', label: 'Otros' }]} />);
+    expect(container.textContent).toContain('Vendedor:');
+    expect(container.firstChild.className).toContain('bg-filtro-activo');
+  });
+});
