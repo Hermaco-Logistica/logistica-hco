@@ -296,7 +296,7 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
             onClick={() => { setRangoFecha(rangoMesActual()); setFiltroGerencia('todas'); setBusqueda(''); }}
           />
         )}
-        extremo={<ContadorResultados total={visibles.length} unidad="registros" />}
+        extremo={<ContadorResultados total={visibles.length} singular="registro" plural="registros" />}
       />
 
       {/* Tarjeta de tabla: pestañas, tabla (o tarjetas en móvil), vacío y fila expandida */}

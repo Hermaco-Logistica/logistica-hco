@@ -1,4 +1,5 @@
 import React from 'react';
+import { pluralizar } from '../../../utils/pluralizar';
 import { useCountUp, useInView } from '../../../hooks/useInView';
 
 function RingStat({ pct = 0, gradientId, gradientStart, gradientEnd, children, isVisible = false }) {
@@ -72,7 +73,7 @@ export function GraficoMetricasRotativas({ metricas, modo }) {
         >
           <span className="text-3xl font-black tracking-tight text-slate-900">{porcentajeAnimado.toFixed(1)}%</span>
           <span className="mt-0.5 text-[10px] font-semibold text-slate-400">
-            {esVentasPerdidas ? `${metricas.ventasPerdidasSolicitudes} solicitudes` : `${metricas.pedidos} ganadas`}
+            {esVentasPerdidas ? `${metricas.ventasPerdidasSolicitudes} ${pluralizar(metricas.ventasPerdidasSolicitudes, 'solicitud', 'solicitudes')}` : `${metricas.pedidos} ${pluralizar(metricas.pedidos, 'ganada', 'ganadas')}`}
           </span>
         </RingStat>
       </div>

@@ -761,3 +761,22 @@ describe('FiltroSegmentado: pista compacta que cubre todas las opciones', () => 
     expect(screen.getByRole('group', { name: 'V' }).className).toMatch(/(^|\s)w-full(\s|$)/);
   });
 });
+
+describe('ContadorResultados: singular y plural', () => {
+  it('"1 registro", "0 registros" y "N registros"', () => {
+    const { container, rerender } = render(<ContadorResultados total={1} singular="registro" plural="registros" />);
+    expect(container.textContent).toBe('1 registro');
+    rerender(<ContadorResultados total={0} singular="registro" plural="registros" />);
+    expect(container.textContent).toBe('0 registros');
+    rerender(<ContadorResultados total={7} singular="registro" plural="registros" />);
+    expect(container.textContent).toBe('7 registros');
+  });
+  it('con filtro el sustantivo concuerda con el total y sin singular se deriva de unidad', () => {
+    const { container, rerender } = render(<ContadorResultados total={20} filtrados={1} singular="orden" plural="órdenes" />);
+    expect(container.textContent).toBe('1 de 20 órdenes');
+    rerender(<ContadorResultados total={1} singular="ítem" plural="ítems" />);
+    expect(container.textContent).toBe('1 ítem');
+    rerender(<ContadorResultados total={1} unidad="resultados" />);
+    expect(container.textContent).toBe('1 resultado');
+  });
+});

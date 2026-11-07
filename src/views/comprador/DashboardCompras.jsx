@@ -523,7 +523,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             }}
           />
         )}
-        extremo={<ContadorResultados total={sortedSolicitudes.length} unidad="solicitudes" />}
+        extremo={<ContadorResultados total={sortedSolicitudes.length} singular="solicitud" plural="solicitudes" />}
       />
 
       {/* VISTA MÓVIL: TARJETAS DETALLADAS Y ESPACIOSAS (< md) */}

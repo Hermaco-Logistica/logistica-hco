@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { pluralizar } from '../../utils/pluralizar';
 import { useParams, useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -679,7 +680,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
               {metricas.productosUnicos}
             </div>
             <div className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate">
-              {metricas.totalMovimientos} items en {metricas.rfqsUnicas} {metricas.rfqsUnicas === 1 ? 'RFQ' : 'RFQs'}
+              {metricas.totalMovimientos} {pluralizar(metricas.totalMovimientos, 'item', 'items')} en {metricas.rfqsUnicas} {metricas.rfqsUnicas === 1 ? 'RFQ' : 'RFQs'}
             </div>
           </div>
         </div>

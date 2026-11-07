@@ -143,7 +143,7 @@ export const RetaceosView = ({ role }) => {
             onClick={() => { setFilterMes(''); setFilterProv(''); }}
           />
         )}
-        extremo={<ContadorResultados total={filteredData.length} unidad="retaceos" />}
+        extremo={<ContadorResultados total={filteredData.length} singular="retaceo" plural="retaceos" />}
       />
 
       <div className="tf-tabla-card overflow-x-auto">

@@ -716,7 +716,7 @@ export const GestionOC = ({ readOnly = false }) => {
             }}
           />
         )}
-        extremo={<ContadorResultados total={filteredOrdenes.length} unidad="órdenes" />}
+        extremo={<ContadorResultados total={filteredOrdenes.length} singular="orden" plural="órdenes" />}
       />
 
       {/* Vista Móvil (< md): Tarjetas Detalladas y Espaciosas con toda la información de escritorio */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback, useDeferredValue } from 'react';
+import { pluralizar } from '../../utils/pluralizar';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { AnalisisEstadisticasMobile } from './AnalisisEstadisticasMobile';
@@ -1448,7 +1449,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                           <span className="font-bold text-slate-800">{c.total}</span>
                           <span className="text-slate-400 text-[10px]">RFQ</span>
                           {c.pedidos > 0 && (
-                            <Etiqueta tono="exito" mono title={`${c.pedidos} pedidos ganados`}>
+                            <Etiqueta tono="exito" mono title={`${c.pedidos} ${pluralizar(c.pedidos, 'pedido ganado', 'pedidos ganados')}`}>
                               {pedidosPct}% conv
                             </Etiqueta>
                           )}
@@ -1467,7 +1468,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                             <div 
                               className={`h-full bg-gradient-to-r ${theme.flujoEstados?.pedidos?.barGradient || 'from-emerald-500 to-teal-500'} transition-all duration-500`}
                               style={{ width: `${pedidosPct}%` }}
-                              title={`${c.pedidos} pedidos ganados (${pedidosPct}%)`}
+                              title={`${c.pedidos} ${pluralizar(c.pedidos, 'pedido ganado', 'pedidos ganados')} (${pedidosPct}%)`}
                             />
                           )}
                           {/* Segmento Cotizado / En Proceso (Tema según rol) */}
@@ -1790,7 +1791,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 Anterior
               </button>
               <span className="text-[11px] font-medium text-slate-400">
-                Página {safePageVendedores} de {totalPagesVendedores} ({statsVendedores.length} vendedores)
+                Página {safePageVendedores} de {totalPagesVendedores} ({statsVendedores.length} {pluralizar(statsVendedores.length, 'vendedor', 'vendedores')})
               </span>
               <button 
                 type="button"

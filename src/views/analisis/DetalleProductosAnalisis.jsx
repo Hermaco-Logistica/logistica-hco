@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { pluralizar } from '../../utils/pluralizar';
 import { useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Search, Package, ChevronRight, Download, X, User, Building } from 'lucide-react';
 import { extraerTodosLosMovimientos, exportarMovimientosExcel } from '../../utils/exportarExcel';
@@ -227,7 +228,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
             Catálogo
           </Etiqueta>
         }
-        subtitle={<>Demanda de productos y unidades solicitadas ({todosLosProductos.length} productos analizados)</>}
+        subtitle={<>Demanda de productos y unidades solicitadas ({todosLosProductos.length} {pluralizar(todosLosProductos.length, 'producto analizado', 'productos analizados')})</>}
       />
 
       {/* SELECTOR DE ORDENAMIENTO */}
@@ -339,7 +340,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
             <span>Exportar Movimientos</span>
           </button>
           <div className="text-[11px] font-medium text-slate-400 font-mono self-end sm:self-auto">
-            Mostrando <strong className="text-slate-700 font-semibold">{productosFiltrados.length}</strong> productos
+            Mostrando <strong className="text-slate-700 font-semibold">{productosFiltrados.length}</strong> {pluralizar(productosFiltrados.length, 'producto', 'productos')}
           </div>
         </div>
       </div>
@@ -406,7 +407,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                           aria-label={`Ver ${p.enSeguimiento} ítems en seguimiento de ${p.desc}`}
                           className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                         >
-                          <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(p.fasesSeguimiento)}>{p.enSeguimiento > 0 ? `${p.enSeguimiento} ítems` : null}</Etiqueta>
+                          <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(p.fasesSeguimiento)}>{p.enSeguimiento > 0 ? `${p.enSeguimiento} ${pluralizar(p.enSeguimiento, 'ítem', 'ítems')}` : null}</Etiqueta>
                         </button>
                       </div>
                     )}

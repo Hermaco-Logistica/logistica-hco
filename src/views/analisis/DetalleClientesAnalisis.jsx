@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { pluralizar } from '../../utils/pluralizar';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Search, Building, Download } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
@@ -268,7 +269,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
             <span>Exportar Movimientos</span>
           </button>
           <div className="text-[11px] font-medium text-slate-400 font-mono self-end sm:self-auto">
-            Mostrando <strong className="text-slate-700 font-semibold">{clientesFiltrados.length}</strong> clientes
+            Mostrando <strong className="text-slate-700 font-semibold">{clientesFiltrados.length}</strong> {pluralizar(clientesFiltrados.length, 'cliente', 'clientes')}
           </div>
         </div>
       </div>
@@ -317,7 +318,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                       <div className="flex items-center gap-1">
                         <span className="font-bold font-mono text-emerald-700">{c.pedidos}</span>
                         {c.pedidosParciales > 0 && (
-                          <span className="text-[9px] font-normal text-sky-600 font-mono" title={`${c.pedidosParciales} pedidos parciales`}>
+                          <span className="text-[9px] font-normal text-sky-600 font-mono" title={`${c.pedidosParciales} ${pluralizar(c.pedidosParciales, 'pedido parcial', 'pedidos parciales')}`}>
                             +{c.pedidosParciales}
                           </span>
                         )}
@@ -337,10 +338,10 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         <button
                           type="button"
                           onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}?seguimiento=1`)}
-                          aria-label={`Ver ${c.enSeguimiento} solicitudes en seguimiento de ${c.cliente}`}
+                          aria-label={`Ver ${c.enSeguimiento} ${pluralizar(c.enSeguimiento, 'solicitud', 'solicitudes')} en seguimiento de ${c.cliente}`}
                           className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                         >
-                          <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento} solicitudes` : null}</Etiqueta>
+                          <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento} ${pluralizar(c.enSeguimiento, 'solicitud', 'solicitudes')}` : null}</Etiqueta>
                         </button>
                       </div>
                     )}
@@ -424,7 +425,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                             ? <button
                                 type="button"
                                 onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}?seguimiento=1`)}
-                                aria-label={`Ver ${c.enSeguimiento} solicitudes en seguimiento de ${c.cliente}`}
+                                aria-label={`Ver ${c.enSeguimiento} ${pluralizar(c.enSeguimiento, 'solicitud', 'solicitudes')} en seguimiento de ${c.cliente}`}
                                 className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                               >
                                 <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento}` : null}</Etiqueta>
@@ -435,7 +436,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
                           <span>{c.pedidos}</span>
                           {c.pedidosParciales > 0 && (
-                            <span className="text-[10px] font-normal text-sky-600 block" title={`${c.pedidosParciales} pedidos parciales`}>
+                            <span className="text-[10px] font-normal text-sky-600 block" title={`${c.pedidosParciales} ${pluralizar(c.pedidosParciales, 'pedido parcial', 'pedidos parciales')}`}>
                               +{c.pedidosParciales} parc.
                             </span>
                           )}

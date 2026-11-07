@@ -976,7 +976,7 @@ export const DashboardPedidos = ({ role }) => {
             }}
           />
         )}
-        extremo={<ContadorResultados total={filteredItems.length} unidad="ítems" />}
+        extremo={<ContadorResultados total={filteredItems.length} singular="ítem" plural="ítems" />}
       />
 
       {/* ASIGNADOR DE OC RESPONSIVO (DESKTOP) */}

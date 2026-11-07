@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { pluralizar } from '../../utils/pluralizar';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Search, Package, ExternalLink, Calendar, User, Building, Link as LinkIcon, CheckCircle2, Download, X, Ban, MessageCircleQuestion } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
@@ -403,7 +404,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
             <span>Exportar Movimientos</span>
           </button>
           <div className="text-[11px] font-medium text-slate-400 font-mono self-end sm:self-auto">
-            Mostrando <strong className="text-slate-700 font-semibold">{solicitudesFiltradas.length}</strong> solicitudes
+            Mostrando <strong className="text-slate-700 font-semibold">{solicitudesFiltradas.length}</strong> {pluralizar(solicitudesFiltradas.length, 'solicitud', 'solicitudes')}
           </div>
         </div>
       </div>

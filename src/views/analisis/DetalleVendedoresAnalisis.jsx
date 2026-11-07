@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { pluralizar } from '../../utils/pluralizar';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { ArrowLeft, Search, Zap, Clock, Download } from 'lucide-react';
 import { extraerTodosLosMovimientos, exportarMovimientosExcel } from '../../utils/exportarExcel';
@@ -325,7 +326,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
             <span>Exportar Movimientos</span>
           </button>
           <div className="text-[11px] font-medium text-slate-400 font-mono self-end sm:self-auto">
-            Mostrando <strong className="text-slate-700 font-semibold">{vendedoresFiltrados.length}</strong> vendedores
+            Mostrando <strong className="text-slate-700 font-semibold">{vendedoresFiltrados.length}</strong> {pluralizar(vendedoresFiltrados.length, 'vendedor', 'vendedores')}
           </div>
         </div>
       </div>
@@ -372,7 +373,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                       <div className="flex items-center gap-1">
                         <span className="font-bold font-mono text-emerald-700">{v.pedidos}</span>
                         {v.pedidosParciales > 0 && (
-                          <span className="text-[9px] font-normal text-sky-600 font-mono" title={`${v.pedidosParciales} pedidos parciales`}>
+                          <span className="text-[9px] font-normal text-sky-600 font-mono" title={`${v.pedidosParciales} ${pluralizar(v.pedidosParciales, 'pedido parcial', 'pedidos parciales')}`}>
                             +{v.pedidosParciales}
                           </span>
                         )}
@@ -392,10 +393,10 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                         <button
                           type="button"
                           onClick={() => navigate(`/analisis/vendedor/${encodeURIComponent(v.vendedor)}?seguimiento=1`)}
-                          aria-label={`Ver ${v.enSeguimiento} solicitudes en seguimiento de ${v.vendedor}`}
+                          aria-label={`Ver ${v.enSeguimiento} ${pluralizar(v.enSeguimiento, 'solicitud', 'solicitudes')} en seguimiento de ${v.vendedor}`}
                           className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                         >
-                          <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(v.fasesSeguimiento)}>{v.enSeguimiento > 0 ? `${v.enSeguimiento} solicitudes` : null}</Etiqueta>
+                          <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(v.fasesSeguimiento)}>{v.enSeguimiento > 0 ? `${v.enSeguimiento} ${pluralizar(v.enSeguimiento, 'solicitud', 'solicitudes')}` : null}</Etiqueta>
                         </button>
                       </div>
                     )}
@@ -514,7 +515,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                           ? <button
                               type="button"
                               onClick={() => navigate(`/analisis/vendedor/${encodeURIComponent(v.vendedor)}?seguimiento=1`)}
-                              aria-label={`Ver ${v.enSeguimiento} solicitudes en seguimiento de ${v.vendedor}`}
+                              aria-label={`Ver ${v.enSeguimiento} ${pluralizar(v.enSeguimiento, 'solicitud', 'solicitudes')} en seguimiento de ${v.vendedor}`}
                               className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                             >
                               <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(v.fasesSeguimiento)}>{v.enSeguimiento > 0 ? `${v.enSeguimiento}` : null}</Etiqueta>
@@ -524,7 +525,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                       <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
                         <span>{v.pedidos}</span>
                         {v.pedidosParciales > 0 && (
-                          <span className="text-[10px] font-normal text-sky-600 block" title={`${v.pedidosParciales} pedidos parciales`}>
+                          <span className="text-[10px] font-normal text-sky-600 block" title={`${v.pedidosParciales} ${pluralizar(v.pedidosParciales, 'pedido parcial', 'pedidos parciales')}`}>
                             +{v.pedidosParciales} parc.
                           </span>
                         )}
