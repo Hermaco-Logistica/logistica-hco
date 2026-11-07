@@ -113,6 +113,7 @@ Dos `<input type="date">` con el estilo de campo para pantallas sin calendario p
 | `DashboardCompras` (Bandeja RFQ; `readOnly` para gerente y administrador) | `dc_*` | búsqueda, Resultado, Estado, Vendedor (siempre), fecha |
 | `DashboardPedidos` | `dp_*` | búsqueda ítem/ref/cliente, Proveedor (comprador y administrador), Estado logístico, búsqueda N° OC, fecha confirmado; la selección de filas y "Vincular selección" quedan fuera |
 | `GestionOC` (lista) | `goc_*` | búsqueda, Proveedor, Estado logístico, fecha de creación; el detalle de la OC no tiene filtros (solo entradas de datos: tracking, retaceo) |
+| `ProrrogasPage` | — (sin persistencia) | búsqueda, `FiltroFechas` (mes actual por defecto), Vendedor (Todos/Propias/Otros, solo gerencia) y contador; las pestañas (`FiltroPestanas`, ids `tab-prorroga-*`) siguen dentro del panel de la tabla. "Limpiar" restablece mes actual, todos los vendedores y sin búsqueda; el contador cuenta lo que se aparta de ese estado (las pestañas no cuentan) |
 | `RetaceosView` | — (sin persistencia) | Mes y Proveedor; la fecha de la fila en edición es entrada de datos |
 
 ## Qué no se homologa
