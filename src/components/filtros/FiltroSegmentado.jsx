@@ -9,10 +9,13 @@ const MAX_OPCIONES_SEGMENTADO_EN_HOJA = 3;
  * Selector segmentado plano (pista gris, opción activa en blanco). `opciones`: [{ value, label }]. `onChange(valor)`.
  * `prefijo` (opcional, solo en la barra): nombre del filtro dentro de la pista ("Vendedor:"); en la hoja lo da `etiqueta`.
  * `valorNeutro` (opcional): el valor que equivale a "sin filtro"; si `value` es otro, el segmentado usa el estado "seleccionado".
+ * La pista es compacta: ocupa el ancho de su contenido (`w-max`, no se estira a la fila) y cubre TODAS las opciones; los botones
+ * comparten ancho (rejilla `auto-cols-fr`, el de la opción más larga). `completo` la lleva al ancho del contenedor (p. ej. en un
+ * acordeón), repartiendo el ancho a partes iguales.
  * En la hoja móvil es una fila con `etiqueta` (por defecto `ariaLabel`): con 3 opciones o menos, la fila lleva los botones a la
  * derecha (un toque, sin desplegar nada); con más, se despliega como acordeón con la misma lista de opciones que los selects.
  */
-export const FiltroSegmentado = ({ opciones = [], value, onChange, ariaLabel, etiqueta, prefijo, valorNeutro, className = '' }) => {
+export const FiltroSegmentado = ({ opciones = [], value, onChange, ariaLabel, etiqueta, prefijo, valorNeutro, completo = false, className = '' }) => {
   const enHoja = useModoFiltro() === 'hoja';
   const seleccionado = valorNeutro !== undefined && value !== valorNeutro;
   if (enHoja && opciones.length > MAX_OPCIONES_SEGMENTADO_EN_HOJA) {
@@ -22,22 +25,28 @@ export const FiltroSegmentado = ({ opciones = [], value, onChange, ariaLabel, et
     );
   }
   const control = (
-    <div role="group" aria-label={ariaLabel} className={`inline-flex items-center gap-0.5 rounded-xl p-0.5 ${seleccionado ? 'bg-filtro-activo' : 'bg-slate-100'} ${enHoja ? 'h-9' : `h-11 md:h-9 ${className}`}`}>
+    <div
+      role="group"
+      aria-label={ariaLabel}
+      className={`${completo ? 'flex w-full' : 'inline-flex w-max max-w-full'} items-center rounded-xl p-0.5 ${seleccionado ? 'bg-filtro-activo' : 'bg-slate-100'} ${enHoja ? 'h-9' : `h-11 md:h-9 ${className}`}`}
+    >
       {prefijo && !enHoja && <span aria-hidden="true" className={`shrink-0 pl-2 pr-1 text-xs font-medium ${seleccionado ? 'text-filtro-texto' : 'text-slate-500'}`}>{prefijo}</span>}
-      {opciones.map((o) => {
-        const activo = o.value === value;
-        return (
-          <button
-            key={o.value}
-            type="button"
-            aria-pressed={activo}
-            onClick={() => onChange(o.value)}
-            className={`h-full cursor-pointer whitespace-nowrap rounded-[10px] px-3 text-xs font-semibold transition-colors ${activo ? `bg-white ${seleccionado ? 'text-filtro-texto' : 'text-slate-900'}` : 'text-slate-500 hover:text-slate-800'}`}
-          >
-            {o.label}
-          </button>
-        );
-      })}
+      <div className={`grid h-full auto-cols-fr grid-flow-col gap-0.5 ${completo ? 'flex-1' : ''}`}>
+        {opciones.map((o) => {
+          const activo = o.value === value;
+          return (
+            <button
+              key={o.value}
+              type="button"
+              aria-pressed={activo}
+              onClick={() => onChange(o.value)}
+              className={`inline-flex h-full cursor-pointer items-center justify-center whitespace-nowrap rounded-[10px] px-3 text-xs font-semibold transition-colors ${activo ? `bg-white ${seleccionado ? 'text-filtro-texto' : 'text-slate-900'}` : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
   if (!enHoja) return control;

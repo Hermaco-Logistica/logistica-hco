@@ -278,7 +278,6 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
                 ariaLabel="Filtrar por vendedor"
                 etiqueta="Vendedor"
                 prefijo="Vendedor:"
-                className="[&>button]:flex-1"
                 valorNeutro="todas"
                 value={filtroGerencia}
                 onChange={setFiltroGerencia}

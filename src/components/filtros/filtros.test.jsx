@@ -740,3 +740,24 @@ describe('FiltroSegmentado con prefijo', () => {
     expect(container.firstChild.className).toContain('bg-filtro-activo');
   });
 });
+
+describe('FiltroSegmentado: pista compacta que cubre todas las opciones', () => {
+  const op = [{ value: 'todas', label: 'Todos' }, { value: 'propias', label: 'Propias' }, { value: 'otros', label: 'Otros' }];
+  it('todas las opciones viven dentro de la pista; ancho del contenido y botones de igual ancho (rejilla auto-cols-fr)', () => {
+    mm(false);
+    render(<FiltroSegmentado ariaLabel="V" prefijo="Vendedor:" value="todas" onChange={() => {}} opciones={op} />);
+    const pista = screen.getByRole('group', { name: 'V' });
+    expect(pista.className).toContain('w-max');
+    expect(pista.className).toContain('inline-flex');
+    expect(pista.className).not.toContain('w-full');
+    const rejilla = pista.querySelector('.grid');
+    expect(rejilla.className).toContain('auto-cols-fr');
+    expect([...rejilla.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Todos', 'Propias', 'Otros']);
+    expect(pista.querySelectorAll('button')).toHaveLength(3);
+  });
+  it('`completo` la lleva al ancho del contenedor', () => {
+    mm(false);
+    render(<FiltroSegmentado ariaLabel="V" completo value="todas" onChange={() => {}} opciones={op} />);
+    expect(screen.getByRole('group', { name: 'V' }).className).toContain('w-full');
+  });
+});

@@ -93,7 +93,7 @@ export const FiltroFechas = ({ value, onChange, porDefecto, etiqueta = 'Fecha', 
           <div className="min-h-0 overflow-hidden">
             <div className="space-y-2 px-4 pb-4 pt-1">
               <ContextoFiltros.Provider value="barra">
-                <FiltroSegmentado ariaLabel={`${ariaLabel}: accesos rápidos`} opciones={ACCESOS} value={acceso} onChange={elegirAcceso} className="w-full [&>button]:flex-1" />
+                <FiltroSegmentado ariaLabel={`${ariaLabel}: accesos rápidos`} opciones={ACCESOS} value={acceso} onChange={elegirAcceso} completo />
               </ContextoFiltros.Provider>
               <div className="grid grid-cols-2 gap-2">
                 <label className="block">
