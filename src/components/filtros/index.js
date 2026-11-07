@@ -9,3 +9,5 @@ export { ContadorResultados } from './ContadorResultados';
 export { BotonExportar } from './BotonExportar';
 export { FiltroFechasContenedor } from './FiltroFechasContenedor';
 export { FiltroFechaCampo } from './FiltroFechaCampo';
+export { FiltroFechas } from './FiltroFechas';
+export { rangoMesActualISO, derivarAcceso } from './rangosFecha';

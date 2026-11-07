@@ -15,6 +15,7 @@ Componentes de `src/components/filtros/` (import: `from '../components/filtros'`
 | `ContadorResultados` | `total`, `filtrados`, `unidad` | — |
 | `BotonExportar` | `onClick`, `etiqueta`, `disabled` | — |
 | `FiltroFechaCampo` | `texto`, `activo`, `expandido`, `onClick`, `onLimpiar`, `etiqueta` | — |
+| `FiltroFechas` | `value {desde,hasta}` (ISO), `onChange(rango)`, `porDefecto`, `etiqueta`, `ariaLabel` | rango `{desde,hasta}` |
 | `FiltroFechasContenedor` | `abierto`, `onCerrar`, `titulo`, hijos = calendario existente | — |
 | `ListaOpciones` | `id`, `opciones`, `value`, `activo`, `onElegir`, `onActivar`, `alto` | opción |
 
@@ -76,6 +77,13 @@ La vista conserva su estado `abierto`, su `relative`/`ref` de "clic fuera" y la 
 - Dentro de la hoja móvil: acordeón en línea (clase `.filtro-acordeon`), una fila más del acordeón; cerrado queda `inert`.
 - ≥ md: desplegable absoluto `right-0 mt-2 z-30`.
 - < md fuera de la hoja: hoja inferior propia en un portal a `<body>` (`z-[80]`) sobre el dock (`bottom: var(--bottom-dock-h)`). Motivo: `<main>` usa `@container` (contexto de apilamiento) y un `z-40` dentro de `main` nunca supera al `BottomDock`.
+
+## Fechas en modo nativo (`FiltroFechas`)
+Dos `<input type="date">` con el estilo de campo para pantallas sin calendario propio (Prórrogas, Análisis). `value` y `onChange` usan `{ desde, hasta }` en ISO (AAAA-MM-DD), el mismo formato que guardan las vistas; el componente no guarda estado.
+- Escritorio: accesos rápidos + un solo campo compuesto ("01/11/2026 → 30/11/2026"), `data-peso="3"` en la rejilla.
+- Hoja móvil: fila "Fecha" (acordeón, una fila abierta a la vez, atrás por capas) con los accesos y los dos campos en línea.
+- Accesos "Mes actual", "Todas las fechas" y "Personalizado": `FiltroSegmentado` cuyo valor se DERIVA del rango (`derivarAcceso`: igual al mes actual, vacío u otro); "Personalizado" solo enfoca el campo desde.
+- Estado seleccionado cuando el rango se aparta de `porDefecto` (por defecto el mes actual). El modo calendario (`FiltroFechaCampo` + `FiltroFechasContenedor`) no cambia.
 
 ## Ejemplo
 ```jsx
