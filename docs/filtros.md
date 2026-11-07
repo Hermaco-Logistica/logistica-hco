@@ -94,5 +94,14 @@ La vista conserva su estado `abierto`, su `relative`/`ref` de "clic fuera" y la 
 - Alturas: 44 px en móvil y en las filas de la hoja, 36 px en la barra desde `md`.
 - Solo tokens y clases de paleta ya usadas (`slate`); `check:colores` y `check:superficies` deben seguir en verde.
 
+## Pantallas migradas (F1–F3)
+| Pantalla | Claves | Controles |
+| --- | --- | --- |
+| `DashboardVendedor` (vendedor, gerente y administrador; comprador no la ve) | `dv_*` | búsqueda, Resultado, Estado, Vendedor (no vendedor), Prórroga (solo gerente), fecha |
+| `DashboardCompras` (Bandeja RFQ; `readOnly` para gerente y administrador) | `dc_*` | búsqueda, Resultado, Estado, Vendedor (siempre), fecha |
+| `DashboardPedidos` | `dp_*` | búsqueda ítem/ref/cliente, Proveedor (comprador y administrador), Estado logístico, búsqueda N° OC, fecha confirmado; la selección de filas y "Vincular selección" quedan fuera |
+| `GestionOC` (lista) | `goc_*` | búsqueda, Proveedor, Estado logístico, fecha de creación; el detalle de la OC no tiene filtros (solo entradas de datos: tracking, retaceo) |
+| `RetaceosView` | — (sin persistencia) | Mes y Proveedor; la fecha de la fila en edición es entrada de datos |
+
 ## Qué no se homologa
 `FiltroFechas` (fase posterior), la selección de filas de `DashboardPedidos`, las claves de persistencia y la lógica de filtrado de cada vista, y las condiciones por rol (las decide la vista).
