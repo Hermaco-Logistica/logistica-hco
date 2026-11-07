@@ -254,7 +254,9 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
       {/* Filtros: un solo marcado; en móvil los controles viven en la hoja inferior de BarraFiltros (sin persistencia, como antes) */}
       <BarraFiltros
         className="mb-4 md:mb-6"
-        filtrosActivos={filtrosActivosCount + (busqueda.trim() ? 1 : 0)}
+        busquedaAparte
+        busquedaEnBarraMovil
+        filtrosActivos={filtrosActivosCount}
         resultados={visibles.length}
         busqueda={(
           <FiltroBusqueda
@@ -264,32 +266,34 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
             ariaLabel={esVendedor ? 'Buscar por correlativo, cliente o ítem' : 'Buscar por correlativo, cliente, vendedor o ítem'}
           />
         )}
-        filtros={(
-          <>
+        filas={[
+          [
             <FiltroFechas
+              key="fechas"
               value={rangoFecha}
               onChange={setRangoFecha}
               porDefecto={rangoPredeterminado}
               etiqueta="Fecha de actividad"
               ariaLabel="Filtrar por fecha de actividad"
             />
-            {esGerencia && (
-              <FiltroSegmentado
-                ariaLabel="Filtrar por vendedor"
-                etiqueta="Vendedor"
-                prefijo="Vendedor:"
-                valorNeutro="todas"
-                value={filtroGerencia}
-                onChange={setFiltroGerencia}
-                opciones={[
-                  { value: 'todas', label: 'Todos' },
-                  { value: 'propias', label: 'Propias' },
-                  { value: 'otros', label: 'Otros' }
-                ]}
-              />
-            )}
-          </>
-        )}
+          ],
+          ...(esGerencia ? [[
+            <FiltroSegmentado
+              key="vendedor"
+              ariaLabel="Filtrar por vendedor"
+              etiqueta="Vendedor"
+              prefijo="Vendedor:"
+              valorNeutro="todas"
+              value={filtroGerencia}
+              onChange={setFiltroGerencia}
+              opciones={[
+                { value: 'todas', label: 'Todos' },
+                { value: 'propias', label: 'Propias' },
+                { value: 'otros', label: 'Otros' }
+              ]}
+            />
+          ]] : [])
+        ]}
         limpiar={(
           <BotonLimpiar
             activos={filtrosActivosCount + (busqueda.trim() ? 1 : 0)}
