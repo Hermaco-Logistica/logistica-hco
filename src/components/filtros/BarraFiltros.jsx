@@ -177,8 +177,10 @@ const repartir = (rejilla) => {
  * `filtrosActivos` es el número de "Filtros (N)" y cuenta SOLO lo que hay dentro de la hoja; "Limpiar (N)" (el `activos` del BotonLimpiar)
  * cuenta todo, búsqueda incluida, así la búsqueda no se duplica en los dos números.
  * `resultados` el de "Ver N resultados" (opcional).
- * `busquedaEnBarraMovil` deja la búsqueda en la barra móvil en vez de dentro de la hoja; en ese caso la barra móvil también lleva
- * `limpiar` (la hoja lo repite en su cabecera con el mismo número).
+* `busquedaEnBarraMovil` deja la búsqueda en la barra móvil en vez de dentro de la hoja. Patrón de la tarjeta móvil con búsqueda: UNA
+ * fila con el buscador (ancho mínimo 8,5 rem), "Filtros (N)" y "Limpiar" como botón de icono de 44 px (hueco SIEMPRE reservado, con el
+ * número como distintivo); el contador va debajo en una línea de altura fija (h-4). La tarjeta no cambia de altura al aparecer Limpiar.
+ * La hoja repite "Limpiar (N)" en su cabecera con el mismo número.
  * `filas` (alternativa a `filtros`, solo escritorio): arreglo de filas, cada una un arreglo de nodos, apiladas con su ancho natural (sin
  * rejilla que estire); `limpiar` va al final de la última fila con su hueco siempre reservado. En móvil se aplanan dentro de la hoja.
  * `busquedaAparte` (con `filas`): en escritorio la búsqueda es una segunda tarjeta debajo (campo a ancho completo y, a la derecha, el
@@ -207,28 +209,37 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, filas, busquedaApa
   const hayFiltrosHoja = Boolean(filas ? filas.flat().length : filtros);
   const modoFilas = Boolean(filas) && !movil;
   const anchoBloque = busquedaAparte ? 'w-44' : 'w-72';
+  const botonFiltros = (
+    <button
+      type="button"
+      aria-haspopup="dialog"
+      aria-expanded={hojaAbierta}
+      aria-controls={idHoja}
+      onClick={() => setAbierta(true)}
+      className={`inline-flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold ${filtrosActivos > 0 ? 'border-primary text-primary-strong' : 'border-border text-slate-600'}`}
+    >
+      <Filter size={14} aria-hidden="true" />
+      <span>Filtros{filtrosActivos > 0 ? ` (${filtrosActivos})` : ''}</span>
+    </button>
+  );
 
   return (
     <>
     <section aria-label="Filtros" className={`surface p-3.5 md:p-4 ${className}`}>
       {encabezado && <div className="mb-3 flex flex-wrap items-center justify-between gap-2">{encabezado}</div>}
-      {movil ? (
+      {movil && busquedaEnBarraMovil ? (
+        <div>
+          <div className="flex items-center gap-2">
+            {busqueda && <div className="min-w-[8.5rem] flex-1">{busqueda}</div>}
+            {(hayFiltrosHoja || busquedaEnHoja) && botonFiltros}
+            <div className="w-11 shrink-0"><ContextoFiltros.Provider value="icono">{limpiar}</ContextoFiltros.Provider></div>
+          </div>
+          {extremo && <div className="mt-1 flex h-4 items-center justify-end">{extremo}</div>}
+        </div>
+      ) : movil ? (
         <div className="flex flex-wrap items-center gap-2">
           {busqueda && busquedaEnBarraMovil && <div className="min-w-[8.5rem] flex-1">{busqueda}</div>}
-          {(hayFiltrosHoja || busquedaEnHoja) && (
-            <button
-              type="button"
-              aria-haspopup="dialog"
-              aria-expanded={hojaAbierta}
-              aria-controls={idHoja}
-              onClick={() => setAbierta(true)}
-              className={`inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold ${filtrosActivos > 0 ? 'border-primary text-primary-strong' : 'border-border text-slate-600'}`}
-            >
-              <Filter size={14} aria-hidden="true" />
-              <span>Filtros{filtrosActivos > 0 ? ` (${filtrosActivos})` : ''}</span>
-            </button>
-          )}
-          {busquedaEnBarraMovil && limpiar}
+          {(hayFiltrosHoja || busquedaEnHoja) && botonFiltros}
           {extremo && <div className="ml-auto flex items-center gap-2">{extremo}</div>}
         </div>
       ) : modoFilas ? (

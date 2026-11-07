@@ -31,7 +31,8 @@ Es una `surface` (sin borde, sombra de reposo). Slots: `encabezado` (fila superi
 
 ### Escritorio con filas y búsqueda aparte (`filas`, `busquedaAparte`)
 Para pantallas que piden un orden fijo (Prórrogas): `filas` es un arreglo de filas (cada una, un arreglo de nodos) apiladas con su ancho natural, sin la rejilla que estira. El bloque `limpiar` va al final de la última fila con su hueco SIEMPRE reservado (`w-44` con búsqueda aparte, `w-72` con el contador dentro). Con `busquedaAparte` la búsqueda es una segunda tarjeta (misma separación entre tarjetas) debajo de la de filtros, con el `extremo` (contador) a la derecha. El orden del DOM y del teclado es el visual (filas, luego búsqueda). En móvil las filas se aplanan dentro de la hoja.
-- **Contadores sin duplicar:** "Filtros (N)" (`filtrosActivos`) cuenta solo lo que hay dentro de la hoja; "Limpiar (N)" cuenta todo, la búsqueda incluida. Con `busquedaEnBarraMovil` la tarjeta móvil lleva búsqueda, "Filtros (N)", Limpiar y contador, y la hoja contiene solo los filtros.
+- **Contadores sin duplicar:** "Filtros (N)" (`filtrosActivos`) cuenta solo lo que hay dentro de la hoja; "Limpiar (N)" cuenta todo, la búsqueda incluida. Con `busquedaEnBarraMovil` la tarjeta móvil lleva búsqueda, "Filtros (N)" y Limpiar, y la hoja contiene solo los filtros (repite "Limpiar (N)" en su cabecera con el mismo número).
+- **Tarjeta móvil con búsqueda en la barra (patrón):** UNA fila con el buscador (ancho mínimo 8,5 rem), "Filtros (N)" y "Limpiar" como botón de icono de 44 px (`BotonLimpiar` en modo `icono`, aria-label "Limpiar filtros (N)", el número como distintivo); su hueco de 44 px está SIEMPRE reservado. El contador va debajo, en una línea de altura fija (`h-4`, alineado a la derecha). La tarjeta no cambia de altura al aparecer Limpiar (medido a 393 × 852: 92 px con y sin filtros, en los 4 roles).
 - **Segmentados:** la pista (`FiltroSegmentado`) es compacta (`w-max`), cubre todas las opciones y los botones comparten ancho; `completo` la lleva al ancho del contenedor.
 - **Contador:** `ContadorResultados` recibe `singular` y `plural` ("1 registro", "0 registros"); helper `utils/pluralizar.js`.
 
@@ -107,6 +108,7 @@ Dos `<input type="date">` con el estilo de campo para pantallas sin calendario p
 ```
 
 ## Reglas
+- **Cantidades con singular y plural:** cada pantalla migrada pasa `singular` y `plural` a `ContadorResultados`, y cualquier texto con una cantidad usa `pluralizar(n, singular, plural)` (`utils/pluralizar.js`): "1 solicitud", "0 solicitudes". Nunca "1 solicitudes".
 - Sin etiqueta visible encima en escritorio: cada control lleva `aria-label` y, si hace falta, un prefijo interno ("Estado: Todos", apilado si el valor es largo). En la hoja móvil las etiquetas son visibles.
 - Controles de la barra: borde suave y sin sombra; `BotonLimpiar` y `BotonExportar` son `Button secondary` (sombra de botón, sin borde).
 - Alturas: 44 px en móvil y en las filas de la hoja, 36 px en la barra desde `md`.

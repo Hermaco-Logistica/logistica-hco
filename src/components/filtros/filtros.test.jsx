@@ -832,7 +832,10 @@ describe('BarraFiltros con filas y búsqueda aparte (Prórrogas)', () => {
     expect(container.querySelectorAll('section')).toHaveLength(1);
     expect(container.querySelector('input[type="search"]')).toBeTruthy();
     expect(screen.getByRole('button', { name: /Filtros \(1\)/ })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Limpiar filtros (2 activos)' })).toBeTruthy();
+    const icono = screen.getByRole('button', { name: 'Limpiar filtros (2)' });
+    expect(icono.className).toContain('size-11');
+    expect(icono.textContent).toBe('2');
+    expect(container.querySelector('section > div > div').children).toHaveLength(3);
     expect(container.textContent).toContain('5 registros');
     fireEvent.click(screen.getByRole('button', { name: /Filtros \(1\)/ }));
     const hoja = screen.getByRole('dialog');
