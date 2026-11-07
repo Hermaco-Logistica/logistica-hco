@@ -86,7 +86,7 @@ export const MenuAnclado = ({ ancla, abierto, onCerrar, onDireccion, id, childre
       id={id}
       data-menu-anclado
       data-estado={cerrando ? 'cerrando' : 'abierto'}
-      className="menu-anclado fixed z-[90] overflow-hidden bg-surface shadow-menu"
+      className="menu-anclado fixed z-[90] overflow-hidden bg-filtro-abierto shadow-menu"
     >
       {children}
     </div>,

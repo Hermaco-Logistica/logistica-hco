@@ -179,7 +179,8 @@ describe('FiltroSelect: select-only combobox', () => {
     fireEvent.click(boton);
     expect(document.querySelector('[data-menu-anclado]').dataset.dir).toBe('abajo');
     expect(campo.className).toContain('rounded-b-none');
-    expect(campo.className).toContain('bg-surface');
+    expect(campo.className).toContain('bg-filtro-abierto');
+    expect(document.querySelector('[data-menu-anclado]').className).toContain('bg-filtro-abierto');
   });
   it('estado seleccionado: con valor, bg-filtro-activo y texto primary-strong; "Todos" no se pinta como selección (sin check ni color)', () => {
     const { container, rerender, boton } = montarSelect();
@@ -599,6 +600,7 @@ describe('Tokens de animación (una sola fuente)', () => {
   it('--color-filtro-activo se declara en el bloque inline y en el de derivados por ámbito (sigue al rol)', () => {
     expect(tokens.match(/--color-filtro-activo:/g)).toHaveLength(2);
     expect(tokens.match(/--color-filtro-texto:/g)).toHaveLength(2);
+    expect(tokens.match(/--color-filtro-abierto:/g)).toHaveLength(2);
   });
 });
 

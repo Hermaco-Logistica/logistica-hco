@@ -192,6 +192,8 @@
 
   /* Fondo de un filtro con valor distinto de "Todos" (select, fecha con rango, búsqueda con texto, conmutador activo). Utilidad: bg-filtro-activo. */
   --color-filtro-activo: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
+  /* Campo de filtro abierto + su menú (una sola pieza): tinte suave del rol, más claro que el de "seleccionado". Utilidad: bg-filtro-abierto. */
+  --color-filtro-abierto: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
   /* Texto del valor de un filtro activo: primary-strong oscurecido un 20 % para llegar a 4,5:1 sobre --color-filtro-activo en todos los roles y sin rol. */
   --color-filtro-texto: color-mix(in srgb, var(--color-primary-strong) 80%, black);
 
@@ -291,6 +293,7 @@
     --color-sidebar: var(--color-secondary);
     --color-primary-soft: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
     --color-filtro-activo: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
+    --color-filtro-abierto: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
     --color-filtro-texto: color-mix(in srgb, var(--color-primary-strong) 80%, black);
     --color-secondary-soft: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
     --color-seguimiento: var(--color-primary-strong);
