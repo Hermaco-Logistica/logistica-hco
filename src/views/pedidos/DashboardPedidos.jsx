@@ -8,8 +8,8 @@ import { collection, onSnapshot, doc, updateDoc, serverTimestamp, getDoc, getDoc
 import { auth, db } from '../../firebase';
 import { 
   CheckSquare, Square, Link as LinkIcon, 
-  ChevronDown, ChevronUp, ChevronRight, Package, DollarSign, Hash, ClipboardCheck, 
-  Activity, Calendar, Clock, Truck, Trash2, Filter
+  ChevronDown, ChevronRight, Package, DollarSign, Hash, ClipboardCheck, 
+  Activity, Calendar, Clock, Truck
 } from 'lucide-react';
 import { MobileListCard, MobileBadge, BottomActionBar } from '../../components/mobile';
 import { TrackingModal } from '../../components/TrackingModal';

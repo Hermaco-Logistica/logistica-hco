@@ -7,12 +7,13 @@ import { collection, query, onSnapshot, doc, updateDoc, orderBy, serverTimestamp
 import { db } from '../../firebase';
 import {
   Truck, Globe, ChevronRight, ArrowLeft, Calendar, Hash,
-  AlertTriangle, RefreshCw, Loader2, Calendar as CalendarIcon, Trash2,
-  Filter, SlidersHorizontal, Clock, Package
+  AlertTriangle, RefreshCw, Loader2,
+  Clock, Package
 } from 'lucide-react';
 import { consultarTrackingStatus, trackingStatusEnabled } from '../../services/trackingStatusService';
 import { ShipmentTracker } from '../../components/ShipmentTracker';
 import { usePersistedState } from '../../hooks/usePersistedState';
+import { BarraFiltros, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroFechaCampo, FiltroFechasContenedor, FiltroSelect } from '../../components/filtros';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { interpretarEstadoLogistico } from '../../utils/interpretarEstadoLogistico';
 import { Etiqueta } from '../../components/Etiqueta';
@@ -47,7 +48,6 @@ export const GestionOC = ({ readOnly = false }) => {
   const [mesActual, setMesActual] = useState(new Date());
   const refCalendario = useRef(null);
   const refCalendarioMobile = useRef(null);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -622,233 +622,91 @@ export const GestionOC = ({ readOnly = false }) => {
         subtitle="Bandeja Logística de Compras"
       />
 
-      {/* Controles de Filtros Mobile (< md) */}
-      <div className="md:hidden space-y-3 mb-4">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <input 
-              type="text" 
-              placeholder="Buscar OC, ítem, tracking..." 
-              value={searchOCNum}
-              onChange={(e) => setSearchOCNum(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-bold outline-none focus:border-slate-400 transition-all text-slate-700 shadow-xs"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowMobileFilters(!showMobileFilters)}
-            className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-xs font-black transition-all ${
-              activeFiltersCount > 0 || showMobileFilters
-                ? 'bg-slate-900 text-white border-slate-900'
-                : 'bg-white text-slate-600 border-slate-200'
-            }`}
-          >
-            <SlidersHorizontal size={14} />
-            <span>Filtros</span>
-            {activeFiltersCount > 0 && (
-              <span className="w-4 h-4 rounded-full bg-emerald-500 text-white text-[9px] flex items-center justify-center font-black">
-                {activeFiltersCount}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {showMobileFilters && (
-          <div ref={refCalendarioMobile} className="surface p-4 rounded-2xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Proveedor</label>
-              <select 
-                value={filterProveedor} 
-                onChange={(e) => setFilterProveedor(e.target.value)}
-                className="tf-campo"
-              >
-                <option value="">TODOS LOS PROVEEDORES</option>
-                {proveedoresDisponibles.map(prov => (
-                  <option key={prov} value={prov}>{prov.toUpperCase()}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Estado Logístico</label>
-              <select 
-                value={filterEstadoLogistica} 
-                onChange={(e) => setFilterEstadoLogistica(e.target.value)}
-                className="tf-campo"
-              >
-                <option value="">TODOS LOS ESTADOS</option>
-                {estadosLogisticaDisponibles.map(est => (
-                  <option key={est} value={est}>{est.toUpperCase()}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fecha Creación</label>
-              <div className="flex items-center gap-2">
-                <div 
-                  onClick={() => setMostrarCalendario(!mostrarCalendario)}
-                  className="flex-1 flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-bold cursor-pointer text-slate-700"
-                >
-                  <CalendarIcon size={14} className="text-slate-400 shrink-0" />
-                  <span className="truncate">{formattedRangoText()}</span>
-                </div>
-                {(fechaInicio || fechaFin) && (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => { setFechaInicio(null); setFechaFin(null); }}
-                  >
-                    Borrar
-                  </Button>
-                )}
-              </div>
-              {mostrarCalendario && (
-                <div className="surface-flotante absolute right-0 mt-2 z-40 rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
-                  <div className="flex items-center justify-between mb-4">
-                    <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
-                    <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
-                      {mesActual.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
-                    </span>
-                    <button type="button" onClick={() => cambiarMes(1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&gt;</button>
-                  </div>
-                  <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-slate-400 mb-2">
-                    <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
-                  </div>
-                  <div className="grid grid-cols-7 gap-1">
-                    {getDiasDelMes().map((dia, idx) => {
-                      if (!dia) return <div key={`empty-mobile-${idx}`} />;
-                      const timestampDia = dia.getTime();
-                      const isInicio = fechaInicio && timestampDia === fechaInicio.getTime();
-                      const isFin = fechaFin && timestampDia === fechaFin.getTime();
-                      const isRango = fechaInicio && fechaFin && timestampDia > fechaInicio.getTime() && timestampDia < fechaFin.getTime();
-                      let bgClass = 'hover:bg-slate-100 text-slate-700';
-                      if (isInicio || isFin) bgClass = 'bg-slate-900 text-white rounded-full font-black';
-                      if (isRango) bgClass = 'bg-slate-100 text-slate-900 rounded-none';
-                      return (
-                        <button key={idx} type="button" onClick={() => handleSelectDia(dia)} className={`text-center py-1 text-[11px] font-bold rounded-full transition-all ${bgClass}`}>
-                          {dia.getDate()}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="pt-2 flex justify-end">
-              <Button
-                variant="secondary"
-                size="sm"
-                type="button"
-                onClick={() => {
-                  setSearchOCNum('');
-                  setFilterProveedor('');
-                  setFilterEstadoLogistica('');
-                  setFechaInicio(null);
-                  setFechaFin(null);
-                }}
-              >
-                <Trash2 size={13} /> Limpiar Filtros
-              </Button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Controles de Filtros Desktop (>= md) */}
-      <div className="surface hidden md:grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-6 p-6">
-        <div>
-          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Buscar (OC / Item / Tracking)</label>
-          <input 
-            type="text" 
-            placeholder="N° OC, ítem, tracking..." 
+      {/* FILTROS: un solo marcado; en móvil los controles viven en la hoja inferior de BarraFiltros */}
+      <BarraFiltros
+        className="mb-4 md:mb-6"
+        filtrosActivos={activeFiltersCount + (searchOCNum ? 1 : 0)}
+        resultados={filteredOrdenes.length}
+        busqueda={(
+          <FiltroBusqueda
             value={searchOCNum}
-            onChange={(e) => setSearchOCNum(e.target.value)}
-            className="tf-campo"
+            onChange={(texto) => setSearchOCNum(texto)}
+            placeholder="Buscar OC, ítem, tracking…"
+            ariaLabel="Buscar por OC, ítem o tracking"
           />
-        </div>
-        <div>
-          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Proveedor</label>
-          <select 
-            value={filterProveedor} 
-            onChange={(e) => setFilterProveedor(e.target.value)}
-            className="tf-campo cursor-pointer"
-          >
-            <option value="">TODOS LOS PROVEEDORES</option>
-            {proveedoresDisponibles.map(prov => (
-              <option key={prov} value={prov}>{prov.toUpperCase()}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Estado Logístico</label>
-          <select 
-            value={filterEstadoLogistica} 
-            onChange={(e) => setFilterEstadoLogistica(e.target.value)}
-            className="tf-campo cursor-pointer"
-          >
-            <option value="">TODOS LOS ESTADOS</option>
-            {estadosLogisticaDisponibles.map(est => (
-              <option key={est} value={est}>{est.toUpperCase()}</option>
-            ))}
-          </select>
-        </div>
+        )}
+        filtros={(
+          <>
+            <FiltroSelect
+              value={filterProveedor}
+              onChange={(valor) => setFilterProveedor(valor)}
+              opciones={proveedoresDisponibles}
+              prefijo="Proveedor:"
+              ariaLabel="Filtrar por proveedor"
+            />
+            <FiltroSelect
+              value={filterEstadoLogistica}
+              onChange={(valor) => setFilterEstadoLogistica(valor)}
+              opciones={estadosLogisticaDisponibles}
+              prefijo="Estado:"
+              etiqueta="Estado logístico"
+              ariaLabel="Filtrar por estado logístico"
+            />
+            {/* Rango de fecha de creación: el calendario existente (estado y lógica sin cambios) como hijo del contenedor */}
+            <div className="relative" ref={refCalendario}>
+              <FiltroFechaCampo
+                texto={formattedRangoText()}
+                activo={Boolean(fechaInicio || fechaFin)}
+                expandido={mostrarCalendario}
+                onClick={() => setMostrarCalendario(!mostrarCalendario)}
+                onLimpiar={() => { setFechaInicio(null); setFechaFin(null); }}
+                etiqueta="Fecha creación"
+                ariaLabel="Filtrar por fecha de creación"
+              />
+              <FiltroFechasContenedor abierto={mostrarCalendario} onCerrar={() => setMostrarCalendario(false)}>
+                <div className="flex items-center justify-between mb-4">
+                  <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
+                  <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
+                    {mesActual.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                  </span>
+                  <button type="button" onClick={() => cambiarMes(1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&gt;</button>
+                </div>
 
-        {/* Popover Rango de Fecha Creación */}
-        <div className="relative" ref={refCalendario}>
-          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Fecha Creación</label>
-          <div className="tf-campo flex items-center gap-1 cursor-pointer" onClick={() => setMostrarCalendario(!mostrarCalendario)}>
-            <CalendarIcon size={14} className="text-slate-400 shrink-0" />
-            <span className="truncate flex-1 select-none">{formattedRangoText()}</span>
-            {(fechaInicio || fechaFin) && (
-              <button onClick={(e) => { e.stopPropagation(); setFechaInicio(null); setFechaFin(null); }} className="hover:text-red-500 font-bold p-0.5">&times;</button>
-            )}
-          </div>
+                <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-slate-400 mb-2">
+                  <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
+                </div>
 
-          {mostrarCalendario && (
-            <div className="surface-flotante absolute right-0 mt-2 z-30 rounded-3xl p-5 w-72 animate-in fade-in slide-in-from-top-3 duration-200">
-              <div className="flex items-center justify-between mb-4">
-                <button type="button" onClick={() => cambiarMes(-1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&lt;</button>
-                <span className="text-xs font-black uppercase text-slate-700 tracking-wider">
-                  {mesActual.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
-                </span>
-                <button type="button" onClick={() => cambiarMes(1)} className="hover:bg-slate-100 p-1.5 rounded-lg font-black text-slate-600">&gt;</button>
-              </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {getDiasDelMes().map((dia, idx) => {
+                    if (!dia) return <div key={`empty-${idx}`} />;
+                    const timestampDia = dia.getTime();
+                    const isInicio = fechaInicio && timestampDia === fechaInicio.getTime();
+                    const isFin = fechaFin && timestampDia === fechaFin.getTime();
+                    const isRango = fechaInicio && fechaFin && timestampDia > fechaInicio.getTime() && timestampDia < fechaFin.getTime();
 
-              <div className="grid grid-cols-7 gap-1 text-center text-[9px] font-black text-slate-400 mb-2">
-                <span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span>
-              </div>
+                    let bgClass = 'hover:bg-slate-100 text-slate-700';
+                    if (isInicio || isFin) bgClass = 'bg-slate-900 text-white rounded-full font-black';
+                    if (isRango) bgClass = 'bg-slate-100 text-slate-900 rounded-none';
 
-              <div className="grid grid-cols-7 gap-1">
-                {getDiasDelMes().map((dia, idx) => {
-                  if (!dia) return <div key={`empty-${idx}`} />;
-                  const timestampDia = dia.getTime();
-                  const isInicio = fechaInicio && timestampDia === fechaInicio.getTime();
-                  const isFin = fechaFin && timestampDia === fechaFin.getTime();
-                  const isRango = fechaInicio && fechaFin && timestampDia > fechaInicio.getTime() && timestampDia < fechaFin.getTime();
-
-                  let bgClass = 'hover:bg-slate-100 text-slate-700';
-                  if (isInicio || isFin) bgClass = 'bg-slate-900 text-white rounded-full font-black';
-                  if (isRango) bgClass = 'bg-slate-100 text-slate-900 rounded-none';
-
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleSelectDia(dia)}
-                      className={`text-center py-1 text-[11px] font-bold rounded-full transition-all ${bgClass}`}
-                    >
-                      {dia.getDate()}
-                    </button>
-                  );
-                })}
-              </div>
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSelectDia(dia)}
+                        className={`text-center py-1 text-[11px] font-bold rounded-full transition-all ${bgClass}`}
+                      >
+                        {dia.getDate()}
+                      </button>
+                    );
+                  })}
+                </div>
+              </FiltroFechasContenedor>
             </div>
-          )}
-        </div>
-
-        <div className="flex flex-col justify-end w-fit pb-1">
-          <Button
-            variant="secondary"
-            size="icon"
+          </>
+        )}
+        limpiar={(
+          <BotonLimpiar
+            activos={activeFiltersCount + (searchOCNum ? 1 : 0)}
             onClick={() => {
               setSearchOCNum('');
               setFilterProveedor('');
@@ -856,12 +714,10 @@ export const GestionOC = ({ readOnly = false }) => {
               setFechaInicio(null);
               setFechaFin(null);
             }}
-            title="Limpiar filtros"
-          >
-            <Trash2 size={16} />
-          </Button>
-        </div>
-      </div>
+          />
+        )}
+        extremo={<ContadorResultados total={filteredOrdenes.length} unidad="órdenes" />}
+      />
 
       {/* Vista Móvil (< md): Tarjetas Detalladas y Espaciosas con toda la información de escritorio */}
       <div className="md:hidden space-y-3.5">
