@@ -277,6 +277,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
               onChange={(valor) => { setFilterResultado(valor); setCurrentPage(1); }}
               opciones={resultadosDisponibles.map((resultado) => ({ value: resultado, label: etiquetaResultadoSolicitud(resultado) }))}
               prefijo="Resultado:"
+              peso={1.4}
               ariaLabel="Filtrar por resultado"
             />
             <FiltroSelect

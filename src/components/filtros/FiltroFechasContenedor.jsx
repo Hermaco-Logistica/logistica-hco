@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useCapaAtras } from './capasAtras';
 import { centrarEnCuerpo } from './centrarEnCuerpo';
 import { useFilaAcordeon, useModoFiltro, useMovil } from './contexto';
 
@@ -21,8 +22,7 @@ export const FiltroFechasContenedor = ({ abierto, onCerrar, titulo = 'Filtrar po
   const movil = useMovil();
   const fila = useFilaAcordeon();
   const contenedorRef = useRef(null);
-  const ultimo = useRef({ abierto, onCerrar });
-  useEffect(() => { ultimo.current = { abierto, onCerrar }; });
+  const ultimo = useRef({ abierto, onCerrar, alturaCuerpoFinal: null });
 
   useEffect(() => {
     if (!abierto || enHoja) return undefined;
@@ -32,11 +32,13 @@ export const FiltroFechasContenedor = ({ abierto, onCerrar, titulo = 'Filtrar po
   }, [abierto, enHoja, onCerrar]);
 
   // Acordeón de la hoja: al abrir el calendario esta fila pasa a ser la abierta y el cuerpo la centra; si otra fila se abre, se cierra.
-  const { abrir: abrirFila } = fila;
+  const { abrir: abrirFila, alturaCuerpoFinal } = fila;
+  useEffect(() => { ultimo.current = { abierto, onCerrar, alturaCuerpoFinal }; });
+  useCapaAtras(enHoja && abierto, onCerrar);
   useEffect(() => {
     if (!enHoja || !abierto) return undefined;
     abrirFila(true);
-    const r = requestAnimationFrame(() => requestAnimationFrame(() => centrarEnCuerpo(contenedorRef.current && contenedorRef.current.parentElement)));
+    const r = requestAnimationFrame(() => requestAnimationFrame(() => centrarEnCuerpo(contenedorRef.current && contenedorRef.current.parentElement, ultimo.current.alturaCuerpoFinal ? ultimo.current.alturaCuerpoFinal() : undefined)));
     return () => cancelAnimationFrame(r);
   }, [abierto, enHoja, abrirFila]);
   const filaAbierta = fila.abierto;

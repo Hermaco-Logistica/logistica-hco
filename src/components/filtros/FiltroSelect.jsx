@@ -19,7 +19,7 @@ const normalizar = (o) => (typeof o === 'string' ? { value: o, label: o } : o);
  *   - hoja móvil: fila con `etiqueta` (por defecto el prefijo sin ":") que se despliega en línea (acordeón, FilaAcordeon).
  * Con valor distinto de "Todos" el campo usa el estado "seleccionado" (--color-filtro-activo, texto primary-strong, icono primary).
  */
-export const FiltroSelect = ({ value, onChange, opciones = [], prefijo, etiqueta, etiquetaTodos = 'Todos', ariaLabel, className = '' }) => {
+export const FiltroSelect = ({ value, onChange, opciones = [], prefijo, etiqueta, etiquetaTodos = 'Todos', ariaLabel, peso, className = '' }) => {
   const enHoja = useModoFiltro() === 'hoja';
   const todas = [{ value: '', label: etiquetaTodos, esTodos: true }, ...opciones.map(normalizar)];
   const valor = value === undefined || value === null ? '' : value;
@@ -32,10 +32,10 @@ export const FiltroSelect = ({ value, onChange, opciones = [], prefijo, etiqueta
     const titulo = etiqueta || (prefijo ? prefijo.replace(/:$/, '') : ariaLabel);
     return <FilaAcordeon etiqueta={titulo} textoValor={elegida.label} opciones={todas} value={valor} onElegir={onChange} ariaLabel={nombre} seleccionado={seleccionado} className={className} />;
   }
-  return <CampoDesplegable todas={todas} valor={valor} indice={indice} elegida={elegida} seleccionado={seleccionado} onChange={onChange} prefijo={prefijo} nombre={nombre} className={className} />;
+  return <CampoDesplegable todas={todas} valor={valor} indice={indice} elegida={elegida} seleccionado={seleccionado} onChange={onChange} prefijo={prefijo} nombre={nombre} peso={peso} className={className} />;
 };
 
-const CampoDesplegable = ({ todas, valor, indice, elegida, seleccionado, onChange, prefijo, nombre, className }) => {
+const CampoDesplegable = ({ todas, valor, indice, elegida, seleccionado, onChange, prefijo, nombre, peso, className }) => {
   const id = useId();
   const idLista = `${id}-lista`;
   const campoRef = useRef(null);
@@ -58,7 +58,7 @@ const CampoDesplegable = ({ todas, valor, indice, elegida, seleccionado, onChang
   const apilado = Boolean(prefijo) && seleccionado;
 
   return (
-    <div ref={campoRef} data-filtro-select className={`${claseCampo({ abierto, seleccionado, dir })} md:w-full ${className}`}>
+    <div ref={campoRef} data-filtro-select data-peso={peso} className={`${claseCampo({ abierto, seleccionado, dir })} md:w-full ${className}`}>
       <button
         ref={botonRef}
         type="button"

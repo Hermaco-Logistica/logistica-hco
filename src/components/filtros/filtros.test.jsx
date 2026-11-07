@@ -7,9 +7,10 @@ import {
   BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroConmutador, FiltroFechaCampo, FiltroFechasContenedor,
   FiltroPestanas, FiltroSegmentado, FiltroSelect
 } from './index';
+import { reiniciarCapasParaPruebas } from './capasAtras';
 import { BotonSeguimiento } from '../../views/analisis/components/FiltroSeguimiento';
 
-afterEach(() => { cleanup(); vi.useRealTimers(); });
+afterEach(async () => { cleanup(); vi.useRealTimers(); await new Promise((r) => setTimeout(r, 25)); reiniciarCapasParaPruebas(); window.history.replaceState(null, ''); });
 
 const mm = (matches) => { window.matchMedia = () => ({ matches, addEventListener() {}, removeEventListener() {} }); };
 const OPC = ['Cotizado', 'Pedido', 'Pedido Parcial', { value: 'perdida', label: 'Venta perdida' }];
@@ -328,7 +329,7 @@ describe('BarraFiltros en escritorio', () => {
     expect(hijos[0].textContent).toBe('Solicitudes');
     const rejilla = hijos[1];
     expect(rejilla.className).toContain('grid');
-    expect(rejilla.children[0].getAttribute('data-span')).toBe('2');
+    expect(rejilla.children[0].getAttribute('data-peso')).toBe('2');
     expect(rejilla.children[0].querySelector('input')).toBeTruthy();
     expect(rejilla.children[1].querySelector('button[role="combobox"]')).toBeTruthy();
     const bloque = rejilla.lastElementChild;
@@ -598,5 +599,84 @@ describe('Tokens de animación (una sola fuente)', () => {
   it('--color-filtro-activo se declara en el bloque inline y en el de derivados por ámbito (sigue al rol)', () => {
     expect(tokens.match(/--color-filtro-activo:/g)).toHaveLength(2);
     expect(tokens.match(/--color-filtro-texto:/g)).toHaveLength(2);
+  });
+});
+
+describe('Hoja móvil: scroll, altura y botón atrás', () => {
+  const esperar = (ms = 30) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
+  const Mini = () => (
+    <BarraFiltros
+      busqueda={<FiltroBusqueda value="" onChange={() => {}} ariaLabel="buscar" />}
+      filtros={<FiltroSelect value="" onChange={() => {}} opciones={['A', 'B']} prefijo="Estado:" ariaLabel="estado" />}
+      resultados={3}
+    />
+  );
+  it('el cuerpo se desplaza con el dedo sin arrastrar la página y la cabecera y el pie son fijos', () => {
+    mm(true);
+    render(<Mini />);
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    const cuerpo = document.querySelector('[data-hoja-cuerpo]');
+    for (const c of ['overflow-y-auto', 'overscroll-contain', 'touch-pan-y', 'flex-1', 'min-h-0']) expect(cuerpo.className).toContain(c);
+    expect(cuerpo.previousElementSibling.className).toContain('shrink-0');
+    expect(cuerpo.nextElementSibling.className).toContain('shrink-0');
+  });
+  it('atrás por capas: cierra la fila, luego la hoja, sin tocar el valor; la entrada del historial se retira al cerrar con la interfaz', async () => {
+    mm(true);
+    const onChange = vi.fn();
+    render(<BarraFiltros busqueda={<FiltroBusqueda value="" onChange={() => {}} ariaLabel="buscar" />} filtros={<FiltroSelect value="" onChange={onChange} opciones={['A', 'B']} prefijo="Estado:" ariaLabel="estado" />} />);
+    const base = window.history.length;
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    await esperar();
+    expect(window.history.state.filtros).toBe(1);
+    fireEvent.click(screen.getByRole('combobox', { name: 'estado' }));
+    await esperar();
+    expect(window.history.state.filtros).toBe(2);
+    window.history.back();
+    await esperar();
+    expect(screen.getByRole('combobox', { name: 'estado' }).getAttribute('aria-expanded')).toBe('false');
+    expect(screen.getByRole('dialog')).toBeTruthy();
+    expect(onChange).not.toHaveBeenCalled();
+    window.history.back();
+    await esperar(300);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+    expect(window.history.length).toBeGreaterThanOrEqual(base);
+    // cierre con la interfaz (X): la entrada se retira y el siguiente atrás no cierra nada ni deja entrada fantasma
+    const antes = window.history.state && window.history.state.filtros;
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    await esperar();
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar filtros' }));
+    await esperar(400);
+    await esperar(100);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect((window.history.state && window.history.state.filtros) || undefined).toBe(antes || undefined);
+  });
+  it('elegir una opción cierra la fila y retira su entrada: el atrás siguiente cierra la hoja', async () => {
+    mm(true);
+    render(<Mini />);
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    await esperar();
+    fireEvent.click(screen.getByRole('combobox', { name: 'estado' }));
+    await esperar();
+    fireEvent.click(screen.getByRole('option', { name: 'B' }));
+    await esperar();
+    expect(window.history.state.filtros).toBe(1);
+    window.history.back();
+    await esperar(300);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+  it('el menú de escritorio mide siempre el ancho del campo (sin min-width) y sus opciones largas parten en dos líneas con title', () => {
+    mm(false);
+    const largo = 'Una opción muy larga que no cabe en una sola línea del campo';
+    const { container } = render(<FiltroSelect value="" onChange={() => {}} opciones={[largo]} prefijo="Estado:" ariaLabel="estado" />);
+    container.querySelector('[data-filtro-select]').getBoundingClientRect = () => ({ top: 10, bottom: 46, left: 20, right: 180, width: 160, height: 36 });
+    fireEvent.click(screen.getByRole('combobox', { name: 'estado' }));
+    const menu = document.querySelector('[data-menu-anclado]');
+    expect(menu.style.width).toBe('160px');
+    expect(menu.style.minWidth).toBe('');
+    const op = screen.getByRole('option', { name: largo });
+    expect(op.title).toBe(largo);
+    expect(op.querySelector('span').className).toContain('line-clamp-2');
+    expect(menu.querySelector('ul').className).toContain('scroll-filtros');
   });
 });

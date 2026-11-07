@@ -9,7 +9,7 @@
 const BASE = 'relative flex h-11 min-w-0 items-center rounded-xl border text-xs font-medium transition-colors md:h-9 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/50';
 
 export const claseCampo = ({ abierto = false, seleccionado = false, dir = 'abajo' } = {}) => {
-  if (abierto) return `${BASE} border-border bg-surface text-slate-700 ${dir === 'arriba' ? 'rounded-t-none border-t-transparent' : 'rounded-b-none border-b-transparent'}`;
+  if (abierto) return `${BASE} border-transparent bg-surface text-slate-700 has-[:focus-visible]:ring-0 ${dir === 'arriba' ? 'rounded-t-none' : 'rounded-b-none'}`;
   if (seleccionado) return `${BASE} border-transparent bg-filtro-activo text-filtro-texto`;
   return `${BASE} border-border bg-surface-muted text-slate-700 hover:bg-surface`;
 };

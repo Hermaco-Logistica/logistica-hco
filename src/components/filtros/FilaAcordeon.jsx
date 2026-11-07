@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react';
 import { ListaOpciones } from './ListaOpciones';
 import { claseFila, claseIcono } from './estilosCampo';
 import { centrarEnCuerpo } from './centrarEnCuerpo';
+import { useCapaAtras } from './capasAtras';
 import { useFilaAcordeon } from './contexto';
 import { idOpcion, useNavegacionOpciones } from './useNavegacionOpciones';
 
@@ -14,7 +15,8 @@ import { idOpcion, useNavegacionOpciones } from './useNavegacionOpciones';
  * `opciones`: [{ value, label, esTodos? }]; `textoValor`: lo que se muestra a la derecha; `seleccionado`: tiene valor distinto de "Todos".
  */
 export const FilaAcordeon = ({ etiqueta, textoValor, opciones, value, onElegir, ariaLabel, seleccionado = false, className = '' }) => {
-  const { id, abierto, abrir } = useFilaAcordeon();
+  const { id, abierto, abrir, alturaCuerpoFinal } = useFilaAcordeon();
+  useCapaAtras(abierto, () => abrir(false));
   const filaRef = useRef(null);
   const botonRef = useRef(null);
   const idLista = `${id}-lista`;
@@ -22,7 +24,7 @@ export const FilaAcordeon = ({ etiqueta, textoValor, opciones, value, onElegir, 
 
   const abrirYCentrar = () => {
     abrir(true);
-    requestAnimationFrame(() => requestAnimationFrame(() => centrarEnCuerpo(filaRef.current)));
+    requestAnimationFrame(() => requestAnimationFrame(() => centrarEnCuerpo(filaRef.current, alturaCuerpoFinal ? alturaCuerpoFinal() : undefined)));
   };
   const nav = useNavegacionOpciones({
     opciones,

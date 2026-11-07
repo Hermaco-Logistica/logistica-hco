@@ -207,7 +207,7 @@
      peso visual de los cuatro roles). Se declaran aquí (inline) y en "Derivados por ámbito": en :root solas no seguirían al rol. */
   --shadow-reposo: 0 2px 5px 0 color-mix(in srgb, var(--color-primary) calc(7% * var(--sombra-alfa)), transparent), 0 10px 30px -4px color-mix(in srgb, var(--color-primary) calc(12% * var(--sombra-alfa)), transparent);
   --shadow-flotante: 0 24px 64px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent), 0 2px 8px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
-  --shadow-menu: 0 20px 32px -16px color-mix(in srgb, var(--color-primary) calc(24% * var(--sombra-alfa)), transparent), 0 8px 16px -8px color-mix(in srgb, var(--color-primary) calc(12% * var(--sombra-alfa)), transparent);
+  --shadow-menu: 0 22px 26px -24px color-mix(in srgb, var(--color-primary) calc(34% * var(--sombra-alfa)), transparent), 0 10px 14px -12px color-mix(in srgb, var(--color-primary) calc(16% * var(--sombra-alfa)), transparent);
   --shadow-boton: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent), 0 4px 10px -2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent);
   --shadow-boton-hover: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent), 0 6px 14px -2px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent);
   --shadow-boton-activo: 0 1px 1px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
@@ -299,7 +299,7 @@
     --color-seguimiento-claro: color-mix(in srgb, var(--color-primary-strong) 55%, white);
     --shadow-reposo: 0 2px 5px 0 color-mix(in srgb, var(--color-primary) calc(7% * var(--sombra-alfa)), transparent), 0 10px 30px -4px color-mix(in srgb, var(--color-primary) calc(12% * var(--sombra-alfa)), transparent);
     --shadow-flotante: 0 24px 64px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent), 0 2px 8px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
-    --shadow-menu: 0 20px 32px -16px color-mix(in srgb, var(--color-primary) calc(24% * var(--sombra-alfa)), transparent), 0 8px 16px -8px color-mix(in srgb, var(--color-primary) calc(12% * var(--sombra-alfa)), transparent);
+    --shadow-menu: 0 22px 26px -24px color-mix(in srgb, var(--color-primary) calc(34% * var(--sombra-alfa)), transparent), 0 10px 14px -12px color-mix(in srgb, var(--color-primary) calc(16% * var(--sombra-alfa)), transparent);
     --shadow-boton: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent), 0 4px 10px -2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent);
     --shadow-boton-hover: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent), 0 6px 14px -2px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent);
     --shadow-boton-activo: 0 1px 1px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);

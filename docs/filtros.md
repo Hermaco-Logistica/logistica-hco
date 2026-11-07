@@ -24,22 +24,9 @@ Internos: `MenuAnclado` (desplegable de escritorio), `FilaAcordeon` (fila de la 
 Es una `surface` (sin borde, sombra de reposo). Slots: `encabezado` (fila superior opcional) → `busqueda` → `filtros` → `limpiar` + `extremo` (bloque final). Cada control se pinta **una sola vez**.
 
 ### Escritorio: rejilla que ocupa todo el ancho
-- Rejilla de columnas iguales (`grid`, hueco de 8 px). Cada hijo declara su peso con `data-span`: la búsqueda 2, el bloque final 2, el resto 1. **Ancho mínimo de columna: 160 px.**
-- `repartir()` (BarraFiltros.jsx) elige el número de columnas que da menos filas, sin "Limpiar" solo en una fila y con el mínimo de huecos; el hueco de cada fila lo absorbe su último control, así todas las filas ocupan el ancho completo y quedan equilibradas. Se recalcula en cada render y con un `ResizeObserver` (sidebar abierto o plegado). Escribe en el DOM, sin estado.
-- El bloque `limpiar` + `extremo` está **siempre reservado** (span 2, alineado a la derecha): al aparecer "Limpiar (N)" no se mueve ningún control.
-- Sin JS el CSS de partida es `repeat(auto-fit, minmax(10.5rem, 1fr))`.
-- Medidas (render real; controles = búsqueda + selects/fecha; ancho de la barra = ventana − sidebar − márgenes):
-
-| Ventana | Sidebar | Barra | 3 controles | 4 | 5 | 6 |
-| --- | --- | --- | --- | --- | --- | --- |
-| 1024 | abierto | 720 | 3 col, 2 filas | 4 col, 2 filas | 4 col, 2 filas | 3 col, 3 filas |
-| 1024 | plegado | 880 | 3 col, 2 filas | 4 col, 2 filas | 4 col, 2 filas | 5 col, 2 filas |
-| 1280 | abierto | 976 | 3 col, 2 filas | 4 col, 2 filas | 4 col, 2 filas | 5 col, 2 filas |
-| 1280 | plegado | 1136 | 6 col, 1 fila | 4 col, 2 filas | 4 col, 2 filas | 5 col, 2 filas |
-| 1440 | abierto | 1136 | 6 col, 1 fila | 4 col, 2 filas | 4 col, 2 filas | 5 col, 2 filas |
-| 1440 | plegado | 1296 | 6 col, 1 fila | 7 col, 1 fila | 4 col, 2 filas | 5 col, 2 filas |
-| 1920 | abierto | 1616 | 6 col, 1 fila | 7 col, 1 fila | 8 col, 1 fila | 9 col, 1 fila |
-| 1920 | plegado | 1776 | 6 col, 1 fila | 7 col, 1 fila | 8 col, 1 fila | 9 col, 1 fila |
+- Cada hijo declara su peso con `data-peso` (búsqueda 2, `FiltroSelect peso={1.4}` para "Resultado", el resto 1). **Ancho mínimo de un control de peso 1: 160 px.** El bloque `limpiar` + `extremo` (`data-bloque`) tiene un **ancho reservado fijo de 288 px**, siempre (invisible sin filtros activos): al aparecer "Limpiar (N)" no se mueve nada.
+- `repartir()` (BarraFiltros.jsx) planifica las filas (mínimo de filas, equilibradas por carga mínima, el bloque nunca solo), reparte el espacio libre de cada fila entre los controles en proporción a su peso y lo traduce a pistas de ~4 px (`grid-template-columns: repeat(T, minmax(0,1fr))`, sin hueco de columna: los 8 px entre controles son el margen de 4 px de cada hijo). Cada fila cierra a ras del ancho. Se recalcula en cada render y con un `ResizeObserver` (sidebar abierto o plegado). Escribe en el DOM, sin estado.
+- Medido en Chrome (ventana × sidebar abierto/plegado × 3, 4, 5 y 6 controles × Limpiar visible/oculto = 64 casos): suma de anchos + huecos − ancho interior = **0 px en todas las filas**; filas equilibradas (p. ej. 6 controles: 3 + 4 elementos con el bloque). "Resultado" mide de 236 a 464 px y la opción más larga real ("Cotización con anulaciones") cabe en una línea en todos los casos.
 
 ### Móvil (< md): hoja inferior
 La barra muestra "Filtros (N)" (`aria-haspopup`, `aria-expanded`, `aria-controls`) y `extremo`. Al tocarlo sube una hoja hecha con `Modal` (`variante="hojaInferior"`, `soloMovil`, `atraparFoco`, `ancho="completo"`): portal a `<body>`, `z-[100]`, fondo oscurecido que cierra al tocarlo, `surface-flotante`, alto máximo 85 dvh.
@@ -47,6 +34,9 @@ La barra muestra "Filtros (N)" (`aria-haspopup`, `aria-expanded`, `aria-controls
 - Cuerpo con scroll interno (`data-hoja-cuerpo`) sobre `bg-background`, en bloques `surface-plana`: búsqueda arriba y `filtros` como filas de 44 px (etiqueta a la izquierda, valor a la derecha). Los controles saben dónde están por `ContextoFiltros`; en la hoja las etiquetas SÍ son visibles (`etiqueta`, por defecto el prefijo sin ":").
 - Pie: `Button primary` "Ver N resultados" (prop `resultados`). Los filtros se aplican al instante; el botón solo cierra. No hay estado provisional.
 - Cierre con X, pie, Escape o fondo; foco atrapado y devuelto al botón; scroll del fondo bloqueado. `useCerrarModal()` cierra con la animación de salida desde dentro.
+- **Scroll táctil**: el cuerpo lleva `overflow-y: auto`, `overscroll-behavior: contain` y `touch-action: pan-y`; la cabecera y el pie son fijos (`shrink-0`). Un gesto vertical desplaza el cuerpo y no arrastra la página de detrás.
+- **Altura**: al desplegar una fila (opciones o calendario) la hoja crece con transición de `height` (`--anim-abrir`, 220 ms) hasta `calc(100dvh - max(env(safe-area-inset-top), 1rem))` y vuelve a su altura al cerrarla (`--anim-cerrar`, 140 ms); se anima la hoja, no el contenido (`alturaHoja.js`). Con `prefers-reduced-motion` no hay transición. La fila abierta se centra usando la altura final del cuerpo.
+- **Botón atrás por capas** (`capasAtras.js`): cada capa abierta (hoja, fila, calendario) añade una entrada con `history.pushState({ ...history.state, filtros: nivel })` (react-router-dom 7, `BrowserRouter`: la URL no cambia). Un listener de `popstate` cierra la capa de arriba sin tocar el valor del filtro; al cerrar con la interfaz se retira la entrada con `history.go(-n)` y el `popstate` resultante se ignora. Una entrada marcada tras recargar se retira al montar la barra.
 
 ## Select: combobox de solo selección (sin `<select>` nativo)
 La lista desplegada del `<select>` la dibuja el navegador y no se puede estilizar, así que `FiltroSelect` sigue el patrón ARIA **select-only combobox** (W3C APG): botón `role="combobox"` (`aria-haspopup="listbox"`, `aria-expanded`, `aria-controls`, `aria-activedescendant`, `aria-label`) y `ListaOpciones` (`role="listbox"`, opciones `role="option"` con `aria-selected`). El foco se queda en el botón. La firma no cambió: `value` y `onChange(valor)`.

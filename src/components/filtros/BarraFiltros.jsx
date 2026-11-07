@@ -1,112 +1,160 @@
-import React, { useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Filter, X } from 'lucide-react';
 import { Modal } from '../Modal';
 import { useCerrarModal } from '../modalCierre';
 import { Button } from '../ui/Button';
 import { ContextoAcordeon, ContextoFiltros, useMovil } from './contexto';
+import { alturaAmpliadaPx, animarAlturaHoja, OBJETIVO_CSS } from './alturaHoja';
+import { limpiarEntradaColgada, useCapaAtras } from './capasAtras';
 
-/** Contenido de la hoja móvil: cabecera (tirador, X, título, Limpiar), cuerpo con scroll en bloques planos y pie "Ver N resultados". */
+/**
+ * Contenido de la hoja móvil: cabecera fija (tirador, X, título, Limpiar), cuerpo con scroll propio en bloques planos y pie fijo
+ * "Ver N resultados". El cuerpo se desplaza con el dedo (overflow-y auto, overscroll-behavior contain y touch-action pan-y: no arrastra
+ * la página de detrás). Al desplegar una fila la hoja crece a la altura completa (alturaHoja.js) y vuelve al cerrarla. El botón
+ * atrás cierra primero la fila y después la hoja (capasAtras.js).
+ */
 const ContenidoHoja = ({ idTitulo, titulo, busqueda, filtros, limpiar, textoVer }) => {
   const cerrar = useCerrarModal();
   const [abiertoId, setAbiertoId] = useState(null);
-  const acordeon = useMemo(() => ({ abiertoId, abrir: setAbiertoId }), [abiertoId]);
+  const raiz = useRef(null);
+  const cabecera = useRef(null);
+  const pie = useRef(null);
+  const ampliada = useRef(false);
+  const alturaReposo = useRef(0);
+  const cancelar = useRef(() => {});
+
+  useCapaAtras(true, cerrar);
+
+  const acordeon = useMemo(() => ({
+    abiertoId,
+    abrir: setAbiertoId,
+    alturaCuerpoFinal: () => alturaAmpliadaPx() - (cabecera.current ? cabecera.current.offsetHeight : 0) - (pie.current ? pie.current.offsetHeight : 0)
+  }), [abiertoId]);
+
+  useEffect(() => {
+    const panel = raiz.current && raiz.current.closest('[role="dialog"]');
+    if (!panel) return;
+    const hayFila = abiertoId !== null;
+    if (hayFila && !ampliada.current) {
+      ampliada.current = true;
+      alturaReposo.current = panel.offsetHeight;
+      cancelar.current();
+      cancelar.current = animarAlturaHoja(panel, panel.offsetHeight, OBJETIVO_CSS, 'abrir');
+    } else if (!hayFila && ampliada.current) {
+      ampliada.current = false;
+      cancelar.current();
+      cancelar.current = animarAlturaHoja(panel, panel.offsetHeight, alturaReposo.current, 'cerrar');
+    }
+  }, [abiertoId]);
+  useEffect(() => () => cancelar.current(), []);
+
   return (
     <ContextoFiltros.Provider value="hoja">
       <ContextoAcordeon.Provider value={acordeon}>
-      <div className="shrink-0 px-2 pt-2">
-        <div aria-hidden="true" className="mx-auto mb-1 h-1 w-9 rounded-full bg-border" />
-        <div className="grid grid-cols-[3rem_1fr_auto] items-center">
-          <button type="button" onClick={cerrar} aria-label="Cerrar filtros" className="flex size-11 cursor-pointer items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100">
-            <X size={18} aria-hidden="true" />
-          </button>
-          <h2 id={idTitulo} className="text-center text-sm font-bold text-slate-800">{titulo}</h2>
-          <div className="min-w-12 text-right">{limpiar}</div>
+        <div ref={raiz} className="flex min-h-0 flex-1 flex-col">
+          <div ref={cabecera} className="shrink-0 px-2 pt-2">
+            <div aria-hidden="true" className="mx-auto mb-1 h-1 w-9 rounded-full bg-border" />
+            <div className="grid grid-cols-[3rem_1fr_auto] items-center">
+              <button type="button" onClick={cerrar} aria-label="Cerrar filtros" className="flex size-11 cursor-pointer items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100">
+                <X size={18} aria-hidden="true" />
+              </button>
+              <h2 id={idTitulo} className="text-center text-sm font-bold text-slate-800">{titulo}</h2>
+              <div className="min-w-12 text-right">{limpiar}</div>
+            </div>
+          </div>
+          <div data-hoja-cuerpo className="min-h-0 flex-1 touch-pan-y space-y-3 overflow-y-auto overscroll-contain bg-background px-4 py-3">
+            {busqueda && <div className="surface-plana overflow-hidden">{busqueda}</div>}
+            {filtros && <div className="surface-plana divide-y divide-border overflow-hidden">{filtros}</div>}
+          </div>
+          <div ref={pie} className="shrink-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
+            <Button variant="primary" size="block" onClick={cerrar} className="h-11">{textoVer}</Button>
+          </div>
         </div>
-      </div>
-      <div data-hoja-cuerpo className="min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain bg-background px-4 py-3">
-        {busqueda && <div className="surface-plana overflow-hidden">{busqueda}</div>}
-        {filtros && <div className="surface-plana divide-y divide-border overflow-hidden">{filtros}</div>}
-      </div>
-      <div className="shrink-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3">
-        <Button variant="primary" size="block" onClick={cerrar} className="h-11">{textoVer}</Button>
-      </div>
       </ContextoAcordeon.Provider>
     </ContextoFiltros.Provider>
   );
 };
 
 const HUECO = 8;
-/** Ancho mínimo de una columna: un select con prefijo ("Estado: Cotizado") y un campo de fecha caben cómodos; los valores largos se apilan y recortan. */
-const ANCHO_MINIMO_COLUMNA = 160;
+/** Ancho mínimo (visible) de un control de peso 1: un select con prefijo ("Estado: Cotizado") y un campo de fecha caben cómodos. */
+const ANCHO_MINIMO_CONTROL = 160;
+/** Ancho reservado, siempre, para "Limpiar filtros (N)" + contador (invisible sin filtros activos: al aparecer no mueve nada). */
+const ANCHO_BLOQUE = 288;
+/** Resolución de la rejilla: pistas de ~4 px, así cada fila cierra a ras del ancho (el sobrante es de redondeo, no de diseño). */
+const PASO = 4;
 
-/**
- * Reparte los hijos de la rejilla en `columnas` columnas: devuelve el span final de cada hijo y el número de filas. Los controles
- * se colocan en orden; el bloque final (limpiar + extremo, span 2) comparte fila con el último control si cabe y, si no, el último
- * control de la fila anterior baja con él (el bloque nunca queda solo). El hueco de cada fila lo absorbe su último control, así todas
- * las filas ocupan el ancho completo y quedan equilibradas.
- */
-const distribuir = (info, columnas) => {
-  const bloque = info.find((it) => it.bloque);
-  const controles = info.filter((it) => !it.bloque);
-  const spanBloque = bloque ? Math.min(bloque.base, columnas) : 0;
-  const filas = [[]];
-  let usado = 0;
-  controles.forEach((it) => {
-    const s = Math.min(it.base, columnas);
-    if (usado + s > columnas) { filas.push([]); usado = 0; }
-    filas[filas.length - 1].push({ it, s });
-    usado += s;
-  });
-  let bloqueFila = filas.length - 1;
-  if (bloque) {
-    if (usado + spanBloque > columnas) {
-      const previa = filas[filas.length - 1];
-      if (previa.length > 1) { filas.push([previa.pop()]); bloqueFila = filas.length - 1; }
-      else { filas.push([]); bloqueFila = filas.length - 1; }
-    }
+/** Reparte los elementos (en orden) en el mínimo de filas posible, equilibradas, y sin que el bloque final quede solo en una fila. */
+const planificarFilas = (area, hayBloque, ancho) => {
+  const n = area.length;
+  const carga = (a, b) => area.slice(a, b).reduce((s, x) => s + x, 0);
+  for (let filas = 1; filas <= n; filas += 1) {
+    let mejor = null;
+    const recorrer = (inicio, quedan, cortes) => {
+      if (quedan === 1) {
+        if (carga(inicio, n) > ancho) return;
+        if (hayBloque && filas > 1 && n - inicio < 2) return;
+        const cs = [...cortes, n];
+        const maximo = Math.max(...cs.map((fin, i) => carga(i ? cs[i - 1] : 0, fin)));
+        if (!mejor || maximo < mejor.maximo) mejor = { cs, maximo };
+        return;
+      }
+      for (let fin = inicio + 1; fin <= n - (quedan - 1); fin += 1) {
+        if (carga(inicio, fin) > ancho) break;
+        recorrer(fin, quedan - 1, [...cortes, fin]);
+      }
+    };
+    recorrer(0, filas, []);
+    if (mejor) return mejor.cs;
   }
-  let huecos = 0;
-  filas.forEach((fila, i) => {
-    const ocupado = fila.reduce((t, x) => t + x.s, 0) + (bloque && i === bloqueFila ? spanBloque : 0);
-    const hueco = columnas - ocupado;
-    if (hueco > 0 && fila.length) { fila[fila.length - 1].s += hueco; huecos += hueco; }
-  });
-  const soloBloque = Boolean(bloque) && filas[bloqueFila].length === 0 && filas.length > 1;
-  const spans = new Map();
-  filas.forEach((fila) => fila.forEach((x) => spans.set(x.it, x.s)));
-  return { spans, spanBloque, total: filas.length, huecos, soloBloque };
+  return area.map((_, i) => i + 1);
 };
 
 /**
- * Escritorio: rejilla de columnas iguales que ocupa todo el ancho de la barra. Cada hijo declara su peso con data-span (la búsqueda 2,
- * el bloque final limpiar + extremo 2, el resto 1); el bloque se reserva siempre (no se mueve nada al aparecer "Limpiar"). Se elige
- * el número de columnas con menos filas, sin "Limpiar" solo y con el mínimo de huecos repartidos (ver `distribuir`).
- * Se escribe directamente en el DOM (sin estado) en cada render y al cambiar el ancho (sidebar abierto o plegado).
+ * Escritorio: los controles ocupan TODO el ancho de la barra. Cada hijo declara su peso con data-peso (búsqueda 2, "Resultado" 1,4,
+ * el resto 1) y el bloque final (data-bloque) tiene un ancho fijo reservado. Se planifican las filas (mínimo de filas, equilibradas) y
+ * en cada fila el espacio libre se reparte entre los controles en proporción a su peso; el resultado se traduce a pistas de ~4 px
+ * (grid-template-columns con T pistas, sin hueco de columna: la separación de 8 px la da el margen de 4 px de cada hijo). Escribe en
+ * el DOM (sin estado) en cada render y al cambiar el ancho (sidebar abierto o plegado).
  */
 const repartir = (rejilla) => {
   const ancho = rejilla.clientWidth;
   if (!ancho) return;
-  const info = [...rejilla.children].map((el) => ({ el, base: Number(el.getAttribute('data-span')) || 1, bloque: el.hasAttribute('data-bloque') }));
-  const maximo = Math.max(1, Math.min(12, Math.floor((ancho + HUECO) / (ANCHO_MINIMO_COLUMNA + HUECO))));
-  let mejor = null;
-  for (let c = maximo; c >= 1; c -= 1) {
-    const d = distribuir(info, c);
-    const puntos = d.total * 1000 + (d.soloBloque ? 100000 : 0) + d.huecos * 10;
-    if (!mejor || puntos < mejor.puntos) mejor = { c, puntos, d };
-  }
-  const { c, d } = mejor;
-  rejilla.style.gridTemplateColumns = `repeat(${c}, minmax(0, 1fr))`;
-  info.forEach((it) => {
-    it.el.style.gridColumn = it.bloque ? `span ${d.spanBloque} / -1` : `span ${d.spans.get(it) || 1}`;
+  const hijos = [...rejilla.children];
+  const items = hijos.map((el) => {
+    const bloque = el.hasAttribute('data-bloque');
+    const peso = Number(el.getAttribute('data-peso')) || 1;
+    return { el, bloque, peso, minimo: bloque ? ANCHO_BLOQUE : Math.round(ANCHO_MINIMO_CONTROL * peso) };
   });
+  const area = items.map((it) => it.minimo + HUECO);
+  const cortes = planificarFilas(area, items.some((it) => it.bloque), ancho);
+  const pistas = Math.max(1, Math.round(ancho / PASO));
+  const ancho1 = ancho / pistas;
+  let inicio = 0;
+  cortes.forEach((fin) => {
+    const fila = items.slice(inicio, fin);
+    const minimos = area.slice(inicio, fin).reduce((s, x) => s + x, 0);
+    const libre = Math.max(0, ancho - minimos);
+    const pesos = fila.filter((it) => !it.bloque).reduce((s, it) => s + it.peso, 0);
+    let usadas = 0;
+    fila.forEach((it, k) => {
+      const base = area[inicio + k];
+      const crece = !it.bloque && pesos > 0 ? (libre * it.peso) / pesos : 0;
+      const span = k === fila.length - 1 ? pistas - usadas : Math.max(1, Math.round((base + crece) / ancho1));
+      usadas += span;
+      it.el.style.gridColumn = `span ${span}`;
+      it.el.style.margin = `0 ${HUECO / 2}px`;
+      it.el.style.width = 'auto';
+    });
+    inicio = fin;
+  });
+  rejilla.style.gridTemplateColumns = `repeat(${pistas}, minmax(0, 1fr))`;
 };
 
 /**
  * Tarjeta de filtros: `surface` (sin borde, sombra de reposo) con una fila superior opcional y una fila de filtros.
  * Slots (props con nodos): `encabezado` (título y acciones principales), `busqueda`, `filtros` (selects, segmentados, conmutadores,
  * fecha…), `limpiar` (BotonLimpiar) y `extremo` (contador, exportar). Cada control se pinta una sola vez:
- *   - escritorio: todo en una fila con flex-wrap; `limpiar` + `extremo` son el último bloque (ml-auto), así "Limpiar" queda al final
- *     de la última fila y nunca solo en una fila de abajo;
+ *   - escritorio: rejilla que ocupa todo el ancho (ver `repartir`); `limpiar` + `extremo` son el último bloque, con ancho reservado;
  *   - móvil (< md): la barra muestra "Filtros (N)" (y `extremo`); al tocarlo sube una hoja inferior (Modal, variante `hojaInferior`)
  *     con la búsqueda, los `filtros` como filas con etiqueta visible, "Limpiar (N)" en la cabecera y "Ver N resultados" en el pie.
  *     Los filtros se aplican al instante: el pie solo cierra la hoja. La barra no guarda estado de filtros, solo si la hoja está abierta.
@@ -120,6 +168,7 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, limpiar, extremo, 
   const idTitulo = useId();
   const hojaAbierta = movil && abierta;
   const rejilla = useRef(null);
+  useEffect(() => { limpiarEntradaColgada(); }, []);
   useLayoutEffect(() => {
     const el = rejilla.current;
     if (!el) return undefined;
@@ -154,10 +203,10 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, limpiar, extremo, 
           {extremo && <div className="ml-auto flex items-center gap-2">{extremo}</div>}
         </div>
       ) : (
-        <div ref={rejilla} className="grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] items-center gap-2">
-          {busqueda && <div data-span="2" className="min-w-0">{busqueda}</div>}
+        <div ref={rejilla} className="-mx-1 grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] items-center gap-y-2">
+          {busqueda && <div data-peso="2" className="min-w-0">{busqueda}</div>}
           {filtros}
-          {(limpiar || extremo) && <div data-bloque data-span="2" className="flex min-w-0 items-center justify-end gap-2">{limpiar}{extremo}</div>}
+          {(limpiar || extremo) && <div data-bloque className="flex min-w-0 items-center justify-end gap-2">{limpiar}{extremo}</div>}
         </div>
       )}
       {hojaAbierta && (

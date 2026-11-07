@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useId, useState, useSyncExterna
 export const ContextoFiltros = createContext('barra');
 export const useModoFiltro = () => useContext(ContextoFiltros);
 
-/** Acordeón de la hoja móvil: solo una fila abierta a la vez. Valor: { abiertoId, abrir(id | null) }. */
+/** Acordeón de la hoja móvil: solo una fila abierta a la vez. Valor: { abiertoId, abrir(id | null), alturaCuerpoFinal() } (alto que tendrá el cuerpo con la hoja ampliada). */
 export const ContextoAcordeon = createContext(null);
 
 /**
@@ -17,11 +17,12 @@ export const useFilaAcordeon = () => {
   const [local, setLocal] = useState(false);
   const abierto = ctx ? ctx.abiertoId === id : local;
   const abrirCtx = ctx ? ctx.abrir : null;
+  const alturaCuerpoFinal = ctx ? ctx.alturaCuerpoFinal : null;
   const abrir = useCallback((valor) => {
     if (abrirCtx) abrirCtx(valor ? id : null);
     else setLocal(Boolean(valor));
   }, [abrirCtx, id]);
-  return { id, abierto, abrir };
+  return { id, abierto, abrir, alturaCuerpoFinal };
 };
 
 const MQ_MOVIL = '(max-width: 767px)';

@@ -8,7 +8,7 @@ const MARGEN = 8;
 
 /**
  * Desplegable de escritorio anclado a un campo, en un portal a <body> (no lo recorta ningún overflow de la barra).
- *   - ancho: mínimo el del campo (`ancla`), máximo 22 rem; lo que no cabe se recorta con puntos suspensivos;
+ *   - ancho: SIEMPRE el del campo (`ancla`); las opciones largas parten en dos líneas (line-clamp 2, `title` con el texto completo);
  *   - se abre hacia abajo y, si no cabe y arriba hay más sitio, hacia arriba (flip); `onDireccion('abajo' | 'arriba')` avisa al
  *     campo para que quite el radio del lado que toca el menú;
  *   - se reposiciona con scroll (en cualquier contenedor) y resize; el clic fuera llama a `onCerrar`;
@@ -47,7 +47,7 @@ export const MenuAnclado = ({ ancla, abierto, onCerrar, onDireccion, id, childre
     const alto = Math.min(menu.scrollHeight, ALTO_MAXIMO + 8);
     const dir = alto > abajo && arriba > abajo ? 'arriba' : 'abajo';
     const disponible = Math.max(120, dir === 'abajo' ? abajo : arriba);
-    menu.style.minWidth = `${r.width}px`;
+    menu.style.width = `${r.width}px`;
     menu.style.left = `${r.left}px`;
     menu.style.setProperty('--menu-alto', `${Math.min(ALTO_MAXIMO, disponible - 8)}px`);
     if (dir === 'abajo') { menu.style.top = `${r.bottom}px`; menu.style.bottom = 'auto'; }
@@ -86,7 +86,7 @@ export const MenuAnclado = ({ ancla, abierto, onCerrar, onDireccion, id, childre
       id={id}
       data-menu-anclado
       data-estado={cerrando ? 'cerrando' : 'abierto'}
-      className="menu-anclado fixed z-[90] max-w-[22rem] overflow-hidden bg-surface shadow-menu"
+      className="menu-anclado fixed z-[90] overflow-hidden bg-surface shadow-menu"
     >
       {children}
     </div>,

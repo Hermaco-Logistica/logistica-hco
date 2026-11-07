@@ -1,9 +1,10 @@
 /**
  * Desplaza suavemente el cuerpo de la hoja para dejar centrada una fila de acordeón ya desplegada (~220 ms, solo scrollTop, sin
  * `scroll-behavior` global). Usa el alto FINAL de la fila (cabecera + contenido), porque el panel aún está creciendo. Con
- * prefers-reduced-motion salta directamente. Si no hay cuerpo con scroll (`[data-hoja-cuerpo]`) no hace nada.
+ * prefers-reduced-motion salta directamente. `alturaVisibleFinal` es el alto que tendrá el cuerpo cuando la hoja termine de ampliarse
+ * (la hoja crece a la vez que el panel se despliega). Si no hay cuerpo con scroll (`[data-hoja-cuerpo]`) no hace nada.
  */
-export const centrarEnCuerpo = (fila) => {
+export const centrarEnCuerpo = (fila, alturaVisibleFinal) => {
   if (!fila || typeof window === 'undefined') return;
   const cuerpo = fila.closest('[data-hoja-cuerpo]');
   const panel = fila.querySelector('[data-acordeon-panel]');
@@ -13,8 +14,9 @@ export const centrarEnCuerpo = (fila) => {
   const cabecera = fila.offsetHeight - panel.offsetHeight;
   const altoFinal = cabecera + interior.scrollHeight;
   const arriba = fila.getBoundingClientRect().top - cuerpo.getBoundingClientRect().top + cuerpo.scrollTop;
-  const maximo = Math.max(0, cuerpo.scrollHeight - cuerpo.clientHeight + (interior.scrollHeight - panel.offsetHeight));
-  const destino = Math.min(maximo, Math.max(0, arriba + altoFinal / 2 - cuerpo.clientHeight / 2));
+  const visible = alturaVisibleFinal || cuerpo.clientHeight;
+  const maximo = Math.max(0, cuerpo.scrollHeight + (interior.scrollHeight - panel.offsetHeight) - visible);
+  const destino = Math.min(maximo, Math.max(0, arriba + altoFinal / 2 - visible / 2));
   const inicio = cuerpo.scrollTop;
   if (reducir || Math.abs(destino - inicio) < 2) { cuerpo.scrollTop = destino; return; }
   const duracion = 220;
