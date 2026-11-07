@@ -749,7 +749,7 @@ describe('FiltroSegmentado: pista compacta que cubre todas las opciones', () => 
     const pista = screen.getByRole('group', { name: 'V' });
     expect(pista.className).toContain('w-max');
     expect(pista.className).toContain('inline-flex');
-    expect(pista.className).not.toContain('w-full');
+    expect(pista.className).not.toMatch(/(^|\s)w-full(\s|$)/);
     const rejilla = pista.querySelector('.grid');
     expect(rejilla.className).toContain('auto-cols-fr');
     expect([...rejilla.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['Todos', 'Propias', 'Otros']);
@@ -758,6 +758,6 @@ describe('FiltroSegmentado: pista compacta que cubre todas las opciones', () => 
   it('`completo` la lleva al ancho del contenedor', () => {
     mm(false);
     render(<FiltroSegmentado ariaLabel="V" completo value="todas" onChange={() => {}} opciones={op} />);
-    expect(screen.getByRole('group', { name: 'V' }).className).toContain('w-full');
+    expect(screen.getByRole('group', { name: 'V' }).className).toMatch(/(^|\s)w-full(\s|$)/);
   });
 });
