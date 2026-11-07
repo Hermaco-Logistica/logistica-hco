@@ -147,17 +147,29 @@ const repartir = (rejilla) => {
   const cortes = planificarFilas(area, items.some((it) => it.bloque), ancho);
   const pistas = Math.max(1, Math.round(ancho / PASO));
   const ancho1 = ancho / pistas;
+  // Ancho (px) de cada control en su fila antes de ajustar; la última fila (con el bloque final) no deja un control más ancho que el
+  // mayor de los controles de peso < 2 de las filas anteriores: el sobrante lo absorbe el bloque (su contenido va a la derecha).
+  const anchos = new Array(items.length).fill(0);
+  let desde = 0;
+  cortes.forEach((fin) => {
+    const minimos = area.slice(desde, fin).reduce((s, x) => s + x, 0);
+    const libre = Math.max(0, ancho - minimos);
+    const pesos = items.slice(desde, fin).filter((it) => !it.bloque).reduce((s, it) => s + it.peso, 0);
+    for (let k = desde; k < fin; k += 1) anchos[k] = area[k] + (!items[k].bloque && pesos > 0 ? (libre * items[k].peso) / pesos : 0);
+    desde = fin;
+  });
+  const ultimaIni = cortes.length > 1 ? cortes[cortes.length - 2] : 0;
+  if (cortes.length > 1 && items[items.length - 1].bloque) {
+    const previos = anchos.slice(0, ultimaIni).filter((_, k) => !items[k].bloque && items[k].peso < 2);
+    const tope = previos.length ? Math.max(...previos) : 0;
+    if (tope > 0) for (let k = ultimaIni; k < items.length; k += 1) if (!items[k].bloque) anchos[k] = Math.min(anchos[k], Math.max(tope, area[k]));
+  }
   let inicio = 0;
   cortes.forEach((fin) => {
     const fila = items.slice(inicio, fin);
-    const minimos = area.slice(inicio, fin).reduce((s, x) => s + x, 0);
-    const libre = Math.max(0, ancho - minimos);
-    const pesos = fila.filter((it) => !it.bloque).reduce((s, it) => s + it.peso, 0);
     let usadas = 0;
     fila.forEach((it, k) => {
-      const base = area[inicio + k];
-      const crece = !it.bloque && pesos > 0 ? (libre * it.peso) / pesos : 0;
-      const span = k === fila.length - 1 ? pistas - usadas : Math.max(1, Math.round((base + crece) / ancho1));
+      const span = k === fila.length - 1 ? pistas - usadas : Math.max(1, Math.round(anchos[inicio + k] / ancho1));
       usadas += span;
       it.el.style.gridColumn = `span ${span}`;
       it.el.style.margin = `0 ${HUECO / 2}px`;
