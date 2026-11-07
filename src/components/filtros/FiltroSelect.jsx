@@ -17,15 +17,17 @@ const normalizar = (o) => (typeof o === 'string' ? { value: o, label: o } : o);
  *   - escritorio: campo con `prefijo` interno ("Estado: Todos"; con valor elegido el prefijo pasa a una línea pequeña encima del
  *     valor) y desplegable anclado (MenuAnclado: portal, flip, un solo cuerpo con el campo).
  *   - hoja móvil: fila con `etiqueta` (por defecto el prefijo sin ":") que se despliega en línea (acordeón, FilaAcordeon).
+ * `sinTodos`: sin la opción "Todos" (selector obligatorio, p. ej. el año del histórico): siempre hay un valor y no usa el estado
+ * "seleccionado".
  * Con valor distinto de "Todos" el campo usa el estado "seleccionado" (--color-filtro-activo, texto primary-strong, icono primary).
  */
-export const FiltroSelect = ({ value, onChange, opciones = [], prefijo, etiqueta, etiquetaTodos = 'Todos', ariaLabel, peso, className = '' }) => {
+export const FiltroSelect = ({ value, onChange, opciones = [], prefijo, etiqueta, etiquetaTodos = 'Todos', sinTodos = false, ariaLabel, peso, className = '' }) => {
   const enHoja = useModoFiltro() === 'hoja';
-  const todas = [{ value: '', label: etiquetaTodos, esTodos: true }, ...opciones.map(normalizar)];
+  const todas = [...(sinTodos ? [] : [{ value: '', label: etiquetaTodos, esTodos: true }]), ...opciones.map(normalizar)];
   const valor = value === undefined || value === null ? '' : value;
   const indice = todas.findIndex((o) => o.value === valor);
   const elegida = indice >= 0 ? todas[indice] : todas[0];
-  const seleccionado = valor !== '';
+  const seleccionado = !sinTodos && valor !== '';
   const nombre = ariaLabel || prefijo || etiqueta || etiquetaTodos;
 
   if (enHoja) {

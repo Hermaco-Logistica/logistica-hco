@@ -125,3 +125,23 @@ describe('FiltroFechas en la hoja móvil', () => {
     expect(screen.getByRole('dialog')).toBeTruthy();
   });
 });
+
+describe('FiltroFechas: sinAccesos, max y errores', () => {
+  it('sin accesos solo queda el campo compuesto; max limita ambos campos; los errores marcan el campo', () => {
+    mm(false);
+    render(<FiltroFechas value={{ desde: '2026-01-01', hasta: '' }} onChange={() => {}} sinAccesos max="2026-06-30" errorDesde="Fecha inválida" porDefecto={{ desde: '', hasta: '' }} />);
+    expect(screen.queryByRole('button', { name: 'Mes actual' })).toBeNull();
+    const d = screen.getByLabelText('Fecha desde'); const h = screen.getByLabelText('Fecha hasta');
+    expect(d.max).toBe('2026-06-30'); expect(h.max).toBe('2026-06-30');
+    expect(d.getAttribute('aria-invalid')).toBe('true');
+    expect(d.title).toBe('Fecha inválida');
+    expect(d.className).toContain('text-danger');
+    expect(h.getAttribute('aria-invalid')).toBeNull();
+    expect(d.parentElement.className).toContain('bg-filtro-activo');
+  });
+  it('desde no pasa de hasta si hasta es anterior al máximo', () => {
+    mm(false);
+    render(<FiltroFechas value={{ desde: '', hasta: '2026-02-10' }} onChange={() => {}} sinAccesos max="2026-06-30" />);
+    expect(screen.getByLabelText('Fecha desde').max).toBe('2026-02-10');
+  });
+});

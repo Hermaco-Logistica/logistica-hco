@@ -25,10 +25,12 @@ const textoRango = (valor, acceso) => {
  * vista. `porDefecto` es el rango "sin filtro" (por defecto, el mes actual): si el valor se aparta de él el campo usa el estado
  * "seleccionado". Los accesos rápidos (Mes actual, Todas las fechas, Personalizado) son un FiltroSegmentado cuyo valor se deriva
  * del rango; "Personalizado" solo enfoca el campo "desde". El modo calendario (FiltroFechaCampo + FiltroFechasContenedor) no cambia.
+ * `sinAccesos` los oculta (p. ej. Análisis, donde el período ya los da); `max` es la fecha tope (ISO) de ambos campos; `errorDesde` y
+ * `errorHasta` (texto) marcan el campo con error (`aria-invalid`, color de peligro y `title`).
  *   - escritorio: accesos + un solo campo compuesto ("01/11/2026 → 30/11/2026");
  *   - hoja móvil: fila "Fecha" que se despliega en línea (acordeón: una fila abierta a la vez) con accesos y los dos campos.
  */
-export const FiltroFechas = ({ value, onChange, porDefecto, etiqueta = 'Fecha', ariaLabel = 'Filtrar por fecha', className = '' }) => {
+export const FiltroFechas = ({ value, onChange, porDefecto, etiqueta = 'Fecha', ariaLabel = 'Filtrar por fecha', sinAccesos = false, max, errorDesde, errorHasta, className = '' }) => {
   const enHoja = useModoFiltro() === 'hoja';
   const fila = useFilaAcordeon();
   const filaRef = useRef(null);
@@ -53,9 +55,11 @@ export const FiltroFechas = ({ value, onChange, porDefecto, etiqueta = 'Fecha', 
       type="date"
       aria-label="Fecha desde"
       value={value.desde}
-      max={value.hasta || undefined}
+      max={value.hasta && (!max || value.hasta <= max) ? value.hasta : max}
+      title={errorDesde || undefined}
+      aria-invalid={errorDesde ? true : undefined}
       onChange={(e) => onChange({ ...value, desde: e.target.value })}
-      className={clases}
+      className={`${clases} ${errorDesde ? 'text-danger' : ''}`}
     />
   );
   const entradaHasta = (clases) => (
@@ -64,8 +68,11 @@ export const FiltroFechas = ({ value, onChange, porDefecto, etiqueta = 'Fecha', 
       aria-label="Fecha hasta"
       value={value.hasta}
       min={value.desde || undefined}
+      max={max}
+      title={errorHasta || undefined}
+      aria-invalid={errorHasta ? true : undefined}
       onChange={(e) => onChange({ ...value, hasta: e.target.value })}
-      className={clases}
+      className={`${clases} ${errorHasta ? 'text-danger' : ''}`}
     />
   );
 
@@ -92,9 +99,11 @@ export const FiltroFechas = ({ value, onChange, porDefecto, etiqueta = 'Fecha', 
         <div className="filtro-acordeon" data-acordeon-panel data-abierto={fila.abierto} inert={!fila.abierto} aria-hidden={!fila.abierto}>
           <div className="min-h-0 overflow-hidden">
             <div className="space-y-2 px-4 pb-4 pt-1">
-              <ContextoFiltros.Provider value="barra">
-                <FiltroSegmentado ariaLabel={`${ariaLabel}: accesos rápidos`} opciones={ACCESOS} value={acceso} onChange={elegirAcceso} completo />
-              </ContextoFiltros.Provider>
+              {!sinAccesos && (
+                <ContextoFiltros.Provider value="barra">
+                  <FiltroSegmentado ariaLabel={`${ariaLabel}: accesos rápidos`} opciones={ACCESOS} value={acceso} onChange={elegirAcceso} completo />
+                </ContextoFiltros.Provider>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <label className="block">
                   <span className="mb-1 block text-[11px] font-semibold text-slate-500">Desde</span>
@@ -113,8 +122,8 @@ export const FiltroFechas = ({ value, onChange, porDefecto, etiqueta = 'Fecha', 
   }
 
   return (
-    <div data-peso="3" className={`flex min-w-0 flex-wrap items-center gap-2 ${className}`}>
-      <FiltroSegmentado ariaLabel={`${ariaLabel}: accesos rápidos`} opciones={ACCESOS} value={acceso} onChange={elegirAcceso} className="shrink-0" />
+    <div data-peso={sinAccesos ? 2.3 : 3} className={`flex min-w-0 flex-wrap items-center gap-2 ${className}`}>
+      {!sinAccesos && <FiltroSegmentado ariaLabel={`${ariaLabel}: accesos rápidos`} opciones={ACCESOS} value={acceso} onChange={elegirAcceso} className="shrink-0" />}
       <div className={`${claseCampo({ seleccionado })} w-[22.5rem] max-w-full gap-1 px-3`}>
         <Calendar size={14} aria-hidden="true" className={`shrink-0 ${claseIcono(seleccionado)}`} />
         {entradaDesde('h-full min-w-0 flex-1 bg-transparent text-xs font-medium outline-none')}

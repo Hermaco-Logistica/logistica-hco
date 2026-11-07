@@ -845,3 +845,34 @@ describe('BarraFiltros con filas y búsqueda aparte (Prórrogas)', () => {
     expect(screen.getByRole('button', { name: 'Ver 5 resultados' })).toBeTruthy();
   });
 });
+
+describe('FiltroSelect sinTodos y acciones de la barra', () => {
+  it('sinTodos: no hay opción "Todos", siempre hay un valor y no usa el estado seleccionado', () => {
+    mm(false);
+    const onChange = vi.fn();
+    render(<FiltroSelect sinTodos value="2025" onChange={onChange} opciones={['2026', '2025', { value: 'todos', label: 'Todo el historial' }]} prefijo="Año:" ariaLabel="Año" />);
+    const b = screen.getByRole('combobox', { name: 'Año' });
+    expect(b.textContent).toContain('2025');
+    expect(b.closest('[data-filtro-select]').className).not.toContain('bg-filtro-activo');
+    fireEvent.click(b);
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['2026', '2025', 'Todo el historial']);
+    fireEvent.click(screen.getByRole('option', { name: 'Todo el historial' }));
+    expect(onChange).toHaveBeenCalledWith('todos');
+  });
+  it('acciones: en escritorio van en el bloque final con ancho mayor; en móvil son la última fila de la hoja', () => {
+    mm(false);
+    const { container, unmount } = render(<BarraFiltros filtros={<FiltroSelect value="" onChange={() => {}} opciones={['A']} prefijo="E:" ariaLabel="e" />} acciones={<BotonExportar onClick={() => {}} etiqueta="Exportar Excel" />} extremo={<ContadorResultados total={3} singular="solicitud" plural="solicitudes" />} />);
+    const bloque = container.querySelector('[data-bloque]');
+    expect(bloque.getAttribute('data-ancho')).toBe('440');
+    expect(bloque.textContent).toContain('Exportar Excel');
+    expect(bloque.textContent).toContain('3 solicitudes');
+    unmount();
+    mm(true);
+    render(<BarraFiltros filtros={<FiltroSelect value="" onChange={() => {}} opciones={['A']} prefijo="E:" ariaLabel="e" />} acciones={<BotonExportar onClick={() => {}} etiqueta="Exportar Excel" />} extremo={<ContadorResultados total={3} singular="solicitud" plural="solicitudes" />} />);
+    fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
+    const hoja = screen.getByRole('dialog');
+    const ult = hoja.querySelector('.divide-y').lastElementChild;
+    expect(ult.textContent).toBe('Exportar Excel');
+    expect(ult.className).toContain('min-h-11');
+  });
+});

@@ -96,6 +96,8 @@ const HUECO = 8;
 const ANCHO_MINIMO_CONTROL = 160;
 /** Ancho reservado, siempre, para "Limpiar filtros (N)" + contador (invisible sin filtros activos: al aparecer no mueve nada). */
 const ANCHO_BLOQUE = 288;
+/** Con `acciones` (p. ej. Exportar) el bloque final reserva más ancho. */
+const ANCHO_BLOQUE_ACCIONES = 440;
 /** Resolución de la rejilla: pistas de ~4 px, así cada fila cierra a ras del ancho (el sobrante es de redondeo, no de diseño). */
 const PASO = 4;
 
@@ -139,7 +141,7 @@ const repartir = (rejilla) => {
   const items = hijos.map((el) => {
     const bloque = el.hasAttribute('data-bloque');
     const peso = Number(el.getAttribute('data-peso')) || 1;
-    return { el, bloque, peso, minimo: bloque ? ANCHO_BLOQUE : Math.round(ANCHO_MINIMO_CONTROL * peso) };
+    return { el, bloque, peso, minimo: bloque ? Number(el.getAttribute('data-ancho')) || ANCHO_BLOQUE : Math.round(ANCHO_MINIMO_CONTROL * peso) };
   });
   const area = items.map((it) => it.minimo + HUECO);
   const cortes = planificarFilas(area, items.some((it) => it.bloque), ancho);
@@ -177,6 +179,8 @@ const repartir = (rejilla) => {
  * `filtrosActivos` es el número de "Filtros (N)" y cuenta SOLO lo que hay dentro de la hoja; "Limpiar (N)" (el `activos` del BotonLimpiar)
  * cuenta todo, búsqueda incluida, así la búsqueda no se duplica en los dos números.
  * `resultados` el de "Ver N resultados" (opcional).
+ * `acciones` (opcional): botones como Exportar; en escritorio van en el bloque final entre `limpiar` y `extremo` (ancho reservado mayor) y
+ * en móvil son la última fila de la hoja.
 * `busquedaEnBarraMovil` deja la búsqueda en la barra móvil en vez de dentro de la hoja. Patrón de la tarjeta móvil con búsqueda: UNA
  * fila con el buscador (ancho mínimo 8,5 rem), "Filtros (N)" y "Limpiar" como botón de icono de 44 px (hueco SIEMPRE reservado, con el
  * número como distintivo); el contador va debajo en una línea de altura fija (h-4). La tarjeta no cambia de altura al aparecer Limpiar.
@@ -186,7 +190,7 @@ const repartir = (rejilla) => {
  * `busquedaAparte` (con `filas`): en escritorio la búsqueda es una segunda tarjeta debajo (campo a ancho completo y, a la derecha, el
  * `extremo`); en móvil no cambia nada.
  */
-export const BarraFiltros = ({ encabezado, busqueda, filtros, filas, busquedaAparte = false, limpiar, extremo, filtrosActivos = 0, resultados, busquedaEnBarraMovil = false, tituloHoja = 'Filtros', className = '' }) => {
+export const BarraFiltros = ({ encabezado, busqueda, filtros, filas, busquedaAparte = false, limpiar, acciones, extremo, filtrosActivos = 0, resultados, busquedaEnBarraMovil = false, tituloHoja = 'Filtros', className = '' }) => {
   const movil = useMovil();
   const [abierta, setAbierta] = useState(false);
   const idHoja = useId();
@@ -205,8 +209,9 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, filas, busquedaApa
   });
   const textoVer = resultados === undefined || resultados === null ? 'Ver resultados' : `Ver ${resultados} ${resultados === 1 ? 'resultado' : 'resultados'}`;
   const busquedaEnHoja = busqueda && !busquedaEnBarraMovil;
-  const filtrosHoja = filas ? <>{filas.flat().map((nodo, i) => <React.Fragment key={i}>{nodo}</React.Fragment>)}</> : filtros;
-  const hayFiltrosHoja = Boolean(filas ? filas.flat().length : filtros);
+  const filtrosBase = filas ? <>{filas.flat().map((nodo, i) => <React.Fragment key={i}>{nodo}</React.Fragment>)}</> : filtros;
+  const filtrosHoja = acciones ? <>{filtrosBase}{acciones}</> : filtrosBase;
+  const hayFiltrosHoja = Boolean((filas ? filas.flat().length : filtros) || acciones);
   const modoFilas = Boolean(filas) && !movil;
   const anchoBloque = busquedaAparte ? 'w-44' : 'w-72';
   const botonFiltros = (
@@ -258,7 +263,7 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, filas, busquedaApa
         <div ref={rejilla} className="-mx-1 grid grid-cols-[repeat(auto-fit,minmax(10.5rem,1fr))] items-center gap-y-2">
           {busqueda && <div data-peso="2" className="min-w-0">{busqueda}</div>}
           {filtros}
-          {(limpiar || extremo) && <div data-bloque className="flex min-w-0 items-center justify-end gap-2">{limpiar}{extremo}</div>}
+          {(limpiar || acciones || extremo) && <div data-bloque data-ancho={acciones ? ANCHO_BLOQUE_ACCIONES : undefined} className="flex min-w-0 items-center justify-end gap-2">{limpiar}{acciones}{extremo}</div>}
         </div>
       )}
       {hojaAbierta && (
