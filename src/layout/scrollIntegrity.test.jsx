@@ -3,10 +3,13 @@ import { describe, it, expect } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { MemoryRouter } from 'react-router-dom';
 import { BottomDockProvider } from '../context/BottomDockContext';
 import { BottomDock } from '../components/mobile/BottomDock';
 import { BottomActionBar } from '../components/mobile/BottomActionBar';
+
+const carpeta = path.dirname(fileURLToPath(import.meta.url));
 
 // Polyfills para jsdom
 class MockResizeObserver {
@@ -14,11 +17,11 @@ class MockResizeObserver {
   unobserve() {}
   disconnect() {}
 }
-global.ResizeObserver = MockResizeObserver;
+globalThis.ResizeObserver = MockResizeObserver;
 
 describe('Layout & Scroll Integrity - Reglas Arquitecturales', () => {
   it('App.jsx define el scroller vertical único en <main> con min-h-0', () => {
-    const appPath = path.resolve(__dirname, '../App.jsx');
+    const appPath = path.resolve(carpeta, '../App.jsx');
     const appContent = fs.readFileSync(appPath, 'utf-8');
 
     // Extraer la etiqueta <main ...>
@@ -39,7 +42,7 @@ describe('Layout & Scroll Integrity - Reglas Arquitecturales', () => {
   });
 
   it('Ninguna vista en src/views/ usa h-screen, min-h-screen o h-dvh dentro del layout principal', () => {
-    const viewsDir = path.resolve(__dirname, '../views');
+    const viewsDir = path.resolve(carpeta, '../views');
     
     function getFiles(dir) {
       let results = [];
