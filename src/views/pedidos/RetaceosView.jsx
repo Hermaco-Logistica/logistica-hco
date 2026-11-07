@@ -5,6 +5,7 @@ import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/fire
 import { db } from '../../firebase';
 import { Truck, Calendar, Hash, Save, Search, Filter } from 'lucide-react';
 import { Etiqueta } from '../../components/Etiqueta';
+import { BarraFiltros, BotonLimpiar, ContadorResultados, FiltroSelect } from '../../components/filtros';
 
 export const RetaceosView = ({ role }) => {
   const [retaceos, setRetaceos] = useState([]);
@@ -114,30 +115,36 @@ export const RetaceosView = ({ role }) => {
         subtitle="Desglose de Aduana"
       />
 
-      <div className="surface p-4 rounded-2xl mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Mes</label>
-          <select 
-            value={filterMes}
-            onChange={(e) => setFilterMes(e.target.value)}
-            className="tf-campo cursor-pointer"
-          >
-            <option value="">TODOS LOS MESES</option>
-            {mesesDisponibles.map(m => <option key={m} value={m}>{m.toUpperCase()}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filtrar por Proveedor</label>
-          <select 
-            value={filterProv}
-            onChange={(e) => setFilterProv(e.target.value)}
-            className="tf-campo cursor-pointer"
-          >
-            <option value="">TODOS LOS PROVEEDORES</option>
-            {proveedoresDisponibles.map(p => <option key={p} value={p}>{p.toUpperCase()}</option>)}
-          </select>
-        </div>
-      </div>
+      <BarraFiltros
+        className="mb-6"
+        filtrosActivos={(filterMes ? 1 : 0) + (filterProv ? 1 : 0)}
+        resultados={filteredData.length}
+        filtros={(
+          <>
+            <FiltroSelect
+              value={filterMes}
+              onChange={(valor) => setFilterMes(valor)}
+              opciones={mesesDisponibles}
+              prefijo="Mes:"
+              ariaLabel="Filtrar por mes"
+            />
+            <FiltroSelect
+              value={filterProv}
+              onChange={(valor) => setFilterProv(valor)}
+              opciones={proveedoresDisponibles}
+              prefijo="Proveedor:"
+              ariaLabel="Filtrar por proveedor"
+            />
+          </>
+        )}
+        limpiar={(
+          <BotonLimpiar
+            activos={(filterMes ? 1 : 0) + (filterProv ? 1 : 0)}
+            onClick={() => { setFilterMes(''); setFilterProv(''); }}
+          />
+        )}
+        extremo={<ContadorResultados total={filteredData.length} unidad="retaceos" />}
+      />
 
       <div className="tf-tabla-card overflow-x-auto">
         <table className="tf-tabla text-left min-w-[800px]">
