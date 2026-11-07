@@ -424,7 +424,7 @@ describe('BarraFiltros en móvil: hoja inferior', () => {
     montarBarra();
     fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
     const d = screen.getByRole('dialog');
-    const foco = [...d.querySelectorAll('button, input')].filter((el) => !el.closest('[inert]'));
+    const foco = [...d.querySelectorAll('button, input, [role="separator"]')].filter((el) => !el.closest('[inert]'));
     foco[foco.length - 1].focus();
     fireEvent.keyDown(document, { key: 'Tab' });
     expect(document.activeElement).toBe(foco[0]);

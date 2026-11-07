@@ -4,7 +4,8 @@ import { Modal } from '../Modal';
 import { useCerrarModal } from '../modalCierre';
 import { Button } from '../ui/Button';
 import { ContextoAcordeon, ContextoFiltros, useMovil } from './contexto';
-import { alturaAmpliadaPx, animarAlturaHoja, OBJETIVO_CSS } from './alturaHoja';
+import { alturaAmpliadaPx } from './alturaHoja';
+import { crearControlHoja } from './hojaArrastrable';
 import { limpiarEntradaColgada, useCapaAtras } from './capasAtras';
 
 /**
@@ -13,15 +14,17 @@ import { limpiarEntradaColgada, useCapaAtras } from './capasAtras';
  * la página de detrás). Al desplegar una fila la hoja crece a la altura completa (alturaHoja.js) y vuelve al cerrarla. El botón
  * atrás cierra primero la fila y después la hoja (capasAtras.js).
  */
-const ContenidoHoja = ({ idTitulo, titulo, busqueda, filtros, limpiar, textoVer }) => {
+const ContenidoHoja = ({ idHoja, idTitulo, titulo, busqueda, filtros, limpiar, textoVer }) => {
   const cerrar = useCerrarModal();
   const [abiertoId, setAbiertoId] = useState(null);
-  const raiz = useRef(null);
   const cabecera = useRef(null);
   const pie = useRef(null);
-  const ampliada = useRef(false);
-  const alturaReposo = useRef(0);
-  const cancelar = useRef(() => {});
+  const [valor, setValor] = useState({ estado: 'compacta', porcentaje: 60 });
+  const [control] = useState(() => crearControlHoja({
+    obtenerPanel: () => document.getElementById(idHoja),
+    alCerrar: () => cerrar(),
+    alCambiar: setValor
+  }));
 
   useCapaAtras(true, cerrar);
 
@@ -31,29 +34,42 @@ const ContenidoHoja = ({ idTitulo, titulo, busqueda, filtros, limpiar, textoVer 
     alturaCuerpoFinal: () => alturaAmpliadaPx() - (cabecera.current ? cabecera.current.offsetHeight : 0) - (pie.current ? pie.current.offsetHeight : 0)
   }), [abiertoId]);
 
-  useEffect(() => {
-    const panel = raiz.current && raiz.current.closest('[role="dialog"]');
-    if (!panel) return;
-    const hayFila = abiertoId !== null;
-    if (hayFila && !ampliada.current) {
-      ampliada.current = true;
-      alturaReposo.current = panel.offsetHeight;
-      cancelar.current();
-      cancelar.current = animarAlturaHoja(panel, panel.offsetHeight, OBJETIVO_CSS, 'abrir');
-    } else if (!hayFila && ampliada.current) {
-      ampliada.current = false;
-      cancelar.current();
-      cancelar.current = animarAlturaHoja(panel, panel.offsetHeight, alturaReposo.current, 'cerrar');
-    }
-  }, [abiertoId]);
-  useEffect(() => () => cancelar.current(), []);
+  useEffect(() => { control.medir(); return () => control.cancelar(); }, [control]);
+  // Abrir una fila lleva la hoja a completa; al cerrarla vuelve al estado previo.
+  useEffect(() => { if (abiertoId !== null) control.abrirFila(); else control.cerrarFila(); }, [abiertoId, control]);
+
+  const alPulsar = (e) => {
+    if (e.target.closest('button')) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (e.currentTarget.setPointerCapture) { try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* sin captura: el arrastre sigue por el elemento */ } }
+    control.iniciarArrastre(e.clientY, e.timeStamp);
+  };
+  const alMover = (e) => control.moverArrastre(e.clientY, e.timeStamp);
+  const alSoltar = (e) => {
+    if (e.currentTarget.releasePointerCapture) { try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* ya liberado */ } }
+    control.terminarArrastre();
+  };
+  const alTeclear = (e) => { if (control.teclado(e.key)) e.preventDefault(); };
 
   return (
     <ContextoFiltros.Provider value="hoja">
       <ContextoAcordeon.Provider value={acordeon}>
-        <div ref={raiz} className="flex min-h-0 flex-1 flex-col">
-          <div ref={cabecera} className="shrink-0 px-2 pt-2">
-            <div aria-hidden="true" className="mx-auto mb-1 h-1 w-9 rounded-full bg-border" />
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div ref={cabecera} onPointerDown={alPulsar} onPointerMove={alMover} onPointerUp={alSoltar} onPointerCancel={alSoltar} className="shrink-0 touch-none px-2 pt-2">
+            <div
+              role="separator"
+              tabIndex={0}
+              aria-orientation="horizontal"
+              aria-label="Ajustar la altura de los filtros"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={valor.porcentaje}
+              aria-valuetext={valor.estado === 'completa' ? 'Altura completa' : 'Altura compacta'}
+              onKeyDown={alTeclear}
+              className="mx-auto mb-0.5 flex h-5 w-20 cursor-grab touch-none items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-primary/60 active:cursor-grabbing"
+            >
+              <span aria-hidden="true" className="h-1 w-9 rounded-full bg-border" />
+            </div>
             <div className="grid grid-cols-[3rem_1fr_auto] items-center">
               <button type="button" onClick={cerrar} aria-label="Cerrar filtros" className="flex size-11 cursor-pointer items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100">
                 <X size={18} aria-hidden="true" />
@@ -220,7 +236,7 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, limpiar, extremo, 
           id={idHoja}
           onCerrar={() => setAbierta(false)}
         >
-          <ContenidoHoja idTitulo={idTitulo} titulo={tituloHoja} busqueda={busquedaEnHoja ? busqueda : null} filtros={filtros} limpiar={limpiar} textoVer={textoVer} />
+          <ContenidoHoja idHoja={idHoja} idTitulo={idTitulo} titulo={tituloHoja} busqueda={busquedaEnHoja ? busqueda : null} filtros={filtros} limpiar={limpiar} textoVer={textoVer} />
         </Modal>
       )}
     </section>
