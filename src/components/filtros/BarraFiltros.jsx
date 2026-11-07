@@ -214,7 +214,7 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, filas, busquedaApa
       {encabezado && <div className="mb-3 flex flex-wrap items-center justify-between gap-2">{encabezado}</div>}
       {movil ? (
         <div className="flex flex-wrap items-center gap-2">
-          {busqueda && busquedaEnBarraMovil && <div className="min-w-0 flex-1">{busqueda}</div>}
+          {busqueda && busquedaEnBarraMovil && <div className="min-w-[8.5rem] flex-1">{busqueda}</div>}
           {(hayFiltrosHoja || busquedaEnHoja) && (
             <button
               type="button"
