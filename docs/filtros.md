@@ -126,3 +126,12 @@ Dos `<input type="date">` con el estilo de campo para pantallas sin calendario p
 
 ## Qué no se homologa
 `FiltroFechas` (fase posterior), la selección de filas de `DashboardPedidos`, las claves de persistencia y la lógica de filtrado de cada vista, y las condiciones por rol (las decide la vista).
+
+## Análisis y Estadísticas (F5)
+
+- Período (7D … Histórico): `FiltroSegmentado` en las acciones de la cabecera (`OPCIONES_PERIODO`); sin cambio de estado ni de claves `analisis_*`.
+- Barra única (`busquedaEnBarraMovil`): búsqueda de cliente, año del histórico (solo con "Histórico"), rango (solo con "Rango"), vendedor (no para el rol vendedor), resultado, seguimiento, `acciones` = Exportar y contador "N solicitud(es)".
+- Año del histórico: `FiltroSelect sinTodos` (siempre hay un valor: un año o "Todo el historial"; sin estado "seleccionado").
+- Rango: `FiltroFechas sinAccesos max={hoy} errorDesde errorHasta` (los accesos rápidos sobran porque el período ya los da); el mensaje general de validación y el aviso de histórico lento van en `encabezado`.
+- Vendedor: el número de vendedores se conserva en la opción neutra: "Todos (N)".
+- `acciones` de `BarraFiltros`: en escritorio entran en el bloque final (ancho reservado 440 px); en móvil son la última fila de la hoja (`BotonExportar` modo hoja).

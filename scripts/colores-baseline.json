@@ -5,7 +5,7 @@
     "src/utils/etiquetas.js"
   ],
   "totales": {
-    "clases": 998,
+    "clases": 978,
     "literales": 87
   },
   "archivos": {
@@ -118,7 +118,7 @@
       "literales": 0
     },
     "src/views/analisis/AnalisisEstadisticas.jsx": {
-      "clases": 96,
+      "clases": 87,
       "literales": 0
     },
     "src/views/analisis/AnalisisEstadisticasMobile.jsx": {
@@ -178,11 +178,11 @@
       "literales": 0
     },
     "src/views/comprador/DashboardCompras.jsx": {
-      "clases": 34,
+      "clases": 32,
       "literales": 0
     },
     "src/views/comprador/GestionOC.jsx": {
-      "clases": 17,
+      "clases": 15,
       "literales": 0
     },
     "src/views/comprador/RevisionPedidoManual.jsx": {
@@ -190,7 +190,7 @@
       "literales": 0
     },
     "src/views/pedidos/DashboardPedidos.jsx": {
-      "clases": 52,
+      "clases": 50,
       "literales": 0
     },
     "src/views/pedidos/RetaceosView.jsx": {
@@ -202,7 +202,7 @@
       "literales": 2
     },
     "src/views/vendedor/DashboardVendedor.jsx": {
-      "clases": 35,
+      "clases": 30,
       "literales": 0
     },
     "src/views/vendedor/DetallePedidoManual.jsx": {
