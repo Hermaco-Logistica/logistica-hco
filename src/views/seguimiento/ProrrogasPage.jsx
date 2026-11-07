@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { TablePagination } from '../../components/ui/TablePagination';
 import { PageHeader } from '../../components/ui/PageHeader';
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock3, Filter, History, Search, Trash2, X } from 'lucide-react';
+import { BarraFiltros, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroFechas, FiltroPestanas, FiltroSegmentado } from '../../components/filtros';
+import { Clock3, History } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { responderProrrogaCliente } from '../../utils/responderProrrogaCliente';
@@ -101,7 +102,6 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
   const [filtroGerencia, setFiltroGerencia] = useState('todas');
   const [busqueda, setBusqueda] = useState('');
   const [rangoFecha, setRangoFecha] = useState(rangoMesActual);
-  const [mostrarFiltrosMobile, setMostrarFiltrosMobile] = useState(false);
   const [respuesta, setRespuesta] = useState(null);
   const [guardando, setGuardando] = useState(false);
 
@@ -119,12 +119,6 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
 
   const filtrosActivosCount = Number(filtroGerencia !== 'todas')
     + Number(rangoFecha.desde !== rangoPredeterminado.desde || rangoFecha.hasta !== rangoPredeterminado.hasta);
-
-  const textoRangoFecha = !rangoFecha.desde && !rangoFecha.hasta
-    ? 'Todas las fechas'
-    : rangoFecha.desde === rangoPredeterminado.desde && rangoFecha.hasta === rangoPredeterminado.hasta
-      ? 'Mes actual'
-      : `${rangoFecha.desde || 'Inicio'} — ${rangoFecha.hasta || 'Hoy'}`;
 
   const terminoBusqueda = normalizarBusqueda(busqueda);
 
@@ -257,210 +251,72 @@ export const ProrrogasPage = ({ solicitudes = [], role, userEmail = auth.current
         }
       />
 
-      {/* Tarjeta de filtros: fechas, buscador y, para gerencia, el filtro de vendedor */}
-      <div className="surface p-3.5 rounded-2xl mb-4 md:p-6 md:rounded-3xl md:mb-6">
-        {/* Versión móvil (< 768px) */}
-        <div className="md:hidden">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <span className="block text-[11px] font-semibold text-[var(--detalle-text-subtle)]">Fecha de actividad</span>
-              <span className="mt-0.5 block truncate text-[12px] font-bold text-[var(--detalle-text)]">{textoRangoFecha}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setMostrarFiltrosMobile((visible) => !visible)}
-              className={`prorrogas-btn-secondary ${filtrosActivosCount > 0 ? 'border-[var(--detalle-accent-info)] text-[var(--detalle-accent-info)]' : ''}`}
-            >
-              <Filter size={13} /> Filtros{filtrosActivosCount > 0 ? ` (${filtrosActivosCount})` : ''}
-              {mostrarFiltrosMobile ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-            </button>
-            {filtrosActivosCount > 0 && (
-              <button
-                type="button"
-                onClick={() => { setRangoFecha(rangoMesActual()); setFiltroGerencia('todas'); }}
-                aria-label="Restablecer filtros"
-                className="prorrogas-btn-secondary !w-9 !px-0"
-              >
-                <Trash2 size={13} />
-              </button>
-            )}
-          </div>
-
-          {mostrarFiltrosMobile && (
-            <div className="mt-3 grid gap-2.5 border-t border-[var(--detalle-border)] pt-3 animate-in fade-in duration-200">
-              <div className="grid grid-cols-2 gap-2">
-                <label className="prorrogas-filter-field">
-                  <span className="prorrogas-filter-label">Desde</span>
-                  <input
-                    type="date"
-                    value={rangoFecha.desde}
-                    max={rangoFecha.hasta || undefined}
-                    onChange={(event) => setRangoFecha((actual) => ({ ...actual, desde: event.target.value }))}
-                    className="prorrogas-input"
-                  />
-                </label>
-                <label className="prorrogas-filter-field">
-                  <span className="prorrogas-filter-label">Hasta</span>
-                  <input
-                    type="date"
-                    value={rangoFecha.hasta}
-                    min={rangoFecha.desde || undefined}
-                    onChange={(event) => setRangoFecha((actual) => ({ ...actual, hasta: event.target.value }))}
-                    className="prorrogas-input"
-                  />
-                </label>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRangoFecha(rangoMesActual())}
-                  className="prorrogas-btn-secondary flex-1"
-                >
-                  Mes actual
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRangoFecha({ desde: '', hasta: '' })}
-                  className="prorrogas-btn-secondary flex-1"
-                >
-                  Todas las fechas
-                </button>
-              </div>
-              {esGerencia && (
-                <div className="border-t border-[var(--detalle-border)] pt-2">
-                  <span className="mb-1.5 block text-[11px] font-semibold text-[var(--detalle-text-subtle)]">Vendedor</span>
-                  <div className="grid grid-cols-3 gap-1">
-                    {[
-                      ['todas', 'Todos'],
-                      ['propias', 'Propias'],
-                      ['otros', 'Otros']
-                    ].map(([valor, etiqueta]) => (
-                      <button
-                        key={valor}
-                        type="button"
-                        onClick={() => setFiltroGerencia(valor)}
-                        className={`prorrogas-segmented-btn ${filtroGerencia === valor ? 'prorrogas-segmented-btn--active' : ''}`}
-                      >
-                        {etiqueta}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Versión desktop (>= 768px) */}
-        <div className="hidden md:flex flex-wrap items-end justify-between gap-3">
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="prorrogas-filter-field">
-              <span className="prorrogas-filter-label">Fecha desde</span>
-              <input
-                type="date"
-                value={rangoFecha.desde}
-                max={rangoFecha.hasta || undefined}
-                onChange={(event) => setRangoFecha((actual) => ({ ...actual, desde: event.target.value }))}
-                className="prorrogas-input"
-              />
-            </label>
-
-            <label className="prorrogas-filter-field">
-              <span className="prorrogas-filter-label">Fecha hasta</span>
-              <input
-                type="date"
-                value={rangoFecha.hasta}
-                min={rangoFecha.desde || undefined}
-                onChange={(event) => setRangoFecha((actual) => ({ ...actual, hasta: event.target.value }))}
-                className="prorrogas-input"
-              />
-            </label>
-
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setRangoFecha(rangoMesActual())}
-                className="prorrogas-btn-secondary"
-              >
-                Mes actual
-              </button>
-              <button
-                type="button"
-                onClick={() => setRangoFecha({ desde: '', hasta: '' })}
-                className="prorrogas-btn-secondary"
-              >
-                Todas las fechas
-              </button>
-            </div>
-          </div>
-
-          {esGerencia && (
-            <div className="flex items-center gap-2">
-              <span className="prorrogas-filter-label">Vendedor:</span>
-              <div className="prorrogas-segmented">
-                {[
-                  ['todas', 'Todos'],
-                  ['propias', 'Propias'],
-                  ['otros', 'Otros']
-                ].map(([valor, etiqueta]) => (
-                  <button
-                    key={valor}
-                    type="button"
-                    onClick={() => setFiltroGerencia(valor)}
-                    className={`prorrogas-segmented-btn ${filtroGerencia === valor ? 'prorrogas-segmented-btn--active' : ''}`}
-                  >
-                    {etiqueta}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="prorrogas-search-section mt-3 md:mt-4">
-          <label className="prorrogas-search-label" htmlFor="prorrogas-search-input">
-            Buscar solicitudes e ítems
-          </label>
-          <div className="prorrogas-search">
-            <Search size={17} aria-hidden="true" />
-            <input
-              id="prorrogas-search-input"
-              type="search"
-              value={busqueda}
-              onChange={(event) => setBusqueda(event.target.value)}
-              placeholder={esVendedor ? 'Correlativo, cliente, ítem o marca' : 'Correlativo, cliente, vendedor, ítem o marca'}
-              aria-label={esVendedor ? 'Buscar por correlativo, cliente o ítem' : 'Buscar por correlativo, cliente, vendedor o ítem'}
+      {/* Filtros: un solo marcado; en móvil los controles viven en la hoja inferior de BarraFiltros (sin persistencia, como antes) */}
+      <BarraFiltros
+        className="mb-4 md:mb-6"
+        filtrosActivos={filtrosActivosCount + (busqueda.trim() ? 1 : 0)}
+        resultados={visibles.length}
+        busqueda={(
+          <FiltroBusqueda
+            value={busqueda}
+            onChange={(texto) => setBusqueda(texto)}
+            placeholder={esVendedor ? 'Correlativo, cliente, ítem o marca' : 'Correlativo, cliente, vendedor, ítem o marca'}
+            ariaLabel={esVendedor ? 'Buscar por correlativo, cliente o ítem' : 'Buscar por correlativo, cliente, vendedor o ítem'}
+          />
+        )}
+        filtros={(
+          <>
+            <FiltroFechas
+              value={rangoFecha}
+              onChange={setRangoFecha}
+              porDefecto={rangoPredeterminado}
+              etiqueta="Fecha de actividad"
+              ariaLabel="Filtrar por fecha de actividad"
             />
-            {busqueda && (
-              <button type="button" onClick={() => setBusqueda('')} aria-label="Limpiar búsqueda">
-                <X size={16} />
-              </button>
+            {esGerencia && (
+              <FiltroSegmentado
+                ariaLabel="Filtrar por vendedor"
+                etiqueta="Vendedor"
+                prefijo="Vendedor:"
+                className="[&>button]:flex-1"
+                valorNeutro="todas"
+                value={filtroGerencia}
+                onChange={setFiltroGerencia}
+                opciones={[
+                  { value: 'todas', label: 'Todos' },
+                  { value: 'propias', label: 'Propias' },
+                  { value: 'otros', label: 'Otros' }
+                ]}
+              />
             )}
-          </div>
-        </div>
-      </div>
+          </>
+        )}
+        limpiar={(
+          <BotonLimpiar
+            activos={filtrosActivosCount + (busqueda.trim() ? 1 : 0)}
+            onClick={() => { setRangoFecha(rangoMesActual()); setFiltroGerencia('todas'); setBusqueda(''); }}
+          />
+        )}
+        extremo={<ContadorResultados total={visibles.length} unidad="registros" />}
+      />
 
       {/* Tarjeta de tabla: pestañas, tabla (o tarjetas en móvil), vacío y fila expandida */}
       <div className="@container/prorrogas tf-surface-panel overflow-hidden w-full min-w-0">
-        {/* Pestañas con subrayado */}
-          <nav className="prorrogas-tabs" aria-label="Vista de prórrogas" tabIndex={0}>
-            {[
-              ['pendientes', 'Pendientes', pendientes.length],
-              ['revisiones', 'Mantener en revisión', revisiones.length],
-              ['historial', 'Historial atendido', historial.length],
-              ['todas', 'Todas', registros.length]
-            ].map(([valor, etiqueta, total]) => (
-              <button
-                key={valor}
-                id={`tab-prorroga-${valor}`}
-                type="button"
-                onClick={() => setPestana(valor)}
-                className={`prorrogas-tab ${pestana === valor ? 'prorrogas-tab--active' : ''}`}
-              >
-                <span>{etiqueta}</span>
-                <span className="prorrogas-tab-count">({total})</span>
-              </button>
-            ))}
-          </nav>
+        {/* Pestañas: dentro del panel de la tabla */}
+        <div className="px-3 pb-3 pt-3 md:px-4 md:pt-4">
+          <FiltroPestanas
+            ariaLabel="Vista de prórrogas"
+            prefijoId="tab-prorroga-"
+            value={pestana}
+            onChange={setPestana}
+            opciones={[
+              { id: 'pendientes', label: 'Pendientes', cantidad: pendientes.length },
+              { id: 'revisiones', label: 'Mantener en revisión', cantidad: revisiones.length },
+              { id: 'historial', label: 'Historial atendido', cantidad: historial.length },
+              { id: 'todas', label: 'Todas', cantidad: registros.length }
+            ]}
+          />
+        </div>
 
         {/* Sección 3: Contenido / Tabla */}
         {visibles.length === 0 ? (
