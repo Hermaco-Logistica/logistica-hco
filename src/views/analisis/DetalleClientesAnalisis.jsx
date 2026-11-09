@@ -29,12 +29,13 @@ const OPCIONES_ORDEN_CLIENTES = [
   { value: 'decisiones', label: 'Más ventas perdidas' }
 ];
 const ANCHO_ORDEN_CLIENTES = 5;
+const ORDEN_INICIAL_CLIENTES = 'total';
 
 export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
   const [searchTerm, setSearchTerm] = useSessionState('analisis_clientes_dir_search', '');
-  const [criterioOrden, setCriterioOrden] = useSessionState('analisis_clientes_dir_orden', 'total'); // 'total' | 'pedidos' | 'monto' | 'anulaciones'
+  const [criterioOrden, setCriterioOrden] = useSessionState('analisis_clientes_dir_orden', ORDEN_INICIAL_CLIENTES); // 'total' | 'pedidos' | 'monto' | 'anulaciones' | 'decisiones'
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -219,6 +220,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
       <BarraFiltros
         busquedaEnBarraMovil
         resultados={clientesFiltrados.length}
+        filtrosActivos={criterioOrden !== ORDEN_INICIAL_CLIENTES ? 1 : 0}
         busqueda={(
           <FiltroBusqueda
             value={searchTerm}
@@ -239,10 +241,15 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
             onChange={(valor) => { setCriterioOrden(valor); setCurrentPage(1); }}
           />
         )}
-        limpiar={<BotonLimpiar activos={searchTerm.trim() ? 1 : 0} onClick={() => { setSearchTerm(''); setCurrentPage(1); }} />}
+        limpiar={(
+          <BotonLimpiar
+            activos={(searchTerm.trim() ? 1 : 0) + (criterioOrden !== ORDEN_INICIAL_CLIENTES ? 1 : 0)}
+            onClick={() => { setSearchTerm(''); setCriterioOrden(ORDEN_INICIAL_CLIENTES); setCurrentPage(1); }}
+          />
+        )}
         acciones={(
           <BotonExportar
-            etiqueta="Exportar Movimientos"
+            etiqueta="Exportar movimientos"
             titulo="Exportar todos los movimientos de clientes a Excel"
             onClick={() => {
           const solsAExportar = searchTerm.trim()
