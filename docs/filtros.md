@@ -9,7 +9,7 @@ Componentes de `src/components/filtros/` (import: `from '../components/filtros'`
 | `FiltroBusqueda` | `value`, `onChange`, `placeholder`, `ariaLabel` | texto |
 | `FiltroSelect` | `value` (`''` = "Todos"), `onChange`, `opciones` (`string` o `{value,label}`), `prefijo`, `etiqueta`, `etiquetaTodos`, `ariaLabel` | valor |
 | `FiltroSegmentado` | `opciones [{value,label}]`, `value`, `onChange`, `ariaLabel`, `etiqueta`, `valorNeutro` | valor |
-| `FiltroPestanas` | `opciones [{id,label,cantidad?,punto?}]`, `value`, `onChange`, `sticky`, `ariaLabel` | id |
+| `FiltroPestanas` | `opciones [{id,label,cantidad?,punto?}]`, `value`, `onChange`, `sticky`, `prefijoId`, `ariaLabel` (ver «Pestañas pegadas») | id |
 | `FiltroConmutador` | `activo`, `onChange`, `etiqueta`, `titulo` | booleano nuevo |
 | `BotonLimpiar` | `activos`, `onClick`, `etiqueta` | — (no se pinta si `activos` ≤ 0) |
 | `ContadorResultados` | `total`, `filtrados`, `unidad` | — |
@@ -57,6 +57,15 @@ La lista desplegada del `<select>` la dibuja el navegador y no se puede estiliza
 - **Escritorio**: `MenuAnclado` — portal a `<body>`, ancho mínimo igual al del campo (máx. 22 rem), alto máximo 320 px con scroll, *flip* hacia arriba si no cabe debajo y hay más sitio arriba, se reposiciona con scroll (en cualquier contenedor) y resize, el clic fuera lo cierra. Sin contorno: el campo abierto pierde el radio del lado que toca el menú y se lee como una pieza con él (mismo fondo, `bg-filtro-abierto`); el menú lleva `--shadow-menu` y un `clip-path` que no pinta nada del lado del campo.
 - **Móvil (hoja)**: `FilaAcordeon` — la fila se despliega en línea con la misma `ListaOpciones`, altura animada con `grid-template-rows` (0fr → 1fr). **Solo una fila abierta a la vez** (`ContextoAcordeon`), calendario incluido (`FiltroFechasContenedor` se registra en el mismo acordeón). Al abrir, el cuerpo de la hoja centra la fila con un desplazamiento suave de ~220 ms (`centrarEnCuerpo`: solo `scrollTop`, sin `scroll-behavior` global). Elegir una opción cierra el acordeón y devuelve el foco a la fila.
 - **Segmentado en la hoja**: criterio — con **3 opciones o menos** sigue siendo una fila con botones (un toque, nada que desplegar); con más, se despliega como acordeón con la misma lista.
+
+## Pestañas pegadas (`FiltroPestanas` con `sticky`)
+
+- **Reposo:** sin pastilla gris, fondo, borde ni sombra: solo las pestañas sobre el fondo de la página. Sin `sticky` la tira conserva su pastilla `bg-slate-100` (p. ej. Prórrogas).
+- **Pegada:** quedan a ras del borde superior del contenedor de scroll (`main`), es decir, justo bajo la barra superior móvil, de ancho completo (`-mx-[var(--tf-pad-x)]` + `px-[var(--tf-pad-x)]`, por eso solo valen dentro de `main`). `sticky` se pega al borde del *relleno* de `main`, así que el componente mide `padding-top` de `main` (y lo vuelve a medir al redimensionar) y lo resta de `top`.
+- **Vidrio:** capa absoluta detrás de las pestañas: `bg-background` translúcido (`/65` con `backdrop-filter`, `/95` sin él), `backdrop-blur-md` + `backdrop-saturate-150`, sin borde, con `shadow-menu` (sombra del rol solo hacia abajo). No hay token nuevo.
+- **Detección:** `IntersectionObserver` sobre un centinela de altura 0 y sin margen (`m-0`, así no altera el `space-y` del padre) justo antes de la barra; raíz `main` con `rootMargin` = relleno superior; sin `IntersectionObserver` no hay estado «pegada». El estado (`data-pegada`) solo cambia la capa visual, no el layout (la altura del contenedor no varía).
+- **Animación:** solo `opacity` y `transform` (`translateY(-6px)` → 0). Al pegarse `--anim-abrir` / `--ease-abrir`; al volver `--anim-cerrar` / `--ease-cerrar`. Con `prefers-reduced-motion` no hay desplazamiento (solo opacidad).
+- Los ids (`prefijoId`), el `scrollIntoView` de la pestaña activa, el desplazamiento horizontal y el degradado de los bordes no cambian.
 
 ## Estados de un campo (`estilosCampo.js`)
 | Estado | Fondo | Borde | Texto / icono |

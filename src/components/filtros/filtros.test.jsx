@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { readFileSync } from 'node:fs';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import {
   BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroConmutador, FiltroFechaCampo, FiltroFechasContenedor,
@@ -238,10 +238,68 @@ describe('FiltroPestanas', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Pendientes/ }));
     expect(onChange).toHaveBeenCalledWith('pend');
   });
-  it('la variante sticky envuelve la barra en un contenedor pegado arriba', () => {
+  it('la variante sticky envuelve la barra en un contenedor pegado arriba, de ancho completo y sin pastilla propia', () => {
     const { container } = render(<FiltroPestanas sticky value="todas" onChange={() => {}} opciones={opciones} />);
-    expect(container.firstChild.className).toContain('sticky');
-    expect(container.firstChild.className).toContain('top-0');
+    const pegado = container.querySelector('[data-pegada]');
+    expect(pegado.className).toContain('sticky');
+    expect(pegado.style.top).toBe('0px');
+    expect(pegado.className).toContain('-mx-[var(--tf-pad-x)]');
+    expect(screen.getByRole('tablist').className).not.toContain('bg-slate-100');
+  });
+  it('sin sticky no hay centinela ni capa de vidrio y la pastilla gris se mantiene', () => {
+    const { container } = render(<FiltroPestanas value="todas" onChange={() => {}} opciones={opciones} />);
+    expect(container.querySelector('[data-centinela]')).toBeNull();
+    expect(container.querySelector('[data-vidrio]')).toBeNull();
+    expect(screen.getByRole('tablist').className).toContain('bg-slate-100');
+  });
+  describe('estado pegada (IntersectionObserver)', () => {
+    let cb; let opts;
+    beforeEach(() => {
+      cb = null; opts = null;
+      window.IntersectionObserver = class { constructor(f, o) { cb = f; opts = o; } observe() {} disconnect() {} };
+    });
+    afterEach(() => { delete window.IntersectionObserver; });
+    const montar = () => {
+      const r = render(<main style={{ paddingTop: '14px' }}><FiltroPestanas sticky value="todas" onChange={() => {}} opciones={opciones} /></main>);
+      return { vidrio: r.container.querySelector('[data-vidrio]'), caja: r.container.querySelector('[data-pegada]') };
+    };
+    it('observa un centinela de altura 0 con raíz en main y suma el relleno superior', () => {
+      const { container } = render(<main style={{ paddingTop: '14px' }}><FiltroPestanas sticky value="todas" onChange={() => {}} opciones={opciones} /></main>);
+      const cent = container.querySelector('[data-centinela]');
+      expect(cent.className).toContain('h-0');
+      expect(opts.root).toBe(container.querySelector('main'));
+      expect(opts.rootMargin).toBe('14px 0px 0px 0px');
+      expect(container.querySelector('[data-pegada]').style.top).toBe('-14px');
+    });
+    it('empieza sin pegar, se marca al salir el centinela por arriba y vuelve a reposo', () => {
+      const { vidrio, caja } = montar();
+      expect(caja.getAttribute('data-pegada')).toBe('false');
+      expect(vidrio.getAttribute('data-pegada')).toBe('false');
+      act(() => cb([{ isIntersecting: false, boundingClientRect: { top: -30 } }]));
+      expect(vidrio.getAttribute('data-pegada')).toBe('true');
+      act(() => cb([{ isIntersecting: true, boundingClientRect: { top: 40 } }]));
+      expect(vidrio.getAttribute('data-pegada')).toBe('false');
+    });
+    it('el centinela por debajo del borde (no ha llegado) no cuenta como pegada', () => {
+      const { vidrio } = montar();
+      act(() => cb([{ isIntersecting: false, boundingClientRect: { top: 2000 } }]));
+      expect(vidrio.getAttribute('data-pegada')).toBe('false');
+    });
+    it('la capa de vidrio solo anima opacity y transform, con los tokens de animación, y sin desplazamiento con reduced motion', () => {
+      const { vidrio } = montar();
+      const c = vidrio.className;
+      expect(c).toContain('transition-[opacity,transform]');
+      expect(c).toContain('duration-[var(--anim-abrir)]');
+      expect(c).toContain('ease-[var(--ease-abrir)]');
+      expect(c).toContain('duration-[var(--anim-cerrar)]');
+      expect(c).toContain('ease-[var(--ease-cerrar)]');
+      expect(c).toContain('motion-reduce:[transform:none]');
+      expect(c).toContain('backdrop-blur-md');
+      expect(c).toContain('bg-background/95');
+      expect(c).toContain('supports-[backdrop-filter]:bg-background/65');
+      expect(c).toContain('shadow-menu');
+      expect(c).not.toMatch(/border|#[0-9a-f]{3,6}/i);
+    });
   });
 });
 
