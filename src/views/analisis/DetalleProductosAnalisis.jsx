@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { pluralizar } from '../../utils/pluralizar';
 import { useNavigate, Navigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Search, Package, ChevronRight, Download, X, User, Building } from 'lucide-react';
+import { ArrowLeft, Package, ChevronRight } from 'lucide-react';
 import { extraerTodosLosMovimientos, exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { Etiqueta } from '../../components/Etiqueta';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroSegmentado } from '../../components/filtros';
+import { ChipsFiltroContexto } from './components/ChipsFiltroContexto';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
@@ -19,6 +21,18 @@ import {
   cargarFiltroPeriodoStorage
 } from '../../utils/dateValidation';
 import { TablePagination } from '../../components/ui/TablePagination';
+
+/** Opciones de "Ordenar" (mismos valores, orden y rótulos que antes). El peso reserva el ancho de la fila de botones en la barra. */
+const OPCIONES_ORDEN_PRODUCTOS = [
+  { value: 'veces', label: 'Más cotizados' },
+  { value: 'unidades', label: 'Mayor volumen' },
+  { value: 'pedidos', label: 'Más ganados' },
+  { value: 'anulaciones', label: 'Más anulaciones' },
+  { value: 'decisiones', label: 'Más decisiones' },
+  { value: 'ventasPerdidas', label: 'Más ventas perdidas' },
+  { value: 'rechazos', label: 'Más rechazos' }
+];
+const ANCHO_ORDEN_PRODUCTOS = 7;
 
 export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();
@@ -66,11 +80,6 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
     document.querySelector('main')?.scrollTo(0, 0);
     window.scrollTo(0, 0);
   }, []);
-
-  useEffect(() => {
-    const btn = document.getElementById(`ord-prod-${ordenarPor}`);
-    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  }, [ordenarPor]);
 
   const parseDate = (val) => {
     if (!val) return null;
@@ -212,6 +221,34 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const paginatedProductos = productosOrdenados.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
 
+  /** Exportar: cuerpo idéntico al anterior (solo movido de lugar). */
+  const exportarMovimientosProductos = () => {
+    let movs = extraerTodosLosMovimientos(solicitudes, ordenesCompra);
+    if (vendedorFilter) {
+      movs = movs.filter(m => m.vendedor === vendedorFilter);
+    }
+    if (clienteFilter) {
+      const termCli = normalizarBusqueda(clienteFilter);
+      movs = movs.filter(m => normalizarBusqueda(m.cliente || '').includes(termCli));
+    }
+    if (searchTerm.trim()) {
+      const term = normalizarBusqueda(searchTerm);
+      movs = movs.filter(m =>
+        normalizarBusqueda(m.producto || '').includes(term) ||
+        normalizarBusqueda(m.marca || '').includes(term)
+      );
+    }
+    const filtrosActivos = ['Catálogo de productos'];
+    if (vendedorFilter) filtrosActivos.push(`Vendedor: ${vendedorFilter}`);
+    if (clienteFilter && clienteFilter.trim()) filtrosActivos.push(`Cliente: "${clienteFilter.trim()}"`);
+    if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
+
+    exportarMovimientosExcel(movs, 'movimientos_productos', {
+      titulo: 'CONTROL DE LOGÍSTICA - MOVIMIENTOS POR PRODUCTOS',
+      periodoLabel: filtrosActivos.join(' | ')
+    });
+  };
+
   // Bloqueo estricto para rol vendedor
   if (role === 'vendedor') {
     return <Navigate to="/vendedor" replace />;
@@ -231,119 +268,55 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
         subtitle={<>Demanda de productos y unidades solicitadas ({todosLosProductos.length} {pluralizar(todosLosProductos.length, 'producto analizado', 'productos analizados')})</>}
       />
 
-      {/* SELECTOR DE ORDENAMIENTO */}
-      <div className="surface flex overflow-x-auto whitespace-nowrap items-center gap-1.5 p-1 rounded-xl w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        <span className="text-[10px] font-medium text-slate-400 ml-2 shrink-0">Ordenar:</span>
-        {[
-          { id: 'veces', label: 'Más cotizados' },
-          { id: 'unidades', label: 'Mayor volumen' },
-          { id: 'pedidos', label: 'Más ganados' },
-          { id: 'anulaciones', label: 'Más anulaciones' },
-          { id: 'decisiones', label: 'Más decisiones' },
-          { id: 'ventasPerdidas', label: 'Más ventas perdidas' },
-          { id: 'rechazos', label: 'Más rechazos' },
-        ].map((btn) => (
-          <button
-            key={btn.id}
-            id={`ord-prod-${btn.id}`}
-            type="button"
-            onClick={() => { setOrdenarPor(btn.id); setCurrentPage(1); }}
-            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
-              ordenarPor === btn.id 
-                ? 'bg-slate-900 text-white shadow-xs font-semibold' 
-                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-            }`}
-          >
-            {btn.label}
-          </button>
-        ))}
-      </div>
-
-
-      {/* BUSCADOR Y FILTROS CONTEXTUALES */}
-      <div className="surface p-3 rounded-2xl flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <div className="relative w-full md:w-80">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Buscar producto o marca..."
-              value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
-            />
-          </div>
-          {vendedorFilter && (
-            <div className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-white border border-slate-200/90 rounded-full text-xs shadow-2xs transition-all hover:border-slate-300">
-              <User size={11} className="text-slate-400 shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Vendedor:</span>
-              <span className="font-semibold text-slate-800">{vendedorFilter}</span>
-              <button 
-                type="button" 
-                onClick={() => { setVendedorFilter(''); setCurrentPage(1); }}
-                className="w-4 h-4 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-                title="Quitar filtro de vendedor"
-              >
-                <X size={10} strokeWidth={2.5} />
-              </button>
-            </div>
-          )}
-          {clienteFilter && (
-            <div className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-white border border-slate-200/90 rounded-full text-xs shadow-2xs transition-all hover:border-slate-300">
-              <Building size={11} className="text-slate-400 shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cliente:</span>
-              <span className="font-semibold text-slate-800">{clienteFilter}</span>
-              <button 
-                type="button" 
-                onClick={() => { setClienteFilter(''); setCurrentPage(1); }}
-                className="w-4 h-4 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-                title="Quitar filtro de cliente"
-              >
-                <X size={10} strokeWidth={2.5} />
-              </button>
-            </div>
-          )}
-        </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
-          <button
-            type="button"
-            onClick={() => {
-              let movs = extraerTodosLosMovimientos(solicitudes, ordenesCompra);
-              if (vendedorFilter) {
-                movs = movs.filter(m => m.vendedor === vendedorFilter);
-              }
-              if (clienteFilter) {
-                const termCli = normalizarBusqueda(clienteFilter);
-                movs = movs.filter(m => normalizarBusqueda(m.cliente || '').includes(termCli));
-              }
-              if (searchTerm.trim()) {
-                const term = normalizarBusqueda(searchTerm);
-                movs = movs.filter(m =>
-                  normalizarBusqueda(m.producto || '').includes(term) ||
-                  normalizarBusqueda(m.marca || '').includes(term)
-                );
-              }
-              const filtrosActivos = ['Catálogo de productos'];
-              if (vendedorFilter) filtrosActivos.push(`Vendedor: ${vendedorFilter}`);
-              if (clienteFilter && clienteFilter.trim()) filtrosActivos.push(`Cliente: "${clienteFilter.trim()}"`);
-              if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
-
-              exportarMovimientosExcel(movs, 'movimientos_productos', {
-                titulo: 'CONTROL DE LOGÍSTICA - MOVIMIENTOS POR PRODUCTOS',
-                periodoLabel: filtrosActivos.join(' | ')
-              });
-            }}
-            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
-            title="Exportar todos los movimientos de productos a Excel"
-          >
-            <Download size={13} />
-            <span>Exportar Movimientos</span>
-          </button>
-          <div className="text-[11px] font-medium text-slate-400 font-mono self-end sm:self-auto">
-            Mostrando <strong className="text-slate-700 font-semibold">{productosFiltrados.length}</strong> {pluralizar(productosFiltrados.length, 'producto', 'productos')}
-          </div>
-        </div>
-      </div>
+      {/* BARRA DE FILTROS: chips de contexto, búsqueda, orden, Limpiar, exportar y contador */}
+      <BarraFiltros
+        busquedaEnBarraMovil
+        resultados={productosFiltrados.length}
+        filtrosActivos={ordenarPor !== ordenInicial ? 1 : 0}
+        encabezado={(vendedorFilter || clienteFilter) ? (
+          <ChipsFiltroContexto
+            plana
+            vendedor={vendedorFilter}
+            cliente={clienteFilter}
+            onQuitarVendedor={() => { setVendedorFilter(''); setCurrentPage(1); }}
+            onQuitarCliente={() => { setClienteFilter(''); setCurrentPage(1); }}
+          />
+        ) : null}
+        busqueda={(
+          <FiltroBusqueda
+            value={searchTerm}
+            onChange={(texto) => { setSearchTerm(texto); setCurrentPage(1); }}
+            placeholder="Buscar producto o marca..."
+            ariaLabel="Buscar producto o marca"
+          />
+        )}
+        filtros={(
+          <FiltroSegmentado
+            colapsable
+            peso={ANCHO_ORDEN_PRODUCTOS}
+            prefijo="Ordenar:"
+            etiqueta="Ordenar"
+            ariaLabel="Ordenar productos"
+            opciones={OPCIONES_ORDEN_PRODUCTOS}
+            value={ordenarPor}
+            onChange={(valor) => { setOrdenarPor(valor); setCurrentPage(1); }}
+          />
+        )}
+        limpiar={(
+          <BotonLimpiar
+            activos={(searchTerm.trim() ? 1 : 0) + (ordenarPor !== ordenInicial ? 1 : 0)}
+            onClick={() => { setSearchTerm(''); setOrdenarPor(ordenInicial); setCurrentPage(1); }}
+          />
+        )}
+        acciones={(
+          <BotonExportar
+            etiqueta="Exportar movimientos"
+            titulo="Exportar todos los movimientos de productos a Excel"
+            onClick={exportarMovimientosProductos}
+          />
+        )}
+        extremo={<ContadorResultados prefijo="Mostrando" total={productosFiltrados.length} singular="producto" plural="productos" />}
+      />
 
       {paginatedProductos.length === 0 ? (
         <div className="surface text-center py-16 text-slate-400 text-xs font-medium rounded-2xl">
