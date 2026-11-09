@@ -525,6 +525,18 @@ describe('BarraFiltros en móvil: hoja inferior', () => {
     expect(screen.getByText('20 resultados')).toBeTruthy();
     expect(screen.queryByRole('dialog')).toBeNull();
   });
+  it('el botón "Filtros" se tiñe con los tokens de filtro activo solo con filtros activos y no cambia su aspecto neutro sin ellos', () => {
+    mm(true);
+    const { rerender } = render(<BarraFiltros filtros={<FiltroSelect value="" onChange={() => {}} opciones={['A']} ariaLabel="estado" />} filtrosActivos={0} />);
+    const sin = screen.getByRole('button', { name: /^Filtros$/ });
+    expect(sin.textContent).toBe('Filtros');
+    expect(sin.className).toBe('inline-flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold border-border text-slate-600');
+    rerender(<BarraFiltros filtros={<FiltroSelect value="" onChange={() => {}} opciones={['A']} ariaLabel="estado" />} filtrosActivos={2} />);
+    const con = screen.getByRole('button', { name: /^Filtros \(2\)$/ });
+    for (const c of ['bg-filtro-activo', 'text-filtro-texto', 'border-primary']) expect(con.className).toContain(c);
+    expect(con.className).not.toMatch(/border-border|text-slate-600|#[0-9a-f]{3,6}/);
+    for (const c of ['h-11', 'rounded-xl', 'border ', 'px-3']) expect(con.className).toContain(c); // mismo alto, esquinas y borde: sin saltos
+  });
   it('abre en un portal a body con role dialog, aria-modal, aria-labelledby y el foco dentro; el trigger queda expandido', () => {
     mm(true);
     montarBarra();

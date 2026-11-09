@@ -190,6 +190,8 @@ const repartir = (rejilla) => {
  *     Los filtros se aplican al instante: el pie solo cierra la hoja. La barra no guarda estado de filtros, solo si la hoja está abierta.
  * `filtrosActivos` es el número de "Filtros (N)" y cuenta SOLO lo que hay dentro de la hoja; "Limpiar (N)" (el `activos` del BotonLimpiar)
  * cuenta todo, búsqueda incluida, así la búsqueda no se duplica en los dos números.
+ * Con N > 0 el botón se tiñe con los tokens de filtro activo del rol (`bg-filtro-activo`, texto `text-filtro-texto`); sin filtros activos mantiene su aspecto
+ * neutro. El borde y el alto son los mismos en ambos estados (sin saltos de layout).
  * `resultados` el de "Ver N resultados" (opcional).
  * `acciones` (opcional): botones como Exportar; en escritorio van en el bloque final entre `limpiar` y `extremo` (ancho reservado mayor) y
  * en móvil son la última fila de la hoja.
@@ -233,7 +235,7 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, filas, busquedaApa
       aria-expanded={hojaAbierta}
       aria-controls={idHoja}
       onClick={() => setAbierta(true)}
-      className={`inline-flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold ${filtrosActivos > 0 ? 'border-primary text-primary-strong' : 'border-border text-slate-600'}`}
+      className={`inline-flex h-11 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold ${filtrosActivos > 0 ? 'border-primary bg-filtro-activo text-filtro-texto' : 'border-border text-slate-600'}`}
     >
       <Filter size={14} aria-hidden="true" />
       <span>Filtros{filtrosActivos > 0 ? ` (${filtrosActivos})` : ''}</span>
