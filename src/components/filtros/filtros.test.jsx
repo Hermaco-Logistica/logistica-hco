@@ -246,10 +246,10 @@ describe('FiltroPestanas', () => {
     expect(pegado.style.top).toBe('0px');
     expect(screen.getByRole('tablist').className).not.toContain('bg-slate-100');
   });
-  it('sin sticky no hay centinela ni cápsulas y la pastilla gris se mantiene', () => {
+  it('sin sticky no hay centinela ni franja y la pastilla gris se mantiene', () => {
     const { container } = render(<FiltroPestanas value="todas" onChange={() => {}} opciones={opciones} />);
     expect(container.querySelector('[data-centinela]')).toBeNull();
-    expect(container.querySelector('[data-capsula]')).toBeNull();
+    expect(container.querySelector('[data-franja]')).toBeNull();
     expect(screen.getByRole('tablist').className).toContain('bg-slate-100');
   });
   describe('estado pegada (IntersectionObserver)', () => {
@@ -271,59 +271,45 @@ describe('FiltroPestanas', () => {
       expect(caja.style.top).toBe('-14px');
     });
     it('empieza sin pegar, se marca al salir el centinela por arriba y vuelve a reposo', () => {
-      const { caja, lista } = montar();
+      const { caja, container } = montar();
+      const franja = container.querySelector('[data-franja]');
       expect(caja.getAttribute('data-pegada')).toBe('false');
-      expect(lista.getAttribute('data-pegada')).toBe('false');
+      expect(franja.getAttribute('data-pegada')).toBe('false');
       act(() => cb([{ isIntersecting: false, boundingClientRect: { top: -30 } }]));
       expect(caja.getAttribute('data-pegada')).toBe('true');
-      expect(lista.getAttribute('data-pegada')).toBe('true');
+      expect(franja.getAttribute('data-pegada')).toBe('true');
       act(() => cb([{ isIntersecting: true, boundingClientRect: { top: 40 } }]));
-      expect(lista.getAttribute('data-pegada')).toBe('false');
+      expect(franja.getAttribute('data-pegada')).toBe('false');
     });
     it('el centinela por debajo del borde (no ha llegado) no cuenta como pegada', () => {
-      const { lista } = montar();
+      const { container } = montar();
       act(() => cb([{ isIntersecting: false, boundingClientRect: { top: 2000 } }]));
-      expect(lista.getAttribute('data-pegada')).toBe('false');
+      expect(container.querySelector('[data-franja]').getAttribute('data-pegada')).toBe('false');
     });
-    it('al pegarse el contenedor no lleva fondo, sombra ni desenfoque; las cápsulas inactivas sí', () => {
+    it('la franja pegada lleva fondo opaco del token de fondo y ni sombra, ni borde, ni backdrop-filter; el contenedor y la barra no pintan nada', () => {
       const { caja, lista, container } = montar();
       act(() => cb([{ isIntersecting: false, boundingClientRect: { top: -30 } }]));
-      for (const el of [caja, lista]) expect(el.className).not.toMatch(/(^|\s)(bg-|shadow-|backdrop-)/);
-      expect(container.querySelector('[data-vidrio]')).toBeNull();
-      const capsulas = container.querySelectorAll('[data-capsula]');
-      expect(capsulas.length).toBe(1);
-      const c = capsulas[0].className;
-      expect(c).toContain('backdrop-blur-md');
-      expect(c).toContain('backdrop-saturate-150');
-      expect(c).toContain('shadow-boton');
-      expect(c).toContain('supports-[backdrop-filter]:bg-background/70');
-      expect(c).toContain('bg-background/95');
-      expect(c).not.toMatch(/border|#[0-9a-f]{3,6}/i);
+      const franja = container.querySelector('[data-franja]').className;
+      expect(franja).toMatch(/(^|\s)bg-background(\s|$)/);
+      expect(franja).not.toMatch(/bg-background\/|shadow|border|backdrop|#[0-9a-f]{3,6}/i);
+      for (const el of [caja, lista]) expect(el.className).not.toMatch(/(^|\s)(bg-|shadow-|backdrop-|border)/);
+      expect(container.querySelector('[data-capsula]')).toBeNull();
     });
-    it('con las cápsulas visibles se quita la máscara de difuminado (rompería el desenfoque) y en reposo se mantiene', () => {
-      const { lista } = montar();
-      Object.defineProperty(lista, 'scrollWidth', { value: 300, configurable: true });
-      Object.defineProperty(lista, 'clientWidth', { value: 100, configurable: true });
-      act(() => { lista.dispatchEvent(new Event('scroll', { bubbles: true })); });
-      expect(lista.getAttribute('data-fade-der')).toBe('true');
-      expect(lista.getAttribute('data-mascara')).toBe('true');
-      act(() => cb([{ isIntersecting: false, boundingClientRect: { top: -30 } }]));
-      expect(lista.getAttribute('data-mascara')).toBe('false');
-      act(() => cb([{ isIntersecting: true, boundingClientRect: { top: 40 } }]));
-      expect(lista.getAttribute('data-mascara')).toBe('true');
-    });
-    it('la pestaña activa no lleva cápsula y conserva su estilo', () => {
+    it('las pestañas sticky son planas y compactas: la inactiva sin fondo, la activa con la píldora oscura', () => {
       montar();
-      expect(screen.getByRole('tab', { name: /Todas/ }).querySelector('[data-capsula]')).toBeNull();
-      expect(screen.getByRole('tab', { name: /Todas/ }).className).toContain('bg-slate-900');
-      expect(screen.getByRole('tab', { name: /Pendientes/ }).querySelector('[data-capsula]')).toBeTruthy();
+      const activa = screen.getByRole('tab', { name: /Todas/ });
+      const inactiva = screen.getByRole('tab', { name: /Pendientes/ });
+      expect(activa.className).toContain('bg-slate-900');
+      expect(inactiva.className).not.toMatch(/(^|\s)(bg-|shadow-|backdrop-)/);
+      expect(inactiva.className).not.toContain('hover:bg-white');
+      expect(inactiva.className).toContain('h-8');
     });
-    it('las cápsulas animan solo opacity y transform, con los tokens de animación, y sin desplazamiento con reduced motion', () => {
+    it('la franja anima solo opacity y transform, con los tokens de animación, y sin desplazamiento con reduced motion', () => {
       const { container } = montar();
-      const c = container.querySelector('[data-capsula]').className;
+      const c = container.querySelector('[data-franja]').className;
       expect(c).toContain('transition-[opacity,transform]');
-      expect(c).toContain('group-data-[pegada=true]:duration-[var(--anim-abrir)]');
-      expect(c).toContain('group-data-[pegada=true]:ease-[var(--ease-abrir)]');
+      expect(c).toContain('data-[pegada=true]:duration-[var(--anim-abrir)]');
+      expect(c).toContain('data-[pegada=true]:ease-[var(--ease-abrir)]');
       expect(c).toContain('duration-[var(--anim-cerrar)]');
       expect(c).toContain('ease-[var(--ease-cerrar)]');
       expect(c).toContain('motion-reduce:[transform:none]');
