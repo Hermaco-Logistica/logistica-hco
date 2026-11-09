@@ -13,7 +13,7 @@ const FRANJA = 'pointer-events-none absolute inset-0 -z-10 bg-background opacity
  * solo vale dentro de `main`, con gutter `tf-gutter-x`) con fondo OPACO del token `bg-background` (el mismo tono que la página, sin
  * transparencia, desenfoque, sombra ni borde). La franja es una capa detrás de las pestañas que entra con opacity y translateY(-6px → 0)
  * (--anim-abrir / --ease-abrir) y sale con --anim-cerrar / --ease-cerrar; solo opacity y transform; con prefers-reduced-motion no hay
- * desplazamiento. En sticky las pestañas son más compactas (h-8, py-1 de la franja: 40 px en total) y la altura del contenedor es la misma
+ * desplazamiento. En sticky las pestañas son más compactas (h-8 con esquinas de 12 px, py-1 de la franja: 40 px en total) y la altura del contenedor es la misma
  * en reposo y pegado. El estado "pegada" (`data-pegada`) solo afecta a esa capa, no al layout. Se detecta con un IntersectionObserver sobre un
  * centinela de altura 0 justo antes de la barra (raíz: `main`, con su relleno superior sumado al margen de la raíz y restado de `top`:
  * `sticky` se pega al borde del relleno y no del contenedor).
@@ -82,7 +82,7 @@ export const FiltroPestanas = ({ opciones = [], value, onChange, ariaLabel, stic
             role="tab"
             aria-selected={activa}
             onClick={() => onChange(o.id)}
-            className={`inline-flex ${sticky ? 'h-8' : 'h-9'} shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 text-xs font-medium transition-colors ${activa ? 'bg-slate-900 font-semibold text-white' : `text-slate-600 hover:text-slate-900 ${sticky ? '' : 'hover:bg-white'}`}`}
+            className={`inline-flex ${sticky ? 'h-8 rounded-xl' : 'h-9 rounded-lg'} shrink-0 cursor-pointer items-center gap-1.5 px-3 text-xs font-medium transition-colors ${activa ? 'bg-slate-900 font-semibold text-white' : `text-slate-600 hover:text-slate-900 ${sticky ? '' : 'hover:bg-white'}`}`}
           >
             {o.punto && <span aria-hidden="true" className={`size-2 rounded-full ${o.punto}`} />}
             {o.label}

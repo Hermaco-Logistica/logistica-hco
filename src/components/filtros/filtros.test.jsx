@@ -251,6 +251,8 @@ describe('FiltroPestanas', () => {
     expect(container.querySelector('[data-centinela]')).toBeNull();
     expect(container.querySelector('[data-franja]')).toBeNull();
     expect(screen.getByRole('tablist').className).toContain('bg-slate-100');
+    expect(screen.getByRole('tab', { name: /Todas/ }).className).toContain('rounded-lg');
+    expect(screen.getByRole('tab', { name: /Todas/ }).className).not.toContain('rounded-xl');
   });
   describe('estado pegada (IntersectionObserver)', () => {
     let cb; let opts;
@@ -303,6 +305,8 @@ describe('FiltroPestanas', () => {
       expect(inactiva.className).not.toMatch(/(^|\s)(bg-|shadow-|backdrop-)/);
       expect(inactiva.className).not.toContain('hover:bg-white');
       expect(inactiva.className).toContain('h-8');
+      expect(activa.className).toContain('rounded-xl');
+      expect(activa.className).not.toContain('rounded-lg');
     });
     it('la franja anima solo opacity y transform, con los tokens de animación, y sin desplazamiento con reduced motion', () => {
       const { container } = montar();
