@@ -34,12 +34,13 @@ describe('ChipsFiltroContexto', () => {
     expect(quitarV).toHaveBeenCalledTimes(1);
   });
 
-  it('la X es un botón accesible (type button, aria-label) con área táctil de 32 px en móvil', () => {
+  it('la X es un botón accesible (type button, aria-label) con área táctil de 32 px', () => {
     render(<ChipsFiltroContexto vendedor="Ana" cliente="HOLCIM" onQuitarVendedor={() => {}} onQuitarCliente={() => {}} />);
     for (const b of screen.getAllByRole('button')) {
       expect(b.getAttribute('type')).toBe('button');
       expect(b.getAttribute('aria-label')).toMatch(/^Quitar filtro de (vendedor|cliente)$/);
-      expect(b.className).toContain('size-8');
+      expect(b.className).toContain('size-6'); // visible: 24 px
+      expect(b.className).toContain('before:-inset-1'); // área táctil: 24 + 4 + 4 = 32 px
     }
   });
 
