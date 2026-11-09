@@ -20,6 +20,7 @@ import {
   cargarFiltroPeriodoStorage
 } from '../../utils/dateValidation';
 import { TablePagination } from '../../components/ui/TablePagination';
+import { FiltroPestanas } from '../../components/filtros';
 
 export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const { tipoEstado } = useParams();
@@ -267,14 +268,14 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
 
   const tabs = [
     { id: 'todas', label: 'Todas' },
-    { id: 'pendiente', label: 'Pendientes de Cotizar', dot: theme.flujoEstados?.pendiente?.dot },
-    { id: 'cotizadas', label: 'Cotizadas', dot: theme.flujoEstados?.cotizadas?.dot },
-    { id: 'pedidos', label: 'Pedidos', dot: theme.flujoEstados?.pedidos?.dot },
-    { id: 'parciales', label: 'Pedidos Parciales', dot: 'bg-sky-500' },
-    { id: 'seguimiento', label: 'En seguimiento', dot: 'bg-seguimiento' },
-    { id: 'anuladas', label: 'Anuladas', dot: 'bg-rose-500' },
-    { id: 'anuladas-parcial', label: 'Con ítems anulados', dot: 'bg-rose-300' },
-    { id: 'ventas-perdidas', label: 'Ventas perdidas / rechazos', dot: 'bg-orange-500' }
+    { id: 'pendiente', label: 'Pendientes de Cotizar', punto: theme.flujoEstados?.pendiente?.dot },
+    { id: 'cotizadas', label: 'Cotizadas', punto: theme.flujoEstados?.cotizadas?.dot },
+    { id: 'pedidos', label: 'Pedidos', punto: theme.flujoEstados?.pedidos?.dot },
+    { id: 'parciales', label: 'Pedidos Parciales', punto: 'bg-sky-500' },
+    { id: 'seguimiento', label: 'En seguimiento', punto: 'bg-seguimiento' },
+    { id: 'anuladas', label: 'Anuladas', punto: 'bg-rose-500' },
+    { id: 'anuladas-parcial', label: 'Con ítems anulados', punto: 'bg-rose-300' },
+    { id: 'ventas-perdidas', label: 'Ventas perdidas / rechazos', punto: 'bg-orange-500' }
   ];
   const esTabDecision = tabActual.startsWith('anuladas') || tabActual === 'ventas-perdidas';
 
@@ -299,29 +300,15 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
         subtitle="Explorador del flujo de estados — RFQs y Pedidos Manuales"
       />
 
-      {/* TABS DE ESTADO (Sticky en móvil) */}
-      <div className="sticky top-0 z-20 bg-slate-50/80 backdrop-blur-md pb-2 -mx-[var(--tf-pad-x)] px-[var(--tf-pad-x)] sm:mx-0 sm:px-0 sm:pb-0 sm:bg-transparent">
-        <div className="surface flex overflow-x-auto whitespace-nowrap gap-1.5 p-1 rounded-xl w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              id={`tab-sol-${t.id}`}
-              type="button"
-              onClick={() => { setTabActual(t.id); setCurrentPage(1); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
-                tabActual === t.id 
-                  ? 'bg-slate-900 text-white shadow-xs font-semibold' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-              }`}
-            >
-              {t.dot && (
-                <span className={`w-2 h-2 rounded-full ${t.dot}`} />
-              )}
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* PESTAÑAS DE ESTADO: pegadas bajo el header (FiltroPestanas sticky); no cuentan como filtro activo */}
+      <FiltroPestanas
+        sticky
+        ariaLabel="Estado de las solicitudes"
+        prefijoId="tab-sol-"
+        opciones={tabs}
+        value={tabActual}
+        onChange={(id) => { setTabActual(id); setCurrentPage(1); }}
+      />
 
       {/* FILTROS Y BÚSQUEDA */}
       <div className="surface p-3 rounded-2xl flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
