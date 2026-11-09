@@ -2,11 +2,17 @@ import { useEffect, useRef } from 'react';
 
 /**
  * Botón "atrás" por capas para la hoja de filtros móvil y sus filas desplegadas.
- * Cada capa abierta (hoja, fila de opciones, calendario) añade UNA entrada al historial con history.pushState conservando el
- * history.state del enrutador ({ ...history.state, filtros: nivel }); la URL no cambia. Un único listener de popstate cierra la capa
- * de arriba (sin tocar el valor del filtro). Cuando una capa se cierra desde la interfaz (X, fondo, elegir una opción, Escape, pie)
- * su entrada se retira con history.go(-n) (n = esa capa y las que estén encima) y el popstate resultante se ignora, así la pila queda
- * coherente y no hay doble cierre. Una entrada con `filtros` que sobrevive a una recarga se retira al montar (ver `limpiarEntradaColgada`).
+ * Cada capa abierta (hoja, fila de opciones, calendario) corresponde a UNA entrada del historial, marcada con
+ * history.pushState conservando el history.state del enrutador ({ ...history.state, filtros: nivel }); la URL no cambia. Un único listener
+ * de popstate cierra la capa de arriba (sin tocar el valor del filtro).
+ * El historial se RECONCILIA en vez de editarse en cada efecto: abrir una capa solo empuja una entrada si la profundidad actual
+ * (history.state.filtros) es menor que el número de capas, y cerrarla solo la quita de la pila; un único setTimeout(0) por commit compara
+ * la profundidad con la pila y hace UN history.go(-diferencia) si sobran entradas (o completa con pushState si faltan). Así un cierre
+ * y una apertura en el mismo commit (doble montaje de StrictMode, cambio de una fila a otra) reutilizan la entrada y no se pierde
+ * ningún pushState: history.go es asíncrono y resuelve su destino al llamarlo, de modo que un go seguido de un pushState dejaba el
+ * navegador un nivel por debajo de la pila y el siguiente cierre retrocedía una entrada de más (salía de la pantalla).
+ * Cada retroceso propio espera su popstate (se ignora) antes de la siguiente operación; el marcador caduca a los 500 ms como tope.
+ * Una entrada con `filtros` que sobrevive a una recarga se retira al montar (ver `limpiarEntradaColgada`).
  */
 const pila = [];
 /** Retiradas propias de entradas pendientes de su popstate (se descartan solas si el navegador no llega a emitirlo). */
@@ -17,6 +23,11 @@ const ignorarProximo = () => {
   setTimeout(() => { const i = pendientes.indexOf(marca); if (i >= 0) pendientes.splice(i, 1); }, 500);
 };
 let escuchando = false;
+let temporizador = null;
+
+/** Profundidad del historial: nivel `filtros` de la entrada actual (0 si no es una entrada de capas). */
+const profundidad = () => (window.history.state && Number(window.history.state.filtros)) || 0;
+const empujar = () => window.history.pushState({ ...window.history.state, filtros: profundidad() + 1 }, '');
 
 const alPopstate = () => {
   if (pendientes.length > 0) {
@@ -29,21 +40,32 @@ const alPopstate = () => {
   if (!pila.length) { window.removeEventListener('popstate', alPopstate); escuchando = false; }
 };
 
+/** Iguala el historial con la pila: un go(-n) si sobran entradas, pushState si faltan. Espera el popstate de un retroceso propio en vuelo. */
+const reconciliar = () => {
+  temporizador = null;
+  if (pendientes.length > 0) { programar(50); return; }
+  const dif = profundidad() - pila.length;
+  if (dif > 0) { ignorarProximo(); window.history.go(-dif); }
+  for (let i = dif; i < 0; i += 1) empujar();
+};
+function programar(ms = 0) {
+  if (temporizador === null) temporizador = setTimeout(reconciliar, ms);
+}
+
 export const abrirCapa = (cerrar) => {
   const capa = { cerrar };
   pila.push(capa);
-  window.history.pushState({ ...window.history.state, filtros: pila.length }, '');
   if (!escuchando) { window.addEventListener('popstate', alPopstate); escuchando = true; }
+  if (pendientes.length === 0) while (profundidad() < pila.length) empujar();
+  programar();
   return capa;
 };
 
 export const cerrarCapaDesdeUI = (capa) => {
   const i = pila.indexOf(capa);
   if (i < 0) return;
-  const n = pila.length - i;
-  pila.length = i;
-  ignorarProximo();
-  window.history.go(-n);
+  pila.length = i; // la capa y las que estén encima
+  programar();
 };
 
 /** Tras una recarga con la hoja abierta la entrada del historial sigue marcada: se retira para no dejar una entrada fantasma. */
@@ -71,5 +93,6 @@ export const useCapaAtras = (activa, cerrar) => {
 export const reiniciarCapasParaPruebas = () => {
   pila.length = 0;
   pendientes.length = 0;
+  if (temporizador !== null) { clearTimeout(temporizador); temporizador = null; }
   if (escuchando) { window.removeEventListener('popstate', alPopstate); escuchando = false; }
 };
