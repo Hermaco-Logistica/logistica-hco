@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { pluralizar } from '../../utils/pluralizar';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Search, Package, ExternalLink, Calendar, User, Building, Link as LinkIcon, CheckCircle2, Download, X, Ban, MessageCircleQuestion } from 'lucide-react';
+import { ArrowLeft, Package, ExternalLink, Calendar, User, Building, Link as LinkIcon, CheckCircle2, Ban, MessageCircleQuestion } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { MotivoAnulacionModal } from '../../components/MotivoAnulacionModal';
 import { Etiqueta } from '../../components/Etiqueta';
@@ -20,7 +19,8 @@ import {
   cargarFiltroPeriodoStorage
 } from '../../utils/dateValidation';
 import { TablePagination } from '../../components/ui/TablePagination';
-import { FiltroPestanas } from '../../components/filtros';
+import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroPestanas } from '../../components/filtros';
+import { ChipsFiltroContexto } from './components/ChipsFiltroContexto';
 
 export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const { tipoEstado } = useParams();
@@ -279,6 +279,35 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
   ];
   const esTabDecision = tabActual.startsWith('anuladas') || tabActual === 'ventas-perdidas';
 
+  /** Exportar: cuerpo idéntico al anterior (solo movido de lugar). */
+  const exportarMovimientosSolicitudes = () => {
+    const tabTitulos = {
+      todas: 'TODAS LAS SOLICITUDES',
+      pendiente: 'SOLICITUDES PENDIENTES',
+      cotizadas: 'SOLICITUDES COTIZADAS',
+      pedidos: 'PEDIDOS GANADOS',
+      parciales: 'PEDIDOS PARCIALES',
+      anuladas: 'SOLICITUDES ANULADAS',
+      'anuladas-parcial': 'SOLICITUDES CON ÍTEMS ANULADOS',
+      'ventas-perdidas': 'VENTAS PERDIDAS Y RECHAZOS'
+    };
+    const tituloTab = tabTitulos[tabActual] || 'SOLICITUDES';
+    const filtrosActivos = [`Pestaña: ${tituloTab}`];
+    if (vendedorFilter) filtrosActivos.push(`Vendedor: ${vendedorFilter}`);
+    if (clienteFilter && clienteFilter.trim()) filtrosActivos.push(`Cliente: "${clienteFilter.trim()}"`);
+    if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
+
+    exportarTodosLosMovimientosExcel(
+      solicitudesFiltradas,
+      ordenesCompra,
+      `movimientos_solicitudes_${tabActual}`,
+      {
+        titulo: `CONTROL DE LOGÍSTICA - ${tituloTab}`,
+        periodoLabel: filtrosActivos.join(' | ')
+      }
+    );
+  };
+
   // Bloqueo estricto para rol vendedor
   if (role === 'vendedor') {
     return <Navigate to="/vendedor" replace />;
@@ -310,91 +339,37 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
         onChange={(id) => { setTabActual(id); setCurrentPage(1); }}
       />
 
-      {/* FILTROS Y BÚSQUEDA */}
-      <div className="surface p-3 rounded-2xl flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <div className="relative w-full md:w-80">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Buscar por correlativo, cliente, vendedor, producto u OC..."
-              value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
-            />
-          </div>
-          {vendedorFilter && (
-            <div className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-white border border-slate-200/90 rounded-full text-xs shadow-2xs transition-all hover:border-slate-300">
-              <User size={11} className="text-slate-400 shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Vendedor:</span>
-              <span className="font-semibold text-slate-800">{vendedorFilter}</span>
-              <button 
-                type="button" 
-                onClick={() => { setVendedorFilter(''); setCurrentPage(1); }}
-                className="w-4 h-4 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-                title="Quitar filtro de vendedor"
-              >
-                <X size={10} strokeWidth={2.5} />
-              </button>
-            </div>
-          )}
-          {clienteFilter && (
-            <div className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-white border border-slate-200/90 rounded-full text-xs shadow-2xs transition-all hover:border-slate-300">
-              <Building size={11} className="text-slate-400 shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Cliente:</span>
-              <span className="font-semibold text-slate-800">{clienteFilter}</span>
-              <button 
-                type="button" 
-                onClick={() => { setClienteFilter(''); setCurrentPage(1); }}
-                className="w-4 h-4 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-                title="Quitar filtro de cliente"
-              >
-                <X size={10} strokeWidth={2.5} />
-              </button>
-            </div>
-          )}
-        </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
-          <button
-            type="button"
-            onClick={() => {
-              const tabTitulos = {
-                todas: 'TODAS LAS SOLICITUDES',
-                pendiente: 'SOLICITUDES PENDIENTES',
-                cotizadas: 'SOLICITUDES COTIZADAS',
-                pedidos: 'PEDIDOS GANADOS',
-                parciales: 'PEDIDOS PARCIALES',
-                anuladas: 'SOLICITUDES ANULADAS',
-                'anuladas-parcial': 'SOLICITUDES CON ÍTEMS ANULADOS',
-                'ventas-perdidas': 'VENTAS PERDIDAS Y RECHAZOS'
-              };
-              const tituloTab = tabTitulos[tabActual] || 'SOLICITUDES';
-              const filtrosActivos = [`Pestaña: ${tituloTab}`];
-              if (vendedorFilter) filtrosActivos.push(`Vendedor: ${vendedorFilter}`);
-              if (clienteFilter && clienteFilter.trim()) filtrosActivos.push(`Cliente: "${clienteFilter.trim()}"`);
-              if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
-
-              exportarTodosLosMovimientosExcel(
-                solicitudesFiltradas,
-                ordenesCompra,
-                `movimientos_solicitudes_${tabActual}`,
-                {
-                  titulo: `CONTROL DE LOGÍSTICA - ${tituloTab}`,
-                  periodoLabel: filtrosActivos.join(' | ')
-                }
-              );
-            }}
-            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
-            title="Exportar todos los movimientos de las solicitudes filtradas a Excel"
-          >
-            <Download size={13} />
-            <span>Exportar Movimientos</span>
-          </button>
-          <div className="text-[11px] font-medium text-slate-400 font-mono self-end sm:self-auto">
-            Mostrando <strong className="text-slate-700 font-semibold">{solicitudesFiltradas.length}</strong> {pluralizar(solicitudesFiltradas.length, 'solicitud', 'solicitudes')}
-          </div>
-        </div>
-      </div>
+      {/* BARRA DE FILTROS: chips de contexto, búsqueda, Limpiar, exportar y contador (las pestañas van aparte y no cuentan como filtro) */}
+      <BarraFiltros
+        busquedaEnBarraMovil
+        resultados={solicitudesFiltradas.length}
+        encabezado={(vendedorFilter || clienteFilter) ? (
+          <ChipsFiltroContexto
+            plana
+            vendedor={vendedorFilter}
+            cliente={clienteFilter}
+            onQuitarVendedor={() => { setVendedorFilter(''); setCurrentPage(1); }}
+            onQuitarCliente={() => { setClienteFilter(''); setCurrentPage(1); }}
+          />
+        ) : null}
+        busqueda={(
+          <FiltroBusqueda
+            value={searchTerm}
+            onChange={(texto) => { setSearchTerm(texto); setCurrentPage(1); }}
+            placeholder="Buscar por correlativo, cliente, vendedor, producto u OC..."
+            ariaLabel="Buscar por correlativo, cliente, vendedor, producto u OC"
+          />
+        )}
+        limpiar={<BotonLimpiar activos={searchTerm.trim() ? 1 : 0} onClick={() => { setSearchTerm(''); setCurrentPage(1); }} />}
+        acciones={(
+          <BotonExportar
+            etiqueta="Exportar movimientos"
+            titulo="Exportar todos los movimientos de las solicitudes filtradas a Excel"
+            onClick={exportarMovimientosSolicitudes}
+          />
+        )}
+        extremo={<ContadorResultados prefijo="Mostrando" total={solicitudesFiltradas.length} singular="solicitud" plural="solicitudes" />}
+      />
 
       {/* TABLA DE SOLICITUDES */}
       <div className="flex flex-col gap-3">
