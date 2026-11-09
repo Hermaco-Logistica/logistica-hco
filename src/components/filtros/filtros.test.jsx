@@ -8,6 +8,7 @@ import {
   FiltroPestanas, FiltroSegmentado, FiltroSelect
 } from './index';
 import { reiniciarCapasParaPruebas } from './capasAtras';
+import { recortePestanas } from './recortePestanas';
 import { BotonSeguimiento } from '../../views/analisis/components/FiltroSeguimiento';
 
 afterEach(async () => { cleanup(); vi.useRealTimers(); await new Promise((r) => setTimeout(r, 25)); reiniciarCapasParaPruebas(); window.history.replaceState(null, ''); });
@@ -288,12 +289,20 @@ describe('FiltroPestanas', () => {
       act(() => cb([{ isIntersecting: false, boundingClientRect: { top: 2000 } }]));
       expect(container.querySelector('[data-franja]').getAttribute('data-pegada')).toBe('false');
     });
-    it('la franja pegada lleva fondo opaco del token de fondo y ni sombra, ni borde, ni backdrop-filter; el contenedor y la barra no pintan nada', () => {
+    it('en reposo hay una tarjeta blanca (surface) con esquinas de 12 px y al pegarse se va; la franja pegada es blanca opaca sin sombra, borde ni backdrop-filter', () => {
       const { caja, lista, container } = montar();
+      const tarjeta = container.querySelector('[data-tarjeta]');
+      const franja = container.querySelector('[data-franja]');
+      expect(tarjeta.className).toMatch(/(^|\s)surface(\s|$)/);
+      expect(tarjeta.className).toContain('rounded-xl');
+      expect(tarjeta.className).toContain('opacity-100');
+      expect(tarjeta.className).toContain('data-[pegada=true]:opacity-0');
+      expect(tarjeta.className).not.toMatch(/bg-|shadow-|border|#[0-9a-f]{3,6}/i);
+      expect(franja.className).toMatch(/(^|\s)bg-surface(\s|$)/);
+      expect(franja.className).not.toMatch(/bg-background|bg-surface\/|shadow|border|backdrop|rounded|#[0-9a-f]{3,6}/i);
       act(() => cb([{ isIntersecting: false, boundingClientRect: { top: -30 } }]));
-      const franja = container.querySelector('[data-franja]').className;
-      expect(franja).toMatch(/(^|\s)bg-background(\s|$)/);
-      expect(franja).not.toMatch(/bg-background\/|shadow|border|backdrop|#[0-9a-f]{3,6}/i);
+      expect(tarjeta.getAttribute('data-pegada')).toBe('true');
+      expect(franja.getAttribute('data-pegada')).toBe('true');
       for (const el of [caja, lista]) expect(el.className).not.toMatch(/(^|\s)(bg-|shadow-|backdrop-|border)/);
       expect(container.querySelector('[data-capsula]')).toBeNull();
     });
@@ -310,14 +319,91 @@ describe('FiltroPestanas', () => {
     });
     it('la franja anima solo opacity y transform, con los tokens de animación, y sin desplazamiento con reduced motion', () => {
       const { container } = montar();
-      const c = container.querySelector('[data-franja]').className;
-      expect(c).toContain('transition-[opacity,transform]');
-      expect(c).toContain('data-[pegada=true]:duration-[var(--anim-abrir)]');
-      expect(c).toContain('data-[pegada=true]:ease-[var(--ease-abrir)]');
-      expect(c).toContain('duration-[var(--anim-cerrar)]');
-      expect(c).toContain('ease-[var(--ease-cerrar)]');
-      expect(c).toContain('motion-reduce:[transform:none]');
+      for (const sel of ['[data-franja]', '[data-tarjeta]']) {
+        const c = container.querySelector(sel).className;
+        expect(c).toContain('transition-[opacity,transform]');
+        expect(c).toContain('data-[pegada=true]:duration-[var(--anim-abrir)]');
+        expect(c).toContain('data-[pegada=true]:ease-[var(--ease-abrir)]');
+        expect(c).toContain('duration-[var(--anim-cerrar)]');
+        expect(c).toContain('ease-[var(--ease-cerrar)]');
+        expect(c).toContain('motion-reduce:[transform:none]');
+      }
     });
+    describe('carrusel: difuminado y flechas', () => {
+      const medidas = (el, { cw, sw, sl }) => {
+        Object.defineProperty(el, 'clientWidth', { value: cw, configurable: true });
+        Object.defineProperty(el, 'scrollWidth', { value: sw, configurable: true });
+        el.scrollLeft = sl;
+        act(() => { el.dispatchEvent(new Event('scroll', { bubbles: true })); });
+      };
+      const flecha = (container, lado) => container.querySelector(`[data-flecha="${lado}"]`);
+      it('sin desbordamiento no hay difuminado ni flechas', () => {
+        const { lista, container } = montar();
+        medidas(lista, { cw: 300, sw: 300, sl: 0 });
+        expect(lista.getAttribute('data-fade-izq')).toBe('false');
+        expect(lista.getAttribute('data-fade-der')).toBe('false');
+        expect(flecha(container, 'izq').getAttribute('data-visible')).toBe('false');
+        expect(flecha(container, 'der').getAttribute('data-visible')).toBe('false');
+      });
+      it('con desbordamiento al inicio: difuminado y flecha a la derecha; al desplazar aparece la izquierda y al llegar al final se invierten', () => {
+        const { lista, container } = montar();
+        medidas(lista, { cw: 300, sw: 700, sl: 0 });
+        expect(lista.getAttribute('data-fade-der')).toBe('true');
+        expect(lista.getAttribute('data-fade-izq')).toBe('false');
+        expect(flecha(container, 'der').getAttribute('data-visible')).toBe('true');
+        expect(flecha(container, 'izq').getAttribute('data-visible')).toBe('false');
+        medidas(lista, { cw: 300, sw: 700, sl: 150 });
+        expect(flecha(container, 'izq').getAttribute('data-visible')).toBe('true');
+        expect(flecha(container, 'der').getAttribute('data-visible')).toBe('true');
+        medidas(lista, { cw: 300, sw: 700, sl: 400 });
+        expect(lista.getAttribute('data-fade-der')).toBe('false');
+        expect(flecha(container, 'der').getAttribute('data-visible')).toBe('false');
+        expect(flecha(container, 'izq').getAttribute('data-visible')).toBe('true');
+      });
+      it('las flechas son solo apoyo visual (aria-hidden, tabIndex -1) y desplazan ~70 % del ancho visible, suave o instantáneo con reduced motion', () => {
+        const matchMediaOriginal = window.matchMedia;
+        const { lista, container } = montar();
+        const scrollBy = vi.fn();
+        lista.scrollBy = scrollBy;
+        medidas(lista, { cw: 300, sw: 700, sl: 0 });
+        const der = flecha(container, 'der');
+        expect(der.getAttribute('aria-hidden')).toBe('true');
+        expect(der.getAttribute('tabindex')).toBe('-1');
+        mm(false);
+        fireEvent.click(der);
+        expect(scrollBy).toHaveBeenLastCalledWith({ left: 210, behavior: 'smooth' });
+        mm(true);
+        fireEvent.click(der);
+        expect(scrollBy).toHaveBeenLastCalledWith({ left: 210, behavior: 'auto' });
+        fireEvent.click(flecha(container, 'izq'));
+        expect(scrollBy).toHaveBeenLastCalledWith({ left: -210, behavior: 'auto' });
+        window.matchMedia = matchMediaOriginal;
+      });
+      it('sin sticky no hay flechas', () => {
+        const r = render(<FiltroPestanas value="todas" onChange={() => {}} opciones={opciones} />);
+        expect(r.container.querySelector('[data-flecha]')).toBeNull();
+      });
+    });
+  });
+});
+
+describe('recortePestanas (la última pestaña asoma cortada a medias)', () => {
+  const t = (...w) => { let x = 4; return w.map((a) => { const r = { inicio: x, fin: x + a }; x += a + 4; return r; }); };
+  it('si todo cabe no recorta', () => { expect(recortePestanas(400, t(60, 80, 90), 300)).toBe(0); });
+  it('si el corte ya cae a mitad de una pestaña no recorta', () => { expect(recortePestanas(110, t(60, 80, 90), 400)).toBe(0); });
+  it('borde justo entre dos pestañas: corta la anterior a la mitad', () => {
+    const tabs = t(60, 80, 90);
+    expect(recortePestanas(tabs[1].fin, tabs, 400)).toBe(Math.round(tabs[1].fin - (tabs[1].inicio + 40)));
+  });
+  it('casi entera (más del 75 %): corta esa pestaña a la mitad', () => {
+    const tabs = t(60, 100, 90);
+    const ancho = tabs[1].inicio + 90;
+    expect(recortePestanas(ancho, tabs, 400)).toBe(Math.round(ancho - (tabs[1].inicio + 50)));
+  });
+  it('astilla (menos del 25 %): se corta la anterior a la mitad en vez de dejar una astilla', () => {
+    const tabs = t(60, 100, 90);
+    const ancho = tabs[1].inicio + 10;
+    expect(recortePestanas(ancho, tabs, 400)).toBe(Math.round(ancho - (tabs[0].inicio + 30)));
   });
 });
 

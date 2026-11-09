@@ -1,27 +1,58 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { recortePestanas } from './recortePestanas';
 
 const FADE = 24;
+const FADE_STICKY = 36;
 
-/** Franja de fondo de las pestañas pegadas (solo con `sticky`): opaca, del tono de la página. Entra al pegarse y sale al volver. */
-const FRANJA = 'pointer-events-none absolute inset-0 -z-10 bg-background opacity-0 [transform:translateY(-6px)] transition-[opacity,transform] duration-[var(--anim-cerrar)] ease-[var(--ease-cerrar)] data-[pegada=true]:opacity-100 data-[pegada=true]:duration-[var(--anim-abrir)] data-[pegada=true]:ease-[var(--ease-abrir)] data-[pegada=true]:[transform:translateY(0)] motion-reduce:[transform:none]';
+/** Capas de fondo de las pestañas sticky, detrás de la barra. Animan solo opacity y transform; el estado lo da data-pegada de la capa. */
+const TRANSICION = 'transition-[opacity,transform] duration-[var(--anim-cerrar)] ease-[var(--ease-cerrar)] data-[pegada=true]:duration-[var(--anim-abrir)] data-[pegada=true]:ease-[var(--ease-abrir)] motion-reduce:[transform:none]';
+/** Reposo: tarjeta blanca (surface: token de superficie + sombra de reposo del rol), alineada con el ancho del contenido. Se va al pegarse. */
+const TARJETA = `surface pointer-events-none absolute inset-y-0 inset-x-[var(--tf-pad-x)] -z-10 rounded-xl opacity-100 [transform:translateY(0)] data-[pegada=true]:opacity-0 data-[pegada=true]:[transform:translateY(-6px)] ${TRANSICION}`;
+/** Pegada: franja de ancho completo, blanca opaca (token de superficie), sin sombra ni borde. Entra al pegarse y sale al volver. */
+const FRANJA = `pointer-events-none absolute inset-0 -z-10 bg-surface opacity-0 [transform:translateY(-6px)] data-[pegada=true]:opacity-100 data-[pegada=true]:[transform:translateY(0)] ${TRANSICION}`;
+
+/** Flecha de apoyo del carrusel (solo ayuda visual: las pestañas ya se manejan con teclado). */
+const Flecha = ({ lado, visible, onClick }) => {
+  const Icono = lado === 'izq' ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      tabIndex={-1}
+      aria-hidden="true"
+      data-flecha={lado}
+      data-visible={visible}
+      onClick={onClick}
+      className={`absolute top-1/2 z-10 flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-surface text-slate-600 shadow-boton transition-opacity duration-[var(--anim-abrir)] ${lado === 'izq' ? 'left-[calc(var(--tf-pad-x)+6px)]' : 'right-[calc(var(--tf-pad-x)+6px)]'} ${visible ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+    >
+      <Icono size={14} strokeWidth={2.25} />
+    </button>
+  );
+};
 
 /**
  * Pestañas planas de estado. `opciones`: [{ id, label, cantidad?, punto? }] (`punto` es una clase de fondo para el puntito de color).
  * `onChange(id)`. `prefijoId` (por defecto "tab-") da el id de cada pestaña (`${prefijoId}${id}`) por si la vista ya los usa.
- * `sticky` las deja pegadas arriba del contenedor de scroll (`main`), a ras del borde inferior de la barra superior móvil. En reposo no
- * hay franja ni fondo: solo las pestañas sobre el fondo de la página. Al pegarse aparece una franja de ancho completo (`-mx-[var(--tf-pad-x)]`:
- * solo vale dentro de `main`, con gutter `tf-gutter-x`) con fondo OPACO del token `bg-background` (el mismo tono que la página, sin
- * transparencia, desenfoque, sombra ni borde). La franja es una capa detrás de las pestañas que entra con opacity y translateY(-6px → 0)
- * (--anim-abrir / --ease-abrir) y sale con --anim-cerrar / --ease-cerrar; solo opacity y transform; con prefers-reduced-motion no hay
- * desplazamiento. En sticky las pestañas son más compactas (h-8 con esquinas de 12 px, py-1 de la franja: 40 px en total) y la altura del contenedor es la misma
- * en reposo y pegado. El estado "pegada" (`data-pegada`) solo afecta a esa capa, no al layout. Se detecta con un IntersectionObserver sobre un
- * centinela de altura 0 justo antes de la barra (raíz: `main`, con su relleno superior sumado al margen de la raíz y restado de `top`:
- * `sticky` se pega al borde del relleno y no del contenedor).
- * Si no caben, se desplazan en horizontal sin barra visible y los bordes con más contenido se difuminan (degradado de 24 px).
+ * `sticky` las deja pegadas arriba del contenedor de scroll (`main`), a ras del borde inferior de la barra superior móvil. Ancho completo
+ * (`-mx-[var(--tf-pad-x)]`: solo vale dentro de `main`, con gutter `tf-gutter-x`) y 40 px de alto en reposo y pegadas (sin salto de layout).
+ *   - Reposo: las pestañas van dentro de una tarjeta `surface` (blanca, sombra de reposo del rol, esquinas de 12 px) alineada con el contenido.
+ *   - Pegada: la tarjeta se desvanece y entra una franja de ancho completo, blanca opaca (`bg-surface`), con esquinas rectas, sin sombra ni
+ *     borde, a ras del header. Las dos son capas detrás de las pestañas que animan solo opacity y translateY(-6px ↔ 0) con
+ *     --anim-abrir / --ease-abrir al pegarse y --anim-cerrar / --ease-cerrar al volver (sin desplazamiento con prefers-reduced-motion).
+ *   - Pestañas compactas (h-8, esquinas de 12 px): inactivas en texto plano con su punto; activa con la píldora oscura del rol.
+ *   - Carrusel: si no caben, difuminado de 36 px hacia el blanco en los bordes con más contenido (derecha al inicio, izquierda solo tras
+ *     desplazar), la última pestaña asoma cortada a medias (`recortePestanas`: se acorta el ancho visible solo si el corte cae casi en un borde),
+ *     y una flecha circular por lado (aria-hidden, tabIndex -1) que desplaza ~70 % del ancho visible (instantáneo con reduced motion).
+ *     Sin desbordamiento no hay difuminado ni flechas.
+ * El estado "pegada" se detecta con un IntersectionObserver sobre un centinela de altura 0 justo antes de la barra (raíz: `main`, con su
+ * relleno superior sumado al margen de la raíz y restado de `top`: `sticky` se pega al borde del relleno y no del contenedor).
+ * Sin `sticky`: tira con pastilla gris y degradado de 24 px, sin cambios.
  */
 export const FiltroPestanas = ({ opciones = [], value, onChange, ariaLabel, sticky = false, prefijoId = 'tab-', className = '' }) => {
   const ref = useRef(null);
   const [bordes, setBordes] = useState({ izq: false, der: false });
+  const [recorte, setRecorte] = useState(0);
+  const recorteRef = useRef(0);
   const medir = (el) => setBordes((a) => {
     const izq = el.scrollLeft > 2;
     const der = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
@@ -30,10 +61,21 @@ export const FiltroPestanas = ({ opciones = [], value, onChange, ariaLabel, stic
   useEffect(() => {
     const el = ref.current;
     if (!el || typeof ResizeObserver === 'undefined') return undefined;
-    const o = new ResizeObserver(() => medir(el));
+    // Con sticky, al inicio del recorrido se ajusta el ancho visible para que la última pestaña asome cortada a medias.
+    const ajustar = () => {
+      if (!sticky || el.scrollLeft > 2) return;
+      const base = el.getBoundingClientRect().left - el.scrollLeft;
+      const tabs = Array.from(el.querySelectorAll('[role="tab"]')).map((t) => {
+        const r = t.getBoundingClientRect();
+        return { inicio: r.left - base, fin: r.right - base };
+      });
+      const nuevo = recortePestanas(el.clientWidth + recorteRef.current, tabs, el.scrollWidth);
+      if (nuevo !== recorteRef.current) { recorteRef.current = nuevo; setRecorte(nuevo); }
+    };
+    const o = new ResizeObserver(() => { ajustar(); medir(el); });
     o.observe(el);
     return () => o.disconnect();
-  }, []);
+  }, [sticky, opciones.length]);
   const centinela = useRef(null);
   const [pegada, setPegada] = useState(false);
   const [relleno, setRelleno] = useState(0);
@@ -58,9 +100,16 @@ export const FiltroPestanas = ({ opciones = [], value, onChange, ariaLabel, stic
     o.observe(el);
     return () => o.disconnect();
   }, [sticky, relleno]);
+  const fade = sticky ? FADE_STICKY : FADE;
   const mascara = bordes.izq || bordes.der
-    ? `linear-gradient(to right, ${bordes.izq ? `transparent, #000 ${FADE}px` : '#000, #000'}, ${bordes.der ? `#000 calc(100% - ${FADE}px), transparent` : '#000, #000'})`
+    ? `linear-gradient(to right, ${bordes.izq ? `transparent, #000 ${fade}px` : '#000, #000'}, ${bordes.der ? `#000 calc(100% - ${fade}px), transparent` : '#000, #000'})`
     : undefined;
+  const desplazar = (sentido) => {
+    const el = ref.current;
+    if (!el) return;
+    const reducido = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollBy({ left: sentido * Math.round(el.clientWidth * 0.7), behavior: reducido ? 'auto' : 'smooth' });
+  };
   const barra = (
     <div
       ref={ref}
@@ -69,8 +118,8 @@ export const FiltroPestanas = ({ opciones = [], value, onChange, ariaLabel, stic
       data-fade-izq={bordes.izq}
       data-fade-der={bordes.der}
       onScroll={(e) => medir(e.currentTarget)}
-      style={mascara ? { maskImage: mascara, WebkitMaskImage: mascara } : undefined}
-      className={`flex w-full overflow-x-auto whitespace-nowrap [scrollbar-width:none] sm:w-auto [&::-webkit-scrollbar]:hidden ${sticky ? 'gap-1' : 'gap-1 rounded-xl bg-slate-100 p-1'} ${className}`}
+      style={{ ...(mascara ? { maskImage: mascara, WebkitMaskImage: mascara } : {}), ...(sticky && recorte ? { width: `calc(100% - ${recorte}px)` } : {}) }}
+      className={`flex w-full overflow-x-auto whitespace-nowrap [scrollbar-width:none] ${sticky ? '' : 'sm:w-auto'} [&::-webkit-scrollbar]:hidden ${sticky ? 'gap-1 px-1' : 'gap-1 rounded-xl bg-slate-100 p-1'} ${className}`}
     >
       {opciones.map((o) => {
         const activa = o.id === value;
@@ -98,8 +147,11 @@ export const FiltroPestanas = ({ opciones = [], value, onChange, ariaLabel, stic
       {/* Centinela: altura 0 y sin margen propio (m-0 gana al espaciado `space-y` del padre), así el layout no cambia. */}
       <div ref={centinela} aria-hidden="true" data-centinela className="m-0 h-0" />
       <div data-pegada={pegada} style={{ top: -relleno }} className="sticky z-20 -mx-[var(--tf-pad-x)] px-[var(--tf-pad-x)] py-1">
+        <div aria-hidden="true" data-tarjeta data-pegada={pegada} className={TARJETA} />
         <div aria-hidden="true" data-franja data-pegada={pegada} className={FRANJA} />
         {barra}
+        <Flecha lado="izq" visible={bordes.izq} onClick={() => desplazar(-1)} />
+        <Flecha lado="der" visible={bordes.der} onClick={() => desplazar(1)} />
       </div>
     </>
   );
