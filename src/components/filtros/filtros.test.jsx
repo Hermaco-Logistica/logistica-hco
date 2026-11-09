@@ -238,18 +238,18 @@ describe('FiltroPestanas', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Pendientes/ }));
     expect(onChange).toHaveBeenCalledWith('pend');
   });
-  it('la variante sticky envuelve la barra en un contenedor pegado arriba, de ancho completo y sin pastilla propia', () => {
+  it('la variante sticky envuelve la barra en un contenedor transparente de ancho completo, sin pastilla propia', () => {
     const { container } = render(<FiltroPestanas sticky value="todas" onChange={() => {}} opciones={opciones} />);
     const pegado = container.querySelector('[data-pegada]');
     expect(pegado.className).toContain('sticky');
-    expect(pegado.style.top).toBe('0px');
     expect(pegado.className).toContain('-mx-[var(--tf-pad-x)]');
+    expect(pegado.style.top).toBe('0px');
     expect(screen.getByRole('tablist').className).not.toContain('bg-slate-100');
   });
-  it('sin sticky no hay centinela ni capa de vidrio y la pastilla gris se mantiene', () => {
+  it('sin sticky no hay centinela ni cápsulas y la pastilla gris se mantiene', () => {
     const { container } = render(<FiltroPestanas value="todas" onChange={() => {}} opciones={opciones} />);
     expect(container.querySelector('[data-centinela]')).toBeNull();
-    expect(container.querySelector('[data-vidrio]')).toBeNull();
+    expect(container.querySelector('[data-capsula]')).toBeNull();
     expect(screen.getByRole('tablist').className).toContain('bg-slate-100');
   });
   describe('estado pegada (IntersectionObserver)', () => {
@@ -261,44 +261,72 @@ describe('FiltroPestanas', () => {
     afterEach(() => { delete window.IntersectionObserver; });
     const montar = () => {
       const r = render(<main style={{ paddingTop: '14px' }}><FiltroPestanas sticky value="todas" onChange={() => {}} opciones={opciones} /></main>);
-      return { vidrio: r.container.querySelector('[data-vidrio]'), caja: r.container.querySelector('[data-pegada]') };
+      return { caja: r.container.querySelector('div[data-pegada]'), lista: screen.getByRole('tablist'), container: r.container };
     };
     it('observa un centinela de altura 0 con raíz en main y suma el relleno superior', () => {
-      const { container } = render(<main style={{ paddingTop: '14px' }}><FiltroPestanas sticky value="todas" onChange={() => {}} opciones={opciones} /></main>);
-      const cent = container.querySelector('[data-centinela]');
-      expect(cent.className).toContain('h-0');
+      const { container, caja } = montar();
+      expect(container.querySelector('[data-centinela]').className).toContain('h-0');
       expect(opts.root).toBe(container.querySelector('main'));
       expect(opts.rootMargin).toBe('14px 0px 0px 0px');
-      expect(container.querySelector('[data-pegada]').style.top).toBe('-14px');
+      expect(caja.style.top).toBe('-14px');
     });
     it('empieza sin pegar, se marca al salir el centinela por arriba y vuelve a reposo', () => {
-      const { vidrio, caja } = montar();
+      const { caja, lista } = montar();
       expect(caja.getAttribute('data-pegada')).toBe('false');
-      expect(vidrio.getAttribute('data-pegada')).toBe('false');
+      expect(lista.getAttribute('data-pegada')).toBe('false');
       act(() => cb([{ isIntersecting: false, boundingClientRect: { top: -30 } }]));
-      expect(vidrio.getAttribute('data-pegada')).toBe('true');
+      expect(caja.getAttribute('data-pegada')).toBe('true');
+      expect(lista.getAttribute('data-pegada')).toBe('true');
       act(() => cb([{ isIntersecting: true, boundingClientRect: { top: 40 } }]));
-      expect(vidrio.getAttribute('data-pegada')).toBe('false');
+      expect(lista.getAttribute('data-pegada')).toBe('false');
     });
     it('el centinela por debajo del borde (no ha llegado) no cuenta como pegada', () => {
-      const { vidrio } = montar();
+      const { lista } = montar();
       act(() => cb([{ isIntersecting: false, boundingClientRect: { top: 2000 } }]));
-      expect(vidrio.getAttribute('data-pegada')).toBe('false');
+      expect(lista.getAttribute('data-pegada')).toBe('false');
     });
-    it('la capa de vidrio solo anima opacity y transform, con los tokens de animación, y sin desplazamiento con reduced motion', () => {
-      const { vidrio } = montar();
-      const c = vidrio.className;
+    it('al pegarse el contenedor no lleva fondo, sombra ni desenfoque; las cápsulas inactivas sí', () => {
+      const { caja, lista, container } = montar();
+      act(() => cb([{ isIntersecting: false, boundingClientRect: { top: -30 } }]));
+      for (const el of [caja, lista]) expect(el.className).not.toMatch(/(^|\s)(bg-|shadow-|backdrop-)/);
+      expect(container.querySelector('[data-vidrio]')).toBeNull();
+      const capsulas = container.querySelectorAll('[data-capsula]');
+      expect(capsulas.length).toBe(1);
+      const c = capsulas[0].className;
+      expect(c).toContain('backdrop-blur-md');
+      expect(c).toContain('backdrop-saturate-150');
+      expect(c).toContain('shadow-boton');
+      expect(c).toContain('supports-[backdrop-filter]:bg-background/70');
+      expect(c).toContain('bg-background/95');
+      expect(c).not.toMatch(/border|#[0-9a-f]{3,6}/i);
+    });
+    it('con las cápsulas visibles se quita la máscara de difuminado (rompería el desenfoque) y en reposo se mantiene', () => {
+      const { lista } = montar();
+      Object.defineProperty(lista, 'scrollWidth', { value: 300, configurable: true });
+      Object.defineProperty(lista, 'clientWidth', { value: 100, configurable: true });
+      act(() => { lista.dispatchEvent(new Event('scroll', { bubbles: true })); });
+      expect(lista.getAttribute('data-fade-der')).toBe('true');
+      expect(lista.getAttribute('data-mascara')).toBe('true');
+      act(() => cb([{ isIntersecting: false, boundingClientRect: { top: -30 } }]));
+      expect(lista.getAttribute('data-mascara')).toBe('false');
+      act(() => cb([{ isIntersecting: true, boundingClientRect: { top: 40 } }]));
+      expect(lista.getAttribute('data-mascara')).toBe('true');
+    });
+    it('la pestaña activa no lleva cápsula y conserva su estilo', () => {
+      montar();
+      expect(screen.getByRole('tab', { name: /Todas/ }).querySelector('[data-capsula]')).toBeNull();
+      expect(screen.getByRole('tab', { name: /Todas/ }).className).toContain('bg-slate-900');
+      expect(screen.getByRole('tab', { name: /Pendientes/ }).querySelector('[data-capsula]')).toBeTruthy();
+    });
+    it('las cápsulas animan solo opacity y transform, con los tokens de animación, y sin desplazamiento con reduced motion', () => {
+      const { container } = montar();
+      const c = container.querySelector('[data-capsula]').className;
       expect(c).toContain('transition-[opacity,transform]');
-      expect(c).toContain('duration-[var(--anim-abrir)]');
-      expect(c).toContain('ease-[var(--ease-abrir)]');
+      expect(c).toContain('group-data-[pegada=true]:duration-[var(--anim-abrir)]');
+      expect(c).toContain('group-data-[pegada=true]:ease-[var(--ease-abrir)]');
       expect(c).toContain('duration-[var(--anim-cerrar)]');
       expect(c).toContain('ease-[var(--ease-cerrar)]');
       expect(c).toContain('motion-reduce:[transform:none]');
-      expect(c).toContain('backdrop-blur-md');
-      expect(c).toContain('bg-background/95');
-      expect(c).toContain('supports-[backdrop-filter]:bg-background/65');
-      expect(c).toContain('shadow-menu');
-      expect(c).not.toMatch(/border|#[0-9a-f]{3,6}/i);
     });
   });
 });
