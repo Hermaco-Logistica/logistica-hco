@@ -19,7 +19,7 @@ import { MetricasRotativas } from './components/MetricasRotativas';
 import { FASES_SEGUIMIENTO } from '../../utils/faseSeguimiento';
 import { Etiqueta } from '../../components/Etiqueta';
 import { FiltroSegmentado } from '../../components/filtros';
-import { OPCIONES_PERIODO } from './opcionesPeriodo';
+import { OPCIONES_PERIODO, textoRangoCorto } from './opcionesPeriodo';
 
 /* ============================================================================
    PRIMITIVOS MÓVILES
@@ -665,6 +665,8 @@ export const AnalisisEstadisticasMobile = ({
   role,
   periodo,
   setPeriodo,
+  fechaInicio,
+  fechaFin,
   metricas,
   vendedorFilter = '',
   statsVendedores = [],
@@ -723,7 +725,10 @@ export const AnalisisEstadisticasMobile = ({
       />
 
       {/* SELECTOR DE PERÍODO */}
-      <MobilePeriodStrip periodo={periodo} setPeriodo={setPeriodo} onChange={resetPage} />
+      <div>
+        <MobilePeriodStrip periodo={periodo} setPeriodo={setPeriodo} onChange={resetPage} />
+        {periodo === 'custom' && <p data-linea-fechas className="mt-1.5 px-1 text-xs text-foreground-muted">{textoRangoCorto(fechaInicio, fechaFin)}</p>}
+      </div>
 
       {/* BARRA DE FILTROS (INYECTADA DESDE DESKTOP) */}
       {FiltrosComponent && FiltrosComponent}

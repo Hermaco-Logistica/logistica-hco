@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback, useDeferredVa
 import { pluralizar } from '../../utils/pluralizar';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
-import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroFechas, FiltroSegmentado, FiltroSelect } from '../../components/filtros';
+import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroFechas, FiltroSegmentado, FiltroSelect, ModalRango } from '../../components/filtros';
 import { AnalisisEstadisticasMobile } from './AnalisisEstadisticasMobile';
 import { OPCIONES_PERIODO } from './opcionesPeriodo';
 import { useNavigate, Navigate } from 'react-router-dom';
@@ -65,6 +65,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
   const [seguimientoFilter, setSeguimientoFilter] = useSessionState('analisis_seguimiento_filter', '');
   const [ordenarProductosPor, setOrdenarProductosPor] = useSessionState('analisis_top_prod_orden', 'veces'); // 'veces' | 'ganadas' | 'unidades' | 'anulaciones' | 'ventasPerdidas' | 'rechazos'
   const [pageVendedores, setPageVendedores] = useState(1);
+  const [rangoAbierto, setRangoAbierto] = useState(false);
   const itemsPerPageVendedores = 5;
 
   // Persistir última selección de período/rango en sessionStorage
@@ -643,13 +644,10 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
 
   // Barra de filtros única (escritorio y móvil): en móvil la búsqueda queda en la tarjeta y el resto va en la hoja inferior.
   // "Filtros (N)" cuenta lo que hay en la hoja (sin la búsqueda); "Limpiar (N)" cuenta todo.
-  const conteoFiltrosHoja = [
-    vendedorFilter,
-    resultadoFilter,
-    seguimientoFilter,
-    periodo === 'custom' && (fechaInicio || fechaFin)
-  ].filter(Boolean).length;
-  const conteoLimpiar = conteoFiltrosHoja + (clienteSearch ? 1 : 0);
+  // Las fechas del rango ya no viven en la hoja (en móvil se eligen en el modal; en escritorio van en línea en la barra): no cuentan en "Filtros (N)"
+  // pero sí en Limpiar, que las vacía.
+  const conteoFiltrosHoja = [vendedorFilter, resultadoFilter, seguimientoFilter].filter(Boolean).length;
+  const conteoLimpiar = conteoFiltrosHoja + (periodo === 'custom' && (fechaInicio || fechaFin) ? 1 : 0) + (clienteSearch ? 1 : 0);
 
   const renderBarra = () => {
     const hayAlertas = (periodo === 'custom' && !validacionRango.esValido) || (periodo === 'historico' && anioHistorico === 'todos');
@@ -684,7 +682,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         )}
         filtros={(
           <>
-            {periodo === 'custom' && (
+            {periodo === 'custom' && !isMobile && (
               <FiltroFechas
                 value={{ desde: fechaInicio, hasta: fechaFin }}
                 onChange={({ desde, hasta }) => { setFechaInicio(desde); setFechaFin(hasta); setPageVendedores(1); }}
@@ -744,12 +742,26 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
   };
 
   if (isMobile) {
+    // En móvil "Rango" abre el modal de fechas y no cambia el período hasta Aplicar (también si Rango ya estaba activo: se reabre con sus fechas).
+    const elegirPeriodoMovil = (valor) => {
+      if (valor === 'custom') setRangoAbierto(true);
+      else setPeriodo(valor);
+    };
+    const aplicarRango = ({ desde, hasta }) => {
+      setFechaInicio(desde);
+      setFechaFin(hasta);
+      setPeriodo('custom');
+      setPageVendedores(1);
+    };
     return (
+      <>
       <AnalisisEstadisticasMobile
         theme={theme}
         role={role}
         periodo={periodo}
-        setPeriodo={setPeriodo}
+        setPeriodo={elegirPeriodoMovil}
+        fechaInicio={fechaInicio}
+        fechaFin={fechaFin}
         metricas={metricas}
         vendedorFilter={vendedorFilter}
         statsVendedores={statsVendedores}
@@ -762,6 +774,8 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         resetPage={() => setPageVendedores(1)}
         FiltrosComponent={renderBarra()}
       />
+      {rangoAbierto && <ModalRango desde={fechaInicio} hasta={fechaFin} max={hoyElSalvador} onAplicar={aplicarRango} onCerrar={() => setRangoAbierto(false)} />}
+      </>
     );
   }
 

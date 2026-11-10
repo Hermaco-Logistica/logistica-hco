@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../../firebase', () => ({ auth: { currentUser: { uid: 'u1', email: 'yo@hermaco.net' } }, db: {} }));
@@ -12,6 +12,7 @@ import { AnalisisEstadisticas as Vista } from './AnalisisEstadisticas';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { RESULTADOS_SOLICITUD } from '../../utils/clasificarSolicitud';
 import { FASES_SEGUIMIENTO } from '../../utils/faseSeguimiento';
+import { reiniciarCapasParaPruebas } from '../../components/filtros/capasAtras';
 
 /**
  * Lógica de filtrado de Análisis y Estadísticas (período, vendedor, cliente, resultado, seguimiento, rango e histórico).
@@ -122,7 +123,8 @@ describe('Análisis y Estadísticas: filtrado', () => {
     expect([...grupo.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['7D', '30D', 'Este Mes', '90D', 'Este Año', 'Rango', 'Histórico']);
     expect(container.querySelector('[id^="periodo-btn-"]')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
-    expect(guardado('analisis_filtro_periodo').periodo).toBe('custom');
+    expect(screen.getByRole('dialog', { name: 'Rango de fechas' })).toBeTruthy();
+    expect(guardado('analisis_filtro_periodo').periodo).toBe('this_year');
     fireEvent.click(screen.getByRole('button', { name: 'Histórico' }));
     expect(guardado('analisis_filtro_periodo').periodo).toBe('historico');
   });
@@ -240,5 +242,171 @@ describe('Análisis y Estadísticas: rango de fechas', () => {
     expect(contar(container)).toBe(GOLD.rango);
     expect(screen.getByLabelText('Fecha desde').getAttribute('aria-invalid')).toBeNull();
     expect(alertaGeneral()).not.toContain('Incoherencia');
+  });
+});
+
+describe('Análisis y Estadísticas: Rango en un modal (móvil)', () => {
+  const esperar = (ms = 60) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
+  const modal = () => screen.getByRole('dialog', { name: 'Rango de fechas' });
+  const campo = (nombre) => within(modal()).getByLabelText(nombre);
+  const aplicar = () => within(modal()).getByRole('button', { name: 'Aplicar' });
+  const botonFiltros = () => screen.getByRole('button', { name: /^Filtros/ });
+  const limpiar = () => within(screen.getByRole('region', { name: 'Filtros' })).queryByRole('button', { name: /^Limpiar filtros/ });
+  const movil = (ancho = 400) => { window.innerWidth = ancho; mm(ancho < 768); };
+  const colapsar = () => {
+    // jsdom no mide: se simula una fila que no cabe para que el período colapse al desplegable
+    globalThis.ResizeObserver = class { constructor(f) { this.f = f; } observe() { this.f(); } disconnect() {} };
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get: () => 480 });
+    Object.defineProperty(Element.prototype, 'clientWidth', { configurable: true, get: () => 360 });
+  };
+  afterEach(async () => {
+    await new Promise((r) => setTimeout(r, 40));
+    reiniciarCapasParaPruebas();
+    delete globalThis.ResizeObserver;
+    delete HTMLElement.prototype.offsetWidth;
+    delete Element.prototype.clientWidth;
+  });
+
+  it('elegir Rango abre el modal y no cambia el período; Cancelar lo cierra sin cambiar nada', async () => {
+    movil();
+    montar('gerente', { periodo: 'this_year' });
+    fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
+    await esperar();
+    expect(guardado('analisis_filtro_periodo').periodo).toBe('this_year');
+    fireEvent.change(campo('Desde'), { target: { value: '2026-05-01' } });
+    fireEvent.click(within(modal()).getByRole('button', { name: 'Cancelar' }));
+    await esperar(260);
+    expect(screen.queryByRole('dialog', { name: 'Rango de fechas' })).toBeNull();
+    expect(guardado('analisis_filtro_periodo')).toMatchObject({ periodo: 'this_year', fechaInicio: '', fechaFin: '' });
+  });
+
+  it('Aplicar con fechas válidas cambia el período a Rango, guarda las fechas y muestra la línea corta', async () => {
+    movil();
+    const { container } = montar('gerente', { periodo: 'this_year' });
+    fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
+    await esperar();
+    expect(aplicar().disabled).toBe(true);
+    fireEvent.change(campo('Desde'), { target: { value: '2026-05-01' } });
+    fireEvent.change(campo('Hasta'), { target: { value: '2026-05-10' } });
+    expect(aplicar().disabled).toBe(false);
+    fireEvent.click(aplicar());
+    await esperar(260);
+    expect(screen.queryByRole('dialog', { name: 'Rango de fechas' })).toBeNull();
+    expect(guardado('analisis_filtro_periodo')).toMatchObject({ periodo: 'custom', fechaInicio: '2026-05-01', fechaFin: '2026-05-10' });
+    expect(container.querySelector('[data-linea-fechas]').textContent).toBe('01/05 – 10/05');
+  });
+
+  it('la línea de fechas solo aparece con Rango activo', () => {
+    movil();
+    const a = montar('gerente', { periodo: 'this_year' });
+    expect(a.container.querySelector('[data-linea-fechas]')).toBeNull();
+    cleanup();
+    const b = montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'] });
+    expect(b.container.querySelector('[data-linea-fechas]').textContent).toBe('01/05 – 10/05');
+  });
+
+  it('Aplicar queda deshabilitado con una fecha vacía, con desde posterior a hasta o con fecha futura, con el error en su campo', async () => {
+    movil();
+    montar('gerente', { periodo: 'this_year' });
+    fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
+    await esperar();
+    fireEvent.change(campo('Desde'), { target: { value: '2026-05-10' } });
+    expect(aplicar().disabled).toBe(true);
+    fireEvent.change(campo('Hasta'), { target: { value: '2026-05-01' } });
+    expect(aplicar().disabled).toBe(true);
+    expect(campo('Hasta').getAttribute('aria-invalid')).toBe('true');
+    expect(within(modal()).getByText(/Incoherencia entre fechas/)).toBeTruthy();
+    fireEvent.change(campo('Desde'), { target: { value: '2026-05-01' } });
+    fireEvent.change(campo('Hasta'), { target: { value: '2026-07-01' } });
+    expect(aplicar().disabled).toBe(true);
+    expect(campo('Hasta').getAttribute('aria-invalid')).toBe('true');
+    expect(guardado('analisis_filtro_periodo').periodo).toBe('this_year');
+  });
+
+  it('con Rango activo el modal abre con las fechas actuales; si no, con las últimas guardadas', async () => {
+    movil();
+    montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'] });
+    fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
+    await esperar();
+    expect(campo('Desde').value).toBe('2026-05-01');
+    expect(campo('Hasta').value).toBe('2026-05-10');
+    cleanup();
+    await esperar(60);
+    reiniciarCapasParaPruebas();
+    montar('gerente', { periodo: '30d', rango: ['2026-04-01', '2026-04-20'] });
+    fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
+    await esperar();
+    expect(campo('Desde').value).toBe('2026-04-01');
+    expect(campo('Hasta').value).toBe('2026-04-20');
+  });
+
+  it('reelegir Rango en el desplegable (ya activo) vuelve a abrir el modal', async () => {
+    movil();
+    colapsar();
+    montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'] });
+    fireEvent.click(screen.getByRole('combobox', { name: 'Período' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Rango' }));
+    await esperar();
+    expect(modal()).toBeTruthy();
+    expect(campo('Desde').value).toBe('2026-05-01');
+  });
+
+  it('el botón atrás del teléfono, la X y Escape cierran sin cambiar nada', async () => {
+    movil();
+    montar('gerente', { periodo: 'this_year' });
+    const abrir = async () => { fireEvent.click(screen.getByRole('button', { name: 'Rango' })); await esperar(); };
+    await abrir();
+    window.history.back();
+    await esperar(300);
+    expect(screen.queryByRole('dialog', { name: 'Rango de fechas' })).toBeNull();
+    await abrir();
+    fireEvent.click(within(modal()).getByRole('button', { name: 'Cerrar' }));
+    await esperar(300);
+    expect(screen.queryByRole('dialog', { name: 'Rango de fechas' })).toBeNull();
+    await abrir();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await esperar(300);
+    expect(screen.queryByRole('dialog', { name: 'Rango de fechas' })).toBeNull();
+    expect(guardado('analisis_filtro_periodo').periodo).toBe('this_year');
+  });
+
+  it('"Filtros (N)" no cuenta las fechas del rango pero Limpiar sí, y Limpiar las vacía como antes', async () => {
+    movil();
+    montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'] });
+    expect(botonFiltros().textContent).toBe('Filtros');
+    expect(limpiar().getAttribute('aria-label')).toBe('Limpiar filtros (1)');
+    fireEvent.click(botonFiltros());
+    await esperar();
+    expect(within(screen.getByRole('dialog')).queryByRole('button', { name: 'Filtrar por rango de fechas' })).toBeNull();
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: /^Ver / }));
+    await esperar(300);
+    fireEvent.click(limpiar());
+    await esperar();
+    expect(guardado('analisis_filtro_periodo')).toMatchObject({ periodo: 'custom', fechaInicio: '', fechaFin: '' });
+    expect(limpiar()).toBeNull();
+  });
+
+  it('entre 768 y 1023 px el modal sigue al layout móvil (no hay FiltroFechas en línea)', async () => {
+    movil(800);
+    const { container } = montar('gerente', { periodo: 'this_year' });
+    fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
+    await esperar();
+    expect(modal()).toBeTruthy();
+    fireEvent.change(campo('Desde'), { target: { value: '2026-05-01' } });
+    fireEvent.change(campo('Hasta'), { target: { value: '2026-05-10' } });
+    fireEvent.click(aplicar());
+    await esperar(300);
+    expect(screen.queryByLabelText('Fecha desde')).toBeNull();
+    expect(container.querySelector('[data-linea-fechas]').textContent).toBe('01/05 – 10/05');
+  });
+
+  it('en escritorio (1280 px) Rango sigue en línea en la barra y no hay modal ni línea corta', () => {
+    window.innerWidth = 1280; mm(false);
+    const { container } = montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'] });
+    expect(screen.getByLabelText('Fecha desde').value).toBe('2026-05-01');
+    expect(screen.getByLabelText('Fecha hasta').value).toBe('2026-05-10');
+    expect(container.querySelector('[data-linea-fechas]')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Histórico' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
