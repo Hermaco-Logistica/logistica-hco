@@ -90,6 +90,48 @@ describe('BarraFiltrosHistorial (escritorio)', () => {
   });
 });
 
+describe('BarraFiltrosHistorial: escritorio en dos filas y modalidad con 3 opciones', () => {
+  it('fila 1: búsqueda, Cliente y Estado; fila 2: Modalidad y seguimiento con Limpiar, Exportar y el contador en el bloque final', () => {
+    const { container } = montar(base({ activosLimpiar: 1, cliente: '', onCliente: vi.fn(), opcionesCliente: ['A', 'B'] }));
+    const filas = Array.from(container.querySelectorAll('section .space-y-2 > div'));
+    expect(filas).toHaveLength(2);
+    expect(within(filas[0]).getByPlaceholderText('Buscar por RFQ, producto...')).toBeTruthy();
+    expect(within(filas[0]).getByRole('combobox', { name: 'Filtrar por cliente' })).toBeTruthy();
+    expect(within(filas[0]).getByRole('combobox', { name: 'Filtrar por estado' })).toBeTruthy();
+    expect(within(filas[1]).getByRole('group', { name: 'Filtrar por modalidad' })).toBeTruthy();
+    expect(within(filas[1]).getByRole('button', { name: 'En seguimiento' })).toBeTruthy();
+    const bloque = filas[1].querySelector('[data-bloque]');
+    expect(bloque.className).toContain('w-[27.5rem]');
+    expect(within(bloque).getByRole('button', { name: /^Limpiar filtros/ })).toBeTruthy();
+    expect(within(bloque).getByRole('button', { name: /Exportar movimientos/ })).toBeTruthy();
+    expect(bloque.textContent).toContain('Mostrando 5 movimientos');
+  });
+
+  it('con soloAnulados la fila 1 no lleva Estado y la 2 no lleva seguimiento', () => {
+    const { container } = montar(base({ soloAnulados: true }));
+    const filas = Array.from(container.querySelectorAll('section .space-y-2 > div'));
+    expect(within(filas[0]).queryByRole('combobox', { name: 'Filtrar por estado' })).toBeNull();
+    expect(within(filas[1]).queryByRole('button', { name: 'En seguimiento' })).toBeNull();
+    expect(within(filas[1]).getByRole('group', { name: 'Filtrar por modalidad' })).toBeTruthy();
+  });
+
+  it('con 3 modalidades (4 opciones con "Todas") Modalidad pasa a select y no hay segmentado que se superponga', () => {
+    const p = base({ opcionesModalidad: ['Aéreo', 'Marítimo', 'No asignada'] });
+    montar(p);
+    expect(screen.queryByRole('group', { name: 'Filtrar por modalidad' })).toBeNull();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Filtrar por modalidad' }));
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['Todas', 'Aéreo', 'Marítimo', 'No asignada']);
+    fireEvent.click(screen.getByRole('option', { name: 'No asignada' }));
+    expect(p.onModalidad).toHaveBeenCalledWith('No asignada');
+  });
+
+  it('con 2 modalidades sigue el segmentado (Todas, Aéreo, Marítimo)', () => {
+    montar(base());
+    expect(screen.getByRole('group', { name: 'Filtrar por modalidad' })).toBeTruthy();
+    expect(screen.queryByRole('combobox', { name: 'Filtrar por modalidad' })).toBeNull();
+  });
+});
+
 describe('BarraFiltrosHistorial (móvil)', () => {
   it('"Filtros (N)" solo con filtrosActivos > 0; los controles viven en la hoja y la búsqueda en la barra', async () => {
     mm(true);
@@ -120,6 +162,6 @@ describe('BarraFiltrosHistorial (móvil)', () => {
 describe('BarraFiltrosHistorial: reglas de estilo', () => {
   it('el archivo no escribe colores, bordes ni sombras a mano', () => {
     const fuente = readFileSync('src/views/analisis/components/BarraFiltrosHistorial.jsx', 'utf8');
-    expect(fuente).not.toMatch(/className=|slate-|border|shadow|#[0-9a-f]{3,6}\b/i);
+    expect(fuente).not.toMatch(/slate-|border|shadow|(^|[\s"'`:])(bg|text|ring)-|#[0-9a-f]{3,6}\b/i);
   });
 });
