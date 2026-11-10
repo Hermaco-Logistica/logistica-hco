@@ -881,7 +881,8 @@ export const DashboardPedidos = ({ role }) => {
       {/* FILTROS: un solo marcado; en móvil los controles viven en la hoja inferior de BarraFiltros */}
       <BarraFiltros
         className="mb-4 md:mb-8"
-        filtrosActivos={filtrosActivosCount + (searchItemRef ? 1 : 0)}
+        busquedaEnBarraMovil
+        filtrosActivos={filtrosActivosCount}
         resultados={filteredItems.length}
         busqueda={(
           <FiltroBusqueda
