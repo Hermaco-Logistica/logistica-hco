@@ -201,7 +201,7 @@ const repartir = (rejilla) => {
  * número como distintivo); el contador va debajo en una línea de altura fija (h-4). La tarjeta no cambia de altura al aparecer Limpiar.
  * La hoja repite "Limpiar (N)" en su cabecera con el mismo número.
  * `filas` (alternativa a `filtros`, solo escritorio): arreglo de filas, cada una un arreglo de nodos, apiladas con su ancho natural (sin
- * rejilla que estire); `limpiar` va al final de la última fila con su hueco siempre reservado. En móvil se aplanan dentro de la hoja.
+ * rejilla que estire); `limpiar`, `acciones` y `extremo` van al final de la última fila con su hueco siempre reservado (440 px con `acciones`, 288 sin ellas). En móvil se aplanan dentro de la hoja.
  * `busquedaAparte` (con `filas`): en escritorio la búsqueda es una segunda tarjeta debajo (campo a ancho completo y, a la derecha, el
  * `extremo`); en móvil no cambia nada.
  */
@@ -272,8 +272,8 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, filas, busquedaApa
           {filas.map((fila, i) => (
             <div key={i} className="flex flex-wrap items-center gap-2">
               {fila.map((nodo, k) => <React.Fragment key={k}>{nodo}</React.Fragment>)}
-              {i === filas.length - 1 && (limpiar || extremo) && (
-                <div data-bloque className={`ml-auto flex ${anchoBloque} shrink-0 items-center justify-end gap-2`}>{limpiar}{!busquedaAparte && extremo}</div>
+              {i === filas.length - 1 && (limpiar || acciones || extremo) && (
+                <div data-bloque className={`ml-auto flex ${acciones ? 'w-[27.5rem]' : anchoBloque} shrink-0 items-center justify-end gap-2`}>{limpiar}{acciones}{!busquedaAparte && extremo}</div>
               )}
             </div>
           ))}

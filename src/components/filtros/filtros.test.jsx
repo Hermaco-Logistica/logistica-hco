@@ -1117,3 +1117,32 @@ describe('Exportar en la barra móvil cuando la hoja no tiene filtros', () => {
     expect(screen.queryByRole('button', { name: /^Filtros/ })).toBeNull();
   });
 });
+
+describe('BarraFiltros con filas: acciones en el bloque final (escritorio)', () => {
+  const fila = [[<FiltroSelect key="e" value="" onChange={() => {}} opciones={['A']} prefijo="E:" ariaLabel="estado" />]];
+  const exportar = <BotonExportar onClick={() => {}} etiqueta="Exportar movimientos" />;
+  it('con acciones, Exportar va en el bloque final (440 px) antes del contador', () => {
+    mm(false);
+    const { container } = render(<BarraFiltros filas={fila} limpiar={<BotonLimpiar activos={1} onClick={() => {}} />} acciones={exportar} extremo={<ContadorResultados prefijo="Mostrando" total={3} singular="movimiento" plural="movimientos" />} />);
+    const bloque = container.querySelector('[data-bloque]');
+    expect(bloque.className).toContain('w-[27.5rem]');
+    const hijos = Array.from(bloque.children).map((e) => e.textContent);
+    expect(hijos[0]).toContain('Limpiar filtros');
+    expect(hijos[1]).toContain('Exportar movimientos');
+    expect(hijos[2]).toContain('Mostrando 3 movimientos');
+  });
+  it('sin acciones el bloque conserva su ancho de 288 px', () => {
+    mm(false);
+    const { container } = render(<BarraFiltros filas={fila} limpiar={<BotonLimpiar activos={1} onClick={() => {}} />} extremo={<ContadorResultados total={3} />} />);
+    const bloque = container.querySelector('[data-bloque]');
+    expect(bloque.className).toContain('w-72');
+    expect(bloque.className).not.toContain('w-[27.5rem]');
+  });
+  it('en móvil las acciones siguen en la hoja y no en la barra', () => {
+    mm(true);
+    render(<BarraFiltros filas={fila} acciones={exportar} />);
+    expect(screen.queryByRole('button', { name: /Exportar movimientos/ })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^Filtros/ }));
+    expect(within(screen.getByRole('dialog')).getByText('Exportar movimientos')).toBeTruthy();
+  });
+});
