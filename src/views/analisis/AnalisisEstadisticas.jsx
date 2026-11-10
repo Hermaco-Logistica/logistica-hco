@@ -4,6 +4,7 @@ import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroFechas, FiltroSegmentado, FiltroSelect } from '../../components/filtros';
 import { AnalisisEstadisticasMobile } from './AnalisisEstadisticasMobile';
+import { OPCIONES_PERIODO } from './opcionesPeriodo';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { 
   TrendingUp, 
@@ -40,16 +41,6 @@ import { clasificarSolicitud, etiquetaResultadoSolicitud, RESULTADOS_SOLICITUD }
 import { MetricasRotativas } from './components/MetricasRotativas';
 import { FASES_SEGUIMIENTO, obtenerFaseSolicitudCacheada, calcularMontoItemsSeguimiento } from '../../utils/faseSeguimiento';
 import { Etiqueta } from '../../components/Etiqueta';
-
-const OPCIONES_PERIODO = [
-  { value: '7d', label: '7D' },
-  { value: '30d', label: '30D' },
-  { value: 'this_month', label: 'Este Mes' },
-  { value: '90d', label: '90D' },
-  { value: 'this_year', label: 'Este Año' },
-  { value: 'custom', label: 'Rango' },
-  { value: 'historico', label: 'Histórico' }
-];
 
 export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useInView, useCountUp } from '../../hooks/useInView';
@@ -18,6 +18,8 @@ import {
 import { MetricasRotativas } from './components/MetricasRotativas';
 import { FASES_SEGUIMIENTO } from '../../utils/faseSeguimiento';
 import { Etiqueta } from '../../components/Etiqueta';
+import { FiltroSegmentado } from '../../components/filtros';
+import { OPCIONES_PERIODO } from './opcionesPeriodo';
 
 /* ============================================================================
    PRIMITIVOS MÓVILES
@@ -121,41 +123,18 @@ function ListRow({ initials, title, subtitle, badgeValue, badgeTono, onClick, in
    SECCIONES
    ========================================================================== */
 
-/** 1. Selector de período — tira de píldoras horizontal (reemplaza el segmented control de escritorio) */
+/** 1. Selector de período: el mismo FiltroSegmentado que en escritorio (mismas opciones y rótulos); en móvil no cabe y colapsa a un desplegable "Período: Este Año". */
 function MobilePeriodStrip({ periodo, setPeriodo, onChange }) {
-  const opciones = [
-    { id: '7d', label: '7D' },
-    { id: '30d', label: '30D' },
-    { id: 'this_month', label: 'Mes' },
-    { id: '90d', label: '90D' },
-    { id: 'this_year', label: 'Año' },
-    { id: 'custom', label: 'Rango' },
-    { id: 'historico', label: 'Histórico' }
-  ];
-  useEffect(() => {
-    const btn = document.getElementById(`periodo-btn-${periodo}`);
-    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  }, [periodo]);
-
   return (
-    <div className="flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden -mx-4 px-4 pb-1">
-      {opciones.map((p) => (
-        <button
-          key={p.id}
-          id={`periodo-btn-${p.id}`}
-          type="button"
-          aria-pressed={periodo === p.id}
-          onClick={() => { setPeriodo(p.id); onChange?.(); }}
-          className={`shrink-0 px-3.5 py-2 rounded-full text-xs transition-colors duration-[var(--anim-cerrar)] ease-[var(--ease-cerrar)] ${
-            periodo === p.id
-              ? 'bg-segmento-activo font-semibold text-primary-soft shadow-xs'
-              : 'bg-white font-medium text-slate-600 border border-slate-200/80'
-          }`}
-        >
-          {p.label}
-        </button>
-      ))}
-    </div>
+    <FiltroSegmentado
+      colapsable
+      sinTodos
+      prefijo="Período:"
+      ariaLabel="Período"
+      opciones={OPCIONES_PERIODO}
+      value={periodo}
+      onChange={(valor) => { setPeriodo(valor); onChange?.(); }}
+    />
   );
 }
 

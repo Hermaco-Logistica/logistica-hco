@@ -115,6 +115,42 @@ describe('Análisis y Estadísticas: filtrado', () => {
     }
   });
 
+  it('móvil: el período usa el mismo FiltroSegmentado y los mismos rótulos que escritorio (sin tira de píldoras)', () => {
+    window.innerWidth = 400; mm(true);
+    const { container } = montar('gerente', { periodo: 'this_year' });
+    const grupo = screen.getByRole('group', { name: 'Período' });
+    expect([...grupo.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['7D', '30D', 'Este Mes', '90D', 'Este Año', 'Rango', 'Histórico']);
+    expect(container.querySelector('[id^="periodo-btn-"]')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
+    expect(guardado('analisis_filtro_periodo').periodo).toBe('custom');
+    fireEvent.click(screen.getByRole('button', { name: 'Histórico' }));
+    expect(guardado('analisis_filtro_periodo').periodo).toBe('historico');
+  });
+
+  it('móvil: si la fila no cabe, el período colapsa a "Período: Este Año" con las mismas opciones y la misma clave', () => {
+    window.innerWidth = 400; mm(true);
+    const ro = globalThis.ResizeObserver;
+    const ow = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
+    const cw = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
+    globalThis.ResizeObserver = class { constructor(f) { this.f = f; } observe() { this.f(); } disconnect() {} };
+    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get: () => 480 });
+    Object.defineProperty(Element.prototype, 'clientWidth', { configurable: true, get: () => 360 });
+    try {
+      montar('gerente', { periodo: 'this_year' });
+      const combo = screen.getByRole('combobox', { name: 'Período' });
+      expect(combo.textContent).toContain('Período:');
+      expect(combo.textContent).toContain('Este Año');
+      fireEvent.click(combo);
+      expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['7D', '30D', 'Este Mes', '90D', 'Este Año', 'Rango', 'Histórico']);
+      fireEvent.click(screen.getByRole('option', { name: 'Este Mes' }));
+      expect(guardado('analisis_filtro_periodo').periodo).toBe('this_month');
+    } finally {
+      globalThis.ResizeObserver = ro;
+      if (ow) Object.defineProperty(HTMLElement.prototype, 'offsetWidth', ow); else delete HTMLElement.prototype.offsetWidth;
+      if (cw) Object.defineProperty(Element.prototype, 'clientWidth', cw); else delete Element.prototype.clientWidth;
+    }
+  });
+
   it('cada filtro persiste en su clave analisis_*; el período en analisis_filtro_periodo', () => {
     const { container } = montar('gerente', { periodo: 'historico', anio: 'todos' });
     fireEvent.click(screen.getByRole('combobox', { name: 'Filtrar por vendedor' }));
