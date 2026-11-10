@@ -8,8 +8,8 @@ Componentes de `src/components/filtros/` (import: `from '../components/filtros'`
 | `BarraFiltros` | `encabezado`, `busqueda`, `filtros`, `limpiar`, `extremo`, `filtrosActivos`, `resultados`, `busquedaEnBarraMovil`, `className` | — |
 | `FiltroBusqueda` | `value`, `onChange`, `placeholder`, `ariaLabel` | texto |
 | `FiltroSelect` | `value` (`''` = "Todos"), `onChange`, `opciones` (`string` o `{value,label}`), `prefijo`, `etiqueta`, `etiquetaTodos`, `ariaLabel` | valor |
-| `FiltroSegmentado` | `opciones [{value,label}]`, `value`, `onChange`, `ariaLabel`, `etiqueta`, `valorNeutro` | valor |
-| `FiltroPestanas` | `opciones [{id,label,cantidad?,punto?}]`, `value`, `onChange`, `sticky`, `prefijoId`, `ariaLabel` (ver «Pestañas pegadas») | id |
+| `FiltroSegmentado` | `opciones [{value,label}]`, `value`, `onChange`, `ariaLabel`, `etiqueta`, `valorNeutro`, `carrusel` (ver «Carrusel horizontal») | valor |
+| `FiltroPestanas` | `opciones [{id,label,cantidad?,punto?}]`, `value`, `onChange`, `sticky`, `recortar`, `flechas`, `prefijoId`, `ariaLabel` (ver «Pestañas pegadas» y «Carrusel horizontal») | id |
 | `FiltroConmutador` | `activo`, `onChange`, `etiqueta`, `titulo` | booleano nuevo |
 | `BotonLimpiar` | `activos`, `onClick`, `etiqueta` | — (no se pinta si `activos` ≤ 0) |
 | `ContadorResultados` | `total`, `filtrados`, `unidad` | — |
@@ -72,6 +72,14 @@ La lista desplegada del `<select>` la dibuja el navegador y no se puede estiliza
 - **A ras del header:** `sticky` se pega al borde del *relleno* de `main` (14 px en móvil, 32 px en escritorio), no al del contenedor. El componente mide `padding-top` de `main` (y lo vuelve a medir al redimensionar) y lo resta de `top`.
 - **Detección:** `IntersectionObserver` sobre un centinela de altura 0 y sin margen (`m-0`, no altera el `space-y` del padre) justo antes de la barra; raíz `main`, `rootMargin` = relleno superior. Sin `IntersectionObserver` no hay estado «pegada». `data-pegada` solo cambia las capas, nunca el layout.
 - Los ids (`prefijoId`), el `scrollIntoView` de la pestaña activa y el desplazamiento horizontal no cambian.
+
+## Carrusel horizontal (`useCarrusel`, `FlechaCarrusel`, `FiltroSegmentado carrusel`)
+
+La lógica del carrusel de `FiltroPestanas` se extrajo a `useCarrusel.js` y la flecha a `FlechaCarrusel.jsx`, para compartirlas sin duplicar. `FiltroPestanas` (Logística, Solicitudes, Prórrogas) no cambia de aspecto ni de comportamiento (se comprobó el HTML y los estilos calculados antes y después, a 393 px).
+- **`useCarrusel({ recortar, fade, cantidad, selectorItems, valorActivo, enVista })`** devuelve `{ ref, bordes, estilo, desplazar, medir }` y no pinta nada: mide el desbordamiento (`bordes.izq/der`, tolerancia de 2 px, al desplazar y al redimensionar), arma la máscara de difuminado de `fade` px y, con `recortar`, el ancho acortado (`recortePestanas`) para que la última opción asome cortada a medias; `desplazar(±1)` mueve ~70 % del ancho visible (instantáneo con movimiento reducido). Con `enVista` y `valorActivo`, centra la opción activa con `scrollIntoView({ inline: 'center' })` al montar y al cambiar; las vistas que ya lo hacen por su cuenta (Logística, Solicitudes, Prórrogas) no lo activan.
+- **`FlechaCarrusel`** (`size-6`, `rounded-full`, `bg-surface`, `shadow-boton`, `aria-hidden`, `tabIndex -1`) se coloca con la prop `posicion` (clases completas escritas por quien la usa).
+- **`FiltroPestanas`:** `recortar` y `flechas` valen por defecto lo mismo que `sticky`, pero son independientes: con `flechas` sin `sticky` las flechas van dentro de la tira (`left-1.5` / `right-1.5`).
+- **`FiltroSegmentado carrusel`** (solo en la barra; excluyente con `colapsable`, que se ignora): la pista gris (`slate-100`, `rounded-xl`, `h-11` en móvil y `md:h-9`) lleva un scroller con las opciones en texto plano y la activa como píldora oscura del rol (las mismas clases que el segmentado normal), difuminado de 24 px, última opción cortada a medias, flechas dentro de la pista (`left-1.5` / `right-1.5`), sin barra de desplazamiento (`scrollbar-width: none`, que Chrome respeta también en modo dispositivo) y la opción activa centrada al montar y al elegirla. `prefijo` no se muestra.
 
 ## Estados de un campo (`estilosCampo.js`)
 | Estado | Fondo | Borde | Texto / icono |

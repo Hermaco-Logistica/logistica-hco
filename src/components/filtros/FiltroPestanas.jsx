@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { recortePestanas } from './recortePestanas';
+import { FlechaCarrusel } from './FlechaCarrusel';
+import { useCarrusel } from './useCarrusel';
 
 const FADE = 24;
 const FADE_STICKY = 36;
@@ -11,24 +11,6 @@ const TRANSICION = 'transition-[opacity,transform] duration-[var(--anim-cerrar)]
 const TARJETA = `surface pointer-events-none absolute inset-y-0 inset-x-[var(--tf-pad-x)] -z-10 rounded-xl opacity-100 [transform:translateY(0)] data-[pegada=true]:opacity-0 data-[pegada=true]:[transform:translateY(-6px)] ${TRANSICION}`;
 /** Pegada: franja de ancho completo, blanca opaca (token de superficie), sin sombra ni borde. Entra al pegarse y sale al volver. */
 const FRANJA = `pointer-events-none absolute inset-0 -z-10 bg-surface opacity-0 [transform:translateY(-6px)] data-[pegada=true]:opacity-100 data-[pegada=true]:[transform:translateY(0)] ${TRANSICION}`;
-
-/** Flecha de apoyo del carrusel (solo ayuda visual: las pestañas ya se manejan con teclado). */
-const Flecha = ({ lado, visible, onClick }) => {
-  const Icono = lado === 'izq' ? ChevronLeft : ChevronRight;
-  return (
-    <button
-      type="button"
-      tabIndex={-1}
-      aria-hidden="true"
-      data-flecha={lado}
-      data-visible={visible}
-      onClick={onClick}
-      className={`absolute top-1/2 z-10 flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full bg-surface text-slate-600 shadow-boton transition-opacity duration-[var(--anim-abrir)] ${lado === 'izq' ? 'left-[calc(var(--tf-pad-x)+6px)]' : 'right-[calc(var(--tf-pad-x)+6px)]'} ${visible ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
-    >
-      <Icono size={14} strokeWidth={2.25} />
-    </button>
-  );
-};
 
 /**
  * Pestañas planas de estado. `opciones`: [{ id, label, cantidad?, punto? }] (`punto` es una clase de fondo para el puntito de color).
@@ -47,35 +29,11 @@ const Flecha = ({ lado, visible, onClick }) => {
  * El estado "pegada" se detecta con un IntersectionObserver sobre un centinela de altura 0 justo antes de la barra (raíz: `main`, con su
  * relleno superior sumado al margen de la raíz y restado de `top`: `sticky` se pega al borde del relleno y no del contenedor).
  * Sin `sticky`: tira con pastilla gris y degradado de 24 px, sin cambios.
+ * `recortar` (por defecto igual que `sticky`) activa el recorte de la última opción y `flechas` (también por defecto `sticky`) pinta las
+ * flechas: las dos son independientes de `sticky`. La lógica del carrusel vive en `useCarrusel` y la flecha en `FlechaCarrusel`.
  */
-export const FiltroPestanas = ({ opciones = [], value, onChange, ariaLabel, sticky = false, prefijoId = 'tab-', className = '' }) => {
-  const ref = useRef(null);
-  const [bordes, setBordes] = useState({ izq: false, der: false });
-  const [recorte, setRecorte] = useState(0);
-  const recorteRef = useRef(0);
-  const medir = (el) => setBordes((a) => {
-    const izq = el.scrollLeft > 2;
-    const der = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
-    return a.izq === izq && a.der === der ? a : { izq, der };
-  });
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof ResizeObserver === 'undefined') return undefined;
-    // Con sticky, al inicio del recorrido se ajusta el ancho visible para que la última pestaña asome cortada a medias.
-    const ajustar = () => {
-      if (!sticky || el.scrollLeft > 2) return;
-      const base = el.getBoundingClientRect().left - el.scrollLeft;
-      const tabs = Array.from(el.querySelectorAll('[role="tab"]')).map((t) => {
-        const r = t.getBoundingClientRect();
-        return { inicio: r.left - base, fin: r.right - base };
-      });
-      const nuevo = recortePestanas(el.clientWidth + recorteRef.current, tabs, el.scrollWidth);
-      if (nuevo !== recorteRef.current) { recorteRef.current = nuevo; setRecorte(nuevo); }
-    };
-    const o = new ResizeObserver(() => { ajustar(); medir(el); });
-    o.observe(el);
-    return () => o.disconnect();
-  }, [sticky, opciones.length]);
+export const FiltroPestanas = ({ opciones = [], value, onChange, ariaLabel, sticky = false, recortar = sticky, flechas = sticky, prefijoId = 'tab-', className = '' }) => {
+  const { ref, bordes, estilo, desplazar, medir } = useCarrusel({ recortar, fade: sticky ? FADE_STICKY : FADE, cantidad: opciones.length });
   const centinela = useRef(null);
   const [pegada, setPegada] = useState(false);
   const [relleno, setRelleno] = useState(0);
@@ -100,16 +58,6 @@ export const FiltroPestanas = ({ opciones = [], value, onChange, ariaLabel, stic
     o.observe(el);
     return () => o.disconnect();
   }, [sticky, relleno]);
-  const fade = sticky ? FADE_STICKY : FADE;
-  const mascara = bordes.izq || bordes.der
-    ? `linear-gradient(to right, ${bordes.izq ? `transparent, #000 ${fade}px` : '#000, #000'}, ${bordes.der ? `#000 calc(100% - ${fade}px), transparent` : '#000, #000'})`
-    : undefined;
-  const desplazar = (sentido) => {
-    const el = ref.current;
-    if (!el) return;
-    const reducido = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    el.scrollBy({ left: sentido * Math.round(el.clientWidth * 0.7), behavior: reducido ? 'auto' : 'smooth' });
-  };
   const barra = (
     <div
       ref={ref}
@@ -118,7 +66,7 @@ export const FiltroPestanas = ({ opciones = [], value, onChange, ariaLabel, stic
       data-fade-izq={bordes.izq}
       data-fade-der={bordes.der}
       onScroll={(e) => medir(e.currentTarget)}
-      style={{ ...(mascara ? { maskImage: mascara, WebkitMaskImage: mascara } : {}), ...(sticky && recorte ? { width: `calc(100% - ${recorte}px)` } : {}) }}
+      style={estilo}
       className={`flex w-full overflow-x-auto whitespace-nowrap [scrollbar-width:none] ${sticky ? '' : 'sm:w-auto'} [&::-webkit-scrollbar]:hidden ${sticky ? 'gap-1 px-1' : 'gap-1 rounded-xl bg-slate-100 p-1'} ${className}`}
     >
       {opciones.map((o) => {
@@ -141,7 +89,17 @@ export const FiltroPestanas = ({ opciones = [], value, onChange, ariaLabel, stic
       })}
     </div>
   );
-  if (!sticky) return barra;
+  if (!sticky) {
+    if (!flechas) return barra;
+    // Sin sticky pero con flechas: la tira va en un contenedor posicionado y las flechas quedan dentro de ella.
+    return (
+      <div className="relative">
+        {barra}
+        <FlechaCarrusel lado="izq" visible={bordes.izq} onClick={() => desplazar(-1)} posicion="left-1.5" />
+        <FlechaCarrusel lado="der" visible={bordes.der} onClick={() => desplazar(1)} posicion="right-1.5" />
+      </div>
+    );
+  }
   return (
     <>
       {/* Centinela: altura 0 y sin margen propio (m-0 gana al espaciado `space-y` del padre), así el layout no cambia. */}
@@ -150,8 +108,8 @@ export const FiltroPestanas = ({ opciones = [], value, onChange, ariaLabel, stic
         <div aria-hidden="true" data-tarjeta data-pegada={pegada} className={TARJETA} />
         <div aria-hidden="true" data-franja data-pegada={pegada} className={FRANJA} />
         {barra}
-        <Flecha lado="izq" visible={bordes.izq} onClick={() => desplazar(-1)} />
-        <Flecha lado="der" visible={bordes.der} onClick={() => desplazar(1)} />
+        {flechas && <FlechaCarrusel lado="izq" visible={bordes.izq} onClick={() => desplazar(-1)} posicion="left-[calc(var(--tf-pad-x)+6px)]" />}
+        {flechas && <FlechaCarrusel lado="der" visible={bordes.der} onClick={() => desplazar(1)} posicion="right-[calc(var(--tf-pad-x)+6px)]" />}
       </div>
     </>
   );
