@@ -625,7 +625,8 @@ export const GestionOC = ({ readOnly = false }) => {
       {/* FILTROS: un solo marcado; en móvil los controles viven en la hoja inferior de BarraFiltros */}
       <BarraFiltros
         className="mb-4 md:mb-6"
-        filtrosActivos={activeFiltersCount + (searchOCNum ? 1 : 0)}
+        busquedaEnBarraMovil
+        filtrosActivos={activeFiltersCount}
         resultados={filteredOrdenes.length}
         busqueda={(
           <FiltroBusqueda
