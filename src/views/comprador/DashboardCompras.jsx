@@ -418,7 +418,8 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       {/* FILTROS: un solo marcado; en móvil los controles viven en la hoja inferior de BarraFiltros */}
       <BarraFiltros
         className="mb-4 md:mb-6"
-        filtrosActivos={filtrosActivosCount + (searchTerm ? 1 : 0)}
+        busquedaEnBarraMovil
+        filtrosActivos={filtrosActivosCount}
         resultados={sortedSolicitudes.length}
         busqueda={(
           <FiltroBusqueda
