@@ -5,7 +5,7 @@
     "src/utils/etiquetas.js"
   ],
   "totales": {
-    "clases": 978,
+    "clases": 977,
     "literales": 87
   },
   "archivos": {
@@ -126,7 +126,7 @@
       "literales": 6
     },
     "src/views/analisis/DetalleClienteHistorial.jsx": {
-      "clases": 5,
+      "clases": 4,
       "literales": 0
     },
     "src/views/analisis/DetalleClientesAnalisis.jsx": {
