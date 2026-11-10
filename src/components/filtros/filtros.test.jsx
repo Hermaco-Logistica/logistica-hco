@@ -9,6 +9,7 @@ import {
 } from './index';
 import { reiniciarCapasParaPruebas } from './capasAtras';
 import { recortePestanas } from './recortePestanas';
+import { ContextoFiltros } from './contexto';
 import { BotonSeguimiento } from '../../views/analisis/components/FiltroSeguimiento';
 
 afterEach(async () => { cleanup(); vi.useRealTimers(); await new Promise((r) => setTimeout(r, 25)); reiniciarCapasParaPruebas(); window.history.replaceState(null, ''); });
@@ -1061,5 +1062,58 @@ describe('FiltroSegmentado: estilo de selección', () => {
     expect(b.className).toContain('font-medium');
     expect(b.className).not.toContain('bg-segmento-activo');
     expect(b.getAttribute('aria-pressed')).toBe('false');
+  });
+});
+
+describe('Exportar en la barra móvil cuando la hoja no tiene filtros', () => {
+  const exportar = (onClick = () => {}) => <BotonExportar onClick={onClick} etiqueta="Exportar movimientos" titulo="Exportar a Excel" />;
+  it('BotonExportar en modo icono es un botón de solo icono de 44 px con aria-label', () => {
+    const onClick = vi.fn();
+    render(<ContextoFiltros.Provider value="icono">{exportar(onClick)}</ContextoFiltros.Provider>);
+    const b = screen.getByRole('button', { name: 'Exportar movimientos' });
+    expect(b.textContent).toBe('');
+    expect(b.className).toContain('!h-11');
+    expect(b.className).toContain('!w-11');
+    expect(b.getAttribute('title')).toBe('Exportar a Excel');
+    fireEvent.click(b);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('sin filtros ni búsqueda dentro de la hoja no se pinta "Filtros" y Exportar va como icono junto al buscador', () => {
+    mm(true);
+    const onClick = vi.fn();
+    render(<BarraFiltros busquedaEnBarraMovil busqueda={<FiltroBusqueda value="" onChange={() => {}} ariaLabel="buscar" />} acciones={exportar(onClick)} limpiar={<BotonLimpiar activos={0} onClick={() => {}} />} />);
+    expect(screen.queryByRole('button', { name: /^Filtros/ })).toBeNull();
+    const b = screen.getByRole('button', { name: 'Exportar movimientos' });
+    expect(b.textContent).toBe('');
+    expect(screen.getByLabelText('buscar').closest('section').contains(b)).toBe(true);
+    fireEvent.click(b);
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('con filtros dentro de la hoja nada cambia: "Filtros" se pinta y Exportar vive en la hoja, no en la barra', () => {
+    mm(true);
+    render(<BarraFiltros busquedaEnBarraMovil busqueda={<FiltroBusqueda value="" onChange={() => {}} ariaLabel="buscar" />} filtros={<FiltroSelect value="" onChange={() => {}} opciones={['A']} prefijo="E:" ariaLabel="e" />} acciones={exportar()} />);
+    expect(screen.getByRole('button', { name: /^Filtros/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Exportar movimientos' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /^Filtros/ }));
+    const hoja = screen.getByRole('dialog');
+    expect(within(hoja).getByText('Exportar movimientos')).toBeTruthy();
+  });
+
+  it('si la búsqueda va dentro de la hoja el botón "Filtros" se mantiene aunque no haya más filtros', () => {
+    mm(true);
+    render(<BarraFiltros busqueda={<FiltroBusqueda value="" onChange={() => {}} ariaLabel="buscar" />} acciones={exportar()} />);
+    expect(screen.getByRole('button', { name: /^Filtros/ })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Exportar movimientos' })).toBeNull();
+  });
+
+  it('en escritorio Exportar sigue en el bloque final de la barra', () => {
+    mm(false);
+    render(<BarraFiltros busqueda={<FiltroBusqueda value="" onChange={() => {}} ariaLabel="buscar" />} acciones={exportar()} />);
+    const b = screen.getByRole('button', { name: /Exportar movimientos/ });
+    expect(b.textContent).toContain('Exportar movimientos');
+    expect(screen.queryByRole('button', { name: /^Filtros/ })).toBeNull();
   });
 });

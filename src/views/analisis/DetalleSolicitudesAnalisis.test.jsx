@@ -28,7 +28,8 @@ const mm = (matches) => { window.matchMedia = () => ({ matches, addEventListener
 const matchMediaOriginal = window.matchMedia;
 const montar = () => render(<MemoryRouter><Vista role="comprador" solicitudes={SOL} ordenesCompra={[]} /></MemoryRouter>);
 const esperar = (ms = 60) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
-const botonFiltros = () => screen.getByRole('button', { name: /^Filtros/ });
+const botonFiltros = () => screen.queryByRole('button', { name: /^Filtros/ });
+const botonExportar = () => screen.getByRole('button', { name: 'Exportar movimientos' });
 const limpiar = () => screen.queryByRole('button', { name: /^Limpiar filtros/ });
 const contador = () => document.querySelector('[aria-live="polite"]').textContent;
 const guardado = (k) => JSON.parse(sessionStorage.getItem(k));
@@ -37,10 +38,11 @@ beforeEach(() => { sessionStorage.clear(); mm(true); Element.prototype.scrollInt
 afterEach(async () => { cleanup(); await new Promise((r) => setTimeout(r, 40)); reiniciarCapasParaPruebas(); window.matchMedia = matchMediaOriginal; });
 
 describe('DetalleSolicitudesAnalisis: barra de filtros en móvil', () => {
-  it('sin búsqueda no hay número en "Filtros" ni botón Limpiar', async () => {
+  it('sin filtros dentro de la hoja no se pinta "Filtros", Exportar va como icono en la barra y no hay Limpiar', async () => {
     montar();
     await esperar();
-    expect(botonFiltros().textContent).toBe('Filtros');
+    expect(botonFiltros()).toBeNull();
+    expect(botonExportar().textContent).toBe('');
     expect(limpiar()).toBeNull();
   });
 
@@ -49,7 +51,7 @@ describe('DetalleSolicitudesAnalisis: barra de filtros en móvil', () => {
     montar();
     await esperar();
     expect(screen.getByRole('tab', { name: /Pedidos$/ }).getAttribute('aria-selected')).toBe('true');
-    expect(botonFiltros().textContent).toBe('Filtros');
+    expect(botonFiltros()).toBeNull();
     expect(limpiar()).toBeNull();
   });
 
@@ -69,7 +71,7 @@ describe('DetalleSolicitudesAnalisis: barra de filtros en móvil', () => {
     sessionStorage.setItem('analisis_cliente_search', JSON.stringify('Bombas'));
     montar();
     await esperar();
-    expect(botonFiltros().textContent).toBe('Filtros');
+    expect(botonFiltros()).toBeNull();
     expect(limpiar().getAttribute('aria-label')).toBe('Limpiar filtros (1)');
     fireEvent.click(limpiar());
     await esperar();
@@ -97,13 +99,11 @@ describe('DetalleSolicitudesAnalisis: barra de filtros en móvil', () => {
     expect(screen.queryByRole('button', { name: /^Quitar filtro/ })).toBeNull();
   });
 
-  it('exportar en la hoja dice "Exportar movimientos" y exporta las solicitudes filtradas de la pestaña activa', async () => {
+  it('Exportar (icono en la barra, "Exportar movimientos") exporta las solicitudes filtradas de la pestaña activa', async () => {
     sessionStorage.setItem('analisis_solicitudes_tab', JSON.stringify('pedidos'));
     montar();
     await esperar();
-    fireEvent.click(botonFiltros());
-    await esperar();
-    const boton = screen.getByRole('button', { name: /Exportar movimientos/ });
+    const boton = botonExportar();
     expect(screen.queryByText('Exportar Movimientos')).toBeNull();
     fireEvent.click(boton);
     expect(exportarTodosLosMovimientosExcel).toHaveBeenCalledTimes(1);

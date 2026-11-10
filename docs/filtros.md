@@ -13,7 +13,7 @@ Componentes de `src/components/filtros/` (import: `from '../components/filtros'`
 | `FiltroConmutador` | `activo`, `onChange`, `etiqueta`, `titulo` | booleano nuevo |
 | `BotonLimpiar` | `activos`, `onClick`, `etiqueta` | — (no se pinta si `activos` ≤ 0) |
 | `ContadorResultados` | `total`, `filtrados`, `unidad` | — |
-| `BotonExportar` | `onClick`, `etiqueta`, `disabled` | — |
+| `BotonExportar` | `onClick`, `etiqueta`, `titulo`, `disabled` (modos: barra, hoja e `icono`) | — |
 | `FiltroFechaCampo` | `texto`, `activo`, `expandido`, `onClick`, `onLimpiar`, `etiqueta` | — |
 | `FiltroFechas` | `value {desde,hasta}` (ISO), `onChange(rango)`, `porDefecto`, `etiqueta`, `ariaLabel` | rango `{desde,hasta}` |
 | `FiltroFechasContenedor` | `abierto`, `onCerrar`, `titulo`, hijos = calendario existente | — |
@@ -149,4 +149,4 @@ Dos `<input type="date">` con el estilo de campo para pantallas sin calendario p
 - Año del histórico: `FiltroSelect sinTodos` (siempre hay un valor: un año o "Todo el historial"; sin estado "seleccionado").
 - Rango: `FiltroFechas sinAccesos max={hoy} errorDesde errorHasta` (los accesos rápidos sobran porque el período ya los da); el mensaje general de validación y el aviso de histórico lento van en `encabezado`.
 - Vendedor: el número de vendedores se conserva en la opción neutra: "Todos (N)".
-- `acciones` de `BarraFiltros`: en escritorio entran en el bloque final (ancho reservado 440 px); en móvil son la última fila de la hoja (`BotonExportar` modo hoja).
+- `acciones` de `BarraFiltros`: en escritorio entran en el bloque final (ancho reservado 440 px); en móvil son la última fila de la hoja (`BotonExportar` modo hoja). **Sin filtros dentro de la hoja** (Solicitudes y Logística de Análisis): el botón "Filtros" no se pinta (`hayFiltrosHoja` ya no cuenta `acciones`) y, con `busquedaEnBarraMovil`, `acciones` va en la barra junto al buscador como botón de icono de 44 px (`BotonExportar` modo `icono`, `aria-label` = etiqueta). Si la búsqueda va dentro de la hoja, el botón "Filtros" se mantiene.

@@ -194,7 +194,8 @@ const repartir = (rejilla) => {
  * neutro. El borde y el alto son los mismos en ambos estados (sin saltos de layout).
  * `resultados` el de "Ver N resultados" (opcional).
  * `acciones` (opcional): botones como Exportar; en escritorio van en el bloque final entre `limpiar` y `extremo` (ancho reservado mayor) y
- * en móvil son la última fila de la hoja.
+ * en móvil son la última fila de la hoja. Si en móvil la hoja no tiene filtros (ni búsqueda dentro), el botón "Filtros" no se pinta y
+ * `acciones` va en la barra junto al buscador como botón de icono de 44 px (modo `icono` de BotonExportar).
 * `busquedaEnBarraMovil` deja la búsqueda en la barra móvil en vez de dentro de la hoja. Patrón de la tarjeta móvil con búsqueda: UNA
  * fila con el buscador (ancho mínimo 8,5 rem), "Filtros (N)" y "Limpiar" como botón de icono de 44 px (hueco SIEMPRE reservado, con el
  * número como distintivo); el contador va debajo en una línea de altura fija (h-4). La tarjeta no cambia de altura al aparecer Limpiar.
@@ -225,7 +226,9 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, filas, busquedaApa
   const busquedaEnHoja = busqueda && !busquedaEnBarraMovil;
   const filtrosBase = filas ? <>{filas.flat().map((nodo, i) => <React.Fragment key={i}>{nodo}</React.Fragment>)}</> : filtros;
   const filtrosHoja = acciones ? <>{filtrosBase}{acciones}</> : filtrosBase;
-  const hayFiltrosHoja = Boolean((filas ? filas.flat().length : filtros) || acciones);
+  const hayFiltrosHoja = Boolean(filas ? filas.flat().length : filtros);
+  // Sin filtros dentro de la hoja la hoja no tendría nada filtrable: no se pinta "Filtros" y `acciones` (Exportar) va en la barra, como icono.
+  const accionesEnBarra = Boolean(acciones) && !hayFiltrosHoja && !busquedaEnHoja;
   const modoFilas = Boolean(filas) && !movil;
   const anchoBloque = busquedaAparte ? 'w-44' : 'w-72';
   const botonFiltros = (
@@ -251,6 +254,7 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, filas, busquedaApa
           <div className="flex items-center gap-2">
             {busqueda && <div className="min-w-[8.5rem] flex-1">{busqueda}</div>}
             {(hayFiltrosHoja || busquedaEnHoja) && botonFiltros}
+            {accionesEnBarra && <div className="w-11 shrink-0"><ContextoFiltros.Provider value="icono">{acciones}</ContextoFiltros.Provider></div>}
             <div className="w-11 shrink-0"><ContextoFiltros.Provider value="icono">{limpiar}</ContextoFiltros.Provider></div>
           </div>
           {extremo && <div className="mt-1 flex h-4 items-center justify-end">{extremo}</div>}
@@ -259,6 +263,7 @@ export const BarraFiltros = ({ encabezado, busqueda, filtros, filas, busquedaApa
         <div className="flex flex-wrap items-center gap-2">
           {busqueda && busquedaEnBarraMovil && <div className="min-w-[8.5rem] flex-1">{busqueda}</div>}
           {(hayFiltrosHoja || busquedaEnHoja) && botonFiltros}
+          {accionesEnBarra && <div className="w-11 shrink-0"><ContextoFiltros.Provider value="icono">{acciones}</ContextoFiltros.Provider></div>}
           {extremo && <div className="ml-auto flex items-center gap-2">{extremo}</div>}
         </div>
       ) : modoFilas ? (
