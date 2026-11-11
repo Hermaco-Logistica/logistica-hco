@@ -91,6 +91,14 @@ Calendario mensual para elegir un día o un rango, controlado y presentacional (
 - **Accesibilidad:** cada día lleva `aria-label` con la fecha completa ("3 de noviembre de 2026") más su papel ("inicio del rango", "fin del rango", "dentro del rango", "un día"), `aria-pressed` si está seleccionado y foco visible; las flechas se llaman "Mes anterior" y "Mes siguiente"; el título del mes es `aria-live="polite"`. Sin navegación con las flechas del teclado (se recorre con Tab): pendiente.
 - Usa `obtenerDiasDelMes` de `views/vendedor/dashboard/utils/dashboardVendedorHelpers.js` (dependencia de `components` hacia `views`; pendiente moverla a `utils` cuando se migren las pantallas).
 
+### `ModalRango` (Rango de fechas en móvil)
+Modal para elegir un día o un rango desde el selector de período de Análisis (solo en el layout móvil, el de `isMobile` < 1024 px; en escritorio `FiltroFechas` sigue en línea con sus `<input type="date">`). Es un `<Modal variante="hoja" ancho="sm" como="form">` con el tono `rol` (el botón Aplicar sigue el color del rol), con `useCapaAtras` para el botón atrás. Cuerpo: un resumen de solo lectura y el `CalendarioRango`; sin campos nativos.
+- **Resumen** (`data-resumen-rango`, `aria-live`): "dd/mm/aaaa — dd/mm/aaaa" con un rango; "dd/mm/aaaa (un día)" con un solo día (un toque, o el mismo día como inicio y fin), con una ayuda debajo ("Se aplicará solo este día. Toca otro día para elegir un rango."); "Elige un día o un rango" sin selección.
+- **Aplicar:** deshabilitado sin inicio; con solo el inicio aplica desde = hasta; `validarRangoFechas` queda como red de seguridad. No cambia nada hasta Aplicar: Cancelar, la X, el fondo, Escape y el botón atrás cierran sin aplicar.
+- **Prellenado:** abre con las fechas de estado de la vista (las actuales si Rango está activo, o las últimas guardadas). `max` = hoy: no hay días futuros.
+- **Cableado** (`AnalisisEstadisticas.jsx`): elegir "Rango" abre el modal y no cambia `periodo` hasta Aplicar (`setFechaInicio`, `setFechaFin`, `setPeriodo('custom')`, `setPageVendedores(1)`); la línea corta de fechas ("01/11 – 15/11") va bajo el selector solo con Rango en móvil. "Filtros (N)" no cuenta las fechas; Limpiar sí. Claves de sesión sin cambios (`analisis_filtro_periodo`).
+- **Pendiente:** Aplicar exige al menos el inicio: los rangos abiertos (solo "desde" o solo "hasta") ya no se pueden crear en móvil; los que ya estaban guardados o vienen de escritorio se leen igual.
+
 ## Estados de un campo (`estilosCampo.js`)
 | Estado | Fondo | Borde | Texto / icono |
 | --- | --- | --- | --- |

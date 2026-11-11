@@ -253,7 +253,9 @@ describe('Análisis y Estadísticas: rango de fechas', () => {
 describe('Análisis y Estadísticas: Rango en un modal (móvil)', () => {
   const esperar = (ms = 60) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
   const modal = () => screen.getByRole('dialog', { name: 'Rango de fechas' });
-  const campo = (nombre) => within(modal()).getByLabelText(nombre);
+  // El calendario del modal parte del mes de la fecha de inicio guardada o, sin ella, del mes de hoy (junio de 2026 con la fecha congelada).
+  const dia = (n) => within(modal()).getAllByRole('button').find((b) => b.hasAttribute('aria-pressed') && b.textContent === String(n));
+  const resumen = () => modal().querySelector('[data-resumen-rango]').textContent;
   const aplicar = () => within(modal()).getByRole('button', { name: 'Aplicar' });
   const botonFiltros = () => screen.getByRole('button', { name: /^Filtros/ });
   const limpiar = () => within(screen.getByRole('region', { name: 'Filtros' })).queryByRole('button', { name: /^Limpiar filtros/ });
@@ -272,7 +274,8 @@ describe('Análisis y Estadísticas: Rango en un modal (móvil)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
     await esperar();
     expect(guardado('analisis_filtro_periodo').periodo).toBe('this_year');
-    fireEvent.change(campo('Desde'), { target: { value: '2026-05-01' } });
+    fireEvent.click(dia(1));
+    expect(resumen()).toBe('01/06/2026 (un día)');
     fireEvent.click(within(modal()).getByRole('button', { name: 'Cancelar' }));
     await esperar(260);
     expect(screen.queryByRole('dialog', { name: 'Rango de fechas' })).toBeNull();
@@ -285,14 +288,15 @@ describe('Análisis y Estadísticas: Rango en un modal (móvil)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
     await esperar();
     expect(aplicar().disabled).toBe(true);
-    fireEvent.change(campo('Desde'), { target: { value: '2026-05-01' } });
-    fireEvent.change(campo('Hasta'), { target: { value: '2026-05-10' } });
+    fireEvent.click(dia(1));
+    fireEvent.click(dia(10));
+    expect(resumen()).toBe('01/06/2026 — 10/06/2026');
     expect(aplicar().disabled).toBe(false);
     fireEvent.click(aplicar());
     await esperar(260);
     expect(screen.queryByRole('dialog', { name: 'Rango de fechas' })).toBeNull();
-    expect(guardado('analisis_filtro_periodo')).toMatchObject({ periodo: 'custom', fechaInicio: '2026-05-01', fechaFin: '2026-05-10' });
-    expect(container.querySelector('[data-linea-fechas]').textContent).toBe('01/05 – 10/05');
+    expect(guardado('analisis_filtro_periodo')).toMatchObject({ periodo: 'custom', fechaInicio: '2026-06-01', fechaFin: '2026-06-10' });
+    expect(container.querySelector('[data-linea-fechas]').textContent).toBe('01/06 – 10/06');
   });
 
   it('la línea de fechas solo aparece con Rango activo', () => {
@@ -304,22 +308,24 @@ describe('Análisis y Estadísticas: Rango en un modal (móvil)', () => {
     expect(b.container.querySelector('[data-linea-fechas]').textContent).toBe('01/05 – 10/05');
   });
 
-  it('Aplicar queda deshabilitado con una fecha vacía, con desde posterior a hasta o con fecha futura, con el error en su campo', async () => {
+  it('un solo toque aplica ese único día (desde = hasta); un día futuro no se puede elegir', async () => {
     movil();
-    montar('gerente', { periodo: 'this_year' });
+    const { container } = montar('gerente', { periodo: 'this_year' });
     fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
     await esperar();
-    fireEvent.change(campo('Desde'), { target: { value: '2026-05-10' } });
+    expect(resumen()).toBe('Elige un día o un rango');
     expect(aplicar().disabled).toBe(true);
-    fireEvent.change(campo('Hasta'), { target: { value: '2026-05-01' } });
+    expect(dia(16).getAttribute('aria-disabled')).toBe('true');
+    fireEvent.click(dia(16));
     expect(aplicar().disabled).toBe(true);
-    expect(campo('Hasta').getAttribute('aria-invalid')).toBe('true');
-    expect(within(modal()).getByText(/Incoherencia entre fechas/)).toBeTruthy();
-    fireEvent.change(campo('Desde'), { target: { value: '2026-05-01' } });
-    fireEvent.change(campo('Hasta'), { target: { value: '2026-07-01' } });
-    expect(aplicar().disabled).toBe(true);
-    expect(campo('Hasta').getAttribute('aria-invalid')).toBe('true');
-    expect(guardado('analisis_filtro_periodo').periodo).toBe('this_year');
+    fireEvent.click(dia(15));
+    expect(resumen()).toBe('15/06/2026 (un día)');
+    expect(within(modal()).getByText(/Se aplicará solo este día/)).toBeTruthy();
+    expect(aplicar().disabled).toBe(false);
+    fireEvent.click(aplicar());
+    await esperar(260);
+    expect(guardado('analisis_filtro_periodo')).toMatchObject({ periodo: 'custom', fechaInicio: '2026-06-15', fechaFin: '2026-06-15' });
+    expect(container.querySelector('[data-linea-fechas]').textContent).toBe('15/06 – 15/06');
   });
 
   it('con Rango activo el modal abre con las fechas actuales; si no, con las últimas guardadas', async () => {
@@ -327,16 +333,14 @@ describe('Análisis y Estadísticas: Rango en un modal (móvil)', () => {
     montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'] });
     fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
     await esperar();
-    expect(campo('Desde').value).toBe('2026-05-01');
-    expect(campo('Hasta').value).toBe('2026-05-10');
+    expect(resumen()).toBe('01/05/2026 — 10/05/2026');
     cleanup();
     await esperar(60);
     reiniciarCapasParaPruebas();
     montar('gerente', { periodo: '30d', rango: ['2026-04-01', '2026-04-20'] });
     fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
     await esperar();
-    expect(campo('Desde').value).toBe('2026-04-01');
-    expect(campo('Hasta').value).toBe('2026-04-20');
+    expect(resumen()).toBe('01/04/2026 — 20/04/2026');
   });
 
   it('reelegir Rango (ya activo) vuelve a abrir el modal; la opción activa no salta a Rango hasta Aplicar y Cancelar la deja donde estaba', async () => {
@@ -345,7 +349,7 @@ describe('Análisis y Estadísticas: Rango en un modal (móvil)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
     await esperar();
     expect(modal()).toBeTruthy();
-    expect(campo('Desde').value).toBe('2026-05-01');
+    expect(resumen()).toBe('01/05/2026 — 10/05/2026');
     fireEvent.click(within(modal()).getByRole('button', { name: 'Cancelar' }));
     await esperar(300);
     expect(screen.getByRole('button', { name: 'Rango' }).getAttribute('aria-pressed')).toBe('true');
@@ -404,12 +408,12 @@ describe('Análisis y Estadísticas: Rango en un modal (móvil)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
     await esperar();
     expect(modal()).toBeTruthy();
-    fireEvent.change(campo('Desde'), { target: { value: '2026-05-01' } });
-    fireEvent.change(campo('Hasta'), { target: { value: '2026-05-10' } });
+    fireEvent.click(dia(1));
+    fireEvent.click(dia(10));
     fireEvent.click(aplicar());
     await esperar(300);
     expect(screen.queryByLabelText('Fecha desde')).toBeNull();
-    expect(container.querySelector('[data-linea-fechas]').textContent).toBe('01/05 – 10/05');
+    expect(container.querySelector('[data-linea-fechas]').textContent).toBe('01/06 – 10/06');
   });
 
   it('en escritorio (1280 px) Rango sigue en línea en la barra y no hay modal ni línea corta', () => {
