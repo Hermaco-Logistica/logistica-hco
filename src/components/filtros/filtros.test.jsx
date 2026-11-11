@@ -2,7 +2,7 @@
 import React from 'react';
 import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import {
   BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroConmutador, FiltroFechaCampo, FiltroFechasContenedor,
   FiltroPestanas, FiltroSegmentado, FiltroSelect
@@ -12,7 +12,22 @@ import { recortePestanas } from './recortePestanas';
 import { ContextoFiltros } from './contexto';
 import { BotonSeguimiento } from '../../views/analisis/components/FiltroSeguimiento';
 
-afterEach(async () => { cleanup(); vi.useRealTimers(); await new Promise((r) => setTimeout(r, 25)); reiniciarCapasParaPruebas(); window.history.replaceState(null, ''); });
+/** Espera a que jsdom termine los recorridos del historial pendientes (back/go son tareas setTimeout(0) en cadena, y cada una emite un popstate):
+ *  sigue hasta que pasan tres turnos de 10 ms sin ningún popstate nuevo. Las tareas ya encoladas vencen antes que estos turnos. */
+const vaciarColaHistorial = async () => {
+  let vistos = 0;
+  let anterior = -1;
+  let quietos = 0;
+  const contar = () => { vistos += 1; };
+  window.addEventListener('popstate', contar);
+  for (let i = 0; i < 100 && quietos < 3; i += 1) {
+    await new Promise((r) => setTimeout(r, 10));
+    if (vistos === anterior) quietos += 1; else { quietos = 0; anterior = vistos; }
+  }
+  window.removeEventListener('popstate', contar);
+};
+
+afterEach(async () => { cleanup(); vi.useRealTimers(); await vaciarColaHistorial(); reiniciarCapasParaPruebas(); window.history.replaceState(null, ''); });
 
 const mm = (matches) => { window.matchMedia = () => ({ matches, addEventListener() {}, removeEventListener() {} }); };
 const OPC = ['Cotizado', 'Pedido', 'Pedido Parcial', { value: 'perdida', label: 'Venta perdida' }];
@@ -804,18 +819,16 @@ describe('Hoja móvil: scroll, altura y botón atrás', () => {
     const base = window.history.length;
     fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
     await esperar();
-    expect(window.history.state.filtros).toBe(1);
+    await waitFor(() => expect(window.history.state.filtros).toBe(1));
     fireEvent.click(screen.getByRole('combobox', { name: 'estado' }));
     await esperar();
-    expect(window.history.state.filtros).toBe(2);
+    await waitFor(() => expect(window.history.state.filtros).toBe(2));
     window.history.back();
-    await esperar();
-    expect(screen.getByRole('combobox', { name: 'estado' }).getAttribute('aria-expanded')).toBe('false');
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'estado' }).getAttribute('aria-expanded')).toBe('false'));
     expect(screen.getByRole('dialog')).toBeTruthy();
     expect(onChange).not.toHaveBeenCalled();
     window.history.back();
-    await esperar(300);
-    expect(screen.queryByRole('dialog')).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), { timeout: 2000 });
     expect(onChange).not.toHaveBeenCalled();
     expect(window.history.length).toBeGreaterThanOrEqual(base);
     // cierre con la interfaz (X): la entrada se retira y el siguiente atrás no cierra nada ni deja entrada fantasma
@@ -823,10 +836,8 @@ describe('Hoja móvil: scroll, altura y botón atrás', () => {
     fireEvent.click(screen.getByRole('button', { name: /Filtros/ }));
     await esperar();
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar filtros' }));
-    await esperar(400);
-    await esperar(100);
-    expect(screen.queryByRole('dialog')).toBeNull();
-    expect((window.history.state && window.history.state.filtros) || undefined).toBe(antes || undefined);
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), { timeout: 2000 });
+    await waitFor(() => expect((window.history.state && window.history.state.filtros) || undefined).toBe(antes || undefined), { timeout: 2000 });
   });
   it('elegir una opción cierra la fila y retira su entrada: el atrás siguiente cierra la hoja', async () => {
     mm(true);
@@ -837,10 +848,9 @@ describe('Hoja móvil: scroll, altura y botón atrás', () => {
     await esperar();
     fireEvent.click(screen.getByRole('option', { name: 'B' }));
     await esperar();
-    expect(window.history.state.filtros).toBe(1);
+    await waitFor(() => expect(window.history.state.filtros).toBe(1));
     window.history.back();
-    await esperar(300);
-    expect(screen.queryByRole('dialog')).toBeNull();
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull(), { timeout: 2000 });
   });
   it('el menú de escritorio mide siempre el ancho del campo (sin min-width) y sus opciones largas parten en dos líneas con title', () => {
     mm(false);
