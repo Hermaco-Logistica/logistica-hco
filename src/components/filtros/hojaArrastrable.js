@@ -12,7 +12,7 @@ import { OBJETIVO_CSS, alturaAmpliadaPx } from './alturaHoja';
  *   - Abrir una fila de filtros lleva a completa; al cerrarla vuelve al estado previo.
  *   - Cerrar arrastrando llama a `alCerrar` (el mismo camino que la X: useCerrarModal, que retira la entrada del historial).
  */
-export const VELOCIDAD_MINIMA = 0.5;
+const VELOCIDAD_MINIMA = 0.5;
 /** El estirón máximo cabe en el margen superior (1 rem): la hoja nunca sale por arriba de la pantalla. */
 const ELASTICO_MAX = 14;
 
