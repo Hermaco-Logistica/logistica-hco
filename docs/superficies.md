@@ -39,7 +39,7 @@ menú o de un popover es **plano**: la elevación la pone el contenedor.
 1. **Al usar `surface` o `<Card>` no añadas `bg-*`, `shadow-*` ni borde decorativo.** Orden del CSS compilado: `.surface` va antes que `.rounded-*`, así que un radio propio
    (`rounded-2xl` = 14 px, `rounded-[10px]`) lo sobrescribe, pero `.bg-white` y `.shadow-sm` van **después** y sobrescriben el fondo y la sombra de `surface`.
 2. **Superficies anidadas, modales, menús y popovers son planas** (`surface-plana`): sin sombra de reposo ni borde. La elevación la pone el contenedor (`surface-flotante`).
-3. **Controles** (inputs, selects, buscadores): borde suave (`.tf-campo`: `1px solid var(--color-border)`) y sin sombra. Segmentos y pestañas de filtro, planos.
+3. **Controles** (inputs, selects, buscadores): borde suave y sin sombra, con los estados de `src/components/filtros/estilosCampo.js` (docs/filtros.md; la clase `.tf-campo` se eliminó por no usarse). Segmentos y pestañas de filtro, planos.
 4. **Los botones llevan sombra y no borde.** Etiqueta y StatusChip (estados) no llevan sombra. Los enlaces de texto tampoco.
 5. **Se quedan:** separadores (`border-t/b/l/r`, `divide-*`) y bordes de estado (selección, error, foco, `dashed`, `border-primary`, `rose` y `emerald` de validación).
 6. **Hover de elevación** en tarjetas clicables: `hover:shadow-flotante` (por ejemplo las tarjetas del Gateway y la tarjeta móvil de `DashboardVendedor`).
@@ -71,4 +71,11 @@ La sombra de reposo se extiende unos 24 px a los lados y unos 36 px abajo; un an
 - Sin verificación en pantalla: el detalle de RFQ y el cuerpo completo de la Calculadora (no se pudieron renderizar con datos de ejemplo).
 - `--tf-shadow-panel` y `--detalle-shadow-float`: sin uso; pueden eliminarse.
 - `Card` y `CardHeader`: casi no se usan en vistas; las superficies se hacen con la clase `surface`.
-- Los filtros (directorio `src/components/filtros/`) se harán después.
+- Los filtros (`src/components/filtros/`) ya están migrados y documentados en docs/filtros.md; las superficies de los filtros que no son campos están en la sección siguiente.
+
+## 9. Superficies de los filtros
+- **`BarraFiltros`:** `surface` (sombra de reposo, sin borde). En la hoja móvil, los bloques son `surface-plana` sobre `bg-background` y la hoja es `surface-flotante`.
+- **`FiltroPestanas` con `sticky`:** en reposo una tarjeta `surface` (`rounded-xl`); pegada, una franja `bg-surface` opaca de ancho completo, sin sombra ni borde. Las dos capas se cruzan animando solo `opacity` y `transform`.
+- **`ChipsFiltroContexto`:** chip `surface` de 28 px; con `plana`, `surface-plana` (cuando va dentro de otra superficie).
+- **Menús de los selects de escritorio (`MenuAnclado`):** `bg-surface` + `shadow-menu`, sin contorno (ver §3).
+- **`ModalRango`:** `Modal variante="hoja"`: hoja inferior en móvil y tarjeta centrada de 384 px desde `sm`, con `surface-flotante`.

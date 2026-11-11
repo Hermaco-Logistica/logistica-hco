@@ -1,6 +1,6 @@
 # Sistema de colores
 
-Referencia del sistema de color de `logistica-hco` (rama `dominio-y-botones`). Los valores son los vigentes en `src/styles/tokens.css`. Lo que no esté aquí se
+Referencia del sistema de color de `logistica-hco` (rama `superficies-y-filtros`, que parte de `dominio-y-botones`). Los valores son los vigentes en `src/styles/tokens.css`. Lo que no esté aquí se
 define en el archivo citado en cada sección.
 
 ## 1. Dónde viven los tokens
@@ -27,7 +27,8 @@ define en el archivo citado en cada sección.
 - **Dominio aéreo y marítimo (fijos):** `mode-air` = `emerald-600` (`-strong` 700, `-soft` 50, `-border` 200, `-100`, `-800`, `-900`, `-950`) y `mode-sea` = `blue-600` (`-strong` 700, `-soft` 50, `-border` 200, `-100`, `-500`, `-900`, `-950`).
 - **Seguimiento (por rol):** `seguimiento`, `seguimiento-soft`, `seguimiento-borde`, `seguimiento-claro` (§7).
 - **Gráficos:** `chart-1` a `chart-9` (hex).
-- **Sombras:** `shadow-card`, `shadow-panel`, `shadow-float`.
+- **Sombras:** `shadow-reposo`, `shadow-flotante`, `shadow-boton` (con `-hover` y `-activo`) y `shadow-menu` (ver docs/superficies.md). `--tf-shadow-card` es alias de `shadow-reposo`; `--tf-shadow-panel` y `--detalle-shadow-float` no se usan.
+- **Filtros (por rol):** `color-filtro-abierto` (6 % de `primary` sobre `surface`: campo abierto y su menú), `color-filtro-activo` (16 % de `primary` sobre `surface`: campo con valor) y `color-filtro-texto` (`primary-strong` con 20 % de negro: texto del valor activo, ≥ 4,5:1 sobre `color-filtro-activo` en los cuatro roles y sin rol). Ver docs/filtros.md.
 
 ## 2. Paleta por rol
 

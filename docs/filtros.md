@@ -5,19 +5,21 @@ Componentes de `src/components/filtros/` (import: `from '../components/filtros'`
 ## Componentes
 | Componente | Props principales | `onChange` recibe |
 | --- | --- | --- |
-| `BarraFiltros` | `encabezado`, `busqueda`, `filtros`, `limpiar`, `extremo`, `filtrosActivos`, `resultados`, `busquedaEnBarraMovil`, `className` | — |
-| `FiltroBusqueda` | `value`, `onChange`, `placeholder`, `ariaLabel` | texto |
-| `FiltroSelect` | `value` (`''` = "Todos"), `onChange`, `opciones` (`string` o `{value,label}`), `prefijo`, `etiqueta`, `etiquetaTodos`, `ariaLabel` | valor |
-| `FiltroSegmentado` | `opciones [{value,label}]`, `value`, `onChange`, `ariaLabel`, `etiqueta`, `valorNeutro`, `carrusel` (ver «Carrusel horizontal») | valor |
+| `BarraFiltros` | `encabezado`, `busqueda`, `filtros`, `filas`, `busquedaAparte`, `limpiar`, `acciones`, `extremo`, `filtrosActivos`, `resultados`, `busquedaEnBarraMovil`, `tituloHoja` (por defecto "Filtros"), `className` | — |
+| `FiltroBusqueda` | `value`, `onChange`, `placeholder`, `ariaLabel`, `etiqueta` (rótulo de la fila en la hoja), `id` | texto |
+| `FiltroSelect` | `value` (`''` = "Todos"), `onChange`, `opciones` (`string` o `{value,label}`), `prefijo`, `etiqueta`, `etiquetaTodos`, `sinTodos` (sin opción neutra: siempre hay un valor), `ariaLabel`, `peso` (peso en la rejilla de escritorio, 1 por defecto) | valor |
+| `FiltroSegmentado` | `opciones [{value,label}]`, `value`, `onChange`, `ariaLabel`, `etiqueta`, `prefijo`, `valorNeutro`, `completo` (pista al ancho del contenedor), `peso`, `colapsable` (solo escritorio: si la celda no cabe se muestra como select sin "Todos"), `carrusel` (ver «Carrusel horizontal»; excluyente con `colapsable`) | valor |
 | `FiltroPestanas` | `opciones [{id,label,cantidad?,punto?}]`, `value`, `onChange`, `sticky`, `recortar`, `flechas`, `prefijoId`, `ariaLabel` (ver «Pestañas pegadas» y «Carrusel horizontal») | id |
-| `FiltroConmutador` | `activo`, `onChange`, `etiqueta`, `titulo` | booleano nuevo |
-| `BotonLimpiar` | `activos`, `onClick`, `etiqueta` | — (no se pinta si `activos` ≤ 0) |
-| `ContadorResultados` | `total`, `filtrados`, `unidad` | — |
-| `BotonExportar` | `onClick`, `etiqueta`, `titulo`, `disabled` (modos: barra, hoja e `icono`) | — |
-| `FiltroFechaCampo` | `texto`, `activo`, `expandido`, `onClick`, `onLimpiar`, `etiqueta` | — |
-| `FiltroFechas` | `value {desde,hasta}` (ISO), `onChange(rango)`, `porDefecto`, `etiqueta`, `ariaLabel` | rango `{desde,hasta}` |
+| `FiltroConmutador` | `activo`, `onChange`, `etiqueta`, `titulo`, `ariaLabel` | booleano nuevo |
+| `BotonLimpiar` | `activos`, `onClick`, `etiqueta` (por defecto "Limpiar filtros") | — (no se pinta si `activos` ≤ 0; en la tarjeta móvil con búsqueda en la barra es un botón de icono de 44 px) |
+| `ContadorResultados` | `total`, `filtrados`, `singular`, `plural`, `unidad` (por defecto "resultados"), `prefijo` ("Mostrando") | — |
+| `BotonExportar` | `onClick`, `etiqueta`, `titulo`, `disabled` (modos: barra, hoja e `icono`; el modo lo decide el contexto de `BarraFiltros`) | — |
+| `FiltroFechaCampo` | `texto`, `activo`, `expandido`, `onClick`, `onLimpiar`, `etiqueta`, `ariaLabel` | — |
+| `FiltroFechas` | `value {desde,hasta}` (ISO), `onChange(rango)`, `porDefecto`, `etiqueta`, `ariaLabel`, `sinAccesos` (sin "Mes actual/Todas/Personalizado"), `max` (ISO, último día), `errorDesde`, `errorHasta` (mensajes bajo cada campo) | rango `{desde,hasta}` |
 | `FiltroFechasContenedor` | `abierto`, `onCerrar`, `titulo`, hijos = calendario existente | — |
 | `ListaOpciones` | `id`, `opciones`, `value`, `activo`, `onElegir`, `onActivar`, `alto` | opción |
+| `CalendarioRango` | ver «Calendario de rango» | día |
+| `ModalRango` | `desde`, `hasta`, `max`, `onAplicar({desde,hasta})`, `onCerrar` (ver «ModalRango») | rango |
 
 Internos: `MenuAnclado` (desplegable de escritorio), `FilaAcordeon` (fila de la hoja móvil), `useNavegacionOpciones` (teclado), `estilosCampo` (estados), `centrarEnCuerpo`, `contexto` (modo barra/hoja y acordeón).
 
@@ -83,7 +85,7 @@ La lógica del carrusel de `FiltroPestanas` se extrajo a `useCarrusel.js` y la f
 
 ## Calendario de rango (`CalendarioRango`, `elegirDiaRango`)
 
-Calendario mensual para elegir un día o un rango, controlado y presentacional (no guarda estado ni cierra nada). Reproduce el calendario que DashboardVendedor, DashboardCompras, DashboardPedidos y GestionOC repiten a mano dentro de `FiltroFechasContenedor`; esas cuatro pantallas **todavía no lo usan** (pendiente: migrarlas con la comprobación del DOM antes y después). Lo usa el modal de Rango.
+Calendario mensual para elegir un día o un rango, controlado y presentacional (no guarda estado ni cierra nada). Reproduce el calendario que DashboardVendedor, DashboardCompras, DashboardPedidos y GestionOC repiten a mano dentro de `FiltroFechasContenedor`; esas cuatro pantallas **todavía no lo usan** y siguen con su copia (`DashboardVendedor` :313-358, `DashboardCompras`, `DashboardPedidos` en "Fecha confirmado" y `GestionOC`; la de `DashboardCompras` usa `rounded-xl` en las flechas de mes, de ahí `flechasRedondeo`). **Plan de migración:** una pantalla por commit, comparando el HTML y los estilos calculados antes y después a 393 px (como se hizo con `FiltroPestanas`), y con ello heredan teclado, foco visible y movimiento reducido (hoy sus copias no los tienen). Lo usa el modal de Rango.
 - **Props:** `inicio`, `fin` (Date a las 00:00 o null), `mes` (Date del mes mostrado), `onCambiarMes(±1)`, `onElegirDia(Date)`, `max` (Date, último día elegible; sin `max` no hay límite) y `flechasRedondeo` (`'lg'` por defecto o `'xl'`).
 - **Aspecto:** cabecera con el mes en mayúsculas y flechas `<` `>` (`p-1.5`, `rounded-lg`), iniciales `D L M M J V S` (9 px), días en filas de siete con `gap-1` y 11 px. Inicio y fin: `bg-slate-900` con texto blanco y círculo; días del medio: `bg-slate-100` sin radio. Medido en la hoja (393 px): contenedor de 288 px de ancho útil, cuadrícula de 5 filas = 138,5 px, día de 37,7×24,5.
 - **`elegirDiaRango(inicio, fin, dia)`** → `{ inicio, fin, cerrar }`: sin inicio o con el rango completo, el toque empieza un rango nuevo (un solo toque = un día); con inicio y sin fin, un día anterior reemplaza el inicio y no cierra, y otro (también el mismo día) es el fin y cierra.
@@ -92,6 +94,9 @@ Calendario mensual para elegir un día o un rango, controlado y presentacional (
 - **Teclado** (roving tabindex: un solo día en el orden de tabulación, el que tuvo el foco, o el inicio, o hoy, o `max`, o el primero elegible del mes): izquierda/derecha ±1 día, arriba/abajo ±7, Inicio/Fin al primer/último día de su fila (domingo/sábado, sin salir del mes), AvPág/RePág al mismo día del mes siguiente/anterior (o al último día si no existe); al salir del mes se llama a `onCambiarMes(±1)` y el foco sigue al día. Enter y Espacio eligen con la activación nativa del botón (no se interceptan). **Nunca pasa de `max`:** un destino posterior se queda en `max` y uno en un mes posterior no se mueve; los días deshabilitados no están en la tabulación. Con Ctrl, Alt o Meta no se intercepta nada.
 - **`autoFoco`:** al montar lleva el foco al día de la selección o a hoy (un cuadro después, para quedar sobre el foco que el modal da a su panel). En `ModalRango` está activo: al abrir, el foco queda en el día; al cerrar, `Modal` devuelve el foco a quien lo abrió (el botón "Rango" del selector o la etiqueta de fechas).
 - Usa `obtenerDiasDelMes` de `views/vendedor/dashboard/utils/dashboardVendedorHelpers.js` (dependencia de `components` hacia `views`; pendiente moverla a `utils` cuando se migren las pantallas).
+
+### `EtiquetaFechasRango` (`views/analisis/components/EtiquetaFechasRango.jsx`)
+Las fechas del período Rango como botón: `<EtiquetaFechasRango desde hasta onEditar className />`. Pinta una `Etiqueta` (`tono="apagado"`, `tamano="compacta"`, icono de calendario) con "01/11 – 15/11", "Desde 01/11" o "Hasta 05/11" (`textoRangoCorto` de `opcionesPeriodo.js`). Lleva `data-linea-fechas` y `aria-label="Editar fechas del rango"`; su área de toque llega a 44 px con un pseudo-elemento (24 px de etiqueta + 4 arriba + 16 abajo), sin agrandarla a la vista, y tiene foco visible. Solo se pinta con período Rango (lo decide quien la usa); `className` la coloca. La usan el layout móvil y el de escritorio de Análisis.
 
 ### `ModalRango` (Rango de fechas, en móvil y en escritorio)
 Modal para elegir un día o un rango desde el selector de período de Análisis; el mismo en móvil y en escritorio (ya no depende de `isMobile`: la variante `hoja` es una hoja inferior en móvil y una tarjeta centrada de 384 px desde `sm`). Es un `<Modal variante="hoja" ancho="sm" como="form">` con el tono `rol` (el botón Aplicar sigue el color del rol), con `useCapaAtras` para el botón atrás. Cuerpo: un resumen de solo lectura y el `CalendarioRango`; sin campos nativos.
@@ -168,7 +173,7 @@ Dos `<input type="date">` con el estilo de campo para pantallas sin calendario p
 | `RetaceosView` | — (sin persistencia) | Mes y Proveedor; la fecha de la fila en edición es entrada de datos |
 
 ## Qué no se homologa
-`FiltroFechas` (fase posterior), la selección de filas de `DashboardPedidos`, las claves de persistencia y la lógica de filtrado de cada vista, y las condiciones por rol (las decide la vista).
+Los calendarios propios de los cuatro dashboards (ver «Calendario de rango»), la selección de filas de `DashboardPedidos`, las claves de persistencia y la lógica de filtrado de cada vista, y las condiciones por rol (las decide la vista).
 
 ## Análisis y Estadísticas (F5)
 
@@ -178,3 +183,19 @@ Dos `<input type="date">` con el estilo de campo para pantallas sin calendario p
 - Rango: `ModalRango` (ver arriba), sin campos en la barra; la alerta de incoherencia de fechas del `encabezado` solo protege datos viejos de sesión alterados, y el aviso de histórico lento también va en `encabezado`.
 - Vendedor: el número de vendedores se conserva en la opción neutra: "Todos (N)".
 - `acciones` de `BarraFiltros`: en escritorio entran en el bloque final (ancho reservado 440 px); en móvil son la última fila de la hoja (`BotonExportar` modo hoja). **Sin filtros dentro de la hoja** (Solicitudes y Logística de Análisis): el botón "Filtros" no se pinta (`hayFiltrosHoja` ya no cuenta `acciones`) y, con `busquedaEnBarraMovil`, `acciones` va en la barra junto al buscador como botón de icono de 44 px (`BotonExportar` modo `icono`, `aria-label` = etiqueta). Si la búsqueda va dentro de la hoja, el botón "Filtros" se mantiene. Con `filas` (escritorio), `acciones` también entra en el bloque final de la última fila, entre `limpiar` y `extremo`, y el bloque reserva 440 px (288 sin `acciones`).
+
+## Checklist al migrar una pantalla (`filtrosActivos` y Limpiar)
+- `filtrosActivos` = lo que hay **dentro de la hoja** (no cuenta la búsqueda si va en la barra, ni las fechas del Rango, ni las pestañas). Si el orden o un segmentado se aparta de su valor inicial y está en la hoja, cuenta.
+- `BotonLimpiar activos` = **todo** lo que Limpiar restablece (búsqueda incluida) y Limpiar debe restablecerlo todo, también la página a 1. Lo que no aparece en la barra y sigue filtrando es un **filtro invisible**: se evita o se anota en pendientes.
+- Los chips de contexto (`ChipsFiltroContexto`) no cuentan ni los limpia Limpiar: tienen su propia X.
+- `singular` y `plural` en `ContadorResultados`; `aria-label` en cada control; solo tokens; `check:colores` y `check:superficies` en verde.
+
+## Búsqueda en la barra en móvil (patrón de los dashboards)
+`DashboardVendedor`, `DashboardCompras`, `DashboardPedidos` y `GestionOC` usan `busquedaEnBarraMovil`: en móvil la tarjeta lleva el buscador, "Filtros (N)" y Limpiar (icono de 44 px) en una fila, y la hoja contiene solo los filtros. La tarjeta mide 92 px a 393 px (antes 72) con y sin filtros activos. Ninguna perdió filtros en la hoja. `RetaceosView` no tiene búsqueda y no se tocó (además `ENABLE_RETACEOS` está en `false`).
+
+## Pantallas de Análisis (F4–F7)
+- **F4 Prórrogas:** ver la tabla de F1–F3; `filas` + `busquedaAparte`, `FiltroFechas` en línea.
+- **F5 Análisis y Estadísticas:** ver la sección siguiente; el período es un carrusel en móvil y el Rango abre `ModalRango` en móvil y en escritorio.
+- **F6 Análisis de clientes, vendedores y logística:** `BarraFiltros` con búsqueda, orden (`FiltroSegmentado colapsable`, "Filtros (N)" cuenta el orden distinto del inicial y Limpiar lo devuelve a `total`), Limpiar, Exportar y contador; en logística además `FiltroPestanas` (`tab-log-*`) fuera de la hoja. Productos conserva su filtro `analisis_resultado_filter` sin chip (filtro invisible, pendiente). Pendiente F6b: chip de vendedor en Clientes y de cliente en Vendedores.
+- **F7 Historiales (cliente, vendedor y producto):** `BarraFiltrosHistorial` (`views/analisis/components/`), solo presentación: recibe valores, `onChange`, opciones y conteos y cada Historial conserva su estado, sus claves de sesión y sus cálculos. Escritorio en dos filas (búsqueda, Cliente y Estado; Modalidad y seguimiento, con Limpiar, Exportar y contador). Móvil: búsqueda en la barra y el resto en la hoja. `soloAnulados` oculta Estado y seguimiento. Modalidad es segmentado con hasta dos modalidades y select con tres. **Aviso:** en el Historial de vendedor las opciones de Cliente salen de los movimientos ya filtrados por búsqueda, Estado y Modalidad; si esos filtros dejan un solo cliente (`opcionesCliente.length ≤ 1`) el select se oculta, y si ya había un cliente elegido el filtro sigue aplicándose sin verse ni contarse en "Filtros (N)" (solo lo quita Limpiar o cambiar los otros filtros).
+- **`ChipsFiltroContexto`** (`views/analisis/components/`): chips compactos (28 px, `surface`, o `surface-plana` con `plana` dentro de otra superficie) con el contexto del que se llega (vendedor, cliente) y una X de 24 px con área de toque de 32 px; en móvil comparten una fila y se truncan. Van en el slot `encabezado` de la barra.
