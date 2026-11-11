@@ -80,6 +80,7 @@ export const ModalRango = ({ desde = '', hasta = '', max, onAplicar, onCerrar })
         </ModalSeccion>
         <CalendarioRango
           className="mx-auto w-full max-w-xs"
+          autoFoco
           inicio={inicio}
           fin={fin}
           mes={mes}

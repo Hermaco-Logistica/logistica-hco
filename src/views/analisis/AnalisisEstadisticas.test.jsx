@@ -617,3 +617,39 @@ describe('Análisis y Estadísticas: Rango en escritorio (mismo modal que en mó
     expect(modal()).toBeTruthy();
   });
 });
+
+describe('Análisis y Estadísticas: foco del modal de Rango', () => {
+  const esperar = (ms = 60) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
+  afterEach(async () => { await new Promise((r) => setTimeout(r, 40)); reiniciarCapasParaPruebas(); });
+
+  it('al abrir el modal el foco queda en el día seleccionado, y al cerrar vuelve al botón Rango del selector (móvil y escritorio)', async () => {
+    for (const ancho of [400, 1280]) {
+      window.innerWidth = ancho; mm(ancho < 768);
+      montar('gerente', { periodo: 'custom', rango: ['2026-05-03', '2026-05-06'] });
+      const rango = screen.getByRole('button', { name: 'Rango' });
+      rango.focus();
+      fireEvent.click(rango);
+      await esperar(100);
+      expect(document.activeElement.getAttribute('data-dia')).toBe('2026-05-03');
+      fireEvent.click(within(screen.getByRole('dialog', { name: 'Rango de fechas' })).getByRole('button', { name: 'Cancelar' }));
+      await esperar(320);
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Rango' }));
+      cleanup();
+      await esperar(60);
+      reiniciarCapasParaPruebas();
+    }
+  });
+
+  it('abierto desde la etiqueta de fechas, al cerrar el foco vuelve a la etiqueta', async () => {
+    window.innerWidth = 1280; mm(false);
+    const { container } = montar('gerente', { periodo: 'custom', rango: ['2026-05-03', '2026-05-06'] });
+    const etiqueta = container.querySelector('[data-linea-fechas]');
+    etiqueta.focus();
+    fireEvent.click(etiqueta);
+    await esperar(100);
+    expect(document.activeElement.getAttribute('data-dia')).toBe('2026-05-03');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    await esperar(320);
+    expect(document.activeElement).toBe(container.querySelector('[data-linea-fechas]'));
+  });
+});
