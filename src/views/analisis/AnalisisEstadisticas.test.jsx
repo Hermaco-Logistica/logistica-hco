@@ -13,6 +13,7 @@ import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { RESULTADOS_SOLICITUD } from '../../utils/clasificarSolicitud';
 import { FASES_SEGUIMIENTO } from '../../utils/faseSeguimiento';
 import { reiniciarCapasParaPruebas } from '../../components/filtros/capasAtras';
+import { cargarFiltroPeriodoStorage, PERIODO_POR_DEFECTO } from '../../utils/dateValidation';
 
 /**
  * Lógica de filtrado de Análisis y Estadísticas (período, vendedor, cliente, resultado, seguimiento, rango e histórico).
@@ -195,9 +196,9 @@ describe('Análisis y Estadísticas: filtrado', () => {
     expect(screen.getByRole('button', { name: /^Limpiar filtros \(5 activos\)$/ })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /^Limpiar filtros/ }));
     for (const k of ['analisis_vendedor_filter', 'analisis_cliente_search', 'analisis_resultado_filter', 'analisis_seguimiento_filter']) expect(guardado(k)).toBe('');
-    expect(guardado('analisis_filtro_periodo')).toMatchObject({ periodo: 'custom', fechaInicio: '', fechaFin: '' });
-    expect(screen.getByLabelText('Fecha desde').value).toBe('');
-    expect(screen.getByLabelText('Fecha hasta').value).toBe('');
+    expect(guardado('analisis_filtro_periodo')).toMatchObject({ periodo: '30d', fechaInicio: '', fechaFin: '' });
+    expect(screen.queryByLabelText('Fecha desde')).toBeNull();
+    expect(screen.getByRole('button', { name: '30D' }).getAttribute('aria-pressed')).toBe('true');
     expect(screen.queryByRole('button', { name: /^Limpiar filtros/ })).toBeNull();
   });
 
@@ -231,7 +232,7 @@ describe('Análisis y Estadísticas: rango de fechas', () => {
     expect(contar(container)).toBe(60);
   });
   it('fecha futura: error en el campo (aria-invalid y título), mensaje general y esa fecha se ignora', () => {
-    const { container } = montar('comprador', { periodo: 'custom', rango: ['', ''] });
+    const { container } = montar('comprador', { periodo: 'custom', rango: [iso(60), ''] });
     fireEvent.change(screen.getByLabelText('Fecha desde'), { target: { value: '2026-12-31' } });
     const campo = screen.getByLabelText('Fecha desde');
     expect(campo.getAttribute('aria-invalid')).toBe('true');
@@ -241,7 +242,7 @@ describe('Análisis y Estadísticas: rango de fechas', () => {
     expect(guardado('analisis_filtro_periodo').fechaInicio).toBe('2026-12-31');
   });
   it('rango válido: filtra por ambos extremos', () => {
-    const { container } = montar('comprador', { periodo: 'custom', rango: ['', ''] });
+    const { container } = montar('comprador', { periodo: 'custom', rango: [iso(60), ''] });
     fireEvent.change(screen.getByLabelText('Fecha desde'), { target: { value: iso(120) } });
     fireEvent.change(screen.getByLabelText('Fecha hasta'), { target: { value: iso(20) } });
     expect(contar(container)).toBe(GOLD.rango);
@@ -386,7 +387,7 @@ describe('Análisis y Estadísticas: Rango en un modal (móvil)', () => {
     expect(guardado('analisis_filtro_periodo').periodo).toBe('this_year');
   });
 
-  it('"Filtros (N)" no cuenta las fechas del rango pero Limpiar sí, y Limpiar las vacía como antes', async () => {
+  it('"Filtros (N)" no cuenta las fechas del rango pero Limpiar sí; Limpiar vacía las fechas, vuelve a 30D y el distintivo desaparece', async () => {
     movil();
     montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'] });
     expect(botonFiltros().textContent).toBe('Filtros');
@@ -398,7 +399,7 @@ describe('Análisis y Estadísticas: Rango en un modal (móvil)', () => {
     await esperar(300);
     fireEvent.click(limpiar());
     await esperar();
-    expect(guardado('analisis_filtro_periodo')).toMatchObject({ periodo: 'custom', fechaInicio: '', fechaFin: '' });
+    expect(guardado('analisis_filtro_periodo')).toMatchObject({ periodo: '30d', fechaInicio: '', fechaFin: '' });
     expect(limpiar()).toBeNull();
   });
 
@@ -424,5 +425,124 @@ describe('Análisis y Estadísticas: Rango en un modal (móvil)', () => {
     expect(container.querySelector('[data-linea-fechas]')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Histórico' }));
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
+
+describe('Análisis y Estadísticas: Limpiar desde Rango, red de seguridad y etiqueta de fechas', () => {
+  const esperar = (ms = 60) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
+  const movil = () => { window.innerWidth = 400; mm(true); };
+  const limpiar = () => within(screen.getByRole('region', { name: 'Filtros' })).queryByRole('button', { name: /^Limpiar filtros/ });
+  const etiqueta = (container) => container.querySelector('[data-linea-fechas]');
+  afterEach(async () => { await new Promise((r) => setTimeout(r, 40)); reiniciarCapasParaPruebas(); });
+
+  it('Limpiar con Rango vacía las fechas, vuelve a 30D (por la constante compartida), quita la etiqueta y deja el carrusel en 30D', async () => {
+    movil();
+    const { container } = montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'] });
+    expect(PERIODO_POR_DEFECTO).toBe('30d');
+    expect(screen.getByRole('button', { name: 'Rango' }).getAttribute('aria-pressed')).toBe('true');
+    expect(etiqueta(container)).toBeTruthy();
+    fireEvent.click(limpiar());
+    await esperar();
+    expect(guardado('analisis_filtro_periodo')).toMatchObject({ periodo: PERIODO_POR_DEFECTO, fechaInicio: '', fechaFin: '' });
+    expect(screen.getByRole('button', { name: '30D' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Rango' }).getAttribute('aria-pressed')).toBe('false');
+    expect(etiqueta(container)).toBeNull();
+    expect(limpiar()).toBeNull();
+  });
+
+  it('Limpiar con otro período (aunque haya otros filtros) no cambia el período', async () => {
+    movil();
+    montar('gerente', { periodo: 'this_year', analisis_cliente_search: 'bomba' });
+    expect(limpiar().getAttribute('aria-label')).toBe('Limpiar filtros (1)');
+    fireEvent.click(limpiar());
+    await esperar();
+    expect(guardado('analisis_filtro_periodo').periodo).toBe('this_year');
+    expect(guardado('analisis_cliente_search')).toBe('');
+    expect(screen.getByRole('button', { name: 'Este Año' }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('Limpiar con Rango y otro filtro: vuelve a 30D y el distintivo cuenta solo lo que queda hasta que también se vacía', async () => {
+    movil();
+    montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'], analisis_cliente_search: 'bomba' });
+    expect(limpiar().getAttribute('aria-label')).toBe('Limpiar filtros (2)');
+    fireEvent.click(limpiar());
+    await esperar();
+    expect(guardado('analisis_cliente_search')).toBe('');
+    expect(limpiar()).toBeNull();
+  });
+
+  it('una sesión con Rango sin ninguna fecha carga en el período por defecto (no como un Rango vacío)', () => {
+    movil();
+    const { container } = montar('gerente', { periodo: 'custom', rango: ['', ''] });
+    expect(screen.getByRole('button', { name: '30D' }).getAttribute('aria-pressed')).toBe('true');
+    expect(etiqueta(container)).toBeNull();
+    expect(guardado('analisis_filtro_periodo').periodo).toBe('30d');
+  });
+
+  it('cargarFiltroPeriodoStorage: custom sin fechas vuelve al por defecto; con una sola fecha sigue siendo Rango; otros períodos no cambian', () => {
+    const guardar = (valor) => sessionStorage.setItem('analisis_filtro_periodo', JSON.stringify(valor));
+    guardar({ periodo: 'custom', fechaInicio: '', fechaFin: '' });
+    expect(cargarFiltroPeriodoStorage().periodo).toBe(PERIODO_POR_DEFECTO);
+    guardar({ periodo: 'custom', fechaInicio: '2026-05-01', fechaFin: '' });
+    expect(cargarFiltroPeriodoStorage()).toMatchObject({ periodo: 'custom', fechaInicio: '2026-05-01' });
+    guardar({ periodo: 'custom', fechaInicio: '', fechaFin: '2026-05-10' });
+    expect(cargarFiltroPeriodoStorage()).toMatchObject({ periodo: 'custom', fechaFin: '2026-05-10' });
+    guardar({ periodo: 'this_year', fechaInicio: '', fechaFin: '' });
+    expect(cargarFiltroPeriodoStorage().periodo).toBe('this_year');
+    sessionStorage.clear();
+    expect(cargarFiltroPeriodoStorage().periodo).toBe(PERIODO_POR_DEFECTO);
+  });
+
+  it('la etiqueta de fechas aparece solo con Rango en móvil, con los tres formatos', () => {
+    movil();
+    const a = montar('gerente', { periodo: 'this_year' });
+    expect(etiqueta(a.container)).toBeNull();
+    cleanup();
+    const b = montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'] });
+    expect(etiqueta(b.container).textContent).toBe('01/05 – 10/05');
+    cleanup();
+    const c = montar('gerente', { periodo: 'custom', rango: ['2026-05-01', ''] });
+    expect(etiqueta(c.container).textContent).toBe('Desde 01/05');
+    cleanup();
+    const d = montar('gerente', { periodo: 'custom', rango: ['', '2026-05-05'] });
+    expect(etiqueta(d.container).textContent).toBe('Hasta 05/05');
+  });
+
+  it('la etiqueta usa Etiqueta (tono apagado, compacta, icono) y es un botón con nombre accesible y área de toque ampliada', () => {
+    movil();
+    const { container } = montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'] });
+    const boton = etiqueta(container);
+    expect(boton.tagName).toBe('BUTTON');
+    expect(boton.getAttribute('aria-label')).toBe('Editar fechas del rango');
+    expect(boton.className).toContain('before:-bottom-4');
+    expect(boton.className).toContain('mt-1');
+    const chip = boton.querySelector('span');
+    expect(chip.className).toContain('bg-tag-apagado-soft');
+    expect(chip.className).toContain('h-6');
+    expect(chip.querySelector('svg')).toBeTruthy();
+  });
+
+  it('tocar la etiqueta abre el modal de Rango prellenado y Cancelar no cambia nada', async () => {
+    movil();
+    montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'] });
+    fireEvent.click(screen.getByRole('button', { name: 'Editar fechas del rango' }));
+    await esperar();
+    const modal = screen.getByRole('dialog', { name: 'Rango de fechas' });
+    expect(modal.querySelector('[data-resumen-rango]').textContent).toBe('01/05/2026 — 10/05/2026');
+    fireEvent.click(within(modal).getByRole('button', { name: 'Cancelar' }));
+    await esperar(300);
+    expect(screen.queryByRole('dialog', { name: 'Rango de fechas' })).toBeNull();
+    expect(guardado('analisis_filtro_periodo')).toMatchObject({ periodo: 'custom', fechaInicio: '2026-05-01', fechaFin: '2026-05-10' });
+  });
+
+  it('en escritorio no existe la etiqueta y Limpiar desde Rango vuelve a 30D quitando los campos de fecha', () => {
+    window.innerWidth = 1280; mm(false);
+    const { container } = montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'] });
+    expect(etiqueta(container)).toBeNull();
+    expect(screen.getByLabelText('Fecha desde').value).toBe('2026-05-01');
+    fireEvent.click(screen.getByRole('button', { name: /^Limpiar filtros/ }));
+    expect(screen.queryByLabelText('Fecha desde')).toBeNull();
+    expect(screen.getByRole('button', { name: '30D' }).getAttribute('aria-pressed')).toBe('true');
+    expect(etiqueta(container)).toBeNull();
   });
 });

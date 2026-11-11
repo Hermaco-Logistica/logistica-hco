@@ -5,6 +5,9 @@
 
 export const STORAGE_KEY_PERIODO = 'analisis_filtro_periodo';
 
+/** Período con el que abre Análisis sin sesión (y al que vuelve Limpiar desde Rango, y la sesión de un Rango sin fechas). Una sola fuente. */
+export const PERIODO_POR_DEFECTO = '30d';
+
 const NOMBRES_MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
@@ -240,7 +243,7 @@ export const validarRangoFechas = (fechaInicio, fechaFin) => {
  * @returns {{ periodo: string, fechaInicio: string, fechaFin: string }}
  */
 export const cargarFiltroPeriodoStorage = () => {
-  const fallback = { periodo: '30d', fechaInicio: '', fechaFin: '', anioHistorico: null };
+  const fallback = { periodo: PERIODO_POR_DEFECTO, fechaInicio: '', fechaFin: '', anioHistorico: null };
   try {
     const dataRaw = sessionStorage.getItem(STORAGE_KEY_PERIODO);
     if (!dataRaw) return fallback;
@@ -254,10 +257,13 @@ export const cargarFiltroPeriodoStorage = () => {
       periodo = 'historico';
       if (!data.anioHistorico) data.anioHistorico = 'todos';
     }
-    periodo = periodosValidos.includes(periodo) ? periodo : '30d';
+    periodo = periodosValidos.includes(periodo) ? periodo : PERIODO_POR_DEFECTO;
 
     let fechaInicio = typeof data.fechaInicio === 'string' ? data.fechaInicio : '';
     let fechaFin = typeof data.fechaFin === 'string' ? data.fechaFin : '';
+
+    // Un Rango sin ninguna fecha no filtra nada: es un estado vacío, no un rango. Vuelve al período por defecto.
+    if (periodo === 'custom' && !fechaInicio && !fechaFin) periodo = PERIODO_POR_DEFECTO;
 
     if (periodo === 'custom') {
       const hoyStr = getHoyElSalvador();
@@ -287,7 +293,7 @@ export const guardarFiltroPeriodoStorage = ({ periodo, fechaInicio = '', fechaFi
     sessionStorage.setItem(
       STORAGE_KEY_PERIODO,
       JSON.stringify({
-        periodo: periodo || '30d',
+        periodo: periodo || PERIODO_POR_DEFECTO,
         fechaInicio: fechaInicio || '',
         fechaFin: fechaFin || '',
         anioHistorico: anioHistorico || null

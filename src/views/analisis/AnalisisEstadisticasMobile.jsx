@@ -13,7 +13,8 @@ import {
   ArrowUpRight,
   ChevronRight,
   Ban,
-  AlertCircle
+  AlertCircle,
+  Calendar
 } from 'lucide-react';
 import { MetricasRotativas } from './components/MetricasRotativas';
 import { FASES_SEGUIMIENTO } from '../../utils/faseSeguimiento';
@@ -669,6 +670,7 @@ export const AnalisisEstadisticasMobile = ({
   setPeriodo,
   fechaInicio,
   fechaFin,
+  onEditarRango,
   metricas,
   vendedorFilter = '',
   statsVendedores = [],
@@ -729,7 +731,19 @@ export const AnalisisEstadisticasMobile = ({
       {/* SELECTOR DE PERÍODO */}
       <div>
         <MobilePeriodStrip periodo={periodo} setPeriodo={setPeriodo} onChange={resetPage} />
-        {periodo === 'custom' && <p data-linea-fechas className="mt-1.5 px-1 text-xs text-foreground-muted">{textoRangoCorto(fechaInicio, fechaFin)}</p>}
+        {periodo === 'custom' && (
+          // Etiqueta con las fechas; tocarla reabre el modal de Rango (mismo handler que "Rango"). El área de toque llega a 44 px (24 de la
+          // etiqueta + 4 de arriba, que son el margen, + 16 de abajo, hasta la tarjeta) con un pseudo-elemento, sin agrandar nada a la vista.
+          <button
+            type="button"
+            data-linea-fechas
+            aria-label="Editar fechas del rango"
+            onClick={onEditarRango}
+            className="relative mt-1 flex w-fit cursor-pointer rounded-lg text-left before:absolute before:-bottom-4 before:-top-1 before:inset-x-0 before:content-[''] focus-visible:outline-2 focus-visible:outline-primary"
+          >
+            <Etiqueta tono="apagado" tamano="compacta" icono={Calendar}>{textoRangoCorto(fechaInicio, fechaFin)}</Etiqueta>
+          </button>
+        )}
       </div>
 
       {/* BARRA DE FILTROS (INYECTADA DESDE DESKTOP) */}

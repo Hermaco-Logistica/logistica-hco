@@ -33,7 +33,8 @@ import {
   parseFinDiaElSalvador,
   validarRangoFechas,
   cargarFiltroPeriodoStorage,
-  guardarFiltroPeriodoStorage
+  guardarFiltroPeriodoStorage,
+  PERIODO_POR_DEFECTO
 } from '../../utils/dateValidation';
 
 import { useSessionState } from '../../hooks/usePersistedState';
@@ -592,7 +593,10 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     setFechaInicio(''); 
     setFechaFin(''); 
     setPageVendedores(1);
-    guardarFiltroPeriodoStorage({ periodo, fechaInicio: '', fechaFin: '' });
+    // Desde Rango (que sin fechas quedaría vacío) vuelve al período por defecto; con cualquier otro período no cambia: es el alcance de la pantalla.
+    const periodoNuevo = periodo === 'custom' ? PERIODO_POR_DEFECTO : periodo;
+    if (periodoNuevo !== periodo) setPeriodo(periodoNuevo);
+    guardarFiltroPeriodoStorage({ periodo: periodoNuevo, fechaInicio: '', fechaFin: '' });
   };
 
   const exportarMovimientos = () => {
@@ -762,6 +766,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         setPeriodo={elegirPeriodoMovil}
         fechaInicio={fechaInicio}
         fechaFin={fechaFin}
+        onEditarRango={() => elegirPeriodoMovil('custom')}
         metricas={metricas}
         vendedorFilter={vendedorFilter}
         statsVendedores={statsVendedores}
