@@ -120,7 +120,7 @@ describe('Análisis y Estadísticas: filtrado', () => {
     window.innerWidth = 400; mm(true);
     const { container } = montar('gerente', { periodo: 'this_year' });
     const grupo = screen.getByRole('group', { name: 'Período' });
-    expect([...grupo.querySelectorAll('button')].map((b) => b.textContent)).toEqual(['7D', '30D', 'Este Mes', '90D', 'Este Año', 'Rango', 'Histórico']);
+    expect([...grupo.querySelectorAll('button:not([data-flecha])')].map((b) => b.textContent)).toEqual(['7D', '30D', 'Este Mes', '90D', 'Este Año', 'Rango', 'Histórico']);
     expect(container.querySelector('[id^="periodo-btn-"]')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
     expect(screen.getByRole('dialog', { name: 'Rango de fechas' })).toBeTruthy();
@@ -129,27 +129,32 @@ describe('Análisis y Estadísticas: filtrado', () => {
     expect(guardado('analisis_filtro_periodo').periodo).toBe('historico');
   });
 
-  it('móvil: si la fila no cabe, el período colapsa a "Período: Este Año" con las mismas opciones y la misma clave', () => {
+  it('móvil: el período es un carrusel (no un desplegable): flechas con desbordamiento, opción activa a la vista y elegir una cambia la clave', () => {
     window.innerWidth = 400; mm(true);
     const ro = globalThis.ResizeObserver;
-    const ow = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
-    const cw = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
+    const cw = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+    const sw = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollWidth');
     globalThis.ResizeObserver = class { constructor(f) { this.f = f; } observe() { this.f(); } disconnect() {} };
-    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get: () => 480 });
-    Object.defineProperty(Element.prototype, 'clientWidth', { configurable: true, get: () => 360 });
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 336 });
+    Object.defineProperty(HTMLElement.prototype, 'scrollWidth', { configurable: true, get: () => 523 });
     try {
-      montar('gerente', { periodo: 'this_year' });
-      const combo = screen.getByRole('combobox', { name: 'Período' });
-      expect(combo.textContent).toContain('Período:');
-      expect(combo.textContent).toContain('Este Año');
-      fireEvent.click(combo);
-      expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['7D', '30D', 'Este Mes', '90D', 'Este Año', 'Rango', 'Histórico']);
-      fireEvent.click(screen.getByRole('option', { name: 'Este Mes' }));
-      expect(guardado('analisis_filtro_periodo').periodo).toBe('this_month');
+      const { container } = montar('gerente', { periodo: 'this_year' });
+      expect(screen.queryByRole('combobox', { name: 'Período' })).toBeNull();
+      const grupo = screen.getByRole('group', { name: 'Período' });
+      expect(grupo.className).toContain('h-11');
+      expect(grupo.className).toContain('bg-slate-100');
+      const scroller = container.querySelector('[data-carrusel]');
+      expect(scroller.className).toContain('[scrollbar-width:none]');
+      expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: 'auto', block: 'nearest', inline: 'center' });
+      expect(container.querySelector('[data-flecha="der"]').getAttribute('data-visible')).toBe('true');
+      expect(container.querySelector('[data-flecha="izq"]').getAttribute('data-visible')).toBe('false');
+      fireEvent.click(screen.getByRole('button', { name: '90D' }));
+      expect(guardado('analisis_filtro_periodo').periodo).toBe('90d');
+      expect(screen.getByRole('button', { name: '90D' }).getAttribute('aria-pressed')).toBe('true');
     } finally {
       globalThis.ResizeObserver = ro;
-      if (ow) Object.defineProperty(HTMLElement.prototype, 'offsetWidth', ow); else delete HTMLElement.prototype.offsetWidth;
-      if (cw) Object.defineProperty(Element.prototype, 'clientWidth', cw); else delete Element.prototype.clientWidth;
+      if (cw) Object.defineProperty(HTMLElement.prototype, 'clientWidth', cw); else delete HTMLElement.prototype.clientWidth;
+      if (sw) Object.defineProperty(HTMLElement.prototype, 'scrollWidth', sw); else delete HTMLElement.prototype.scrollWidth;
     }
   });
 
@@ -253,12 +258,6 @@ describe('Análisis y Estadísticas: Rango en un modal (móvil)', () => {
   const botonFiltros = () => screen.getByRole('button', { name: /^Filtros/ });
   const limpiar = () => within(screen.getByRole('region', { name: 'Filtros' })).queryByRole('button', { name: /^Limpiar filtros/ });
   const movil = (ancho = 400) => { window.innerWidth = ancho; mm(ancho < 768); };
-  const colapsar = () => {
-    // jsdom no mide: se simula una fila que no cabe para que el período colapse al desplegable
-    globalThis.ResizeObserver = class { constructor(f) { this.f = f; } observe() { this.f(); } disconnect() {} };
-    Object.defineProperty(HTMLElement.prototype, 'offsetWidth', { configurable: true, get: () => 480 });
-    Object.defineProperty(Element.prototype, 'clientWidth', { configurable: true, get: () => 360 });
-  };
   afterEach(async () => {
     await new Promise((r) => setTimeout(r, 40));
     reiniciarCapasParaPruebas();
@@ -340,15 +339,28 @@ describe('Análisis y Estadísticas: Rango en un modal (móvil)', () => {
     expect(campo('Hasta').value).toBe('2026-04-20');
   });
 
-  it('reelegir Rango en el desplegable (ya activo) vuelve a abrir el modal', async () => {
+  it('reelegir Rango (ya activo) vuelve a abrir el modal; la opción activa no salta a Rango hasta Aplicar y Cancelar la deja donde estaba', async () => {
     movil();
-    colapsar();
     montar('gerente', { periodo: 'custom', rango: ['2026-05-01', '2026-05-10'] });
-    fireEvent.click(screen.getByRole('combobox', { name: 'Período' }));
-    fireEvent.click(screen.getByRole('option', { name: 'Rango' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
     await esperar();
     expect(modal()).toBeTruthy();
     expect(campo('Desde').value).toBe('2026-05-01');
+    fireEvent.click(within(modal()).getByRole('button', { name: 'Cancelar' }));
+    await esperar(300);
+    expect(screen.getByRole('button', { name: 'Rango' }).getAttribute('aria-pressed')).toBe('true');
+    cleanup();
+    await esperar(60);
+    reiniciarCapasParaPruebas();
+    montar('gerente', { periodo: '30d' });
+    fireEvent.click(screen.getByRole('button', { name: 'Rango' }));
+    await esperar();
+    expect(screen.getByRole('button', { name: '30D' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'Rango' }).getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(within(modal()).getByRole('button', { name: 'Cancelar' }));
+    await esperar(300);
+    expect(screen.getByRole('button', { name: '30D' }).getAttribute('aria-pressed')).toBe('true');
+    expect(guardado('analisis_filtro_periodo').periodo).toBe('30d');
   });
 
   it('el botón atrás del teléfono, la X y Escape cierran sin cambiar nada', async () => {

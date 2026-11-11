@@ -123,13 +123,15 @@ function ListRow({ initials, title, subtitle, badgeValue, badgeTono, onClick, in
    SECCIONES
    ========================================================================== */
 
-/** 1. Selector de período: el mismo FiltroSegmentado que en escritorio (mismas opciones y rótulos); en móvil no cabe y colapsa a un desplegable "Período: Este Año". */
+/**
+ * 1. Selector de período: el mismo FiltroSegmentado que en escritorio (mismas opciones y rótulos), en variante carrusel: en móvil no cabe y
+ * se desplaza en horizontal (difuminado, última opción asomada, flechas, opción activa a la vista). "Rango" no cambia la opción activa: el
+ * padre abre el modal de fechas y solo Aplicar cambia el período.
+ */
 function MobilePeriodStrip({ periodo, setPeriodo, onChange }) {
   return (
     <FiltroSegmentado
-      colapsable
-      sinTodos
-      prefijo="Período:"
+      carrusel
       ariaLabel="Período"
       opciones={OPCIONES_PERIODO}
       value={periodo}

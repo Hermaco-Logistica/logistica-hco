@@ -72,7 +72,7 @@ export const FiltroSegmentado = ({ opciones = [], value, onChange, ariaLabel, et
       <div
         role="group"
         aria-label={ariaLabel}
-        className={`relative flex h-11 w-full items-center rounded-xl p-0.5 md:h-9 ${seleccionado ? 'bg-filtro-activo' : 'bg-slate-100'} ${className}`}
+        className={`relative flex h-11 w-full items-center rounded-xl p-0.5 ${seleccionado ? 'bg-filtro-activo' : 'bg-slate-100'} ${className}`}
       >
         <div
           ref={refCarrusel}
