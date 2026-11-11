@@ -6,7 +6,7 @@
   ],
   "totales": {
     "clases": 975,
-    "literales": 80
+    "literales": 78
   },
   "archivos": {
     "src/App.jsx": {
@@ -227,7 +227,7 @@
     },
     "src/views/vendedor/pedido-manual/detallePedidoManual.css": {
       "clases": 0,
-      "literales": 4
+      "literales": 2
     }
   }
 }

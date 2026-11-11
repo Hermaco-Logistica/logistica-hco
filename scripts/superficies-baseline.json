@@ -4,7 +4,7 @@
     "bordes": 27,
     "sombras": 22,
     "sinSurface": 18,
-    "css": 2,
+    "css": 1,
     "anidadas": 0
   },
   "archivos": {
@@ -110,7 +110,7 @@
       "bordes": 0,
       "sombras": 0,
       "sinSurface": 0,
-      "css": 2,
+      "css": 1,
       "anidadas": 0
     }
   }
