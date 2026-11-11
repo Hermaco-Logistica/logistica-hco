@@ -6,7 +6,7 @@
   ],
   "totales": {
     "clases": 975,
-    "literales": 87
+    "literales": 80
   },
   "archivos": {
     "src/App.jsx": {
@@ -84,10 +84,6 @@
     "src/components/seguimiento/SeguimientoItemCondicion.jsx": {
       "clases": 1,
       "literales": 0
-    },
-    "src/components/seguimiento/seguimiento.css": {
-      "clases": 0,
-      "literales": 7
     },
     "src/components/ui/Toast.jsx": {
       "clases": 16,
