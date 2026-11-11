@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo, useRef, useCallback, useDeferredVa
 import { pluralizar } from '../../utils/pluralizar';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
-import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroFechas, FiltroSegmentado, FiltroSelect, ModalRango } from '../../components/filtros';
+import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroSegmentado, FiltroSelect, ModalRango } from '../../components/filtros';
 import { AnalisisEstadisticasMobile } from './AnalisisEstadisticasMobile';
+import { EtiquetaFechasRango } from './components/EtiquetaFechasRango';
 import { OPCIONES_PERIODO } from './opcionesPeriodo';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { 
@@ -686,19 +687,6 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         )}
         filtros={(
           <>
-            {periodo === 'custom' && !isMobile && (
-              <FiltroFechas
-                value={{ desde: fechaInicio, hasta: fechaFin }}
-                onChange={({ desde, hasta }) => { setFechaInicio(desde); setFechaFin(hasta); setPageVendedores(1); }}
-                porDefecto={{ desde: '', hasta: '' }}
-                sinAccesos
-                max={hoyElSalvador}
-                errorDesde={validacionRango.errorInicio || undefined}
-                errorHasta={validacionRango.errorFin || undefined}
-                etiqueta="Rango de fechas"
-                ariaLabel="Filtrar por rango de fechas"
-              />
-            )}
             {periodo === 'historico' && (
               <FiltroSelect
                 sinTodos
@@ -745,28 +733,33 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     );
   };
 
+  // "Rango" abre el modal de fechas (el mismo en móvil y en escritorio) y no cambia el período hasta Aplicar; también si Rango ya estaba activo:
+  // se reabre con sus fechas. El resto de períodos cambian al elegirlos.
+  const elegirPeriodo = (valor) => {
+    if (valor === 'custom') setRangoAbierto(true);
+    else setPeriodo(valor);
+  };
+  const aplicarRango = ({ desde, hasta }) => {
+    setFechaInicio(desde);
+    setFechaFin(hasta);
+    setPeriodo('custom');
+    setPageVendedores(1);
+  };
+  const modalRango = rangoAbierto && (
+    <ModalRango desde={fechaInicio} hasta={fechaFin} max={hoyElSalvador} onAplicar={aplicarRango} onCerrar={() => setRangoAbierto(false)} />
+  );
+
   if (isMobile) {
-    // En móvil "Rango" abre el modal de fechas y no cambia el período hasta Aplicar (también si Rango ya estaba activo: se reabre con sus fechas).
-    const elegirPeriodoMovil = (valor) => {
-      if (valor === 'custom') setRangoAbierto(true);
-      else setPeriodo(valor);
-    };
-    const aplicarRango = ({ desde, hasta }) => {
-      setFechaInicio(desde);
-      setFechaFin(hasta);
-      setPeriodo('custom');
-      setPageVendedores(1);
-    };
     return (
       <>
       <AnalisisEstadisticasMobile
         theme={theme}
         role={role}
         periodo={periodo}
-        setPeriodo={elegirPeriodoMovil}
+        setPeriodo={elegirPeriodo}
         fechaInicio={fechaInicio}
         fechaFin={fechaFin}
-        onEditarRango={() => elegirPeriodoMovil('custom')}
+        onEditarRango={() => elegirPeriodo('custom')}
         metricas={metricas}
         vendedorFilter={vendedorFilter}
         statsVendedores={statsVendedores}
@@ -779,7 +772,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         resetPage={() => setPageVendedores(1)}
         FiltrosComponent={renderBarra()}
       />
-      {rangoAbierto && <ModalRango desde={fechaInicio} hasta={fechaFin} max={hoyElSalvador} onAplicar={aplicarRango} onCerrar={() => setRangoAbierto(false)} />}
+      {modalRango}
       </>
     );
   }
@@ -803,16 +796,21 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         }
         subtitle="Métricas operativas consolidadas, trazabilidad de solicitudes y rendimiento comercial"
         actions={(
-          <FiltroSegmentado
-            ariaLabel="Período"
-            opciones={OPCIONES_PERIODO}
-            value={periodo}
-            onChange={(valor) => { setPeriodo(valor); setPageVendedores(1); }}
-          />
+          <div className="flex flex-col items-end gap-1">
+            <FiltroSegmentado
+              ariaLabel="Período"
+              opciones={OPCIONES_PERIODO}
+              value={periodo}
+              onChange={(valor) => { elegirPeriodo(valor); setPageVendedores(1); }}
+            />
+            {/* Con Rango, sus fechas van como etiqueta tocable justo debajo del segmentado, alineada a la derecha (a su lado la cabecera crecía: el título se parte). */}
+            {periodo === 'custom' && <EtiquetaFechasRango desde={fechaInicio} hasta={fechaFin} onEditar={() => elegirPeriodo('custom')} />}
+          </div>
         )}
       />
 
       {renderBarra()}
+      {modalRango}
 
       {/* TARJETAS KPI MINIMALISTAS */}
       {mostrarKpisLegacy && (
