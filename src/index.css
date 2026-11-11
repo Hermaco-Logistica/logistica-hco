@@ -424,31 +424,6 @@
     @apply surface;
   }
 
-  /* Campo de filtro/formulario en las vistas: misma forma que los campos de los modales
-     (gris suave, borde de 1px casi invisible, al enfocar se aclara y aparece un anillo de 4px). */
-  .tf-campo {
-    width: 100%;
-    border-radius: 0.75rem;
-    border: 1px solid var(--color-border);
-    background-color: var(--tf-color-surface-muted);
-    padding: 0.625rem 0.875rem;
-    font-size: 13px;
-    font-weight: 500;
-    color: #171717;
-    outline: none;
-    transition-property: background-color, border-color, box-shadow;
-    transition-duration: 150ms;
-  }
-  .tf-campo:focus {
-    background-color: var(--color-surface);
-    border-color: var(--color-foreground-muted);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-foreground-muted) 20%, transparent);
-  }
-  .tf-campo:disabled { cursor: not-allowed; opacity: 0.6; }
-  @media (prefers-reduced-motion: reduce) {
-    .tf-campo { transition-duration: 0.01ms; }
-  }
-
   /* Tablas de listado: tarjeta con padding de 12px, así el encabezado (radio 12px) es concéntrico con
      la tarjeta (radio 24px). Sin cuadrícula: solo una línea fina entre filas y hover redondeado. */
   .tf-tabla-card {

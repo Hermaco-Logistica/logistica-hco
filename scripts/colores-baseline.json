@@ -6,7 +6,7 @@
   ],
   "totales": {
     "clases": 975,
-    "literales": 78
+    "literales": 77
   },
   "archivos": {
     "src/App.jsx": {
@@ -99,7 +99,7 @@
     },
     "src/index.css": {
       "clases": 16,
-      "literales": 8
+      "literales": 7
     },
     "src/utils/etiquetas.js": {
       "clases": 7,
