@@ -7,41 +7,8 @@
 }
 
 /* ── Cabecera y KPIs ──────────────────────────────────────────────────────── */
-.prorrogas-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-.prorrogas-header__intro {
-  flex: 1 1 22rem;
-  min-width: 0;
-}
-
-.prorrogas-title {
-  margin: 0;
-  font-size: clamp(24px, 2.5vw, 32px);
-  font-weight: 900;
-  font-style: italic;
-  letter-spacing: -0.03em;
-  color: var(--detalle-text);
-  line-height: 1.1;
-  white-space: nowrap;
-}
-
 .prorrogas-title__dot {
   color: var(--tf-color-brand);
-}
-
-.prorrogas-subtitle {
-  margin: 6px 0 0 0;
-  font-size: 13px;
-  color: var(--detalle-text-muted);
-  font-weight: 400;
-  line-height: 1.4;
-  max-width: 56ch;
 }
 
 /* Tarjeta única de KPIs con 3 celdas */
@@ -173,16 +140,6 @@
   color: var(--detalle-text);
 }
 
-/* Columna Motivo */
-.prorrogas-cell-motivo {
-  font-size: 13px;
-  color: var(--detalle-text);
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
 .prorrogas-btn-items {
   margin-top: 4px;
   display: inline-flex;
@@ -298,23 +255,6 @@
 .prorrogas-btn-action--atender:hover {
   background: var(--detalle-surface-muted);
 }
-.prorrogas-btn-action--rechazar {
-  border: 1px solid var(--detalle-accent-danger);
-  background: transparent;
-  color: var(--detalle-accent-danger);
-}
-.prorrogas-btn-action--rechazar:hover {
-  background: var(--detalle-bg-danger);
-}
-.prorrogas-btn-action--aprobar {
-  border: 1px solid var(--detalle-accent-success);
-  background: var(--detalle-accent-success);
-  color: white;
-}
-.prorrogas-btn-action--aprobar:hover {
-  background: var(--detalle-success-hover);
-}
-
 /* Fila expandida de ítems afectados: la altura se anima con grid-template-rows (0fr -> 1fr). */
 .prorrogas-expanded-row > td {
   padding: 0;
