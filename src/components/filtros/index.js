@@ -12,3 +12,5 @@ export { FiltroFechaCampo } from './FiltroFechaCampo';
 export { FiltroFechas } from './FiltroFechas';
 export { rangoMesActualISO, derivarAcceso } from './rangosFecha';
 export { ModalRango } from './ModalRango';
+export { CalendarioRango } from './CalendarioRango';
+export { elegirDiaRango } from './elegirDiaRango';

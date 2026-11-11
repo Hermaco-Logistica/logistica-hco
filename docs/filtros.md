@@ -81,6 +81,16 @@ La lógica del carrusel de `FiltroPestanas` se extrajo a `useCarrusel.js` y la f
 - **`FiltroPestanas`:** `recortar` y `flechas` valen por defecto lo mismo que `sticky`, pero son independientes: con `flechas` sin `sticky` las flechas van dentro de la tira (`left-1.5` / `right-1.5`).
 - **`FiltroSegmentado carrusel`** (solo en la barra; excluyente con `colapsable`, que se ignora): la pista gris (`slate-100`, `rounded-xl`, `h-11` = 44 px en cualquier ancho: es una variante táctil) lleva un scroller con las opciones en texto plano y la activa como píldora oscura del rol (las mismas clases que el segmentado normal), difuminado de 24 px, última opción cortada a medias, flechas dentro de la pista (`left-1.5` / `right-1.5`), sin barra de desplazamiento (`scrollbar-width: none`, que Chrome respeta también en modo dispositivo) y la opción activa centrada al montar y al elegirla. `prefijo` no se muestra.
 
+## Calendario de rango (`CalendarioRango`, `elegirDiaRango`)
+
+Calendario mensual para elegir un día o un rango, controlado y presentacional (no guarda estado ni cierra nada). Reproduce el calendario que DashboardVendedor, DashboardCompras, DashboardPedidos y GestionOC repiten a mano dentro de `FiltroFechasContenedor`; esas cuatro pantallas **todavía no lo usan** (pendiente: migrarlas con la comprobación del DOM antes y después). Lo usa el modal de Rango.
+- **Props:** `inicio`, `fin` (Date a las 00:00 o null), `mes` (Date del mes mostrado), `onCambiarMes(±1)`, `onElegirDia(Date)`, `max` (Date, último día elegible; sin `max` no hay límite) y `flechasRedondeo` (`'lg'` por defecto o `'xl'`).
+- **Aspecto:** cabecera con el mes en mayúsculas y flechas `<` `>` (`p-1.5`, `rounded-lg`), iniciales `D L M M J V S` (9 px), días en filas de siete con `gap-1` y 11 px. Inicio y fin: `bg-slate-900` con texto blanco y círculo; días del medio: `bg-slate-100` sin radio. Medido en la hoja (393 px): contenedor de 288 px de ancho útil, cuadrícula de 5 filas = 138,5 px, día de 37,7×24,5.
+- **`elegirDiaRango(inicio, fin, dia)`** → `{ inicio, fin, cerrar }`: sin inicio o con el rango completo, el toque empieza un rango nuevo (un solo toque = un día); con inicio y sin fin, un día anterior reemplaza el inicio y no cierra, y otro (también el mismo día) es el fin y cierra.
+- **`max`:** los días posteriores llevan `aria-disabled` y no hacen nada al tocarlos; la flecha `>` se deshabilita en el mes de `max`.
+- **Accesibilidad:** cada día lleva `aria-label` con la fecha completa ("3 de noviembre de 2026") más su papel ("inicio del rango", "fin del rango", "dentro del rango", "un día"), `aria-pressed` si está seleccionado y foco visible; las flechas se llaman "Mes anterior" y "Mes siguiente"; el título del mes es `aria-live="polite"`. Sin navegación con las flechas del teclado (se recorre con Tab): pendiente.
+- Usa `obtenerDiasDelMes` de `views/vendedor/dashboard/utils/dashboardVendedorHelpers.js` (dependencia de `components` hacia `views`; pendiente moverla a `utils` cuando se migren las pantallas).
+
 ## Estados de un campo (`estilosCampo.js`)
 | Estado | Fondo | Borde | Texto / icono |
 | --- | --- | --- | --- |
