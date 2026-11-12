@@ -5,7 +5,7 @@
     "src/utils/etiquetas.js"
   ],
   "totales": {
-    "clases": 975,
+    "clases": 971,
     "literales": 77
   },
   "archivos": {
@@ -86,7 +86,7 @@
       "literales": 0
     },
     "src/components/ui/Toast.jsx": {
-      "clases": 16,
+      "clases": 12,
       "literales": 0
     },
     "src/components/vendedor/ModalVentaPerdida.jsx": {
