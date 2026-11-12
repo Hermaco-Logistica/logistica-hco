@@ -47,7 +47,7 @@ export const ProrrogaItemsAfectados = ({ solicitud, record }) => {
         return (
           <article
             key={`${solicitud.id}-item-${indice}`}
-            className="rounded-[6px] border border-[var(--detalle-border)] bg-[var(--detalle-surface)] p-3"
+            className="surface-plana rounded-[6px] p-3"
           >
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">

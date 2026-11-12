@@ -310,7 +310,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
       />
 
       {/* Resumen Móvil (< md): Correlativo, estado e info del cliente */}
-      <div className="md:hidden bg-white rounded-2xl p-4 shadow-[var(--tf-shadow-card)] mb-4 space-y-2">
+      <div className="surface md:hidden rounded-2xl p-4 mb-4 space-y-2">
         <div className="flex items-center justify-between gap-2">
           <span className="font-mono font-black text-base text-slate-900 tracking-tight">
             {solicitudBase.correlativo || '---'}
@@ -355,7 +355,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
       <PanelCriteriosProrroga solicitud={solicitudSeguimiento} resumen={resumenSeguimiento} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-[var(--tf-shadow-card)] flex flex-col justify-center">
+        <div className="surface lg:col-span-2 p-6 flex flex-col justify-center">
           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Detalles del Vendedor</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex flex-col gap-4">
@@ -381,7 +381,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl p-6 shadow-[var(--tf-shadow-card)] flex flex-col h-full">
+        <div className="surface p-6 flex flex-col h-full">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tus Comentarios</h3>
             <button 

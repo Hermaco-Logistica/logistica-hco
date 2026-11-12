@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { pluralizar } from '../../utils/pluralizar';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Search, Zap, Clock, Download } from 'lucide-react';
+import { ArrowLeft, Zap, Clock } from 'lucide-react';
 import { extraerTodosLosMovimientos, exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { Etiqueta } from '../../components/Etiqueta';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroSegmentado } from '../../components/filtros';
 import { getRoleTheme, formatearTiempoRespuesta, formatearTiempoCierre } from './theme';
 import { contarDecisiones } from './utils/decisionMetrics';
 import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
@@ -17,6 +19,17 @@ import {
   cargarFiltroPeriodoStorage
 } from '../../utils/dateValidation';
 import { TablePagination } from '../../components/ui/TablePagination';
+
+/** Opciones de "Ordenar" (mismo orden y rótulos que antes). El peso reserva el ancho de la fila de botones en la barra. */
+const OPCIONES_ORDEN_VENDEDORES = [
+  { value: 'total', label: 'Más Solicitudes' },
+  { value: 'pedidos', label: 'Más Pedidos' },
+  { value: 'efectividad', label: 'Efectividad' },
+  { value: 'monto', label: 'Mayor Monto' },
+  { value: 'decisiones', label: 'Más ventas perdidas' }
+];
+const ANCHO_ORDEN_VENDEDORES = 5;
+const ORDEN_INICIAL_VENDEDORES = 'total';
 
 export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();
@@ -45,11 +58,6 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
     document.querySelector('main')?.scrollTo(0, 0);
     window.scrollTo(0, 0);
   }, []);
-
-  useEffect(() => {
-    const btn = document.getElementById(`ord-vend-${criterioOrden}`);
-    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  }, [criterioOrden]);
 
   // Scroll horizontal por arrastre (drag) para la tabla, además del swipe nativo táctil
   const scrollContainerRef = useRef(null);
@@ -241,6 +249,24 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const paginatedVendedores = vendedoresOrdenados.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
 
+  /** Exportar: cuerpo idéntico al anterior (solo movido de lugar). */
+  const exportarMovimientosVendedores = () => {
+    let movs = extraerTodosLosMovimientos(solicitudes, ordenesCompra);
+    if (searchTerm.trim()) {
+      const term = normalizarBusqueda(searchTerm);
+      movs = movs.filter(m =>
+        normalizarBusqueda(m.vendedor || '').includes(term)
+      );
+    }
+    const periodoLabel = searchTerm.trim()
+      ? `Todos los registros | Búsqueda vendedor: "${searchTerm.trim()}"`
+      : 'Todos los registros de vendedores';
+    exportarMovimientosExcel(movs, 'movimientos_vendedores', {
+      titulo: 'CONTROL DE LOGÍSTICA - MOVIMIENTOS POR VENDEDORES',
+      periodoLabel
+    });
+  };
+
   // Bloqueo estricto para rol vendedor
   if (role === 'vendedor') {
     return <Navigate to="/vendedor" replace />;
@@ -258,80 +284,52 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
           </Etiqueta>
         }
         subtitle="Métricas de conversión y volumen comercial"
-        actions={
-        <div className="flex overflow-x-auto whitespace-nowrap items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <span className="text-[10px] font-medium text-slate-400 ml-2 shrink-0">Ordenar:</span>
-          {[
-            { id: 'total', label: 'Más RFQs' },
-            { id: 'pedidos', label: 'Más Pedidos' },
-            { id: 'efectividad', label: 'Efectividad' },
-            { id: 'monto', label: 'Mayor Monto' },
-            { id: 'decisiones', label: 'Más ventas perdidas' }
-          ].map((ord) => (
-            <button
-              key={ord.id}
-              id={`ord-vend-${ord.id}`}
-              type="button"
-              onClick={() => { setCriterioOrden(ord.id); setCurrentPage(1); }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
-                criterioOrden === ord.id 
-                  ? 'bg-slate-900 text-white shadow-xs font-semibold' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-              }`}
-            >
-              {ord.label}
-            </button>
-          ))}
-        </div>
-        }
       />
 
 
-      {/* BUSCADOR */}
-      <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
-        <div className="relative w-full md:w-80">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Buscar por vendedor o correo..."
+      {/* BARRA DE FILTROS: búsqueda, orden, exportar y contador */}
+      <BarraFiltros
+        busquedaEnBarraMovil
+        resultados={vendedoresFiltrados.length}
+        filtrosActivos={criterioOrden !== ORDEN_INICIAL_VENDEDORES ? 1 : 0}
+        busqueda={(
+          <FiltroBusqueda
             value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
+            onChange={(texto) => { setSearchTerm(texto); setCurrentPage(1); }}
+            placeholder="Buscar por vendedor o correo..."
+            ariaLabel="Buscar por vendedor o correo"
           />
-        </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
-          <button
-            type="button"
-            onClick={() => {
-              let movs = extraerTodosLosMovimientos(solicitudes, ordenesCompra);
-              if (searchTerm.trim()) {
-                const term = normalizarBusqueda(searchTerm);
-                movs = movs.filter(m =>
-                  normalizarBusqueda(m.vendedor || '').includes(term)
-                );
-              }
-              const periodoLabel = searchTerm.trim()
-                ? `Todos los registros | Búsqueda vendedor: "${searchTerm.trim()}"`
-                : 'Todos los registros de vendedores';
-              exportarMovimientosExcel(movs, 'movimientos_vendedores', {
-                titulo: 'CONTROL DE LOGÍSTICA - MOVIMIENTOS POR VENDEDORES',
-                periodoLabel
-              });
-            }}
-            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
-            title="Exportar todos los movimientos de vendedores a Excel"
-          >
-            <Download size={13} />
-            <span>Exportar Movimientos</span>
-          </button>
-          <div className="text-[11px] font-medium text-slate-400 font-mono self-end sm:self-auto">
-            Mostrando <strong className="text-slate-700 font-semibold">{vendedoresFiltrados.length}</strong> vendedores
-          </div>
-        </div>
-      </div>
+        )}
+        filtros={(
+          <FiltroSegmentado
+            colapsable
+            peso={ANCHO_ORDEN_VENDEDORES}
+            prefijo="Ordenar:"
+            etiqueta="Ordenar"
+            ariaLabel="Ordenar vendedores"
+            opciones={OPCIONES_ORDEN_VENDEDORES}
+            value={criterioOrden}
+            onChange={(valor) => { setCriterioOrden(valor); setCurrentPage(1); }}
+          />
+        )}
+        limpiar={(
+          <BotonLimpiar
+            activos={(searchTerm.trim() ? 1 : 0) + (criterioOrden !== ORDEN_INICIAL_VENDEDORES ? 1 : 0)}
+            onClick={() => { setSearchTerm(''); setCriterioOrden(ORDEN_INICIAL_VENDEDORES); setCurrentPage(1); }}
+          />
+        )}
+        acciones={(
+          <BotonExportar
+            etiqueta="Exportar movimientos"
+            titulo="Exportar todos los movimientos de vendedores a Excel"
+            onClick={exportarMovimientosVendedores}
+          />
+        )}
+        extremo={<ContadorResultados prefijo="Mostrando" total={vendedoresFiltrados.length} singular="vendedor" plural="vendedores" />}
+      />
 
       {paginatedVendedores.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl shadow-[var(--tf-shadow-card)]">
+        <div className="surface text-center py-16 text-slate-400 text-xs font-medium rounded-2xl">
           No se encontraron vendedores con los filtros aplicados.
         </div>
       ) : (
@@ -344,7 +342,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                 ? Math.round((v.pedidos / v.cotizadas) * 100) 
                 : 0;
               return (
-                <div key={v.vendedor} className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3 relative">
+                <div key={v.vendedor} className="surface p-4 rounded-2xl space-y-3 relative">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-700 shrink-0 border border-slate-200/60">
@@ -360,7 +358,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                   
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                      <span className="text-[10px] text-slate-400 font-medium">RFQs</span>
+                      <span className="text-[10px] text-slate-400 font-medium">solicitudes</span>
                       <span className="font-bold font-mono text-slate-700">{v.totalRFQs}</span>
                     </div>
                     <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50 flex flex-col items-center justify-center text-center">
@@ -372,7 +370,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                       <div className="flex items-center gap-1">
                         <span className="font-bold font-mono text-emerald-700">{v.pedidos}</span>
                         {v.pedidosParciales > 0 && (
-                          <span className="text-[9px] font-normal text-sky-600 font-mono" title={`${v.pedidosParciales} pedidos parciales`}>
+                          <span className="text-[9px] font-normal text-sky-600 font-mono" title={`${v.pedidosParciales} ${pluralizar(v.pedidosParciales, 'pedido parcial', 'pedidos parciales')}`}>
                             +{v.pedidosParciales}
                           </span>
                         )}
@@ -392,10 +390,10 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                         <button
                           type="button"
                           onClick={() => navigate(`/analisis/vendedor/${encodeURIComponent(v.vendedor)}?seguimiento=1`)}
-                          aria-label={`Ver ${v.enSeguimiento} solicitudes en seguimiento de ${v.vendedor}`}
+                          aria-label={`Ver ${v.enSeguimiento} ${pluralizar(v.enSeguimiento, 'solicitud', 'solicitudes')} en seguimiento de ${v.vendedor}`}
                           className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                         >
-                          <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(v.fasesSeguimiento)}>{v.enSeguimiento > 0 ? `${v.enSeguimiento} solicitudes` : null}</Etiqueta>
+                          <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(v.fasesSeguimiento)}>{v.enSeguimiento > 0 ? `${v.enSeguimiento} ${pluralizar(v.enSeguimiento, 'solicitud', 'solicitudes')}` : null}</Etiqueta>
                         </button>
                       </div>
                     )}
@@ -427,7 +425,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
           </div>
 
           {/* VISTA DESKTOP (Tabla original) */}
-          <div className="hidden md:flex bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden flex-col">
+          <div className="surface hidden md:flex rounded-2xl overflow-hidden flex-col">
             <div
               ref={scrollContainerRef}
               onMouseDown={handleDragStart}
@@ -442,7 +440,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                 <tr className="tf-tabla-head">
                   <th className="py-2.5 px-3.5 whitespace-nowrap">#</th>
                   <th className="py-2.5 px-3.5 whitespace-nowrap">Vendedor</th>
-                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Total RFQs</th>
+                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Total Solicitudes</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Cotizadas</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap" title="Solicitudes cotizadas en revisión, prórroga o vencidas (ya incluidas en Cotizadas)">En seguimiento</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ganadas (Pedidos)</th>
@@ -514,7 +512,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                           ? <button
                               type="button"
                               onClick={() => navigate(`/analisis/vendedor/${encodeURIComponent(v.vendedor)}?seguimiento=1`)}
-                              aria-label={`Ver ${v.enSeguimiento} solicitudes en seguimiento de ${v.vendedor}`}
+                              aria-label={`Ver ${v.enSeguimiento} ${pluralizar(v.enSeguimiento, 'solicitud', 'solicitudes')} en seguimiento de ${v.vendedor}`}
                               className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                             >
                               <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(v.fasesSeguimiento)}>{v.enSeguimiento > 0 ? `${v.enSeguimiento}` : null}</Etiqueta>
@@ -524,7 +522,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                       <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
                         <span>{v.pedidos}</span>
                         {v.pedidosParciales > 0 && (
-                          <span className="text-[10px] font-normal text-sky-600 block" title={`${v.pedidosParciales} pedidos parciales`}>
+                          <span className="text-[10px] font-normal text-sky-600 block" title={`${v.pedidosParciales} ${pluralizar(v.pedidosParciales, 'pedido parcial', 'pedidos parciales')}`}>
                             +{v.pedidosParciales} parc.
                           </span>
                         )}

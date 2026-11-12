@@ -2,7 +2,6 @@ import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useParams, useNavigate, Navigate, useSearchParams } from 'react-router-dom';
 import { 
   ArrowLeft, 
-  Search, 
   Package, 
   Plane, 
   Ship, 
@@ -16,8 +15,6 @@ import {
   Mail, 
   Users,
   CheckCircle2,
-  Download,
-  X,
   ChevronDown,
   Ban,
   MessageCircleQuestion
@@ -33,6 +30,8 @@ import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/
 import { DecisionBadge } from './components/DecisionBadge';
 import { obtenerFaseItemCacheada, itemEnSeguimiento } from '../../utils/faseSeguimiento';
 import { BotonSeguimiento, AvisoSeguimiento } from './components/FiltroSeguimiento';
+import { BarraFiltrosHistorial } from './components/BarraFiltrosHistorial';
+import { ChipsFiltroContexto } from './components/ChipsFiltroContexto';
 import {
   prepararDatosConsultaMovimiento,
   obtenerTextoConsultaMovimiento,
@@ -63,7 +62,7 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
   const res = evaluarEstadoGanada(m);
 
   return (
-    <div className="relative bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-300 group">
+    <div className="surface relative rounded-xl overflow-hidden transition-all duration-300 group">
       
       {/* Marca de agua de fondo con el RFQ (Usando paleta de rol) */}
       <div className={`absolute right-0 bottom-0 pointer-events-none z-0 translate-x-[15%] translate-y-[20%] overflow-hidden opacity-[0.03] ${theme.textAccent}`}>
@@ -676,6 +675,25 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
     }
   };
 
+  /** Exportar: cuerpo idéntico al anterior (solo movido de lugar). */
+  const exportarMovimientosVendedor = () => {
+    const filtrosActivos = ['Historial Completo'];
+    if (filterCliente) filtrosActivos.push(`Cliente: ${filterCliente}`);
+    if (filterEstado) filtrosActivos.push(`Estado: ${filterEstado}`);
+    if (filterModalidad) filtrosActivos.push(`Modalidad: ${filterModalidad}`);
+    if (soloSeguimiento) filtrosActivos.push('En seguimiento');
+    if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
+
+    exportarMovimientosExcel(
+      movimientosFiltrados,
+      `historial_vendedor_${infoVendedor.nombre || vendedorId}`,
+      {
+        titulo: `CONTROL DE LOGÍSTICA - HISTORIAL DE VENDEDOR: ${(infoVendedor.nombre || vendedorId).toUpperCase()}`,
+        periodoLabel: filtrosActivos.join(' | ')
+      }
+    );
+  };
+
   // Bloqueo estricto para rol vendedor
   if (role === 'vendedor') {
     return <Navigate to="/vendedor" replace />;
@@ -723,7 +741,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
             <span className="h-3 w-px bg-slate-200 hidden sm:block"></span>
             <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
               <Building size={13} className="text-slate-400" />
-              <strong className="text-slate-700">{infoVendedor.totalRfqs}</strong> {infoVendedor.totalRfqs === 1 ? 'RFQ' : 'RFQs'}
+              <strong className="text-slate-700">{infoVendedor.totalRfqs}</strong> {infoVendedor.totalRfqs === 1 ? 'solicitud' : 'solicitudes'}
             </span>
             <span className="h-3 w-px bg-slate-200 hidden sm:block"></span>
             <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
@@ -737,7 +755,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
 
       {/* TARJETAS RESUMEN DEL VENDEDOR */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+        <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <Users size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Clientes Atend.</span>
@@ -747,12 +765,12 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
               {metricas.clientesUnicos}
             </div>
             <div className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate">
-              En {metricas.rfqsUnicas} {metricas.rfqsUnicas === 1 ? 'RFQ' : 'RFQs'} registradas
+              En {metricas.rfqsUnicas} {metricas.rfqsUnicas === 1 ? 'solicitud registrada' : 'solicitudes registradas'}
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+        <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <Package size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Prods. Cotizados</span>
@@ -767,7 +785,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+        <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <DollarSign size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Monto Cotizado</span>
@@ -782,7 +800,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+        <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <DollarSign size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Monto en Pedidos</span>
@@ -797,7 +815,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
           </div>
         </div>
 
-        <div className="bg-white p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between col-span-2 lg:col-span-1">
+        <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <TrendingUp size={14} className="text-slate-400 shrink-0" />
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Efectividad</span>
@@ -817,130 +835,34 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
         </div>
       </div>
 
-      {/* FILTROS Y BÚSQUEDA */}
-      <div className="bg-white p-2.5 sm:p-3 rounded-xl sm:rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col sm:flex-row gap-2 sm:gap-3 items-center justify-between">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-          <div className="relative w-full sm:w-64">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Buscar por RFQ, producto..."
-              value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200/70 rounded-lg text-xs text-slate-700 outline-none focus:border-slate-300 focus:bg-white transition-all"
-            />
-          </div>
-          {clienteFilter && (
-            <div className="inline-flex items-center justify-between sm:justify-start gap-1.5 px-2.5 py-1.5 bg-white border border-slate-200/70 rounded-lg text-xs shadow-sm w-full sm:w-auto">
-              <div className="flex items-center gap-1.5 overflow-hidden">
-                <Building size={12} className="text-slate-400 shrink-0" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 hidden sm:inline">Cli:</span>
-                <span className="font-semibold text-slate-700 truncate max-w-30">{clienteFilter}</span>
-              </div>
-              <button 
-                type="button" 
-                onClick={() => { setClienteFilter(''); setCurrentPage(1); }}
-                className="w-5 h-5 rounded-full flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors shrink-0"
-              >
-                <X size={12} strokeWidth={2.5} />
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-          <div className="grid grid-cols-2 sm:flex items-center gap-2">
-            {/* Filtro por Cliente */}
-            {clientesDisponibles.length > 1 && (
-              <select
-                value={filterCliente}
-                onChange={(e) => { setFilterCliente(e.target.value); setCurrentPage(1); }}
-                className="w-full sm:w-auto bg-slate-50 border border-slate-200/70 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-slate-300 focus:bg-white cursor-pointer max-w-35 truncate"
-              >
-                <option value="">Clientes ({clientesDisponibles.length})</option>
-                {clientesDisponibles.map((cli) => (
-                  <option key={cli} value={cli}>{cli}</option>
-                ))}
-              </select>
-            )}
-
-            {!soloAnulados && <select
-              value={filterEstado}
-              onChange={(e) => { setFilterEstado(e.target.value); setCurrentPage(1); }}
-              className="w-full sm:w-auto bg-slate-50 border border-slate-200/70 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-slate-300 focus:bg-white cursor-pointer"
-            >
-              <option value="">Estados ({estadosDisponibles.length})</option>
-              {estadosDisponibles.map((est) => (
-                <option key={est} value={est}>{est}</option>
-              ))}
-            </select>}
-
-            {/* Filtro modalidad */}
-            <select
-              value={filterModalidad}
-              onChange={(e) => { setFilterModalidad(e.target.value); setCurrentPage(1); }}
-              className="w-full sm:w-auto bg-slate-50 border border-slate-200/70 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-slate-300 focus:bg-white cursor-pointer"
-            >
-              <option value="">Mod. ({modalidadesDisponibles.length})</option>
-              {modalidadesDisponibles.map((mod) => (
-                <option key={mod} value={mod}>{mod}</option>
-              ))}
-            </select>
-            {!soloAnulados && <BotonSeguimiento activo={soloSeguimiento} onChange={cambiarSeguimiento} />}
-          </div>
-
-          <div className="flex items-center justify-between sm:justify-end gap-2 mt-1 sm:mt-0">
-            {(filterEstado || filterModalidad || filterCliente || searchTerm || soloSeguimiento) && (
-              <button
-                type="button"
-                onClick={() => { 
-                  setFilterEstado(''); 
-                  setFilterModalidad(''); 
-                  setFilterCliente(''); 
-                  setSearchTerm(''); 
-                  if (soloSeguimiento) cambiarSeguimiento(false);
-                }}
-                className="text-xs font-medium text-slate-500 hover:text-rose-600 px-2 py-1 transition-colors"
-              >
-                Limpiar
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={() => {
-                const filtrosActivos = ['Historial Completo'];
-                if (filterCliente) filtrosActivos.push(`Cliente: ${filterCliente}`);
-                if (filterEstado) filtrosActivos.push(`Estado: ${filterEstado}`);
-                if (filterModalidad) filtrosActivos.push(`Modalidad: ${filterModalidad}`);
-                if (soloSeguimiento) filtrosActivos.push('En seguimiento');
-                if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
-
-                exportarMovimientosExcel(
-                  movimientosFiltrados,
-                  `historial_vendedor_${infoVendedor.nombre || vendedorId}`,
-                  {
-                    titulo: `CONTROL DE LOGÍSTICA - HISTORIAL DE VENDEDOR: ${(infoVendedor.nombre || vendedorId).toUpperCase()}`,
-                    periodoLabel: filtrosActivos.join(' | ')
-                  }
-                );
-              }}
-              className="inline-flex justify-center items-center gap-1.5 px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-sm w-full sm:w-auto"
-              title="Exportar movimientos a Excel"
-            >
-              <Download size={13} />
-              <span className="hidden sm:inline">Exportar</span>
-            </button>
-
-            <div className="text-[11px] font-medium text-slate-400 font-mono shrink-0">
-              <strong className="text-slate-700 font-semibold">{movimientosFiltrados.length}</strong> movs
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* FILTROS: chip de cliente (contexto), búsqueda, Cliente, Estado, Modalidad, seguimiento, Limpiar, Exportar y contador */}
+      <BarraFiltrosHistorial
+        chips={clienteFilter ? (
+          <ChipsFiltroContexto plana cliente={clienteFilter} onQuitarCliente={() => { setClienteFilter(''); setCurrentPage(1); }} />
+        ) : null}
+        busqueda={searchTerm}
+        onBusqueda={(texto) => { setSearchTerm(texto); setCurrentPage(1); }}
+        placeholderBusqueda="Buscar por correlativo, producto..."
+        soloAnulados={soloAnulados}
+        cliente={filterCliente}
+        onCliente={(valor) => { setFilterCliente(valor); setCurrentPage(1); }}
+        opcionesCliente={clientesDisponibles}
+        estado={filterEstado}
+        onEstado={(valor) => { setFilterEstado(valor); setCurrentPage(1); }}
+        opcionesEstado={estadosDisponibles}
+        modalidad={filterModalidad}
+        onModalidad={(valor) => { setFilterModalidad(valor); setCurrentPage(1); }}
+        opcionesModalidad={modalidadesDisponibles}
+        seguimiento={<BotonSeguimiento activo={soloSeguimiento} onChange={cambiarSeguimiento} />}
+        filtrosActivos={(!soloAnulados && filterEstado ? 1 : 0) + (filterModalidad ? 1 : 0) + (clientesDisponibles.length > 1 && filterCliente ? 1 : 0) + (soloSeguimiento ? 1 : 0)}
+        activosLimpiar={(!soloAnulados && filterEstado ? 1 : 0) + (filterModalidad ? 1 : 0) + (filterCliente ? 1 : 0) + (soloSeguimiento ? 1 : 0) + (searchTerm ? 1 : 0)}
+        onLimpiar={() => { setFilterEstado(''); setFilterModalidad(''); setFilterCliente(''); setSearchTerm(''); if (soloSeguimiento) cambiarSeguimiento(false); }}
+        onExportar={exportarMovimientosVendedor}
+        total={movimientosFiltrados.length}
+      />
 
       {/* TABLA DE RELACIÓN CLIENTES - PRODUCTOS */}
-      <div className="bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden flex flex-col">
+      <div className="surface rounded-2xl overflow-hidden flex flex-col">
         {movimientosFiltrados.length === 0 ? (
           <div className="text-center py-16 text-slate-400 text-xs font-medium">
             No se encontraron movimientos con los filtros seleccionados.
@@ -978,7 +900,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
             <table className="min-w-full w-max text-left text-xs">
               <thead className="sticky top-0 z-10">
                 <tr className="tf-tabla-head">
-                  <th className="py-2.5 px-3 whitespace-nowrap">RFQ</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Correlativo</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Sol.</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Resp.</th>
                   {!soloAnulados && <th className="py-2.5 px-3 whitespace-nowrap">Fecha OC</th>}

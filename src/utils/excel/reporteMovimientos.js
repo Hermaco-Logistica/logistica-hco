@@ -18,7 +18,7 @@ export async function exportarMovimientosExcel(movimientos, nombreArchivo = 'his
   }
 
   const headers = [
-    'RFQ',
+    'Correlativo',
     'Fecha Solicitud',
     'Fecha Respuesta',
     'Fecha OC',
@@ -66,7 +66,7 @@ export async function exportarMovimientosExcel(movimientos, nombreArchivo = 'his
     );
 
     return {
-      'RFQ': m.correlativo || 'S/N',
+      'Correlativo': m.correlativo || 'S/N',
       'Fecha Solicitud': formatFecha(m.fechaSol),
       'Fecha Respuesta': formatFecha(m.fechaResp),
       'Fecha OC': formatFecha(m.fechaOC),
@@ -91,7 +91,7 @@ export async function exportarMovimientosExcel(movimientos, nombreArchivo = 'his
   });
 
   const colsWidths = [
-    { wch: 14 }, // RFQ
+    { wch: 14 }, // Correlativo
     { wch: 15 }, // Fecha Solicitud
     { wch: 15 }, // Fecha Respuesta
     { wch: 14 }, // Fecha OC

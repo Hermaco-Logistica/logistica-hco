@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Search, ExternalLink, Calendar, Globe, Download } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Calendar, Globe } from 'lucide-react';
 import { exportarLogisticaExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme } from './theme';
@@ -8,6 +8,7 @@ import { useSessionState } from '../../hooks/usePersistedState';
 import { Etiqueta } from '../../components/Etiqueta';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroPestanas } from '../../components/filtros';
 import { TablePagination } from '../../components/ui/TablePagination';
 
 export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
@@ -148,6 +149,29 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
     return <Navigate to={role === 'vendedor' ? '/' : '/analisis'} replace />;
   }
 
+  /** Exportar: cuerpo idéntico al anterior (solo movido de lugar). */
+  const exportarOrdenes = () => {
+    const tabTitulos = {
+      todas: 'TODAS LAS ÓRDENES DE COMPRA',
+      pendientes: 'ÓRDENES PENDIENTES',
+      transito: 'ÓRDENES EN TRÁNSITO',
+      aduana: 'ÓRDENES EN ADUANA',
+      entregadas: 'ÓRDENES ENTREGADAS'
+    };
+    const tituloTab = tabTitulos[tabActual] || 'ÓRDENES DE COMPRA Y TRACKING';
+    const filtrosActivos = [`Pestaña: ${tituloTab}`];
+    if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
+
+    exportarLogisticaExcel(
+      ordenesFiltradas,
+      `ordenes_logistica_${tabActual}`,
+      {
+        titulo: `CONTROL DE LOGÍSTICA - ${tituloTab}`,
+        periodoLabel: filtrosActivos.join(' | ')
+      }
+    );
+  };
+
   const tabs = [
     { id: 'todas', label: 'Todas las OCs' },
     { id: 'transito', label: 'En Tránsito' },
@@ -170,80 +194,43 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
         subtitle={<>Estado de órdenes de compra y embarques ({ordenes.length} registradas)</>}
       />
 
-      {/* TABS DE ESTADO LOGÍSTICO (Sticky en móvil) */}
-      <div className="sticky top-0 z-20 bg-slate-50/80 backdrop-blur-md pb-2 -mx-[var(--tf-pad-x)] px-[var(--tf-pad-x)] sm:mx-0 sm:px-0 sm:pb-0 sm:bg-transparent">
-        <div className="flex overflow-x-auto whitespace-nowrap gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              id={`tab-log-${t.id}`}
-              type="button"
-              onClick={() => { setTabActual(t.id); setCurrentPage(1); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
-                tabActual === t.id 
-                  ? 'bg-slate-900 text-white shadow-xs font-semibold' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* PESTAÑAS DE ESTADO LOGÍSTICO: fuera de la hoja de filtros; no cuentan como filtro activo */}
+      <FiltroPestanas
+        sticky
+        ariaLabel="Estado logístico"
+        prefijoId="tab-log-"
+        opciones={tabs}
+        value={tabActual}
+        onChange={(id) => { setTabActual(id); setCurrentPage(1); }}
+      />
 
-
-      {/* BUSCADOR */}
-      <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
-        <div className="relative w-full md:w-80">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Buscar por # OC, proveedor, tracking o ítem..."
+      {/* BARRA DE FILTROS: búsqueda, exportar y contador (refleja la pestaña activa) */}
+      <BarraFiltros
+        busquedaEnBarraMovil
+        resultados={ordenesFiltradas.length}
+        busqueda={(
+          <FiltroBusqueda
             value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
+            onChange={(texto) => { setSearchTerm(texto); setCurrentPage(1); }}
+            placeholder="Buscar por # OC, proveedor, tracking o ítem..."
+            ariaLabel="Buscar por número de OC, proveedor, tracking o ítem"
           />
-        </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
-          <button
-            type="button"
-            onClick={() => {
-              const tabTitulos = {
-                todas: 'TODAS LAS ÓRDENES DE COMPRA',
-                pendientes: 'ÓRDENES PENDIENTES',
-                transito: 'ÓRDENES EN TRÁNSITO',
-                aduana: 'ÓRDENES EN ADUANA',
-                entregadas: 'ÓRDENES ENTREGADAS'
-              };
-              const tituloTab = tabTitulos[tabActual] || 'ÓRDENES DE COMPRA Y TRACKING';
-              const filtrosActivos = [`Pestaña: ${tituloTab}`];
-              if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
-
-              exportarLogisticaExcel(
-                ordenesFiltradas,
-                `ordenes_logistica_${tabActual}`,
-                {
-                  titulo: `CONTROL DE LOGÍSTICA - ${tituloTab}`,
-                  periodoLabel: filtrosActivos.join(' | ')
-                }
-              );
-            }}
-            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
-            title="Exportar órdenes de compra e ítems a Excel"
-          >
-            <Download size={13} />
-            <span>Exportar Excel</span>
-          </button>
-          <div className="text-[11px] font-medium text-slate-400 font-mono self-end sm:self-auto">
-            Mostrando <strong className="text-slate-700 font-semibold">{ordenesFiltradas.length}</strong> órdenes
-          </div>
-        </div>
-      </div>
+        )}
+        limpiar={<BotonLimpiar activos={searchTerm.trim() ? 1 : 0} onClick={() => { setSearchTerm(''); setCurrentPage(1); }} />}
+        acciones={(
+          <BotonExportar
+            etiqueta="Exportar Excel"
+            titulo="Exportar órdenes de compra e ítems a Excel"
+            onClick={exportarOrdenes}
+          />
+        )}
+        extremo={<ContadorResultados prefijo="Mostrando" total={ordenesFiltradas.length} singular="orden" plural="órdenes" />}
+      />
 
       {/* TABLA DE ÓRDENES */}
       <div className="flex flex-col gap-3">
         {paginatedOrdenes.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl shadow-[var(--tf-shadow-card)]">
+          <div className="surface text-center py-16 text-slate-400 text-xs font-medium rounded-2xl">
             No se encontraron órdenes con los filtros seleccionados.
           </div>
         ) : (
@@ -256,7 +243,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
                 const numOC = oc.numeroOC || oc.numero || oc.ocRef || 'S/N';
                 
                 return (
-                  <div key={oc.id} className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3 relative">
+                  <div key={oc.id} className="surface p-4 rounded-2xl space-y-3 relative">
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col">
                         <span className="font-mono text-sm font-bold text-slate-800">{numOC}</span>
@@ -301,7 +288,7 @@ export const DetalleLogisticaAnalisis = ({ role, ordenesCompra = [] }) => {
             </div>
 
             {/* VISTA DESKTOP (Tabla original) */}
-            <div className="hidden md:flex bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden flex-col">
+            <div className="surface hidden md:flex rounded-2xl overflow-hidden flex-col">
               <div
                 ref={scrollContainerRef}
                 onMouseDown={handleDragStart}

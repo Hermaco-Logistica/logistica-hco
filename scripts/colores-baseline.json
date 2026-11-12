@@ -5,8 +5,8 @@
     "src/utils/etiquetas.js"
   ],
   "totales": {
-    "clases": 1005,
-    "literales": 91
+    "clases": 975,
+    "literales": 77
   },
   "archivos": {
     "src/App.jsx": {
@@ -85,10 +85,6 @@
       "clases": 1,
       "literales": 0
     },
-    "src/components/seguimiento/seguimiento.css": {
-      "clases": 0,
-      "literales": 8
-    },
     "src/components/ui/Toast.jsx": {
       "clases": 16,
       "literales": 0
@@ -103,7 +99,7 @@
     },
     "src/index.css": {
       "clases": 16,
-      "literales": 9
+      "literales": 7
     },
     "src/utils/etiquetas.js": {
       "clases": 7,
@@ -118,7 +114,7 @@
       "literales": 0
     },
     "src/views/analisis/AnalisisEstadisticas.jsx": {
-      "clases": 96,
+      "clases": 87,
       "literales": 0
     },
     "src/views/analisis/AnalisisEstadisticasMobile.jsx": {
@@ -126,7 +122,7 @@
       "literales": 6
     },
     "src/views/analisis/DetalleClienteHistorial.jsx": {
-      "clases": 5,
+      "clases": 4,
       "literales": 0
     },
     "src/views/analisis/DetalleClientesAnalisis.jsx": {
@@ -134,7 +130,7 @@
       "literales": 0
     },
     "src/views/analisis/DetalleProductoHistorial.jsx": {
-      "clases": 4,
+      "clases": 3,
       "literales": 0
     },
     "src/views/analisis/DetalleProductosAnalisis.jsx": {
@@ -146,7 +142,7 @@
       "literales": 0
     },
     "src/views/analisis/DetalleVendedorHistorial.jsx": {
-      "clases": 4,
+      "clases": 3,
       "literales": 0
     },
     "src/views/analisis/DetalleVendedoresAnalisis.jsx": {
@@ -178,11 +174,11 @@
       "literales": 0
     },
     "src/views/comprador/DashboardCompras.jsx": {
-      "clases": 34,
+      "clases": 32,
       "literales": 0
     },
     "src/views/comprador/GestionOC.jsx": {
-      "clases": 18,
+      "clases": 15,
       "literales": 0
     },
     "src/views/comprador/RevisionPedidoManual.jsx": {
@@ -190,7 +186,7 @@
       "literales": 0
     },
     "src/views/pedidos/DashboardPedidos.jsx": {
-      "clases": 52,
+      "clases": 50,
       "literales": 0
     },
     "src/views/pedidos/RetaceosView.jsx": {
@@ -199,18 +195,18 @@
     },
     "src/views/seguimiento/prorrogas.css": {
       "clases": 0,
-      "literales": 4
+      "literales": 2
     },
     "src/views/vendedor/DashboardVendedor.jsx": {
-      "clases": 35,
+      "clases": 30,
       "literales": 0
     },
     "src/views/vendedor/DetallePedidoManual.jsx": {
-      "clases": 19,
+      "clases": 17,
       "literales": 0
     },
     "src/views/vendedor/detalle-rfq/DetalleRFQAcciones.jsx": {
-      "clases": 17,
+      "clases": 15,
       "literales": 0
     },
     "src/views/vendedor/detalle-rfq/DetalleRFQProductos.jsx": {
@@ -218,7 +214,7 @@
       "literales": 0
     },
     "src/views/vendedor/detalle-rfq/DetalleRFQVista.jsx": {
-      "clases": 27,
+      "clases": 25,
       "literales": 0
     },
     "src/views/vendedor/nueva-rfq/NuevaRFQView.jsx": {
@@ -231,7 +227,7 @@
     },
     "src/views/vendedor/pedido-manual/detallePedidoManual.css": {
       "clases": 0,
-      "literales": 4
+      "literales": 2
     }
   }
 }

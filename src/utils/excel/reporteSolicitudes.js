@@ -5,7 +5,7 @@ import { crearCalculadorSeguimiento, ENCABEZADOS_SEGUIMIENTO_SOLICITUD, ANCHOS_S
  * Exporta el listado de solicitudes (usado en DetalleSolicitudesAnalisis)
  */
 export async function exportarSolicitudesExcel(solicitudes, nombreArchivo = 'solicitudes_analisis', {
-  titulo = 'CONTROL DE LOGÍSTICA - SOLICITUDES (RFQS)',
+  titulo = 'CONTROL DE LOGÍSTICA - SOLICITUDES',
   periodoLabel = ''
 } = {}) {
   if (!Array.isArray(solicitudes) || solicitudes.length === 0) {
@@ -14,7 +14,7 @@ export async function exportarSolicitudesExcel(solicitudes, nombreArchivo = 'sol
   }
 
   const headers = [
-    'RFQ',
+    'Correlativo',
     'Fecha Solicitud',
     'Fecha Cotización',
     'Cliente',
@@ -50,7 +50,7 @@ export async function exportarSolicitudesExcel(solicitudes, nombreArchivo = 'sol
     }
 
     return {
-      'RFQ': s.correlativo || 'S/N',
+      'Correlativo': s.correlativo || 'S/N',
       'Fecha Solicitud': formatFecha(s.fechaS || s.fechaCreacion),
       'Fecha Cotización': formatFecha(s.fechaCotizacion),
       'Cliente': s.cliente || 'Consumidor Final',

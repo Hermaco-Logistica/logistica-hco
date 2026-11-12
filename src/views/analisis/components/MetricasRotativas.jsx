@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { pluralizar } from '../../../utils/pluralizar';
 import { Gauge, Package, TrendingDown } from 'lucide-react';
 import { GraficoMetricasRotativas } from './GraficoMetricasRotativas';
 
@@ -106,7 +107,7 @@ export const MetricasRotativas = ({ metricas, vendedorFilter = '', compact = fal
       <div key={modoActivo} className={`grid grid-cols-2 gap-2.5 p-3.5 ${compact ? 'sm:grid-cols-2' : 'sm:grid-cols-4'} animate-metricas-rotativas`}>
         {esVentasPerdidas ? (
           <>
-            <MetricValue icon={Package} iconClass="text-orange-600" label="Ítems en venta perdida" value={metricas.ventasPerdidas} detail={`${metricas.ventasPerdidasSolicitudes} solicitudes involucradas`} />
+            <MetricValue icon={Package} iconClass="text-orange-600" label="Ítems en venta perdida" value={metricas.ventasPerdidas} detail={`${metricas.ventasPerdidasSolicitudes} ${pluralizar(metricas.ventasPerdidasSolicitudes, 'solicitud involucrada', 'solicitudes involucradas')}`} />
             <MetricValue icon={TrendingDown} iconClass="text-rose-600" label="Incidencia comercial" value={metricas.tasaVentaPerdida} unit="%" detail={`${metricas.rechazos} rechazos · sobre solicitudes del período`} />
             <MetricValue icon={TrendingDown} iconClass="text-amber-600" label="Rechazos" value={metricas.rechazos} detail="Ítems rechazados o cancelados" />
             <TiemposOperativosValue
@@ -118,7 +119,7 @@ export const MetricasRotativas = ({ metricas, vendedorFilter = '', compact = fal
         ) : (
           <>
             <MetricValue icon={Package} iconClass="text-slate-500" label="Total solicitudes" value={metricas.total} detail={`${metricas.pendientes} pendientes`} />
-            <MetricValue icon={Gauge} iconClass="text-emerald-600" label="Conversión a pedido" value={metricas.tasaConversion} unit="%" detail={`${metricas.pedidos} pedidos ganados`} />
+            <MetricValue icon={Gauge} iconClass="text-emerald-600" label="Conversión a pedido" value={metricas.tasaConversion} unit="%" detail={`${metricas.pedidos} ${pluralizar(metricas.pedidos, 'pedido ganado', 'pedidos ganados')}`} />
             <MetricValue icon={Package} iconClass="text-slate-500" label="Volumen cotizado" value={formatearDinero(metricas.montoCotizadoTotal)} detail={`${formatearDinero(metricas.montoPedidoTotal)} en pedidos`} />
             <TiemposOperativosValue
               vendedorFilter={vendedorFilter}

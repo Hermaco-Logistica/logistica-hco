@@ -24,7 +24,7 @@ export const NuevaRFQView = ({ viewModel }) => {
 
       <form id="form-nueva-rfq" onSubmit={guardarRFQ} className="space-y-6">
         {/* Card Cliente */}
-        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl shadow-[var(--tf-shadow-card)]">
+        <div className="surface p-5 sm:p-8 sm:rounded-4xl">
           <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Nombre del Cliente / Empresa</label>
           <div className="relative">
             <input 
@@ -50,7 +50,7 @@ export const NuevaRFQView = ({ viewModel }) => {
             />
 
             {mostrarSugerencias && cliente.trim().length >= 2 && (
-              <div className="absolute z-20 mt-2 w-full max-h-56 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+              <div className="surface-flotante absolute z-20 mt-2 w-full max-h-56 overflow-y-auto rounded-xl">
                 {buscandoCliente && (
                   <div className="px-4 py-3 text-xs font-bold text-slate-500">Buscando clientes guardados...</div>
                 )}
@@ -99,7 +99,7 @@ export const NuevaRFQView = ({ viewModel }) => {
           </div>
         </div>
 
-        <div className="bg-white p-5 sm:p-8 rounded-3xl sm:rounded-4xl shadow-[var(--tf-shadow-card)]">
+        <div className="surface p-5 sm:p-8 sm:rounded-4xl">
           <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest" htmlFor="comentarios-vendedor">
             Comentarios del Vendedor
           </label>
@@ -115,7 +115,7 @@ export const NuevaRFQView = ({ viewModel }) => {
         </div>
 
         {/* Listado de Productos */}
-        <div className="bg-white rounded-3xl sm:rounded-4xl shadow-[var(--tf-shadow-card)] overflow-visible">
+        <div className="surface sm:rounded-4xl overflow-visible">
           <div className="p-4 sm:p-6 bg-slate-900 flex justify-between items-center rounded-t-3xl sm:rounded-t-4xl">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Items Solicitados</span>
             <button 
@@ -185,7 +185,7 @@ export const NuevaRFQView = ({ viewModel }) => {
                     )}
 
                     {mostrarSugerenciasProducto[idx] && String(p.desc || '').trim().length >= 1 && (
-                      <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg py-1">
+                      <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto surface-flotante rounded-lg py-1">
                         {buscandoProducto[idx] && (
                           <div className="px-4 py-2 flex items-center gap-2 text-xs font-medium text-slate-400 italic">
                             <Loader2 size={14} className="animate-spin" />
@@ -272,7 +272,7 @@ export const NuevaRFQView = ({ viewModel }) => {
                       />
 
                       {mostrarSugerenciasMarca[idx] && String(p.marca || '').trim().length >= 2 && (
-                        <div className="absolute z-50 mt-2 w-full max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+                        <div className="surface-flotante absolute z-50 mt-2 w-full max-h-64 overflow-y-auto rounded-xl">
                           {buscandoMarca[idx] && (
                             <div className="px-4 py-3 text-xs font-bold text-slate-500">Buscando marcas guardadas...</div>
                           )}
@@ -378,7 +378,7 @@ export const NuevaRFQView = ({ viewModel }) => {
                         )}
 
                         {mostrarSugerenciasProducto[idx] && String(p.desc || '').trim().length >= 1 && (
-                          <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-lg py-1">
+                          <div className="absolute z-50 mt-1 w-full max-h-64 overflow-y-auto surface-flotante rounded-lg py-1">
                             {buscandoProducto[idx] && (
                               <div className="px-4 py-2 flex items-center gap-2 text-xs font-medium text-slate-400 italic">
                                 <Loader2 size={14} className="animate-spin" />
@@ -460,7 +460,7 @@ export const NuevaRFQView = ({ viewModel }) => {
                         />
 
                         {mostrarSugerenciasMarca[idx] && String(p.marca || '').trim().length >= 2 && (
-                          <div className="absolute z-50 mt-2 w-full max-h-64 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+                          <div className="surface-flotante absolute z-50 mt-2 w-full max-h-64 overflow-y-auto rounded-xl">
                             {buscandoMarca[idx] && (
                               <div className="px-4 py-3 text-xs font-bold text-slate-500">Buscando marcas guardadas...</div>
                             )}

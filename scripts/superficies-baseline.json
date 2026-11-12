@@ -1,0 +1,117 @@
+{
+  "aviso": "Tope de superficies sueltas por archivo (trinquete: solo puede bajar). Regenerar con: npm run check:superficies -- --update",
+  "totales": {
+    "bordes": 27,
+    "sombras": 22,
+    "sinSurface": 18,
+    "css": 1,
+    "anidadas": 0
+  },
+  "archivos": {
+    "src/components/ShipmentTracker.jsx": {
+      "bordes": 0,
+      "sombras": 1,
+      "sinSurface": 1,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/components/mobile/MobileListCard.jsx": {
+      "bordes": 2,
+      "sombras": 2,
+      "sinSurface": 1,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/components/pedidos/negociacion/FormularioOferta.jsx": {
+      "bordes": 2,
+      "sombras": 1,
+      "sinSurface": 1,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/views/analisis/AnalisisEstadisticas.jsx": {
+      "bordes": 2,
+      "sombras": 3,
+      "sinSurface": 3,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/views/analisis/DetalleClienteHistorial.jsx": {
+      "bordes": 0,
+      "sombras": 1,
+      "sinSurface": 1,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/views/analisis/DetalleProductoHistorial.jsx": {
+      "bordes": 0,
+      "sombras": 1,
+      "sinSurface": 1,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/views/analisis/components/MetricasRotativas.jsx": {
+      "bordes": 2,
+      "sombras": 1,
+      "sinSurface": 1,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/views/auth/Login.jsx": {
+      "bordes": 0,
+      "sombras": 1,
+      "sinSurface": 1,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/views/comprador/Calculadora.jsx": {
+      "bordes": 14,
+      "sombras": 5,
+      "sinSurface": 4,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/views/comprador/ConsolidarCompras.jsx": {
+      "bordes": 1,
+      "sombras": 0,
+      "sinSurface": 0,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/views/comprador/DashboardCompras.jsx": {
+      "bordes": 0,
+      "sombras": 1,
+      "sinSurface": 1,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/views/comprador/GestionOC.jsx": {
+      "bordes": 0,
+      "sombras": 1,
+      "sinSurface": 1,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/views/pedidos/DashboardPedidos.jsx": {
+      "bordes": 2,
+      "sombras": 1,
+      "sinSurface": 1,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/views/vendedor/detalle-rfq/DetalleRFQProductos.jsx": {
+      "bordes": 2,
+      "sombras": 3,
+      "sinSurface": 1,
+      "css": 0,
+      "anidadas": 0
+    },
+    "src/views/vendedor/pedido-manual/detallePedidoManual.css": {
+      "bordes": 0,
+      "sombras": 0,
+      "sinSurface": 0,
+      "css": 1,
+      "anidadas": 0
+    }
+  }
+}

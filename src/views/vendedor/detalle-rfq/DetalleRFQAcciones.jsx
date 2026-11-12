@@ -62,10 +62,10 @@ export const DetalleRFQAcciones = ({
         <button
           onClick={handleCrearPedido}
           disabled={enviandoPedido || !puedeConfirmarOEnviar}
-          className={`rfq-summary-action rfq-summary-action--primary py-4 px-5 sm:px-6 rounded-2xl font-black uppercase tracking-wider shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[48px] text-xs sm:text-sm ${
+          className={`rfq-summary-action rfq-summary-action--primary py-4 px-5 sm:px-6 rounded-2xl font-black uppercase tracking-wider shadow-boton hover:shadow-boton-hover disabled:shadow-none transition-all active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[48px] text-xs sm:text-sm ${
             totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
-              ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-900/20'
-              : 'bg-primary hover:bg-primary-strong text-primary-foreground shadow-secondary/20'
+              ? 'bg-rose-600 hover:bg-rose-700 text-white'
+              : 'bg-primary hover:bg-primary-strong text-primary-foreground'
           }`}
         >
           {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0 ? (
@@ -145,10 +145,10 @@ export const DetalleRFQAcciones = ({
                 type="button"
                 onClick={handleCrearPedido}
                 disabled={enviandoPedido || !puedeConfirmarOEnviar}
-                className={`active:scale-95 text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 shadow-md disabled:opacity-50 whitespace-nowrap min-h-[48px] ${
+                className={`active:scale-95 text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 shadow-boton hover:shadow-boton-hover disabled:shadow-none disabled:opacity-50 whitespace-nowrap min-h-[48px] ${
                   totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
-                    ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/20'
-                    : 'bg-primary hover:bg-primary-strong shadow-primary/20'
+                    ? 'bg-rose-600 hover:bg-rose-700'
+                    : 'bg-primary hover:bg-primary-strong'
                 }`}
               >
                 {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0 ? <TrendingDown size={16} /> : <ShoppingCart size={16} />}

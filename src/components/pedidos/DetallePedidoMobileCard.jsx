@@ -63,7 +63,7 @@ export const DetallePedidoMobileCard = ({
   };
 
   return (
-    <div className={`flex flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-xs ${esCerrado ? 'opacity-60 bg-slate-50/50' : estaAnulado ? 'opacity-60 grayscale-[0.5]' : ''}`}>
+    <div className={`surface flex flex-col rounded-xl p-4 ${esCerrado ? 'opacity-60 bg-slate-50/50' : estaAnulado ? 'opacity-60 grayscale-[0.5]' : ''}`}>
       <div className="order-1 mb-4 flex items-start justify-between gap-3">
         <div className="flex items-start gap-2.5 flex-1 min-w-0">
           {stagedVP ? (

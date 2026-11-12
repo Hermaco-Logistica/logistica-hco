@@ -167,8 +167,20 @@
   --color-chart-8: #f97316;
   --color-chart-9: #dc2626;
 
-  /* Sombras: apuntan a las existentes */
-  --shadow-card: var(--tf-shadow-card);
+  /* Sombras. Superficies sin contorno: la separación la da solo la sombra difuminada (sin anillo de 1px).
+     Los valores de --shadow-reposo, -flotante y -boton* están en el bloque `@theme inline` de derivados (siguen al rol).
+     reposo: tarjetas, paneles, tablas en tarjeta y avisos. flotante: modales, menús, popovers y tooltips (capa larga de
+     elevación + capa corta de contacto). boton / boton-hover / boton-activo: botones. */
+  /* Animación de los filtros (una sola fuente: hoja, desplegable y acordeón). Solo clip-path, transform y opacity
+     (el acordeón anima además grid-template-rows). Con prefers-reduced-motion todo queda en un fundido de ~120 ms.
+     abrir: suave, frena al final. cerrar: rápida pero sin corte brusco. hoja: la hoja inferior de filtros (index.css). */
+  --anim-abrir: 220ms;
+  --ease-abrir: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --anim-cerrar: 140ms;
+  --ease-cerrar: cubic-bezier(0.4, 0, 1, 1);
+  --anim-hoja-abrir: 280ms;
+  --anim-hoja-cerrar: 200ms;
+  --shadow-card: var(--shadow-reposo);
   --shadow-panel: var(--tf-shadow-panel);
   --shadow-float: var(--detalle-shadow-float);
 }
@@ -178,6 +190,15 @@
   --color-primary-soft: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
   --color-secondary-soft: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
 
+  /* Fondo de un filtro con valor distinto de "Todos" (select, fecha con rango, búsqueda con texto, conmutador activo). Utilidad: bg-filtro-activo. */
+  --color-filtro-activo: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
+  /* Campo de filtro abierto + su menú (una sola pieza): tinte suave del rol, más claro que el de "seleccionado". Utilidad: bg-filtro-abierto. */
+  --color-filtro-abierto: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  /* Texto del valor de un filtro activo: primary-strong oscurecido un 20 % para llegar a 4,5:1 sobre --color-filtro-activo en todos los roles y sin rol. */
+  --color-filtro-texto: color-mix(in srgb, var(--color-primary-strong) 80%, black);
+  /* Opción activa de un segmentado: primary-strong oscurecido un 20 % para que el texto primary-soft llegue a 4,5:1 también sin rol. Utilidad: bg-segmento-activo. */
+  --color-segmento-activo: color-mix(in srgb, var(--color-primary-strong) 80%, black);
+
   /* "En seguimiento" con la paleta del rol: relleno oscuro (primary-strong) y letra clara (primary-soft).
      Ciruela fijo anterior: #72467c y #e2d8e4. Utilidades: bg-seguimiento, text-seguimiento, bg-seguimiento-soft,
      border-seguimiento/30, from-seguimiento-claro. */
@@ -185,12 +206,24 @@
   --color-seguimiento-soft: var(--color-primary-soft);
   --color-seguimiento-borde: color-mix(in srgb, var(--color-primary-strong) 30%, white);
   --color-seguimiento-claro: color-mix(in srgb, var(--color-primary-strong) 55%, white);
+
+  /* Sombras de superficie y de botón: TINTADAS con el color de marca del rol (primary: con el tono oscuro del menú el tinte apenas se distinguía de una sombra negra) y escaladas por --sombra-alfa (por rol, iguala el
+     peso visual de los cuatro roles). Se declaran aquí (inline) y en "Derivados por ámbito": en :root solas no seguirían al rol. */
+  --shadow-reposo: 0 2px 5px 0 color-mix(in srgb, var(--color-primary) calc(7% * var(--sombra-alfa)), transparent), 0 10px 30px -4px color-mix(in srgb, var(--color-primary) calc(12% * var(--sombra-alfa)), transparent);
+  --shadow-flotante: 0 24px 64px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent), 0 2px 8px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
+  --shadow-menu: 0 22px 26px -24px color-mix(in srgb, var(--color-primary) calc(34% * var(--sombra-alfa)), transparent), 0 10px 14px -12px color-mix(in srgb, var(--color-primary) calc(16% * var(--sombra-alfa)), transparent);
+  --shadow-boton: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent), 0 4px 10px -2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent);
+  --shadow-boton-hover: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent), 0 6px 14px -2px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent);
+  --shadow-boton-activo: 0 1px 1px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
 }
 
 @layer base {
+  :root { --sombra-alfa: 1.08; }
+
   /* Valores por rol */
   .role-comprador,
   body[data-role="comprador"] {
+    --sombra-alfa: 0.72;
     --color-primary: #3b46f2;
     --color-primary-strong: #2635d9;
     --color-secondary: #1b2452;
@@ -206,6 +239,7 @@
 
   .role-vendedor,
   body[data-role="vendedor"] {
+    --sombra-alfa: 1.45;
     --color-primary: #7964a9;
     --color-primary-strong: #614e8c;
     --color-secondary: #310845;
@@ -221,6 +255,7 @@
 
   .role-gerente,
   body[data-role="gerente"] {
+    --sombra-alfa: 1.56;
     --color-primary: #547e52;
     --color-primary-strong: #40613f;
     --color-secondary: #243119;
@@ -236,6 +271,7 @@
 
   .role-administrador,
   body[data-role="administrador"] {
+    --sombra-alfa: 1.55;
     --color-primary: #a8606b;
     --color-primary-strong: #83414d;
     --color-secondary: #6b2732;
@@ -258,11 +294,22 @@
   body[data-role] {
     --color-sidebar: var(--color-secondary);
     --color-primary-soft: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+    --color-filtro-activo: color-mix(in srgb, var(--color-primary) 16%, var(--color-surface));
+    --color-filtro-abierto: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+    --color-filtro-texto: color-mix(in srgb, var(--color-primary-strong) 80%, black);
+    --color-segmento-activo: color-mix(in srgb, var(--color-primary-strong) 80%, black);
     --color-secondary-soft: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
     --color-seguimiento: var(--color-primary-strong);
     --color-seguimiento-soft: var(--color-primary-soft);
     --color-seguimiento-borde: color-mix(in srgb, var(--color-primary-strong) 30%, white);
     --color-seguimiento-claro: color-mix(in srgb, var(--color-primary-strong) 55%, white);
+    --shadow-reposo: 0 2px 5px 0 color-mix(in srgb, var(--color-primary) calc(7% * var(--sombra-alfa)), transparent), 0 10px 30px -4px color-mix(in srgb, var(--color-primary) calc(12% * var(--sombra-alfa)), transparent);
+    --shadow-flotante: 0 24px 64px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent), 0 2px 8px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
+    --shadow-menu: 0 22px 26px -24px color-mix(in srgb, var(--color-primary) calc(34% * var(--sombra-alfa)), transparent), 0 10px 14px -12px color-mix(in srgb, var(--color-primary) calc(16% * var(--sombra-alfa)), transparent);
+    --shadow-boton: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent), 0 4px 10px -2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent);
+    --shadow-boton-hover: 0 1px 2px color-mix(in srgb, var(--color-primary) calc(10% * var(--sombra-alfa)), transparent), 0 6px 14px -2px color-mix(in srgb, var(--color-primary) calc(14% * var(--sombra-alfa)), transparent);
+    --shadow-boton-activo: 0 1px 1px color-mix(in srgb, var(--color-primary) calc(8% * var(--sombra-alfa)), transparent);
+    --tf-shadow-card: var(--shadow-reposo);
   }
 
   /* Alias de compatibilidad (nombres viejos). Solo en :root y en el shell, nunca en body[data-role]. */

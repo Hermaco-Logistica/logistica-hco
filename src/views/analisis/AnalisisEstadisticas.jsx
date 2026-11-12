@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback, useDeferredValue } from 'react';
+import { pluralizar } from '../../utils/pluralizar';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroSegmentado, FiltroSelect, ModalRango } from '../../components/filtros';
 import { AnalisisEstadisticasMobile } from './AnalisisEstadisticasMobile';
+import { EtiquetaFechasRango } from './components/EtiquetaFechasRango';
+import { OPCIONES_PERIODO } from './opcionesPeriodo';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { 
   TrendingUp, 
@@ -11,21 +15,13 @@ import {
   DollarSign, 
   Users, 
   Truck, 
-  Calendar,
-  Filter,
   ArrowUpRight,
   ChevronRight,
   Layers,
-  Search,
   Zap,
   AlertCircle,
-  Download,
   Info,
-  X,
-  Ban,
-  ChevronDown,
-  ChevronUp,
-  Trash2
+  Ban
 } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
@@ -38,7 +34,8 @@ import {
   parseFinDiaElSalvador,
   validarRangoFechas,
   cargarFiltroPeriodoStorage,
-  guardarFiltroPeriodoStorage
+  guardarFiltroPeriodoStorage,
+  PERIODO_POR_DEFECTO
 } from '../../utils/dateValidation';
 
 import { useSessionState } from '../../hooks/usePersistedState';
@@ -68,9 +65,9 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
   const [clienteSearch, setClienteSearch] = useSessionState('analisis_cliente_search', '');
   const [resultadoFilter, setResultadoFilter] = useSessionState('analisis_resultado_filter', '');
   const [seguimientoFilter, setSeguimientoFilter] = useSessionState('analisis_seguimiento_filter', '');
-  const [mostrarFiltrosMobile, setMostrarFiltrosMobile] = useState(false);
   const [ordenarProductosPor, setOrdenarProductosPor] = useSessionState('analisis_top_prod_orden', 'veces'); // 'veces' | 'ganadas' | 'unidades' | 'anulaciones' | 'ventasPerdidas' | 'rechazos'
   const [pageVendedores, setPageVendedores] = useState(1);
+  const [rangoAbierto, setRangoAbierto] = useState(false);
   const itemsPerPageVendedores = 5;
 
   // Persistir última selección de período/rango en sessionStorage
@@ -588,7 +585,6 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     }).format(val || 0);
   };
 
-  const hayFiltrosActivos = Boolean(vendedorFilter || clienteSearch || resultadoFilter || seguimientoFilter || (periodo === 'custom' && (fechaInicio || fechaFin)));
 
   const limpiarFiltros = () => {
     setVendedorFilter('');
@@ -598,7 +594,10 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     setFechaInicio(''); 
     setFechaFin(''); 
     setPageVendedores(1);
-    guardarFiltroPeriodoStorage({ periodo, fechaInicio: '', fechaFin: '' });
+    // Desde Rango (que sin fechas quedaría vacío) vuelve al período por defecto; con cualquier otro período no cambia: es el alcance de la pantalla.
+    const periodoNuevo = periodo === 'custom' ? PERIODO_POR_DEFECTO : periodo;
+    if (periodoNuevo !== periodo) setPeriodo(periodoNuevo);
+    guardarFiltroPeriodoStorage({ periodo: periodoNuevo, fechaInicio: '', fechaFin: '' });
   };
 
   const exportarMovimientos = () => {
@@ -648,311 +647,119 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     );
   };
 
-  // Campos extra del período (rango personalizado y año histórico); se comparten entre escritorio y móvil.
-  const renderCamposPeriodo = () => (
-  <>
-      {periodo === 'custom' && (
-        <div className="flex flex-col gap-1.5 w-full sm:w-auto animate-in fade-in duration-200">
-          <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 px-2.5 rounded-xl border border-slate-200/80 shrink-0">
-            <Calendar size={13} className="text-slate-400 shrink-0" />
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Desde</span>
-              <input
-                type="date"
-                value={fechaInicio}
-                max={fechaFin && fechaFin <= hoyElSalvador ? fechaFin : hoyElSalvador}
-                onChange={(e) => { setFechaInicio(e.target.value); setPageVendedores(1); }}
-                className={`border rounded-lg px-2 py-0.5 text-base sm:text-xs outline-none font-mono transition-colors ${
-                  validacionRango.errorInicio 
-                    ? 'border-rose-400 text-rose-800 bg-rose-50/50 focus:border-rose-500' 
-                    : 'border-slate-200/80 bg-white text-slate-700 focus:border-slate-400'
-                }`}
-                title={validacionRango.errorInicio || 'Fecha inicial (00:00:00 El Salvador)'}
-              />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hasta</span>
-              <input
-                type="date"
-                value={fechaFin}
-                min={fechaInicio || undefined}
-                max={hoyElSalvador}
-                onChange={(e) => { setFechaFin(e.target.value); setPageVendedores(1); }}
-                className={`border rounded-lg px-2 py-0.5 text-base sm:text-xs outline-none font-mono transition-colors ${
-                  validacionRango.errorFin 
-                    ? 'border-rose-400 text-rose-800 bg-rose-50/50 focus:border-rose-500' 
-                    : 'border-slate-200/80 bg-white text-slate-700 focus:border-slate-400'
-                }`}
-                title={validacionRango.errorFin || 'Fecha final (23:59:59 El Salvador)'}
-              />
-            </div>
-            <span className="text-[10px] font-semibold text-slate-400 hidden xl:inline-block pl-1.5 border-l border-slate-200 whitespace-nowrap">
-              UTC-6 (El Salvador)
-            </span>
-          </div>
+  // Barra de filtros única (escritorio y móvil): en móvil la búsqueda queda en la tarjeta y el resto va en la hoja inferior.
+  // "Filtros (N)" cuenta lo que hay en la hoja (sin la búsqueda); "Limpiar (N)" cuenta todo.
+  // Las fechas del rango ya no viven en la hoja (en móvil se eligen en el modal; en escritorio van en línea en la barra): no cuentan en "Filtros (N)"
+  // pero sí en Limpiar, que las vacía.
+  const conteoFiltrosHoja = [vendedorFilter, resultadoFilter, seguimientoFilter].filter(Boolean).length;
+  const conteoLimpiar = conteoFiltrosHoja + (periodo === 'custom' && (fechaInicio || fechaFin) ? 1 : 0) + (clienteSearch ? 1 : 0);
 
-          {/* Alerta de validación en frontend */}
-          {!validacionRango.esValido && (
-            <div className="flex items-center gap-1.5 text-[11px] text-rose-600 bg-rose-50 border border-rose-200/80 px-2.5 py-1 rounded-lg font-medium animate-in fade-in">
-              <AlertCircle size={13} className="shrink-0 text-rose-500" />
-              <span>{validacionRango.errorGeneral}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {periodo === 'historico' && (
-        <div className="flex flex-col gap-1.5 w-full sm:w-auto animate-in fade-in duration-200">
-          <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-1.5 px-2.5 rounded-xl border border-slate-200/80 shrink-0">
-            <Calendar size={13} className="text-slate-400 shrink-0" />
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Año</span>
-            <select
-              value={anioHistorico}
-              onChange={(e) => { 
-                const val = e.target.value;
-                setAnioHistorico(val === 'todos' ? 'todos' : parseInt(val, 10)); 
-                setPageVendedores(1); 
-              }}
-              className="border border-slate-200/80 bg-white text-slate-700 rounded-lg px-2 py-1 text-xs outline-none font-mono focus:border-slate-400 cursor-pointer"
-            >
-              {aniosDisponibles.map(a => (
-                <option key={a} value={a}>{a}</option>
-              ))}
-              <option value="todos">Todo el historial</option>
-            </select>
-            {anioHistorico !== 'todos' && (
-              <span className="text-[10px] font-semibold text-slate-500 pl-1.5 border-l border-slate-200">
-                Mostrando datos de {anioHistorico}
-              </span>
-            )}
-          </div>
-          {anioHistorico === 'todos' && (
-            <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-lg font-medium animate-in fade-in">
-              <AlertCircle size={13} className="shrink-0 text-amber-500" />
-              <span>Puede ser lento con muchos años de datos</span>
-            </div>
-          )}
-        </div>
-      )}
-    </>
-  );
-
-  const renderFiltros = () => (
-    <>
-      {/* BARRA DE FILTROS MINIMALISTA */}
-      <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col sm:flex-row gap-3 items-center">
-        <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold shrink-0">
-          <Filter size={14} className="text-slate-400" />
-          <span className="text-[11px] uppercase tracking-wider text-slate-500 font-bold">Filtros:</span>
-        </div>
-
-        {renderCamposPeriodo()}
-
-        {role !== 'vendedor' && (
-          <div className="w-full sm:w-60">
-            <select
-              value={vendedorFilter}
-              onChange={(e) => { setVendedorFilter(e.target.value); setPageVendedores(1); }}
-              className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 sm:py-1.5 text-base sm:text-xs font-medium text-slate-700 outline-none focus:border-slate-400 cursor-pointer"
-            >
-              <option value="">Todos los vendedores ({vendedoresDisponibles.length})</option>
-              {vendedoresDisponibles.map((vend) => (
-                <option key={vend} value={vend}>{vend}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div className="w-full sm:w-60">
-          <select
-            value={resultadoFilter}
-            onChange={(e) => { setResultadoFilter(e.target.value); setPageVendedores(1); }}
-            className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 sm:py-1.5 text-base sm:text-xs font-medium text-slate-700 outline-none focus:border-slate-400 cursor-pointer"
-          >
-            <option value="">Todos los resultados</option>
-            {Object.values(RESULTADOS_SOLICITUD).map((resultado) => (
-              <option key={resultado} value={resultado}>{etiquetaResultadoSolicitud(resultado)}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="w-full sm:w-52">
-          <select
-            value={seguimientoFilter}
-            onChange={(e) => { setSeguimientoFilter(e.target.value); setPageVendedores(1); }}
-            className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 sm:py-1.5 text-base sm:text-xs font-medium text-slate-700 outline-none focus:border-slate-400 cursor-pointer"
-            aria-label="Filtrar por seguimiento de cliente"
-          >
-            <option value="">Todo el seguimiento</option>
-            <option value="todas">En seguimiento (todas)</option>
-            {Object.entries(FASES_SEGUIMIENTO).map(([fase, datos]) => (
-              <option key={fase} value={fase}>{datos.etiqueta}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="w-full sm:flex-1 relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Filtrar por cliente..."
-            value={clienteSearch}
-            onChange={(e) => { setClienteSearch(e.target.value); setPageVendedores(1); }}
-            className="w-full pl-9 pr-3 py-2 sm:py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-base sm:text-xs text-slate-700 outline-none focus:border-slate-400"
-          />
-        </div>
-
-        {hayFiltrosActivos && (
-          <button
-            type="button"
-            onClick={limpiarFiltros}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200/80 text-slate-600 hover:text-slate-900 border border-slate-200/80 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap shadow-2xs"
-            title="Restablecer todos los filtros"
-          >
-            <X size={12} className="text-slate-400" />
-            <span>Limpiar filtros</span>
-          </button>
-        )}
-
-        <button
-          type="button"
-          onClick={exportarMovimientos}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
-          title="Exportar todos los movimientos a Excel"
-        >
-          <Download size={13} />
-          <span>Exportar Excel</span>
-        </button>
-
-        <div className="text-xs text-slate-400 font-medium ml-auto hidden md:block">
-          <strong className="text-slate-700 font-semibold">{solicitudesFiltradas.length}</strong> solicitudes
-        </div>
-      </div>
-    </>
-  );
-
-
-  // Versión móvil: búsqueda siempre visible y el resto de filtros en un panel plegable.
-  const renderFiltrosMobile = () => {
-    const filtrosActivosCount = [
-      vendedorFilter,
-      resultadoFilter,
-      seguimientoFilter,
-      periodo === 'custom' && (fechaInicio || fechaFin)
-    ].filter(Boolean).length;
-    const claseCampo = 'w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-base font-medium text-slate-700 outline-none focus:border-slate-400 cursor-pointer';
-    const claseRotulo = 'text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1';
-
+  const renderBarra = () => {
+    const hayAlertas = (periodo === 'custom' && !validacionRango.esValido) || (periodo === 'historico' && anioHistorico === 'todos');
     return (
-      <div className="bg-white p-3.5 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3">
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1 min-w-0">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Filtrar por cliente..."
-              value={clienteSearch}
-              onChange={(e) => { setClienteSearch(e.target.value); setPageVendedores(1); }}
-              className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-base font-medium text-slate-700 outline-none focus:border-slate-400"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={() => setMostrarFiltrosMobile((visible) => !visible)}
-            aria-expanded={mostrarFiltrosMobile}
-            className={`flex items-center gap-1 px-3 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
-              filtrosActivosCount > 0
-                ? 'bg-primary-soft border-primary/30 text-primary-strong'
-                : 'bg-slate-50 border-slate-200 text-slate-600'
-            }`}
-          >
-            <Filter size={14} />
-            <span>Filtros{filtrosActivosCount > 0 ? ` (${filtrosActivosCount})` : ''}</span>
-            {mostrarFiltrosMobile ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
-          {hayFiltrosActivos && (
-            <button
-              type="button"
-              onClick={limpiarFiltros}
-              title="Limpiar filtros"
-              aria-label="Limpiar filtros"
-              className="p-2.5 rounded-xl bg-slate-50 text-slate-500 hover:text-rose-600 border border-slate-200 transition-colors cursor-pointer"
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
-        </div>
-
-        {mostrarFiltrosMobile && (
-          <div className="pt-3 border-t border-slate-100 space-y-2.5 animate-in fade-in duration-200">
-            {renderCamposPeriodo()}
-            {role !== 'vendedor' && (
-              <div>
-                <label className={claseRotulo}>Filtrar por vendedor</label>
-                <select
-                  value={vendedorFilter}
-                  onChange={(e) => { setVendedorFilter(e.target.value); setPageVendedores(1); }}
-                  className={claseCampo}
-                >
-                  <option value="">Todos los vendedores ({vendedoresDisponibles.length})</option>
-                  {vendedoresDisponibles.map((vend) => (
-                    <option key={vend} value={vend}>{vend}</option>
-                  ))}
-                </select>
+      <BarraFiltros
+        busquedaEnBarraMovil
+        filtrosActivos={conteoFiltrosHoja}
+        resultados={solicitudesFiltradas.length}
+        encabezado={hayAlertas ? (
+          <>
+            {periodo === 'custom' && !validacionRango.esValido && (
+              <div className="flex items-center gap-1.5 text-[11px] text-rose-600 bg-rose-50 border border-rose-200/80 px-2.5 py-1 rounded-lg font-medium animate-in fade-in">
+                <AlertCircle size={13} className="shrink-0 text-rose-500" />
+                <span>{validacionRango.errorGeneral}</span>
               </div>
             )}
-            <div>
-              <label className={claseRotulo}>Filtrar por resultado</label>
-              <select
-                value={resultadoFilter}
-                onChange={(e) => { setResultadoFilter(e.target.value); setPageVendedores(1); }}
-                className={claseCampo}
-              >
-                <option value="">Todos los resultados</option>
-                {Object.values(RESULTADOS_SOLICITUD).map((resultado) => (
-                  <option key={resultado} value={resultado}>{etiquetaResultadoSolicitud(resultado)}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={claseRotulo}>Filtrar por seguimiento</label>
-              <select
-                value={seguimientoFilter}
-                onChange={(e) => { setSeguimientoFilter(e.target.value); setPageVendedores(1); }}
-                className={claseCampo}
-              >
-                <option value="">Todo el seguimiento</option>
-                <option value="todas">En seguimiento (todas)</option>
-                {Object.entries(FASES_SEGUIMIENTO).map(([fase, datos]) => (
-                  <option key={fase} value={fase}>{datos.etiqueta}</option>
-                ))}
-              </select>
-            </div>
-            <button
-              type="button"
-              onClick={exportarMovimientos}
-              className="inline-flex items-center justify-center gap-1.5 w-full px-3 py-2.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
-            >
-              <Download size={13} />
-              <span>Exportar Excel</span>
-            </button>
-          </div>
+            {periodo === 'historico' && anioHistorico === 'todos' && (
+              <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-1 rounded-lg font-medium animate-in fade-in">
+                <AlertCircle size={13} className="shrink-0 text-amber-500" />
+                <span>Puede ser lento con muchos años de datos</span>
+              </div>
+            )}
+          </>
+        ) : null}
+        busqueda={(
+          <FiltroBusqueda
+            value={clienteSearch}
+            onChange={(texto) => { setClienteSearch(texto); setPageVendedores(1); }}
+            placeholder="Filtrar por cliente…"
+            ariaLabel="Filtrar por cliente"
+          />
         )}
-
-        <p className="text-[11px] font-medium text-slate-400">
-          <strong className="text-slate-700 font-semibold">{solicitudesFiltradas.length}</strong> solicitudes
-        </p>
-      </div>
+        filtros={(
+          <>
+            {periodo === 'historico' && (
+              <FiltroSelect
+                sinTodos
+                value={String(anioHistorico)}
+                onChange={(valor) => { setAnioHistorico(valor === 'todos' ? 'todos' : parseInt(valor, 10)); setPageVendedores(1); }}
+                opciones={[...aniosDisponibles.map((anio) => ({ value: String(anio), label: String(anio) })), { value: 'todos', label: 'Todo el historial' }]}
+                prefijo="Año:"
+                etiqueta="Año"
+                ariaLabel="Año del histórico"
+              />
+            )}
+            {role !== 'vendedor' && (
+              <FiltroSelect
+                value={vendedorFilter}
+                onChange={(valor) => { setVendedorFilter(valor); setPageVendedores(1); }}
+                opciones={vendedoresDisponibles}
+                prefijo="Vendedor:"
+                etiquetaTodos={`Todos (${vendedoresDisponibles.length})`}
+                ariaLabel="Filtrar por vendedor"
+              />
+            )}
+            <FiltroSelect
+              value={resultadoFilter}
+              onChange={(valor) => { setResultadoFilter(valor); setPageVendedores(1); }}
+              opciones={Object.values(RESULTADOS_SOLICITUD).map((resultado) => ({ value: resultado, label: etiquetaResultadoSolicitud(resultado) }))}
+              prefijo="Resultado:"
+              peso={1.4}
+              ariaLabel="Filtrar por resultado"
+            />
+            <FiltroSelect
+              value={seguimientoFilter}
+              onChange={(valor) => { setSeguimientoFilter(valor); setPageVendedores(1); }}
+              opciones={[{ value: 'todas', label: 'En seguimiento (todas)' }, ...Object.entries(FASES_SEGUIMIENTO).map(([fase, datos]) => ({ value: fase, label: datos.etiqueta }))]}
+              prefijo="Seguimiento:"
+              etiquetaTodos="Todo"
+              ariaLabel="Filtrar por seguimiento de cliente"
+            />
+          </>
+        )}
+        limpiar={<BotonLimpiar activos={conteoLimpiar} onClick={limpiarFiltros} />}
+        acciones={<BotonExportar onClick={exportarMovimientos} etiqueta="Exportar Excel" titulo="Exportar todos los movimientos a Excel" />}
+        extremo={<ContadorResultados total={solicitudesFiltradas.length} singular="solicitud" plural="solicitudes" />}
+      />
     );
   };
 
+  // "Rango" abre el modal de fechas (el mismo en móvil y en escritorio) y no cambia el período hasta Aplicar; también si Rango ya estaba activo:
+  // se reabre con sus fechas. El resto de períodos cambian al elegirlos.
+  const elegirPeriodo = (valor) => {
+    if (valor === 'custom') setRangoAbierto(true);
+    else setPeriodo(valor);
+  };
+  const aplicarRango = ({ desde, hasta }) => {
+    setFechaInicio(desde);
+    setFechaFin(hasta);
+    setPeriodo('custom');
+    setPageVendedores(1);
+  };
+  const modalRango = rangoAbierto && (
+    <ModalRango desde={fechaInicio} hasta={fechaFin} max={hoyElSalvador} onAplicar={aplicarRango} onCerrar={() => setRangoAbierto(false)} />
+  );
+
   if (isMobile) {
     return (
+      <>
       <AnalisisEstadisticasMobile
         theme={theme}
         role={role}
         periodo={periodo}
-        setPeriodo={setPeriodo}
+        setPeriodo={elegirPeriodo}
+        fechaInicio={fechaInicio}
+        fechaFin={fechaFin}
+        onEditarRango={() => elegirPeriodo('custom')}
         metricas={metricas}
         vendedorFilter={vendedorFilter}
         statsVendedores={statsVendedores}
@@ -963,8 +770,10 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         formatearDinero={formatearDinero}
         navigate={navigate}
         resetPage={() => setPageVendedores(1)}
-        FiltrosComponent={renderFiltrosMobile()}
+        FiltrosComponent={renderBarra()}
       />
+      {modalRango}
+      </>
     );
   }
 
@@ -986,35 +795,22 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
           </Etiqueta>
         }
         subtitle="Métricas operativas consolidadas, trazabilidad de solicitudes y rendimiento comercial"
-        actions={
-        <div className="inline-flex flex-wrap items-center bg-white p-1 rounded-2xl shadow-[var(--tf-shadow-card)] self-start sm:self-auto">
-          {[
-            { id: '7d', label: '7D' },
-            { id: '30d', label: '30D' },
-            { id: 'this_month', label: 'Este Mes' },
-            { id: '90d', label: '90D' },
-            { id: 'this_year', label: 'Este Año' },
-            { id: 'custom', label: 'Rango' },
-            { id: 'historico', label: 'Histórico' }
-          ].map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => { setPeriodo(p.id); setPageVendedores(1); }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                periodo === p.id 
-                  ? theme.activePeriod
-                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-        }
+        actions={(
+          <div className="flex flex-col items-end gap-1">
+            <FiltroSegmentado
+              ariaLabel="Período"
+              opciones={OPCIONES_PERIODO}
+              value={periodo}
+              onChange={(valor) => { elegirPeriodo(valor); setPageVendedores(1); }}
+            />
+            {/* Con Rango, sus fechas van como etiqueta tocable justo debajo del segmentado, alineada a la derecha (a su lado la cabecera crecía: el título se parte). */}
+            {periodo === 'custom' && <EtiquetaFechasRango desde={fechaInicio} hasta={fechaFin} onEditar={() => elegirPeriodo('custom')} />}
+          </div>
+        )}
       />
 
-      {renderFiltros()}
+      {renderBarra()}
+      {modalRango}
 
       {/* TARJETAS KPI MINIMALISTAS */}
       {mostrarKpisLegacy && (
@@ -1063,9 +859,9 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                     (Pedidos Ganados ÷ Total Cotizadas) × 100
                   </div>
                   <ul className="text-slate-300 text-[10px] space-y-1 leading-tight list-disc pl-3">
-                    <li><strong className="text-white">Numerador:</strong> RFQs cerradas como Pedido (100% ganadas).</li>
-                    <li><strong className="text-white">Denominador:</strong> Total de RFQs cotizadas (Cotizadas + Pedidos + Parciales).</li>
-                    <li><strong className="text-white">Excluye:</strong> RFQs que aún están en estado Pendiente (sin cotizar).</li>
+                    <li><strong className="text-white">Numerador:</strong> Solicitudes cerradas como Pedido (100% ganadas).</li>
+                    <li><strong className="text-white">Denominador:</strong> Total de solicitudes cotizadas (Cotizadas + Pedidos + Parciales).</li>
+                    <li><strong className="text-white">Excluye:</strong> Solicitudes que aún están en estado Pendiente (sin cotizar).</li>
                   </ul>
                 </div>
               </div>
@@ -1114,7 +910,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         </div>
 
         {/* KPI 4: Tiempos Operativos (Cierre Vendedor & Respuesta Comprador) */}
-        <div className="bg-white p-5 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+        <div className="surface p-5 rounded-2xl flex flex-col justify-between">
           <div className="flex items-center justify-between text-slate-400">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Tiempos Operativos</span>
@@ -1195,7 +991,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Embudo de Estados (2 columnas) con enlaces directos */}
-        <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-[var(--tf-shadow-card)]">
+        <div className="surface lg:col-span-2 p-6 rounded-2xl">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-base font-black text-slate-900 tracking-tight">
@@ -1398,7 +1194,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         </div>
 
         {/* Top 5 Clientes */}
-        <div className="bg-white p-5 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+        <div className="surface p-5 rounded-2xl flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -1446,9 +1242,9 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
 
                         <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
                           <span className="font-bold text-slate-800">{c.total}</span>
-                          <span className="text-slate-400 text-[10px]">RFQ</span>
+                          <span className="text-slate-400 text-[10px]">{pluralizar(c.total, 'solicitud', 'solicitudes')}</span>
                           {c.pedidos > 0 && (
-                            <Etiqueta tono="exito" mono title={`${c.pedidos} pedidos ganados`}>
+                            <Etiqueta tono="exito" mono title={`${c.pedidos} ${pluralizar(c.pedidos, 'pedido ganado', 'pedidos ganados')}`}>
                               {pedidosPct}% conv
                             </Etiqueta>
                           )}
@@ -1467,7 +1263,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                             <div 
                               className={`h-full bg-gradient-to-r ${theme.flujoEstados?.pedidos?.barGradient || 'from-emerald-500 to-teal-500'} transition-all duration-500`}
                               style={{ width: `${pedidosPct}%` }}
-                              title={`${c.pedidos} pedidos ganados (${pedidosPct}%)`}
+                              title={`${c.pedidos} ${pluralizar(c.pedidos, 'pedido ganado', 'pedidos ganados')} (${pedidosPct}%)`}
                             />
                           )}
                           {/* Segmento Cotizado / En Proceso (Tema según rol) */}
@@ -1497,7 +1293,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       </div>
 
       {/* SECCIÓN NUEVA: TOP PRODUCTOS MÁS COTIZADOS */}
-      <div className="bg-white p-5 rounded-2xl shadow-[var(--tf-shadow-card)]">
+      <div className="surface p-5 rounded-2xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-xl bg-slate-100/80 text-slate-500 flex items-center justify-center shrink-0">
@@ -1698,7 +1494,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       {/* SECCIÓN INFERIOR: RENDIMIENTO POR VENDEDOR Y MONITOREO LOGÍSTICO */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Rendimiento por Vendedor */}
-        <div className={`${puedeVerLogistica ? 'lg:col-span-2' : 'lg:col-span-3'} bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between`}>
+        <div className={`surface ${puedeVerLogistica ? 'lg:col-span-2' : 'lg:col-span-3'} p-5 rounded-2xl flex flex-col justify-between`}>
           <div>
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -1737,7 +1533,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                   <thead className="sticky top-0 z-10">
                     <tr className="tf-tabla-head">
                       <th className="py-2.5 px-3 whitespace-nowrap">Vendedor</th>
-                      <th className="py-2.5 px-3 text-center whitespace-nowrap">Total RFQs</th>
+                      <th className="py-2.5 px-3 text-center whitespace-nowrap">Total Solicitudes</th>
                       <th className="py-2.5 px-3 text-center whitespace-nowrap">Cotizadas</th>
                       <th className="py-2.5 px-3 text-center whitespace-nowrap">Pedidos</th>
                       <th className="py-2.5 px-3 text-right whitespace-nowrap">Efectividad</th>
@@ -1790,7 +1586,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 Anterior
               </button>
               <span className="text-[11px] font-medium text-slate-400">
-                Página {safePageVendedores} de {totalPagesVendedores} ({statsVendedores.length} vendedores)
+                Página {safePageVendedores} de {totalPagesVendedores} ({statsVendedores.length} {pluralizar(statsVendedores.length, 'vendedor', 'vendedores')})
               </span>
               <button 
                 type="button"
@@ -1806,7 +1602,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
 
         {/* Resumen Logístico de Órdenes de Compra (Solo Comprador y Administrador) */}
         {puedeVerLogistica && (
-          <div className="bg-white p-5 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col justify-between">
+          <div className="surface p-5 rounded-2xl flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>

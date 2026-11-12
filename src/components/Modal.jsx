@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ContextoCierreModal } from './modalCierre';
 import { createPortal } from 'react-dom';
 import { Check, X } from 'lucide-react';
 import {
@@ -15,6 +16,7 @@ import {
   CAMPO_ERROR,
   CUERPO,
   DURACION_SALIDA_MS,
+  DURACION_SALIDA_VARIANTE_MS,
   ENCABEZADO,
   ETIQUETA_SECCION,
   PESTANAS,
@@ -38,6 +40,8 @@ import {
  *
  * Incluye: portal a document.body, cierre con Escape (solo el modal de arriba) y clic fuera, bloqueo del scroll
  * de la página, foco inicial en el panel y animación de entrada y de salida.
+ * El contenido puede cerrar con la animación de salida con `useCerrarModal()`.
+ * `atraparFoco` mantiene el Tab dentro del panel (opt-in). `variante="hojaInferior"`: hoja anclada abajo (con `soloMovil`).
  * `abierto` permite que el padre mantenga el modal montado; si el padre lo desmonta, solo se anima la entrada.
  * `como="form"` convierte el panel en <form> (pasa `onSubmit`).
  * El color del modal (`tono`) se elige en ModalEncabezado y se repite en pestañas, campos y botón principal.
@@ -66,6 +70,7 @@ export const Modal = ({
   cerrarAlClicFuera = true,
   bloqueado = false,
   soloMovil = false,
+  atraparFoco = false,
   como = 'div',
   className = '',
   children,
@@ -79,10 +84,12 @@ export const Modal = ({
   const onCerrarRef = useRef(onCerrar);
   const bloqueadoRef = useRef(bloqueado);
   const saliendoRef = useRef(false);
+  const varianteRef = useRef(variante);
 
   useEffect(() => {
     onCerrarRef.current = onCerrar;
     bloqueadoRef.current = bloqueado;
+    varianteRef.current = variante;
   });
 
   /** Anima la salida y avisa al padre al terminar. */
@@ -94,7 +101,7 @@ export const Modal = ({
       saliendoRef.current = false;
       setSaliendo(false);
       onCerrarRef.current?.();
-    }, DURACION_SALIDA_MS);
+    }, DURACION_SALIDA_VARIANTE_MS[varianteRef.current] ?? DURACION_SALIDA_MS);
   }, []);
 
   useEffect(() => () => clearTimeout(temporizador.current), []);
@@ -112,6 +119,16 @@ export const Modal = ({
         evento.stopPropagation();
         solicitarCierre();
       }
+      if (evento.key === 'Tab' && atraparFoco && pila[pila.length - 1] === identificador && panelRef.current) {
+        const foco = [...panelRef.current.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+          .filter((el) => !el.closest('[inert]') && el.getAttribute('aria-hidden') !== 'true');
+        if (!foco.length) { evento.preventDefault(); return; }
+        const primero = foco[0];
+        const ultimo = foco[foco.length - 1];
+        const activo = document.activeElement;
+        if (evento.shiftKey && (activo === primero || activo === panelRef.current)) { evento.preventDefault(); ultimo.focus(); }
+        else if (!evento.shiftKey && activo === ultimo) { evento.preventDefault(); primero.focus(); }
+      }
     };
     document.addEventListener('keydown', alPulsar);
 
@@ -122,7 +139,7 @@ export const Modal = ({
       liberarScroll();
       if (anterior instanceof HTMLElement && document.contains(anterior)) anterior.focus({ preventScroll: true });
     };
-  }, [abierto, cerrarConEscape, solicitarCierre]);
+  }, [abierto, cerrarConEscape, atraparFoco, solicitarCierre]);
 
   if (!abierto || typeof document === 'undefined') return null;
 
@@ -130,6 +147,7 @@ export const Modal = ({
     <div
       className={`${clasesFondo({ variante, capa })} ${soloMovil ? 'md:hidden' : ''}`.trim()}
       data-saliendo={saliendo}
+      data-variante={variante}
       onMouseDown={(evento) => { inicioEnFondo.current = evento.target === evento.currentTarget; }}
       onClick={(evento) => {
         if (cerrarAlClicFuera && inicioEnFondo.current && evento.target === evento.currentTarget) solicitarCierre();
@@ -147,7 +165,7 @@ export const Modal = ({
         className={`${clasesPanel({ variante, ancho })} ${className}`.trim()}
         {...resto}
       >
-        {children}
+        <ContextoCierreModal.Provider value={solicitarCierre}>{children}</ContextoCierreModal.Provider>
       </Panel>
     </div>,
     document.body

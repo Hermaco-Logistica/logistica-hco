@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { pluralizar } from '../../utils/pluralizar';
 import { useNavigate, Navigate } from 'react-router-dom';
-import { ArrowLeft, Search, Building, Download } from 'lucide-react';
+import { ArrowLeft, Building } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { Etiqueta } from '../../components/Etiqueta';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroSegmentado } from '../../components/filtros';
 import { acumularFaseSeguimiento, describirFasesSeguimiento, obtenerFaseSolicitudCacheada } from '../../utils/faseSeguimiento';
 import { getRoleTheme } from './theme';
 import { contarDecisiones } from './utils/decisionMetrics';
@@ -18,11 +20,22 @@ import {
 } from '../../utils/dateValidation';
 import { TablePagination } from '../../components/ui/TablePagination';
 
+/** Opciones de "Ordenar" (mismo orden y rótulos que antes). El peso reserva el ancho de la fila de botones en la barra. */
+const OPCIONES_ORDEN_CLIENTES = [
+  { value: 'total', label: 'Más Solicitudes' },
+  { value: 'pedidos', label: 'Más Pedidos' },
+  { value: 'monto', label: 'Mayor Monto' },
+  { value: 'anulaciones', label: 'Más anulaciones' },
+  { value: 'decisiones', label: 'Más ventas perdidas' }
+];
+const ANCHO_ORDEN_CLIENTES = 5;
+const ORDEN_INICIAL_CLIENTES = 'total';
+
 export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
   const [searchTerm, setSearchTerm] = useSessionState('analisis_clientes_dir_search', '');
-  const [criterioOrden, setCriterioOrden] = useSessionState('analisis_clientes_dir_orden', 'total'); // 'total' | 'pedidos' | 'monto' | 'anulaciones'
+  const [criterioOrden, setCriterioOrden] = useSessionState('analisis_clientes_dir_orden', ORDEN_INICIAL_CLIENTES); // 'total' | 'pedidos' | 'monto' | 'anulaciones' | 'decisiones'
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -45,11 +58,6 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
     document.querySelector('main')?.scrollTo(0, 0);
     window.scrollTo(0, 0);
   }, []);
-
-  useEffect(() => {
-    const btn = document.getElementById(`ord-cli-${criterioOrden}`);
-    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-  }, [criterioOrden]);
 
   const parseDate = (val) => {
     if (!val) return null;
@@ -205,76 +213,63 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
           </Etiqueta>
         }
         subtitle={<>Análisis consolidado por cliente ({todosLosClientes.length} empresas registradas)</>}
-        actions={
-        <div className="flex overflow-x-auto whitespace-nowrap items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <span className="text-[10px] font-medium text-slate-400 ml-2 shrink-0">Ordenar:</span>
-          {[
-            { id: 'total', label: 'Más RFQs' },
-            { id: 'pedidos', label: 'Más Pedidos' },
-            { id: 'monto', label: 'Mayor Monto' },
-            { id: 'anulaciones', label: 'Más anulaciones' },
-            { id: 'decisiones', label: 'Más ventas perdidas' }
-          ].map((ord) => (
-            <button
-              key={ord.id}
-              id={`ord-cli-${ord.id}`}
-              type="button"
-              onClick={() => { setCriterioOrden(ord.id); setCurrentPage(1); }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
-                criterioOrden === ord.id 
-                  ? 'bg-slate-900 text-white shadow-xs font-semibold' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-              }`}
-            >
-              {ord.label}
-            </button>
-          ))}
-        </div>
-        }
       />
 
 
-      {/* BUSCADOR */}
-      <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
-        <div className="relative w-full md:w-80">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Buscar por nombre de cliente..."
+      {/* BARRA DE FILTROS: búsqueda, orden, exportar y contador */}
+      <BarraFiltros
+        busquedaEnBarraMovil
+        resultados={clientesFiltrados.length}
+        filtrosActivos={criterioOrden !== ORDEN_INICIAL_CLIENTES ? 1 : 0}
+        busqueda={(
+          <FiltroBusqueda
             value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="w-full pl-9 pr-3 py-1.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-xs text-slate-700 outline-none focus:border-slate-400 transition-colors"
+            onChange={(texto) => { setSearchTerm(texto); setCurrentPage(1); }}
+            placeholder="Buscar por nombre de cliente..."
+            ariaLabel="Buscar por nombre de cliente"
           />
-        </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
-          <button
-            type="button"
+        )}
+        filtros={(
+          <FiltroSegmentado
+            colapsable
+            peso={ANCHO_ORDEN_CLIENTES}
+            prefijo="Ordenar:"
+            etiqueta="Ordenar"
+            ariaLabel="Ordenar clientes"
+            opciones={OPCIONES_ORDEN_CLIENTES}
+            value={criterioOrden}
+            onChange={(valor) => { setCriterioOrden(valor); setCurrentPage(1); }}
+          />
+        )}
+        limpiar={(
+          <BotonLimpiar
+            activos={(searchTerm.trim() ? 1 : 0) + (criterioOrden !== ORDEN_INICIAL_CLIENTES ? 1 : 0)}
+            onClick={() => { setSearchTerm(''); setCriterioOrden(ORDEN_INICIAL_CLIENTES); setCurrentPage(1); }}
+          />
+        )}
+        acciones={(
+          <BotonExportar
+            etiqueta="Exportar movimientos"
+            titulo="Exportar todos los movimientos de clientes a Excel"
             onClick={() => {
-              const solsAExportar = searchTerm.trim()
-                ? clientesFiltrados.flatMap(c => c.solicitudesList || [])
-                : solicitudes;
-              const periodoLabel = searchTerm.trim()
-                ? `Todos los registros | Búsqueda cliente: "${searchTerm.trim()}"`
-                : 'Todos los registros de clientes';
-              exportarTodosLosMovimientosExcel(solsAExportar, ordenesCompra, 'movimientos_clientes', {
-                titulo: 'CONTROL DE LOGÍSTICA - MOVIMIENTOS POR CLIENTES',
-                periodoLabel
-              });
+          const solsAExportar = searchTerm.trim()
+            ? clientesFiltrados.flatMap(c => c.solicitudesList || [])
+            : solicitudes;
+          const periodoLabel = searchTerm.trim()
+            ? `Todos los registros | Búsqueda cliente: "${searchTerm.trim()}"`
+            : 'Todos los registros de clientes';
+          exportarTodosLosMovimientosExcel(solsAExportar, ordenesCompra, 'movimientos_clientes', {
+            titulo: 'CONTROL DE LOGÍSTICA - MOVIMIENTOS POR CLIENTES',
+            periodoLabel
+          });
             }}
-            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
-            title="Exportar todos los movimientos de clientes a Excel"
-          >
-            <Download size={13} />
-            <span>Exportar Movimientos</span>
-          </button>
-          <div className="text-[11px] font-medium text-slate-400 font-mono self-end sm:self-auto">
-            Mostrando <strong className="text-slate-700 font-semibold">{clientesFiltrados.length}</strong> clientes
-          </div>
-        </div>
-      </div>
+          />
+        )}
+        extremo={<ContadorResultados prefijo="Mostrando" total={clientesFiltrados.length} singular="cliente" plural="clientes" />}
+      />
 
       {paginatedClientes.length === 0 ? (
-        <div className="text-center py-16 text-slate-400 text-xs font-medium bg-white rounded-2xl shadow-[var(--tf-shadow-card)]">
+        <div className="surface text-center py-16 text-slate-400 text-xs font-medium rounded-2xl">
           No se encontraron clientes con el filtro aplicado.
         </div>
       ) : (
@@ -287,7 +282,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                 ? Math.round((c.pedidos / c.cotizadas) * 100) 
                 : 0;
               return (
-                <div key={c.cliente} className="bg-white p-4 rounded-2xl shadow-[var(--tf-shadow-card)] space-y-3 relative">
+                <div key={c.cliente} className="surface p-4 rounded-2xl space-y-3 relative">
                   <div className="flex justify-between items-start">
                     <div 
                       className="flex items-center gap-3 cursor-pointer group"
@@ -305,7 +300,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                   
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                      <span className="text-[10px] text-slate-400 font-medium">RFQs</span>
+                      <span className="text-[10px] text-slate-400 font-medium">solicitudes</span>
                       <span className="font-bold font-mono text-slate-700">{c.totalRFQs}</span>
                     </div>
                     <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50 flex flex-col items-center justify-center text-center">
@@ -317,7 +312,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                       <div className="flex items-center gap-1">
                         <span className="font-bold font-mono text-emerald-700">{c.pedidos}</span>
                         {c.pedidosParciales > 0 && (
-                          <span className="text-[9px] font-normal text-sky-600 font-mono" title={`${c.pedidosParciales} pedidos parciales`}>
+                          <span className="text-[9px] font-normal text-sky-600 font-mono" title={`${c.pedidosParciales} ${pluralizar(c.pedidosParciales, 'pedido parcial', 'pedidos parciales')}`}>
                             +{c.pedidosParciales}
                           </span>
                         )}
@@ -337,10 +332,10 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         <button
                           type="button"
                           onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}?seguimiento=1`)}
-                          aria-label={`Ver ${c.enSeguimiento} solicitudes en seguimiento de ${c.cliente}`}
+                          aria-label={`Ver ${c.enSeguimiento} ${pluralizar(c.enSeguimiento, 'solicitud', 'solicitudes')} en seguimiento de ${c.cliente}`}
                           className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                         >
-                          <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento} solicitudes` : null}</Etiqueta>
+                          <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento} ${pluralizar(c.enSeguimiento, 'solicitud', 'solicitudes')}` : null}</Etiqueta>
                         </button>
                       </div>
                     )}
@@ -368,14 +363,14 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
           </div>
 
           {/* VISTA DESKTOP (Tabla original) */}
-          <div className="hidden md:flex bg-white rounded-2xl shadow-[var(--tf-shadow-card)] overflow-hidden flex-col">
+          <div className="surface hidden md:flex rounded-2xl overflow-hidden flex-col">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="tf-tabla-head">
                     <th className="py-2.5 px-3.5 whitespace-normal">#</th>
                     <th className="py-2.5 px-3.5 whitespace-normal">Cliente</th>
-                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Total RFQs</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Total Solicitudes</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Cotizadas</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-nowrap" title="Solicitudes cotizadas en revisión, prórroga o vencidas">En seguimiento</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Anulaciones</th>
@@ -424,7 +419,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                             ? <button
                                 type="button"
                                 onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}?seguimiento=1`)}
-                                aria-label={`Ver ${c.enSeguimiento} solicitudes en seguimiento de ${c.cliente}`}
+                                aria-label={`Ver ${c.enSeguimiento} ${pluralizar(c.enSeguimiento, 'solicitud', 'solicitudes')} en seguimiento de ${c.cliente}`}
                                 className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                               >
                                 <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento}` : null}</Etiqueta>
@@ -435,7 +430,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
                           <span>{c.pedidos}</span>
                           {c.pedidosParciales > 0 && (
-                            <span className="text-[10px] font-normal text-sky-600 block" title={`${c.pedidosParciales} pedidos parciales`}>
+                            <span className="text-[10px] font-normal text-sky-600 block" title={`${c.pedidosParciales} ${pluralizar(c.pedidosParciales, 'pedido parcial', 'pedidos parciales')}`}>
                               +{c.pedidosParciales} parc.
                             </span>
                           )}
