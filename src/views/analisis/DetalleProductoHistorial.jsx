@@ -677,7 +677,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
               {metricas.totalMovimientos}
             </div>
             <div className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate">
-              En diferentes solicitudes
+              En diferentes RFQs
             </div>
           </div>
         </div>
