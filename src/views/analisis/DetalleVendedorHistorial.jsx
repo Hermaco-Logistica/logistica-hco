@@ -741,7 +741,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
             <span className="h-3 w-px bg-slate-200 hidden sm:block"></span>
             <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
               <Building size={13} className="text-slate-400" />
-              <strong className="text-slate-700">{infoVendedor.totalRfqs}</strong> {infoVendedor.totalRfqs === 1 ? 'RFQ' : 'RFQs'}
+              <strong className="text-slate-700">{infoVendedor.totalRfqs}</strong> {infoVendedor.totalRfqs === 1 ? 'solicitud' : 'solicitudes'}
             </span>
             <span className="h-3 w-px bg-slate-200 hidden sm:block"></span>
             <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
@@ -765,7 +765,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
               {metricas.clientesUnicos}
             </div>
             <div className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate">
-              En {metricas.rfqsUnicas} {metricas.rfqsUnicas === 1 ? 'RFQ' : 'RFQs'} registradas
+              En {metricas.rfqsUnicas} {metricas.rfqsUnicas === 1 ? 'solicitud registrada' : 'solicitudes registradas'}
             </div>
           </div>
         </div>
@@ -842,7 +842,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
         ) : null}
         busqueda={searchTerm}
         onBusqueda={(texto) => { setSearchTerm(texto); setCurrentPage(1); }}
-        placeholderBusqueda="Buscar por RFQ, producto..."
+        placeholderBusqueda="Buscar por correlativo, producto..."
         soloAnulados={soloAnulados}
         cliente={filterCliente}
         onCliente={(valor) => { setFilterCliente(valor); setCurrentPage(1); }}
@@ -900,7 +900,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
             <table className="min-w-full w-max text-left text-xs">
               <thead className="sticky top-0 z-10">
                 <tr className="tf-tabla-head">
-                  <th className="py-2.5 px-3 whitespace-nowrap">RFQ</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Correlativo</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Sol.</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Resp.</th>
                   {!soloAnulados && <th className="py-2.5 px-3 whitespace-nowrap">Fecha OC</th>}

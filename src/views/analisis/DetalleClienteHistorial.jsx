@@ -678,7 +678,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
               <Building size={13} className="text-slate-400" />
-              <strong className="text-slate-700">{infoCliente.totalRfqs}</strong> {infoCliente.totalRfqs === 1 ? 'RFQ' : 'RFQs'}
+              <strong className="text-slate-700">{infoCliente.totalRfqs}</strong> {infoCliente.totalRfqs === 1 ? 'solicitud' : 'solicitudes'}
             </span>
           </span>
           </>
@@ -697,7 +697,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
               {metricas.productosUnicos}
             </div>
             <div className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate">
-              {metricas.totalMovimientos} {pluralizar(metricas.totalMovimientos, 'item', 'items')} en {metricas.rfqsUnicas} {metricas.rfqsUnicas === 1 ? 'RFQ' : 'RFQs'}
+              {metricas.totalMovimientos} {pluralizar(metricas.totalMovimientos, 'item', 'items')} en {metricas.rfqsUnicas} {metricas.rfqsUnicas === 1 ? 'solicitud' : 'solicitudes'}
             </div>
           </div>
         </div>
@@ -759,9 +759,9 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
             </div>
             <div
               className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate cursor-help"
-              title={`${metricas.pedidosCount} RFQs ganadas + ${metricas.parcialesCount} RFQs parciales de ${metricas.rfqsUnicas} RFQs totales`}
+              title={`${metricas.pedidosCount} solicitudes ganadas + ${metricas.parcialesCount} solicitudes parciales de ${metricas.rfqsUnicas} solicitudes totales`}
             >
-              {metricas.pedidosCount} gan. {metricas.parcialesCount > 0 && <span className="text-amber-600 font-semibold">(+{metricas.parcialesCount} pc.)</span>} / {metricas.rfqsUnicas} RFQs
+              {metricas.pedidosCount} gan. {metricas.parcialesCount > 0 && <span className="text-amber-600 font-semibold">(+{metricas.parcialesCount} pc.)</span>} / {metricas.rfqsUnicas} solicitudes
             </div>
           </div>
         </div>
@@ -774,7 +774,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
         ) : null}
         busqueda={searchTerm}
         onBusqueda={(texto) => { setSearchTerm(texto); setCurrentPage(1); }}
-        placeholderBusqueda="Buscar por RFQ, producto..."
+        placeholderBusqueda="Buscar por correlativo, producto..."
         soloAnulados={soloAnulados}
         estado={filterEstado}
         onEstado={(valor) => { setFilterEstado(valor); setCurrentPage(1); }}
@@ -829,7 +829,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
             <table className="min-w-full w-max text-left text-xs">
               <thead className="sticky top-0 z-10">
                 <tr className="tf-tabla-head">
-                  <th className="py-2.5 px-3 whitespace-nowrap">RFQ</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Correlativo</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Sol.</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Resp.</th>
                   {!soloAnulados && <th className="py-2.5 px-3 whitespace-nowrap">Fecha OC</th>}

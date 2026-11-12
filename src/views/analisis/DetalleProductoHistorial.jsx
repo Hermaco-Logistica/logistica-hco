@@ -677,7 +677,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
               {metricas.totalMovimientos}
             </div>
             <div className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate">
-              En diferentes RFQs
+              En diferentes solicitudes
             </div>
           </div>
         </div>
@@ -739,9 +739,9 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
             </div>
             <div
               className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate cursor-help"
-              title={`${metricas.pedidosCount} RFQs ganadas + ${metricas.parcialesCount} RFQs parciales de ${metricas.rfqsUnicas} RFQs totales`}
+              title={`${metricas.pedidosCount} solicitudes ganadas + ${metricas.parcialesCount} solicitudes parciales de ${metricas.rfqsUnicas} solicitudes totales`}
             >
-              {metricas.pedidosCount} gan. {metricas.parcialesCount > 0 && <span className="text-amber-600 font-semibold">(+{metricas.parcialesCount} pc.)</span>} / {metricas.rfqsUnicas} RFQs
+              {metricas.pedidosCount} gan. {metricas.parcialesCount > 0 && <span className="text-amber-600 font-semibold">(+{metricas.parcialesCount} pc.)</span>} / {metricas.rfqsUnicas} solicitudes
             </div>
           </div>
         </div>
@@ -760,7 +760,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
         ) : null}
         busqueda={searchTerm}
         onBusqueda={(texto) => { setSearchTerm(texto); setCurrentPage(1); }}
-        placeholderBusqueda="Buscar por RFQ, cliente..."
+        placeholderBusqueda="Buscar por correlativo, cliente..."
         soloAnulados={soloAnulados}
         estado={filterEstado}
         onEstado={(valor) => { setFilterEstado(valor); setCurrentPage(1); }}
@@ -815,7 +815,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
             <table className="min-w-full w-max text-left text-xs">
               <thead className="sticky top-0 z-10">
                 <tr className="tf-tabla-head">
-                  <th className="py-2.5 px-3 whitespace-nowrap">RFQ</th>
+                  <th className="py-2.5 px-3 whitespace-nowrap">Correlativo</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Sol.</th>
                   <th className="py-2.5 px-3 whitespace-nowrap">Fecha Resp.</th>
                   {!soloAnulados && <th className="py-2.5 px-3 whitespace-nowrap">Fecha OC</th>}

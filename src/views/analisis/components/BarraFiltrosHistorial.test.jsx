@@ -12,7 +12,7 @@ const matchMediaOriginal = window.matchMedia;
 const esperar = (ms = 40) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
 const Seguimiento = ({ onClick }) => <button type="button" onClick={onClick}>En seguimiento</button>;
 const base = (extra = {}) => ({
-  busqueda: '', onBusqueda: vi.fn(), placeholderBusqueda: 'Buscar por RFQ, producto...',
+  busqueda: '', onBusqueda: vi.fn(), placeholderBusqueda: 'Buscar por correlativo, producto...',
   estado: '', onEstado: vi.fn(), opcionesEstado: ['Cotizado', 'Pedido'],
   modalidad: '', onModalidad: vi.fn(), opcionesModalidad: ['Aéreo', 'Marítimo'],
   seguimiento: <Seguimiento onClick={() => {}} />, onLimpiar: vi.fn(), onExportar: vi.fn(), total: 5, ...extra
@@ -28,7 +28,7 @@ describe('BarraFiltrosHistorial (escritorio)', () => {
     const seg = vi.fn();
     const p = base({ activosLimpiar: 2, seguimiento: <Seguimiento onClick={seg} />, cliente: '', onCliente: vi.fn(), opcionesCliente: ['A', 'B'] });
     montar(p);
-    fireEvent.change(screen.getByPlaceholderText('Buscar por RFQ, producto...'), { target: { value: 'bomba' } });
+    fireEvent.change(screen.getByPlaceholderText('Buscar por correlativo, producto...'), { target: { value: 'bomba' } });
     expect(p.onBusqueda).toHaveBeenCalledWith('bomba');
     fireEvent.click(screen.getByRole('combobox', { name: 'Filtrar por estado' }));
     fireEvent.click(screen.getByRole('option', { name: 'Pedido' }));
@@ -65,7 +65,7 @@ describe('BarraFiltrosHistorial (escritorio)', () => {
     montar(base({ soloAnulados: true, activosLimpiar: 1 }));
     expect(screen.queryByRole('combobox', { name: 'Filtrar por estado' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'En seguimiento' })).toBeNull();
-    expect(screen.getByPlaceholderText('Buscar por RFQ, producto...')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Buscar por correlativo, producto...')).toBeTruthy();
     expect(screen.getByRole('group', { name: 'Filtrar por modalidad' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /^Limpiar filtros/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Exportar movimientos/ })).toBeTruthy();
@@ -95,7 +95,7 @@ describe('BarraFiltrosHistorial: escritorio en dos filas y modalidad con 3 opcio
     const { container } = montar(base({ activosLimpiar: 1, cliente: '', onCliente: vi.fn(), opcionesCliente: ['A', 'B'] }));
     const filas = Array.from(container.querySelectorAll('section .space-y-2 > div'));
     expect(filas).toHaveLength(2);
-    expect(within(filas[0]).getByPlaceholderText('Buscar por RFQ, producto...')).toBeTruthy();
+    expect(within(filas[0]).getByPlaceholderText('Buscar por correlativo, producto...')).toBeTruthy();
     expect(within(filas[0]).getByRole('combobox', { name: 'Filtrar por cliente' })).toBeTruthy();
     expect(within(filas[0]).getByRole('combobox', { name: 'Filtrar por estado' })).toBeTruthy();
     expect(within(filas[1]).getByRole('group', { name: 'Filtrar por modalidad' })).toBeTruthy();
@@ -137,7 +137,7 @@ describe('BarraFiltrosHistorial (móvil)', () => {
     mm(true);
     const { rerender } = montar(base({ filtrosActivos: 0 }));
     expect(screen.getByRole('button', { name: /^Filtros$/ })).toBeTruthy();
-    expect(screen.getByPlaceholderText('Buscar por RFQ, producto...')).toBeTruthy();
+    expect(screen.getByPlaceholderText('Buscar por correlativo, producto...')).toBeTruthy();
     rerender(<BarraFiltrosHistorial {...base({ filtrosActivos: 2 })} />);
     expect(screen.getByRole('button', { name: 'Filtros (2)' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Filtros (2)' }));
