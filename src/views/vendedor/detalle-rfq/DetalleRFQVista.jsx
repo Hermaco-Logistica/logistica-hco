@@ -20,6 +20,7 @@ import './detalleRFQResponsive.css';
 import { Etiqueta } from '../../../components/Etiqueta';
 import { ModalConsultaTexto, ModalMotivo } from '../../../components/Modal';
 import { ModalVistaPrevia } from '../../../components/ModalVistaPrevia';
+import { contarOpcionesMoviles } from './opcionesMoviles';
 
 export const DetalleRFQVista = ({ viewModel }) => {
   const {
@@ -168,11 +169,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
     };
   };
 
-  const opcionesMovilesCount = [
-    rfq?.estado !== 'Pendiente',
-    hayDecisionesEnParcial,
-    hayVentaPerdidaEnParcial
-  ].filter(Boolean).length;
+  const opcionesMovilesCount = contarOpcionesMoviles({ estado: rfq?.estado, hayDecisionesEnParcial, hayVentaPerdidaEnParcial });
   const alturaMenuMovil = opcionesMovilesCount * 52 + Math.max(0, opcionesMovilesCount - 1) * 8;
   const menuHaciaAbajo = stickyPosicion.y < alturaMenuMovil + 24;
 
@@ -320,7 +317,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
         </div>
       )}
 
-      {typeof document !== 'undefined' && createPortal((
+      {typeof document !== 'undefined' && opcionesMovilesCount > 0 && createPortal((
       <div ref={opcionesMovilesRef} style={{ left: stickyPosicion.x, top: stickyPosicion.y }} className={`fixed z-40 flex flex-col items-end md:hidden ${stickyArrastrando ? '' : 'transition-[left,top] duration-300 ease-out'}`}>
         {opcionesMovilesAbiertas && (
           <div className={`absolute right-0 flex flex-col items-end gap-2 origin-bottom-right [&>button:first-child>span]:hidden animate-in duration-200 ${menuHaciaAbajo ? 'top-[calc(100%+0.75rem)] slide-in-from-top-3' : 'bottom-[calc(100%+0.75rem)] slide-in-from-bottom-3'}`}>
@@ -351,7 +348,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
             )}
           </div>
         )}
-        <button type="button" aria-label={opcionesMovilesAbiertas ? 'Cerrar opciones' : 'Abrir opciones'} aria-expanded={opcionesMovilesAbiertas} onPointerDown={iniciarArrastreSticky} onClick={() => { if (bloquearClickStickyRef.current) { bloquearClickStickyRef.current = false; return; } setOpcionesMovilesAbiertas((abiertas) => !abiertas); }} className={`flex h-11 w-11 touch-none items-center justify-center rounded-full text-white shadow-xl shadow-slate-900/25 transition-all duration-200 ${opcionesMovilesAbiertas ? 'rotate-90 bg-slate-700' : 'bg-slate-900'}`}>
+        <button type="button" aria-label={opcionesMovilesAbiertas ? 'Cerrar opciones' : 'Abrir opciones'} aria-expanded={opcionesMovilesAbiertas} onPointerDown={iniciarArrastreSticky} onClick={() => { if (bloquearClickStickyRef.current) { bloquearClickStickyRef.current = false; return; } setOpcionesMovilesAbiertas((abiertas) => !abiertas); }} className={`flex h-11 w-11 touch-none items-center justify-center rounded-full text-primary-foreground shadow-xl shadow-slate-900/25 transition-all duration-200 ${opcionesMovilesAbiertas ? 'rotate-90 bg-primary-strong' : 'bg-primary'}`}>
           {opcionesMovilesAbiertas ? <X size={23} /> : <MoreVertical size={23} />}
         </button>
       </div>
