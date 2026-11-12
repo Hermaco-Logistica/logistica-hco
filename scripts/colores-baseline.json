@@ -5,7 +5,7 @@
     "src/utils/etiquetas.js"
   ],
   "totales": {
-    "clases": 969,
+    "clases": 964,
     "literales": 77
   },
   "archivos": {
@@ -186,7 +186,7 @@
       "literales": 0
     },
     "src/views/pedidos/DashboardPedidos.jsx": {
-      "clases": 50,
+      "clases": 45,
       "literales": 0
     },
     "src/views/pedidos/RetaceosView.jsx": {

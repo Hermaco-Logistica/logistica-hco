@@ -982,17 +982,17 @@ export const DashboardPedidos = ({ role }) => {
 
       {/* ASIGNADOR DE OC RESPONSIVO (DESKTOP) */}
       {showAsignador && (
-        <div className="hidden md:block mb-6 bg-slate-900 rounded-3xl p-8 shadow-2xl border-4 border-emerald-500/20">
+        <div className="hidden md:block mb-6 bg-secondary rounded-3xl p-8 shadow-2xl border-4 border-primary/20">
           <div className="grid grid-cols-2 gap-12">
             <div className="space-y-4">
-              <p className="text-emerald-400 font-black text-[10px] uppercase">Nueva OC</p>
+              <p className="text-nav-accent-text font-black text-[10px] uppercase">Nueva OC</p>
               <div className="flex gap-3">
-                <input type="text" placeholder="N° OC" className="flex-1 bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold" value={nuevaOC.numero} onFocus={(e) => e.target.select()} onChange={(e) => handleNumeroOCChange(e.target.value)} />
+                <input type="text" placeholder="N° OC" className="flex-1 bg-white/14 border-none p-4 rounded-xl text-white text-xs font-bold" value={nuevaOC.numero} onFocus={(e) => e.target.select()} onChange={(e) => handleNumeroOCChange(e.target.value)} />
                 <div className="relative flex-1">
                   <input
                     type="text"
                     placeholder="PROVEEDOR"
-                    className="w-full bg-slate-800 border-none p-4 rounded-xl text-white text-xs font-bold"
+                    className="w-full bg-white/14 border-none p-4 rounded-xl text-white text-xs font-bold"
                     value={nuevaOC.proveedor}
                     onKeyDown={manejarTeclasProveedor}
                     onFocus={() => {
@@ -1011,7 +1011,7 @@ export const DashboardPedidos = ({ role }) => {
                   />
 
                   {mostrarSugerenciasProveedor && nuevaOC.proveedor.trim().length >= 2 && (
-                    <div className="absolute z-20 mt-2 w-full max-h-56 overflow-y-auto scrollbar-hide rounded-xl bg-slate-900 shadow-flotante">
+                    <div className="absolute z-20 mt-2 w-full max-h-56 overflow-y-auto scrollbar-hide rounded-xl bg-secondary shadow-flotante">
                       {buscandoProveedor && (
                         <div className="px-4 py-3 text-[10px] font-bold text-slate-400">Buscando proveedores guardados...</div>
                       )}
@@ -1028,8 +1028,8 @@ export const DashboardPedidos = ({ role }) => {
                         <button
                           key={s.id}
                           type="button"
-                          className={`w-full text-left px-4 py-3 border-b last:border-b-0 border-slate-800 ${
-                            idx === indiceSugerenciaProveedor ? 'bg-slate-800' : 'hover:bg-slate-800'
+                          className={`w-full text-left px-4 py-3 border-b last:border-b-0 border-white/10 ${
+                            idx === indiceSugerenciaProveedor ? 'bg-white/14' : 'hover:bg-white/14'
                           }`}
                           onMouseEnter={() => setIndiceSugerenciaProveedor(idx)}
                           onMouseDown={() => {
@@ -1043,13 +1043,13 @@ export const DashboardPedidos = ({ role }) => {
                   )}
                 </div>
               </div>
-              <button onClick={() => procesarAsignacion()} className="w-full bg-emerald-500 text-white py-3.5 rounded-xl font-black text-xs uppercase cursor-pointer active:scale-95 transition-all">Crear y Vincular</button>
+              <button onClick={() => procesarAsignacion()} className="w-full bg-primary hover:bg-primary-strong text-primary-foreground py-3.5 rounded-xl font-black text-xs uppercase cursor-pointer active:scale-95 transition-all">Crear y Vincular</button>
             </div>
-            <div className="space-y-4 border-l border-slate-800 pl-12">
-              <p className="text-blue-400 font-black text-[10px] uppercase">Agregar a Existente</p>
+            <div className="space-y-4 border-l border-white/10 pl-12">
+              <p className="text-nav-accent-text font-black text-[10px] uppercase">Agregar a Existente</p>
               <div className="grid grid-cols-1 gap-2 max-h-40 overflow-y-auto scrollbar-hide">
                 {ordenesExistentes.filter(oc => !['Aduana', 'Recibido', 'Entregado'].includes(oc.estado)).map(oc => (
-                  <button key={oc.id} onClick={() => procesarAsignacion(oc)} className="w-full bg-slate-800 hover:bg-blue-600 text-white p-3.5 rounded-xl text-left text-[10px] font-black uppercase flex justify-between cursor-pointer transition-colors">
+                  <button key={oc.id} onClick={() => procesarAsignacion(oc)} className="w-full bg-white/14 hover:bg-primary text-white p-3.5 rounded-xl text-left text-[10px] font-black uppercase flex justify-between cursor-pointer transition-colors">
                     <span>{oc.numeroOC} — {oc.proveedor}</span>
                     <ChevronDown size={14} />
                   </button>
@@ -1358,18 +1358,18 @@ export const DashboardPedidos = ({ role }) => {
             titulo={`Vincular ${seleccionados.length} ${seleccionados.length === 1 ? 'ítem' : 'ítems'}`}
             subtitulo="Crea una OC nueva o agrégalos a una existente."
             icono={LinkIcon}
-            tono="azul"
+            tono="rol"
             onCerrar={() => setShowAsignador(false)}
           />
           <ModalCuerpo>
             <ModalSeccion etiqueta="Nueva OC" htmlFor="asignador-numero-oc">
               <div className="flex flex-col gap-3">
-                <ModalCampo id="asignador-numero-oc" tono="azul" type="text" placeholder="N° OC" value={nuevaOC.numero} onFocus={(e) => e.target.select()} onChange={(e) => handleNumeroOCChange(e.target.value)} />
+                <ModalCampo id="asignador-numero-oc" tono="rol" type="text" placeholder="N° OC" value={nuevaOC.numero} onFocus={(e) => e.target.select()} onChange={(e) => handleNumeroOCChange(e.target.value)} />
                 <div className="relative">
                     <input
                       type="text"
                       placeholder="PROVEEDOR"
-                      className={`${CAMPO} ${CAMPO_ALTURA.texto} ${tonoModal("azul").foco}`}
+                      className={`${CAMPO} ${CAMPO_ALTURA.texto} ${tonoModal("rol").foco}`}
                       value={nuevaOC.proveedor}
                       onKeyDown={manejarTeclasProveedor}
                       onFocus={() => {
@@ -1410,7 +1410,7 @@ export const DashboardPedidos = ({ role }) => {
                       </div>
                     )}
                   </div>
-                <ModalBoton variante="primario" tono="azul" className="w-full" onClick={() => procesarAsignacion()}>Crear y vincular</ModalBoton>
+                <ModalBoton variante="primario" tono="rol" className="w-full" onClick={() => procesarAsignacion()}>Crear y vincular</ModalBoton>
               </div>
             </ModalSeccion>
 
