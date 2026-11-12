@@ -1,0 +1,237 @@
+{
+  "aviso": "Tope de colores sueltos por archivo (trinquete: solo puede bajar). Regenerar con: npm run check:colores -- --update",
+  "excepcionesConocidas": [
+    "src/views/analisis/theme.js",
+    "src/utils/etiquetas.js"
+  ],
+  "totales": {
+    "clases": 1005,
+    "literales": 91
+  },
+  "archivos": {
+    "src/App.jsx": {
+      "clases": 4,
+      "literales": 0
+    },
+    "src/components/Modal.jsx": {
+      "clases": 1,
+      "literales": 0
+    },
+    "src/components/ShipmentTracker.jsx": {
+      "clases": 9,
+      "literales": 0
+    },
+    "src/components/Sidebar.jsx": {
+      "clases": 9,
+      "literales": 0
+    },
+    "src/components/TrackingModal.jsx": {
+      "clases": 2,
+      "literales": 0
+    },
+    "src/components/hilos/HiloComentariosItem.jsx": {
+      "clases": 4,
+      "literales": 2
+    },
+    "src/components/hilos/PropuestaPrecioCard.jsx": {
+      "clases": 2,
+      "literales": 0
+    },
+    "src/components/mobile/MobileListCard.jsx": {
+      "clases": 3,
+      "literales": 0
+    },
+    "src/components/pedidos/DetallePedidoMobileCard.jsx": {
+      "clases": 5,
+      "literales": 0
+    },
+    "src/components/pedidos/NuevoPedidoMobileCard.jsx": {
+      "clases": 18,
+      "literales": 0
+    },
+    "src/components/pedidos/RevisionPedidoMobileCard.jsx": {
+      "clases": 4,
+      "literales": 0
+    },
+    "src/components/pedidos/negociacion/BarraNotificar.jsx": {
+      "clases": 11,
+      "literales": 0
+    },
+    "src/components/pedidos/negociacion/FormularioOferta.jsx": {
+      "clases": 2,
+      "literales": 0
+    },
+    "src/components/pedidos/negociacion/OfertaDiff.jsx": {
+      "clases": 1,
+      "literales": 0
+    },
+    "src/components/pedidos/negociacion/ResumenTurnos.jsx": {
+      "clases": 4,
+      "literales": 0
+    },
+    "src/components/pedidos/negociacion/variantesAccion.js": {
+      "clases": 3,
+      "literales": 0
+    },
+    "src/components/seguimiento/AccionesRespuestaProrroga.jsx": {
+      "clases": 1,
+      "literales": 0
+    },
+    "src/components/seguimiento/PanelCriteriosProrroga.jsx": {
+      "clases": 4,
+      "literales": 0
+    },
+    "src/components/seguimiento/SeguimientoItemCondicion.jsx": {
+      "clases": 1,
+      "literales": 0
+    },
+    "src/components/seguimiento/seguimiento.css": {
+      "clases": 0,
+      "literales": 8
+    },
+    "src/components/ui/Toast.jsx": {
+      "clases": 16,
+      "literales": 0
+    },
+    "src/components/vendedor/ModalVentaPerdida.jsx": {
+      "clases": 4,
+      "literales": 0
+    },
+    "src/dev/NegociacionPreview.jsx": {
+      "clases": 3,
+      "literales": 0
+    },
+    "src/index.css": {
+      "clases": 16,
+      "literales": 9
+    },
+    "src/utils/etiquetas.js": {
+      "clases": 7,
+      "literales": 30
+    },
+    "src/utils/modales.js": {
+      "clases": 55,
+      "literales": 1
+    },
+    "src/utils/trackingUi.jsx": {
+      "clases": 35,
+      "literales": 0
+    },
+    "src/views/analisis/AnalisisEstadisticas.jsx": {
+      "clases": 96,
+      "literales": 0
+    },
+    "src/views/analisis/AnalisisEstadisticasMobile.jsx": {
+      "clases": 55,
+      "literales": 6
+    },
+    "src/views/analisis/DetalleClienteHistorial.jsx": {
+      "clases": 5,
+      "literales": 0
+    },
+    "src/views/analisis/DetalleClientesAnalisis.jsx": {
+      "clases": 11,
+      "literales": 0
+    },
+    "src/views/analisis/DetalleProductoHistorial.jsx": {
+      "clases": 4,
+      "literales": 0
+    },
+    "src/views/analisis/DetalleProductosAnalisis.jsx": {
+      "clases": 8,
+      "literales": 0
+    },
+    "src/views/analisis/DetalleSolicitudesAnalisis.jsx": {
+      "clases": 5,
+      "literales": 0
+    },
+    "src/views/analisis/DetalleVendedorHistorial.jsx": {
+      "clases": 4,
+      "literales": 0
+    },
+    "src/views/analisis/DetalleVendedoresAnalisis.jsx": {
+      "clases": 12,
+      "literales": 0
+    },
+    "src/views/analisis/components/DecisionSummary.jsx": {
+      "clases": 3,
+      "literales": 0
+    },
+    "src/views/analisis/components/GraficoMetricasRotativas.jsx": {
+      "clases": 2,
+      "literales": 8
+    },
+    "src/views/analisis/components/MetricasRotativas.jsx": {
+      "clases": 17,
+      "literales": 0
+    },
+    "src/views/analisis/theme.js": {
+      "clases": 165,
+      "literales": 15
+    },
+    "src/views/comprador/Calculadora.jsx": {
+      "clases": 81,
+      "literales": 4
+    },
+    "src/views/comprador/ConsolidarCompras.jsx": {
+      "clases": 6,
+      "literales": 0
+    },
+    "src/views/comprador/DashboardCompras.jsx": {
+      "clases": 34,
+      "literales": 0
+    },
+    "src/views/comprador/GestionOC.jsx": {
+      "clases": 18,
+      "literales": 0
+    },
+    "src/views/comprador/RevisionPedidoManual.jsx": {
+      "clases": 15,
+      "literales": 0
+    },
+    "src/views/pedidos/DashboardPedidos.jsx": {
+      "clases": 52,
+      "literales": 0
+    },
+    "src/views/pedidos/RetaceosView.jsx": {
+      "clases": 1,
+      "literales": 0
+    },
+    "src/views/seguimiento/prorrogas.css": {
+      "clases": 0,
+      "literales": 4
+    },
+    "src/views/vendedor/DashboardVendedor.jsx": {
+      "clases": 35,
+      "literales": 0
+    },
+    "src/views/vendedor/DetallePedidoManual.jsx": {
+      "clases": 19,
+      "literales": 0
+    },
+    "src/views/vendedor/detalle-rfq/DetalleRFQAcciones.jsx": {
+      "clases": 17,
+      "literales": 0
+    },
+    "src/views/vendedor/detalle-rfq/DetalleRFQProductos.jsx": {
+      "clases": 54,
+      "literales": 0
+    },
+    "src/views/vendedor/detalle-rfq/DetalleRFQVista.jsx": {
+      "clases": 27,
+      "literales": 0
+    },
+    "src/views/vendedor/nueva-rfq/NuevaRFQView.jsx": {
+      "clases": 10,
+      "literales": 0
+    },
+    "src/views/vendedor/nuevo-pedido/NuevoPedidoView.jsx": {
+      "clases": 25,
+      "literales": 0
+    },
+    "src/views/vendedor/pedido-manual/detallePedidoManual.css": {
+      "clases": 0,
+      "literales": 4
+    }
+  }
+}

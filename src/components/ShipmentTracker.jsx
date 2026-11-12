@@ -352,7 +352,7 @@ export const ShipmentTracker = ({ shipmentData, estadoManual }) => {
           )}
           {proofUrl && (
             <div className="text-[10px] font-bold text-slate-500 uppercase">
-              POD: <a href={proofUrl} target="_blank" rel="noreferrer" className="text-emerald-600 font-black">Ver comprobante</a>
+              POD: <a href={proofUrl} target="_blank" rel="noreferrer" className="text-primary-strong hover:text-nav-accent-hover font-black">Ver comprobante</a>
             </div>
           )}
         </div>

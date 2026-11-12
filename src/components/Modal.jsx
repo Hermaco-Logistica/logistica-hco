@@ -228,7 +228,7 @@ export const ModalPestanas = ({ opciones, activa, tono, onElegir, puedeElegir = 
             {completada && <Check size={14} strokeWidth={2} className="text-emerald-600" />}
             {texto}
             {cantidad !== undefined && (
-              <span className={`rounded-full px-1.5 text-xs font-medium ${esActiva ? acento.icono : 'bg-neutral-200 text-neutral-500'}`}>{cantidad}</span>
+              <span className={`rounded-full px-1.5 text-xs font-medium ${esActiva ? (acento.chip || acento.icono) : 'bg-neutral-200 text-neutral-500'}`}>{cantidad}</span>
             )}
           </button>
         );

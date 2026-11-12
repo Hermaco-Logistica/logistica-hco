@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Check, X, MessageSquare, ArrowLeftRight, Ban, MessageCircleQuestion } from 'lucide-react';
 import { auth } from '../../firebase';
+import { Button } from '../ui/Button';
+import { VARIANTES_ACCION } from './negociacion/variantesAccion';
 import { HiloComentariosItem } from '../hilos/HiloComentariosItem';
 import { EstadoItemChip } from './negociacion/EstadoItemChip';
 import { FormularioOferta } from './negociacion/FormularioOferta';
@@ -141,20 +143,21 @@ export const RevisionPedidoMobileCard = ({
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => actions.aprobar(idx, versionEsperada)} 
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 rounded-xl font-black text-[10px] uppercase transition-colors shadow-sm min-h-[38px] cursor-pointer"
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 active:scale-95 rounded-xl font-black text-[10px] uppercase transition-colors shadow-sm min-h-[38px] cursor-pointer ${VARIANTES_ACCION.approve}`}
               >
                 <Check size={14} /> Aprobar
               </button>
               <button 
                 onClick={() => setShowAdjustForm(true)} 
-                className="flex-[0.8] flex items-center justify-center gap-1.5 px-3 py-2.5 bg-amber-100 text-amber-700 hover:bg-amber-200 active:scale-95 rounded-xl font-black text-[10px] uppercase transition-colors min-h-[38px] cursor-pointer"
+                className={`flex-[0.8] flex items-center justify-center gap-1.5 px-3 py-2.5 active:scale-95 rounded-xl font-black text-[10px] uppercase transition-colors min-h-[38px] cursor-pointer ${VARIANTES_ACCION.counter}`}
               >
                 <ArrowLeftRight size={14} /> Ajustar
               </button>
               <button 
                 onClick={() => onDenegar ? onDenegar(idx, versionEsperada) : null} 
-                className="w-10 flex items-center justify-center px-0 py-2.5 bg-slate-100 text-slate-400 hover:bg-rose-100 hover:text-rose-700 active:scale-95 rounded-xl transition-colors min-h-[38px] cursor-pointer"
+                className={`w-10 flex items-center justify-center px-0 py-2.5 active:scale-95 rounded-xl transition-colors min-h-[38px] cursor-pointer ${VARIANTES_ACCION.reject}`}
                 title="Denegar"
+                aria-label="Denegar"
               >
                 <X size={14} />
               </button>
@@ -162,9 +165,11 @@ export const RevisionPedidoMobileCard = ({
           )}
 
           <div className="flex w-full justify-between items-center">
-            <button 
+            <Button
+              variant={hiloAbierto === idx ? 'secondaryBrand' : 'secondary'}
+              size="md"
               onClick={() => setHiloAbierto(hiloAbierto === idx ? null : idx)} 
-              className={`relative inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-black text-[10px] uppercase transition-colors ${hiloAbierto === idx ? 'bg-purple-100 text-purple-700' : 'bg-slate-50 text-slate-600 border border-slate-100'}`}
+              className="relative"
             >
               <MessageSquare size={14} className={msgCount === 0 ? 'opacity-50' : ''} />
               <span>Mensajes</span>
@@ -172,7 +177,7 @@ export const RevisionPedidoMobileCard = ({
               {unreadCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 bg-blue-500 text-white text-[9px] w-4 h-4 flex items-center justify-center rounded-full shadow-sm">{unreadCount}</span>
               )}
-            </button>
+            </Button>
             
             {!isPending && neg.sinNotificar && neg.ultimoCambio?.rol === 'comprador' && (
               <button 

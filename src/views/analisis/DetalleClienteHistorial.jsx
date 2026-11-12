@@ -23,12 +23,15 @@ import {
 } from 'lucide-react';
 import { exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { Etiqueta } from '../../components/Etiqueta';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
 import { normalizarDecisionFilter, obtenerConfiguracionDecision, obtenerEstadoDecision } from './utils/decisionFilter';
 import { ModalConsultaVentaPerdida } from '../../components/vendedor/ModalConsultaVentaPerdida';
 import { ModalConsultaDecisionItem } from '../../components/pedidos/negociacion/ModalConsultaDecisionItem';
 import { DecisionBadge } from './components/DecisionBadge';
-import { obtenerFaseItemCacheada } from '../../utils/faseSeguimiento';
+import { obtenerFaseItemCacheada, itemEnSeguimiento } from '../../utils/faseSeguimiento';
+import { BotonSeguimiento, AvisoSeguimiento } from './components/FiltroSeguimiento';
 import {
   prepararDatosConsultaMovimiento,
   obtenerTextoConsultaMovimiento,
@@ -181,7 +184,7 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
                 <div className="flex justify-between py-1.5 border-b border-slate-100/60 items-center">
                   <span className="text-slate-500">OC Ref</span>
                   {m.ocRef.startsWith('http') ? (
-                    <a href={m.ocRef} target="_blank" rel="noopener noreferrer" className="font-mono text-blue-600 hover:underline flex items-center gap-1">
+                    <a href={m.ocRef} target="_blank" rel="noopener noreferrer" className="font-mono text-primary-strong hover:text-nav-accent-hover hover:underline flex items-center gap-1">
                       <LinkIcon size={10} /> Link
                     </a>
                   ) : (
@@ -224,8 +227,9 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
 
 export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra = [], soloAnulados = false }) => {
   const { clienteId } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const decisionFilter = soloAnulados ? normalizarDecisionFilter(searchParams.get('decision')) : null;
+  const soloSeguimiento = !soloAnulados && searchParams.get('seguimiento') === '1';
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
 
@@ -240,6 +244,14 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
   const [filterModalidad, setFilterModalidad] = useSessionState('analisis_cli_hist_modalidad', '');
   const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [currentPage, setCurrentPage] = useState(1);
+  const cambiarSeguimiento = (activo) => {
+    setSearchParams((previo) => {
+      const siguiente = new URLSearchParams(previo);
+      if (activo) siguiente.set('seguimiento', '1'); else siguiente.delete('seguimiento');
+      return siguiente;
+    });
+    setCurrentPage(1);
+  };
   const [consultaMotivoData, setConsultaMotivoData] = useState(null);
   const abrirConsultaMotivo = useCallback((movimiento) => {
     setConsultaMotivoData(prepararDatosConsultaMovimiento(movimiento));
@@ -403,6 +415,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
           : productosLista;
 
         productosVisibles.forEach((p, idx) => {
+          if (soloSeguimiento && !itemEnSeguimiento(s, idx)) return;
           const descProducto = (p.desc || p.descripcion || 'Sin descripción').trim().toUpperCase();
           const marcaProducto = (p.marca || '').trim();
 
@@ -509,7 +522,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
         vendedores: Array.from(vendedoresSet).join(', ') || 'Sin vendedor asignado'
       }
     };
-  }, [solicitudes, targetKey, decodedSearch, mapFechasOC, vendedorFilter, soloAnulados, decisionFilter, filtroPeriodo, rangoEsteMes]);
+  }, [solicitudes, targetKey, decodedSearch, mapFechasOC, vendedorFilter, soloAnulados, soloSeguimiento, decisionFilter, filtroPeriodo, rangoEsteMes]);
 
   const estadosDisponibles = useMemo(() => obtenerOpcionesMovimiento(movimientos, 'estado'), [movimientos]);
 
@@ -624,47 +637,35 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
         onClose={() => setConsultaMotivoData(null)}
         data={consultaMotivoData?.data}
       />
-      <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
-      {/* CABECERA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-start sm:items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/analisis/clientes')}
-            className="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200/80 transition-colors shadow-xs cursor-pointer shrink-0 mt-1 sm:mt-0"
-            title="Volver a Directorio de Clientes"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-3 mb-1.5">
-              <Etiqueta dominio="rol" valor={theme.key}>
-                {soloAnulados ? `${obtenerConfiguracionDecision(decisionFilter).titulo} de Cliente` : 'Historial de Cliente'}
-              </Etiqueta>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 w-full">
-              <div className="min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight leading-none mb-2.5 truncate">
-                  {infoCliente.nombre}
-                </h1>
-                {soloAnulados && (
-                  <p className="text-xs font-medium text-rose-600 mb-2.5">
-                    Vista exclusiva de {obtenerConfiguracionDecision(decisionFilter).sustantivo}
-                  </p>
-                )}
-                
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
-                    <Building size={13} className="text-slate-400" />
-                    <strong className="text-slate-700">{infoCliente.totalRfqs}</strong> {infoCliente.totalRfqs === 1 ? 'RFQ' : 'RFQs'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageContainer className="animate-in fade-in duration-300 space-y-5 pb-12">
+      <PageHeader
+        onBack={() => navigate('/analisis/clientes')}
+        backLabel="Volver a Directorio de Clientes"
+        title={infoCliente.nombre}
+        statusChip={
+          <Etiqueta dominio="rol" valor={theme.key}>
+            {soloAnulados ? `${obtenerConfiguracionDecision(decisionFilter).titulo} de Cliente` : 'Historial de Cliente'}
+          </Etiqueta>
+        }
+        subtitle={
+          <>
+          {soloAnulados && (
+            <span className="block text-xs font-medium text-rose-600 mb-1">
+              Vista exclusiva de {obtenerConfiguracionDecision(decisionFilter).sustantivo}
+            </span>
+          )}
+          {soloSeguimiento && (
+            <AvisoSeguimiento solicitudes={metricas.rfqsUnicas} items={metricas.totalMovimientos} filtroPeriodo={filtroPeriodo} vendedor={vendedorFilter} />
+          )}
+          <span className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+              <Building size={13} className="text-slate-400" />
+              <strong className="text-slate-700">{infoCliente.totalRfqs}</strong> {infoCliente.totalRfqs === 1 ? 'RFQ' : 'RFQs'}
+            </span>
+          </span>
+          </>
+        }
+      />
 
       {/* TARJETAS RESUMEN DEL CLIENTE */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
@@ -719,7 +720,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
             <span className="text-[10px] font-bold uppercase tracking-wider truncate">Total (IVA 13%)</span>
           </div>
           <div>
-            <div className="text-base sm:text-xl font-bold font-mono text-emerald-600 tracking-tight truncate" title={formatMoneda(metricas.sumaTotalConIva)}>
+            <div className="text-base sm:text-xl font-bold font-mono text-slate-800 tracking-tight truncate" title={formatMoneda(metricas.sumaTotalConIva)}>
               {formatMoneda(metricas.sumaTotalConIva)}
             </div>
             <div className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate">
@@ -803,13 +804,14 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                 <option key={mod} value={mod}>{mod}</option>
               ))}
             </select>
+            {!soloAnulados && <BotonSeguimiento activo={soloSeguimiento} onChange={cambiarSeguimiento} />}
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-2 mt-1 sm:mt-0">
-            {(filterEstado || filterModalidad || searchTerm) && (
+            {(filterEstado || filterModalidad || searchTerm || soloSeguimiento) && (
               <button
                 type="button"
-                onClick={() => { setFilterEstado(''); setFilterModalidad(''); setSearchTerm(''); }}
+                onClick={() => { setFilterEstado(''); setFilterModalidad(''); setSearchTerm(''); if (soloSeguimiento) cambiarSeguimiento(false); }}
                 className="text-xs font-medium text-slate-500 hover:text-rose-600 px-2 py-1 transition-colors"
               >
                 Limpiar
@@ -822,6 +824,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                 const filtrosActivos = ['Historial Completo'];
                 if (filterEstado) filtrosActivos.push(`Estado: ${filterEstado}`);
                 if (filterModalidad) filtrosActivos.push(`Modalidad: ${filterModalidad}`);
+                if (soloSeguimiento) filtrosActivos.push('En seguimiento');
                 if (searchTerm.trim()) filtrosActivos.push(`Búsqueda: "${searchTerm.trim()}"`);
 
                 exportarMovimientosExcel(
@@ -833,7 +836,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                   }
                 );
               }}
-              className="inline-flex justify-center items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/60 rounded-lg text-xs font-bold transition-all shadow-sm w-full sm:w-auto"
+              className="inline-flex justify-center items-center gap-1.5 px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold transition-all shadow-sm w-full sm:w-auto"
               title="Exportar movimientos a Excel"
             >
               <Download size={13} />
@@ -898,7 +901,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                   {!soloAnulados && <th className="py-2.5 px-3 text-center whitespace-nowrap">Estado</th>}
                   {!soloAnulados && <th className="py-2.5 px-3 text-center whitespace-nowrap">Resultado</th>}
                   <th className="py-2.5 px-3 text-center whitespace-nowrap">Motivo</th>
-                  <th className="py-2.5 px-3 text-right whitespace-nowrap">Acción</th>
+                  <th className="py-2.5 px-3 text-center whitespace-nowrap">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -960,7 +963,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                           <button
                             type="button"
                             onClick={() => navigate(`/analisis/producto/${encodeURIComponent(m.producto)}`)}
-                            className="font-semibold text-slate-800 hover:text-blue-600 transition-colors text-left truncate max-w-[220px] cursor-pointer uppercase text-xs"
+                            className="font-semibold text-slate-800 hover:text-primary-strong transition-colors text-left truncate max-w-[220px] cursor-pointer uppercase text-xs"
                             title={`Ver historial de este producto: ${m.producto}`}
                           >
                             {truncarTexto(m.producto, 28)}
@@ -986,7 +989,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                           <button
                             type="button"
                             onClick={() => navigate(`/analisis/vendedor/${encodeURIComponent(m.vendedor)}`)}
-                            className="font-medium text-slate-700 hover:text-blue-600 transition-colors text-left cursor-pointer"
+                            className="font-medium text-slate-700 hover:text-primary-strong transition-colors text-left cursor-pointer"
                             title={`Ver historial de ${m.vendedor}`}
                           >
                             {m.vendedor}
@@ -1027,7 +1030,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                       </td>
 
                       {/* Total con IVA (13%) */}
-                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-emerald-700 whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-slate-800 whitespace-nowrap">
                         {formatMoneda(m.totalConIva)}
                       </td>
 
@@ -1039,7 +1042,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                               href={m.ocRef}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-blue-600 hover:underline bg-blue-50 px-2 py-0.5 rounded-md whitespace-nowrap"
+                              className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-primary-strong hover:text-nav-accent-hover hover:underline bg-primary-soft px-2 py-0.5 rounded-md whitespace-nowrap"
                             >
                               <LinkIcon size={11} /> Ver OC
                             </a>
@@ -1088,7 +1091,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
                         ) : <span className="text-slate-300">---</span>}
                       </td>
 
-                      <td className="py-2.5 px-3 text-right whitespace-nowrap">
+                      <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => irADetalle(m)}
@@ -1114,7 +1117,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
         noun="productos"
         onPageChange={setCurrentPage}
       />
-      </div>
+      </PageContainer>
     </>
   );
 };

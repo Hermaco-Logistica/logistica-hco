@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, getDocFromServer } from 'firebase/firestore';
 import { db } from '../../firebase';
@@ -560,10 +561,10 @@ export const Calculadora = ({ onGuardar }) => {
           {/* Fila superior: 4 tarjetas con fondo blanco limpio */}
           <div className="grid grid-cols-2 gap-2">
             {/* Tarjeta 1: Flete Aéreo ($) */}
-            <div className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all">
+            <div className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
               <div className="flex items-center justify-between text-slate-500">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <Plane size={14} className="text-blue-600 shrink-0" />
+                  <Plane size={14} className="text-slate-500 shrink-0" />
                   <span className="text-[10px] font-black uppercase tracking-tight truncate">Flete Aéreo</span>
                 </div>
                 <span className="text-[9px] font-bold text-slate-400">$</span>
@@ -590,16 +591,16 @@ export const Calculadora = ({ onGuardar }) => {
             <button
               type="button"
               onClick={() => setModalGastosMobile(true)}
-              className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between text-left hover:border-emerald-400 hover:bg-emerald-50/20 transition-all cursor-pointer touch-manipulation"
+              className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between text-left hover:border-primary/40 hover:bg-primary-soft/40 transition-all cursor-pointer touch-manipulation"
             >
               <div className="flex items-center justify-between text-slate-500">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <Receipt size={14} className="text-emerald-600 shrink-0" />
+                  <Receipt size={14} className="text-slate-500 shrink-0" />
                   <span className="text-[10px] font-black uppercase tracking-tight truncate">Aduana</span>
                 </div>
                 <Etiqueta tono="exito">Editar</Etiqueta>
               </div>
-              <div className="mt-1.5 font-mono font-black text-emerald-700 text-sm sm:text-base truncate">
+              <div className="mt-1.5 font-mono font-black text-slate-800 text-sm sm:text-base truncate">
                 ${aduana.toFixed(2)}
               </div>
             </button>
@@ -608,13 +609,13 @@ export const Calculadora = ({ onGuardar }) => {
             <div className="bg-white p-2.5 rounded-xl border border-slate-200/90 shadow-xs flex flex-col justify-between">
               <div className="flex items-center justify-between text-slate-500">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <Plane size={14} className="text-emerald-600 shrink-0" />
+                  <Plane size={14} className="text-mode-air shrink-0" />
                   <span className="text-[10px] font-black uppercase tracking-tight truncate">Fact. Aéreo</span>
                 </div>
               </div>
               <div className="mt-1.5">
                 {!mostrarFactoresAereosFijados ? (
-                  <span className="font-mono font-black text-emerald-800 text-sm sm:text-base truncate block">
+                  <span className="font-mono font-black text-mode-air-800 text-sm sm:text-base truncate block">
                     {factorA.toFixed(2)}
                   </span>
                 ) : (
@@ -622,13 +623,13 @@ export const Calculadora = ({ onGuardar }) => {
                     {factoresAereosFijados.map(({ factor, cantidad }) => (
                       <Etiqueta key={factor} tono="exito" className="justify-between">
                         <span>FA {factor}</span>
-                        <span className="text-emerald-600/80 bg-white px-1 rounded-sm border border-emerald-100 shadow-2xs">x{cantidad}</span>
+                        <span className="text-mode-air/80 bg-white px-1 rounded-sm border border-mode-air-100 shadow-2xs">x{cantidad}</span>
                       </Etiqueta>
                     ))}
                     {!esSoloLectura && tienePendientesGlobales && (
                       <Etiqueta tono="azul" className="justify-between">
                         <span>Nuevos</span>
-                        <span className="text-blue-600/80 bg-white px-1 rounded-sm border border-blue-100 shadow-2xs">FA {factorA.toFixed(2)}</span>
+                        <span className="text-mode-air/80 bg-white px-1 rounded-sm border border-mode-air-100 shadow-2xs">FA {factorA.toFixed(2)}</span>
                       </Etiqueta>
                     )}
                   </div>
@@ -666,15 +667,15 @@ export const Calculadora = ({ onGuardar }) => {
               onClick={() => setModalGastosMobile(true)}
               className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-black flex items-center justify-center gap-2 border border-slate-200 shadow-2xs transition-colors touch-manipulation cursor-pointer"
             >
-              <Receipt size={14} className="text-emerald-600 shrink-0" />
+              <Receipt size={14} className="text-slate-500 shrink-0" />
               <span>Desglose Aduana</span>
             </button>
             <button
               type="button"
               onClick={() => setModalCotizadorMobile(true)}
-              className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-slate-50 text-blue-700 text-[11px] font-black flex items-center justify-center gap-2 border border-blue-200 shadow-2xs transition-colors touch-manipulation cursor-pointer"
+              className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-[11px] font-black flex items-center justify-center gap-2 border border-slate-200 shadow-2xs transition-colors touch-manipulation cursor-pointer"
             >
-              <Calculator size={14} className="text-blue-600 shrink-0" />
+              <Calculator size={14} className="text-slate-500 shrink-0" />
               <span>Cotizar Flete</span>
             </button>
           </div>
@@ -683,12 +684,12 @@ export const Calculadora = ({ onGuardar }) => {
         {/* ESCRITORIO (>= md): Bloques tradicionales */}
         <div className="hidden md:flex w-full gap-4 bg-slate-900 p-4 rounded-xl shadow-lg shadow-slate-200 sm:w-auto shrink-0">
           <div className="flex flex-col">
-            <label className="text-[9px] font-black text-slate-400 uppercase">Flete Aéreo ($)</label>
+            <label className="text-[9px] font-black text-white/70 uppercase">Flete Aéreo ($)</label>
             <input 
               type="number" 
               min="0"
               disabled={esSoloLectura}
-              className="bg-transparent font-bold text-white outline-none w-20 text-lg border-b border-slate-700 focus:border-emerald-500 disabled:opacity-70" 
+              className="bg-transparent font-bold text-white outline-none w-20 text-lg border-b border-slate-700 focus:border-nav-accent-text disabled:opacity-70" 
               value={flete} 
               onChange={(e) => {
                 handleNumericInput(setFlete)(e);
@@ -698,8 +699,8 @@ export const Calculadora = ({ onGuardar }) => {
             />
           </div>
           <div className="flex flex-col border-l border-slate-700 pl-4 relative group cursor-help">
-            <label className="text-[9px] font-black text-slate-400 uppercase">Aduana Aéreo ($)</label>
-            <div className="font-bold text-emerald-400 text-lg mt-1">
+            <label className="text-[9px] font-black text-white/70 uppercase">Aduana Aéreo ($)</label>
+            <div className="font-bold text-nav-accent-text text-lg mt-1">
               {aduana.toFixed(2)}
             </div>
             {/* Tooltip */}
@@ -710,16 +711,16 @@ export const Calculadora = ({ onGuardar }) => {
         </div>
 
         <div className="hidden md:flex w-full flex-wrap gap-4 xl:w-auto xl:flex-nowrap shrink-0">
-          <div className="min-w-60 flex-1 text-right px-5 py-2 bg-emerald-50 rounded-xl border border-emerald-100 xl:flex-none">
-            <span className="text-[9px] block text-emerald-600 font-black uppercase tracking-widest">Factor Aéreo Aplicado</span>
+          <div className="min-w-60 flex-1 text-right px-5 py-2 bg-mode-air-100 rounded-xl xl:flex-none">
+            <span className="text-[9px] block text-mode-air-900 font-black uppercase tracking-widest">Factor Aéreo Aplicado</span>
             {!mostrarFactoresAereosFijados ? (
-              <span className="text-2xl font-black text-emerald-700">{factorA.toFixed(2)}</span>
+              <span className="text-2xl font-black text-mode-air-900">{factorA.toFixed(2)}</span>
             ) : (
               <div ref={factoresRef} className="relative mt-1">
                 <button
                   type="button"
                   onClick={() => setFactoresExpandidos(prev => !prev)}
-                  className="border-b border-emerald-300 pb-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-700 transition-colors hover:border-emerald-600 hover:text-emerald-900"
+                  className="border-b border-primary/40 pb-0.5 text-[10px] font-black uppercase tracking-wide text-primary-strong transition-colors hover:border-primary-strong hover:text-nav-accent-hover"
                 >
                   {factoresExpandidos ? 'Cerrar' : 'Ver más'}
                 </button>
@@ -741,14 +742,14 @@ export const Calculadora = ({ onGuardar }) => {
               </div>
             )}
           </div>
-          <div className="text-right px-5 py-2 bg-blue-50 rounded-xl border border-blue-100 flex flex-col items-end">
-            <span className="text-[9px] block text-blue-600 font-black uppercase tracking-widest">Factor Marítimo Aplicado</span>
+          <div className="text-right px-5 py-2 bg-mode-sea-100 rounded-xl flex flex-col items-end">
+            <span className="text-[9px] block text-mode-sea-900 font-black uppercase tracking-widest">Factor Marítimo Aplicado</span>
             <input 
               type="number" 
               step="0.01"
               min="0"
               disabled={esSoloLectura}
-              className="bg-transparent font-black text-blue-700 outline-none w-16 text-2xl text-right border-b border-transparent focus:border-blue-500 disabled:opacity-70" 
+              className="bg-transparent font-black text-mode-sea-900 outline-none w-16 text-2xl text-right border-b border-transparent focus:border-primary disabled:opacity-70" 
               value={factorM} 
               onChange={handleNumericInput(setFactorM)} 
               onFocus={(e) => e.target.select()}
@@ -763,7 +764,7 @@ export const Calculadora = ({ onGuardar }) => {
           onClick={() => setGastosExpandidos(prev => !prev)}
         >
           <div>
-            <h3 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-wide">Gastos Adicionales Aéreos</h3>
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider md:font-medium md:normal-case md:tracking-normal md:text-foreground">Gastos Adicionales Aéreos</h3>
             <p className="text-[10px] md:text-[11px] text-slate-400 font-semibold mt-0.5">Trámite, Scan, Adimex, Manejos, Seguro, Entrega Local, Otros</p>
           </div>
           <span className={`w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 transition-transform duration-200 ${gastosExpandidos ? 'rotate-180' : ''}`}>
@@ -774,32 +775,32 @@ export const Calculadora = ({ onGuardar }) => {
           <div className="overflow-hidden">
             <div className="p-3.5 md:p-6 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5 md:gap-4 bg-slate-50">
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Trámite Aduanal</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={tramiteAduanal} onChange={handleNumericInput(setTramiteAduanal)} onFocus={(e) => e.target.select()} />
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Trámite Aduanal</label>
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={tramiteAduanal} onChange={handleNumericInput(setTramiteAduanal)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Scan</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={scan} onChange={handleNumericInput(setScan)} onFocus={(e) => e.target.select()} />
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Scan</label>
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={scan} onChange={handleNumericInput(setScan)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Adimex</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={adimex} onChange={handleNumericInput(setAdimex)} onFocus={(e) => e.target.select()} />
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Adimex</label>
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={adimex} onChange={handleNumericInput(setAdimex)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Manejos</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={manejos} onChange={handleNumericInput(setManejos)} onFocus={(e) => e.target.select()} />
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Manejos</label>
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={manejos} onChange={handleNumericInput(setManejos)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Seguro</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={seguro} onChange={handleNumericInput(setSeguro)} onFocus={(e) => e.target.select()} />
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Seguro</label>
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={seguro} onChange={handleNumericInput(setSeguro)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Entrega Local</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={entregaLocal} onChange={handleNumericInput(setEntregaLocal)} onFocus={(e) => e.target.select()} />
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Entrega Local</label>
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={entregaLocal} onChange={handleNumericInput(setEntregaLocal)} onFocus={(e) => e.target.select()} />
               </div>
               <div className="flex flex-col">
-                <label className="text-[9px] font-black text-slate-500 uppercase mb-1">Otros</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-emerald-500 disabled:bg-slate-100 disabled:opacity-70" value={otrosGastos} onChange={handleNumericInput(setOtrosGastos)} onFocus={(e) => e.target.select()} />
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Otros</label>
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2 border border-slate-200 rounded-lg font-bold text-base md:text-sm bg-white text-slate-700 outline-none focus:border-primary disabled:bg-slate-100 disabled:opacity-70" value={otrosGastos} onChange={handleNumericInput(setOtrosGastos)} onFocus={(e) => e.target.select()} />
               </div>
             </div>
           </div>
@@ -813,13 +814,13 @@ export const Calculadora = ({ onGuardar }) => {
           onClick={() => setCotizadorExpandido(prev => !prev)}
         >
           <div>
-            <h3 className="text-xs md:text-sm font-black text-slate-800 uppercase tracking-wide">Cotizador de Flete Internacional</h3>
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider md:font-medium md:normal-case md:tracking-normal md:text-foreground">Cotizador de Flete Internacional</h3>
             <p className="text-[10px] md:text-[11px] text-slate-400 font-semibold mt-0.5">Calcula el costo con cada courier y aplica el resultado como Flete Aéreo</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <span className="text-[9px] block text-slate-400 font-black uppercase tracking-widest">Fuente activa</span>
-              <span className="text-xs font-black text-blue-600 uppercase">
+              <span className="text-[11px] block text-slate-500 font-medium">Fuente activa</span>
+              <span className="text-xs font-black text-primary-strong uppercase">
                 {activeProvider === 'dhl' ? 'DHL Express Bélgica' : activeProvider === 'qs' ? 'QS USA' : 'Ninguna'}
               </span>
             </div>
@@ -836,41 +837,41 @@ export const Calculadora = ({ onGuardar }) => {
             <button
               type="button"
               onClick={() => seleccionarProvider('dhl')}
-              className={`p-4 flex items-center gap-3 text-left transition-colors ${activeProvider === 'dhl' ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+              className={`p-4 flex items-center gap-3 text-left transition-colors ${activeProvider === 'dhl' ? 'bg-primary-soft' : 'hover:bg-slate-50'}`}
             >
               <div className="w-8 h-8 rounded-lg border flex items-center justify-center overflow-hidden bg-white border-slate-200 shrink-0">
                 <img src="/dhl.svg" alt="DHL" className="w-7 h-auto object-contain" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] font-black text-slate-700 uppercase truncate">DHL Express Bélgica</p>
-                <p className="text-[9px] text-slate-400 font-semibold">Peso volumétrico (kg)</p>
+                <p className="text-[9px] text-slate-600 font-semibold">Peso volumétrico (kg)</p>
               </div>
               <div className="text-right shrink-0">
-                <span className="block text-[8px] text-slate-400 font-black uppercase">Costo estimado</span>
+                <span className="block text-[11px] text-slate-600 font-medium">Costo estimado</span>
                 <span className="text-sm font-black text-slate-800">${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : '0.00'}</span>
               </div>
               {activeProvider === 'dhl' && (
-                <Etiqueta tono="azul" className="shrink-0">En uso</Etiqueta>
+                <Etiqueta tono="info" className="shrink-0">En uso</Etiqueta>
               )}
             </button>
             <button
               type="button"
               onClick={() => seleccionarProvider('qs')}
-              className={`p-4 flex items-center gap-3 text-left transition-colors ${activeProvider === 'qs' ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+              className={`p-4 flex items-center gap-3 text-left transition-colors ${activeProvider === 'qs' ? 'bg-primary-soft' : 'hover:bg-slate-50'}`}
             >
               <div className="w-8 h-8 rounded-lg border flex items-center justify-center overflow-hidden bg-white border-slate-200 shrink-0">
                 <img src="/quickshipping.png" alt="QS" className="w-7 h-auto object-contain" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] font-black text-slate-700 uppercase truncate">QS USA</p>
-                <p className="text-[9px] text-slate-400 font-semibold">Tarifa por libra, mínimo $10.00</p>
+                <p className="text-[9px] text-slate-600 font-semibold">Tarifa por libra, mínimo $10.00</p>
               </div>
               <div className="text-right shrink-0">
-                <span className="block text-[8px] text-slate-400 font-black uppercase">Costo estimado</span>
+                <span className="block text-[11px] text-slate-600 font-medium">Costo estimado</span>
                 <span className="text-sm font-black text-slate-800">${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : '0.00'}</span>
               </div>
               {activeProvider === 'qs' && (
-                <Etiqueta tono="azul" className="shrink-0">En uso</Etiqueta>
+                <Etiqueta tono="info" className="shrink-0">En uso</Etiqueta>
               )}
             </button>
           </div>
@@ -883,7 +884,7 @@ export const Calculadora = ({ onGuardar }) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
 
           {/* Cotizador DHL Belgium */}
-          <div className={`p-4 md:p-6 transition-all duration-200 ${activeProvider === 'dhl' ? 'bg-blue-50 ring-2 ring-inset ring-blue-200' : 'bg-slate-100/80 hover:bg-slate-100'}`}>
+          <div className={`p-4 md:p-6 transition-all duration-200 ${activeProvider === 'dhl' ? 'bg-primary-soft border border-primary/40' : 'bg-slate-100/80 hover:bg-slate-100 border border-transparent'}`}>
             <div
               className="flex items-center gap-3 mb-5 cursor-pointer group"
               onClick={() => seleccionarProvider('dhl')}
@@ -891,36 +892,36 @@ export const Calculadora = ({ onGuardar }) => {
               aria-checked={activeProvider === 'dhl'}
               tabIndex={0}
             >
-              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'dhl' ? 'border-blue-600' : 'border-slate-300 group-hover:border-slate-400'}`}>
-                {activeProvider === 'dhl' && <span className="w-2 h-2 rounded-full bg-blue-600" />}
+              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'dhl' ? 'border-primary' : 'border-slate-300 group-hover:border-slate-400'}`}>
+                {activeProvider === 'dhl' && <span className="w-2 h-2 rounded-full bg-primary" />}
               </span>
               <div className={`w-9 h-9 rounded-lg border flex items-center justify-center overflow-hidden shrink-0 transition-colors ${activeProvider === 'dhl' ? 'bg-white border-slate-200' : 'bg-slate-200/70 border-slate-200'}`}>
                 <img src="/dhl.svg" alt="DHL" className="w-8 h-auto object-contain" />
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className={`text-xs font-black uppercase tracking-wide ${activeProvider === 'dhl' ? 'text-slate-800' : 'text-slate-400'}`}>DHL Express Bélgica</h4>
-                <p className={`text-[10px] font-semibold ${activeProvider === 'dhl' ? 'text-slate-400' : 'text-slate-400/70'}`}>Tarifa por peso volumétrico (kg)</p>
+                <p className={`text-[10px] font-semibold ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-400/70'}`}>Tarifa por peso volumétrico (kg)</p>
               </div>
               {activeProvider === 'dhl' && (
-                <Etiqueta tono="azul" className="shrink-0">En uso</Etiqueta>
+                <Etiqueta tono="info" className="shrink-0">En uso</Etiqueta>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div className="flex flex-col">
-                <label className={`text-[10px] font-black uppercase mb-1 ${activeProvider === 'dhl' ? 'text-slate-500' : 'text-slate-400'}`}>Peso base (kg)</label>
+                <label className={`text-[11px] font-medium mb-1 ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-400'}`}>Peso base (kg)</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  className={`p-2.5 border rounded-lg font-bold outline-none text-sm transition-shadow ${activeProvider === 'dhl' ? 'bg-white border-slate-200 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10' : 'bg-white/60 border-slate-200 text-slate-500'}`}
+                  className={`p-2.5 border rounded-lg font-bold outline-none text-sm transition-shadow ${activeProvider === 'dhl' ? 'bg-white border-slate-200 text-slate-800 focus:border-primary focus:ring-2 focus:ring-primary/10' : 'bg-white/60 border-slate-200 text-slate-500'}`}
                   value={dhlWeight}
                   onChange={handleNumericInput(setDhlWeight)}
                   onFocus={(e) => e.target.select()}
                 />
               </div>
               <div className="flex flex-col">
-                <label className={`text-[10px] font-black uppercase mb-1 ${activeProvider === 'dhl' ? 'text-slate-500' : 'text-slate-400'}`}>Zona DHL</label>
+                <label className={`text-[11px] font-medium mb-1 ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-400'}`}>Zona DHL</label>
                 <div className={`p-2.5 border rounded-lg font-bold text-sm flex items-center justify-between h-9.5 ${activeProvider === 'dhl' ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-white/60 border-slate-200 text-slate-400'}`}>
                   <span>Zona {dhlZoneId}</span>
                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Auto</span>
@@ -930,30 +931,33 @@ export const Calculadora = ({ onGuardar }) => {
 
             <div className={`rounded-xl border p-3.5 flex items-center gap-4 ${activeProvider === 'dhl' ? 'bg-white border-slate-200' : 'bg-white/50 border-slate-200'}`}>
               <div className="flex-1">
-                <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Facturable</span>
+                <span className={`text-[11px] block ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-500'} font-medium`}>Facturable</span>
                 <span className={`text-sm font-black ${activeProvider === 'dhl' ? 'text-slate-700' : 'text-slate-400'}`}>{dhlResults.chargeableWeight ? Number(dhlResults.chargeableWeight).toFixed(2) : "0.00"} kg</span>
               </div>
               <div className="flex-1 text-right">
-                <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Costo estimado</span>
+                <span className={`text-[11px] block ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-500'} font-medium`}>Costo estimado</span>
                 <span className={`text-lg font-black ${activeProvider === 'dhl' ? 'text-slate-900' : 'text-slate-400'}`}>${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : "0.00"}</span>
               </div>
-              <button
+              <Button
+                variant={appliedProvider === 'dhl' ? 'secondaryBrand' : 'primary'}
+                size="lg"
                 type="button"
                 disabled={!(dhlResults.totalUsd > 0)}
                 onClick={() => {
                   setFlete(Number(dhlResults.totalUsd.toFixed(2)));
                   setAppliedProvider('dhl');
                 }}
-                className={`${appliedProvider === 'dhl' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'} disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-[10px] font-black px-4 py-2.5 rounded-lg uppercase tracking-wide transition-colors shrink-0`}
+                className="shrink-0"
                 title="Aplicar como Flete Aéreo"
               >
+                {appliedProvider === 'dhl' && <Check size={12} aria-hidden="true" />}
                 {appliedProvider === 'dhl' ? 'Aplicado' : 'Aplicar'}
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Cotizador QS USA */}
-          <div className={`p-6 transition-all duration-200 ${activeProvider === 'qs' ? 'bg-blue-50 ring-2 ring-inset ring-blue-200' : 'bg-slate-100/80 hover:bg-slate-100'}`}>
+          <div className={`p-6 transition-all duration-200 ${activeProvider === 'qs' ? 'bg-primary-soft border border-primary/40' : 'bg-slate-100/80 hover:bg-slate-100 border border-transparent'}`}>
             <div
               className="flex items-center gap-3 mb-5 cursor-pointer group"
               onClick={() => seleccionarProvider('qs')}
@@ -961,29 +965,29 @@ export const Calculadora = ({ onGuardar }) => {
               aria-checked={activeProvider === 'qs'}
               tabIndex={0}
             >
-              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'qs' ? 'border-blue-600' : 'border-slate-300 group-hover:border-slate-400'}`}>
-                {activeProvider === 'qs' && <span className="w-2 h-2 rounded-full bg-blue-600" />}
+              <span className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${activeProvider === 'qs' ? 'border-primary' : 'border-slate-300 group-hover:border-slate-400'}`}>
+                {activeProvider === 'qs' && <span className="w-2 h-2 rounded-full bg-primary" />}
               </span>
               <div className={`w-9 h-9 rounded-lg border flex items-center justify-center overflow-hidden shrink-0 transition-colors ${activeProvider === 'qs' ? 'bg-white border-slate-200' : 'bg-slate-200/70 border-slate-200'}`}>
                 <img src="/quickshipping.png" alt="QS" className="w-8 h-auto object-contain" />
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className={`text-xs font-black uppercase tracking-wide ${activeProvider === 'qs' ? 'text-slate-800' : 'text-slate-400'}`}>QS USA</h4>
-                <p className={`text-[10px] font-semibold ${activeProvider === 'qs' ? 'text-slate-400' : 'text-slate-400/70'}`}>Tarifa por libra, mínimo $10.00</p>
+                <p className={`text-[10px] font-semibold ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-400/70'}`}>Tarifa por libra, mínimo $10.00</p>
               </div>
               {activeProvider === 'qs' && (
-                <Etiqueta tono="azul" className="shrink-0">En uso</Etiqueta>
+                <Etiqueta tono="info" className="shrink-0">En uso</Etiqueta>
               )}
             </div>
 
             <div className="grid grid-cols-1 gap-3 mb-3">
               <div className="flex flex-col max-w-[calc(50%-0.375rem)]">
-                <label className={`text-[10px] font-black uppercase mb-1 ${activeProvider === 'qs' ? 'text-slate-500' : 'text-slate-400'}`}>Peso base (lbs)</label>
+                <label className={`text-[11px] font-medium mb-1 ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-400'}`}>Peso base (lbs)</label>
                 <input
                   type="number"
                   step="0.01"
                   min="0"
-                  className={`p-2.5 border rounded-lg font-bold outline-none text-sm transition-shadow ${activeProvider === 'qs' ? 'bg-white border-slate-200 text-slate-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10' : 'bg-white/60 border-slate-200 text-slate-500'}`}
+                  className={`p-2.5 border rounded-lg font-bold outline-none text-sm transition-shadow ${activeProvider === 'qs' ? 'bg-white border-slate-200 text-slate-800 focus:border-primary focus:ring-2 focus:ring-primary/10' : 'bg-white/60 border-slate-200 text-slate-500'}`}
                   value={qsWeight}
                   onChange={handleNumericInput(setQsWeight)}
                   onFocus={(e) => e.target.select()}
@@ -993,25 +997,28 @@ export const Calculadora = ({ onGuardar }) => {
 
             <div className={`rounded-xl border p-3.5 flex items-center gap-4 ${activeProvider === 'qs' ? 'bg-white border-slate-200' : 'bg-white/50 border-slate-200'}`}>
               <div className="flex-1">
-                <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Tarifa aplicada</span>
+                <span className={`text-[11px] block ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-500'} font-medium`}>Tarifa aplicada</span>
                 <span className={`text-sm font-black ${activeProvider === 'qs' ? 'text-slate-700' : 'text-slate-400'}`}>{parseFloat(qsWeight) > 10 ? '$2.80 / lb' : 'Mínimo fijo'}</span>
               </div>
               <div className="flex-1 text-right">
-                <span className="text-[9px] block text-slate-400 font-black uppercase tracking-wide">Costo estimado</span>
+                <span className={`text-[11px] block ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-500'} font-medium`}>Costo estimado</span>
                 <span className={`text-lg font-black ${activeProvider === 'qs' ? 'text-slate-900' : 'text-slate-400'}`}>${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : "0.00"}</span>
               </div>
-              <button
+              <Button
+                variant={appliedProvider === 'qs' ? 'secondaryBrand' : 'primary'}
+                size="lg"
                 type="button"
                 disabled={!(qsResults.totalUsd > 0)}
                 onClick={() => {
                   setFlete(Number(qsResults.totalUsd.toFixed(2)));
                   setAppliedProvider('qs');
                 }}
-                className={`${appliedProvider === 'qs' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'} disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white text-[10px] font-black px-4 py-2.5 rounded-lg uppercase tracking-wide transition-colors shrink-0`}
+                className="shrink-0"
                 title="Aplicar como Flete Aéreo"
               >
+                {appliedProvider === 'qs' && <Check size={12} aria-hidden="true" />}
                 {appliedProvider === 'qs' ? 'Aplicado' : 'Aplicar'}
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -1027,10 +1034,10 @@ export const Calculadora = ({ onGuardar }) => {
         <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider md:font-medium md:normal-case md:tracking-normal md:text-foreground">Productos de la Solicitud</h3>
         <div className="flex items-center gap-2 flex-wrap">
           {mostrarPicard && (
-            <div ref={costosPicardRef} className={`relative overflow-hidden rounded-xl border transition-all duration-300 ease-out ${costosPicardExpandidos ? 'w-[18.5rem] border-amber-300 bg-amber-50 shadow-sm' : 'w-32 border-amber-200 bg-amber-50/70'}`}>
+            <div ref={costosPicardRef} className={`relative overflow-hidden rounded-xl border transition-all duration-300 ease-out ${costosPicardExpandidos ? 'w-[18.5rem] border-amber-300 bg-amber-50 shadow-sm' : 'w-32 border-transparent'}`}>
               {!costosPicardExpandidos ? (
-                <button type="button" onClick={() => setCostosPicardExpandidos(true)} className="w-full px-3 py-2 text-[9px] font-black uppercase tracking-wide text-amber-700 transition-colors hover:bg-amber-100">
-                  Otros Gastos Picard
+                <button type="button" onClick={() => setCostosPicardExpandidos(true)} className="block w-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-warning">
+                  <Etiqueta tono="aviso" tamano="compacta" className="w-full justify-center">Otros Gastos Picard</Etiqueta>
                 </button>
               ) : (
                 <div className="flex items-end gap-2 p-2 animate-in fade-in zoom-in-95 duration-200">
@@ -1095,7 +1102,7 @@ export const Calculadora = ({ onGuardar }) => {
           return (
             <div
               key={idx}
-              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${esAnuladoItem || esVentaPerdidaItem ? 'bg-slate-100 border-slate-300 opacity-60' : isActive ? 'bg-white border-emerald-400 shadow-md ring-2 ring-emerald-500/10' : isSelected ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-50 border-slate-200/80 opacity-70'} ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}
+              className={`rounded-2xl border transition-all duration-200 overflow-hidden ${esAnuladoItem || esVentaPerdidaItem ? 'bg-slate-100 border-slate-300 opacity-60' : isActive ? 'bg-white border-primary/60 shadow-md ring-2 ring-primary/10' : isSelected ? 'bg-white border-slate-200 shadow-xs' : 'bg-slate-50 border-slate-200/80 opacity-70'} ${itemsCambiados[idx]?.animating ? 'anim-cant-row' : ''}`}
             >
               {/* Encabezado del Producto: Producto Principal (SKU) */}
               <div className="p-4 bg-white flex flex-col gap-3">
@@ -1178,7 +1185,7 @@ export const Calculadora = ({ onGuardar }) => {
                   <div className="flex items-center justify-between mt-2 gap-2">
                     <div className="flex items-center gap-1.5 text-[10px] flex-wrap min-w-0 pr-2">
                       {p.marca ? (
-                        <span className="font-bold text-blue-700 uppercase truncate italic flex items-center gap-1">
+                        <span className="font-bold text-primary-strong uppercase truncate italic flex items-center gap-1">
                           <Tag size={10} className="shrink-0" /> <span className="truncate">{p.marca}</span>
                         </span>
                       ) : (
@@ -1216,7 +1223,7 @@ export const Calculadora = ({ onGuardar }) => {
                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-wide">
                     FOB Unitario
                   </span>
-                  <div className="flex items-center bg-white border border-slate-200 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/20 rounded-lg px-2.5 py-1 transition-all shadow-xs">
+                  <div className="flex items-center bg-white border border-slate-200 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 rounded-lg px-2.5 py-1 transition-all shadow-xs">
                     <span className="text-xs font-bold text-slate-400 mr-1">$</span>
                     <input
                       type="number"
@@ -1224,7 +1231,7 @@ export const Calculadora = ({ onGuardar }) => {
                       step="0.01"
                       disabled={isRowDisabled}
                       placeholder="0.00"
-                      className="w-20 text-right font-mono font-black text-sm text-emerald-700 bg-transparent outline-none disabled:opacity-70"
+                      className="w-20 text-right font-mono font-black text-sm text-slate-800 bg-transparent outline-none disabled:opacity-70"
                       value={p.fob}
                       onFocus={(e) => {
                         e.target.select();
@@ -1242,30 +1249,30 @@ export const Calculadora = ({ onGuardar }) => {
               {/* Fila Financiera: Aéreo vs Marítimo en bloques limpios y con jerarquía */}
               <div className="px-3 pb-3 pt-1 grid grid-cols-2 gap-2.5 bg-white border-t border-slate-100">
                 {/* Modalidad Aérea */}
-                <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-xl p-2.5 space-y-1.5">
+                <div className="bg-mode-air-soft/60 border border-mode-air-border/80 rounded-xl p-2.5 space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <Plane size={13} className="text-emerald-600 shrink-0" />
-                      <span className="text-[10px] font-black text-emerald-900 uppercase tracking-wide">Aéreo</span>
+                      <Plane size={13} className="text-mode-air shrink-0" />
+                      <span className="text-[10px] font-black text-mode-air-900 uppercase tracking-wide">Aéreo</span>
                     </div>
                     <Etiqueta tono={rentaA < 20 ? 'peligro' : 'exito'}>
                       {rentaA > 0 ? `${rentaA.toFixed(0)}%` : '0%'}
                     </Etiqueta>
                   </div>
 
-                  <div className="text-sm sm:text-base font-black text-emerald-900 font-mono truncate">
+                  <div className="text-sm sm:text-base font-black text-mode-air-900 font-mono truncate">
                     {ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}
                   </div>
 
-                  <div className="flex items-center justify-between pt-1 border-t border-emerald-200/60 text-[10px]">
-                    <span className="font-bold text-emerald-700/80">Factor Venta</span>
+                  <div className="flex items-center justify-between pt-1 border-t border-mode-air-border/60 text-[10px]">
+                    <span className="font-bold text-mode-air-strong/80">Factor Venta</span>
                     <div className="flex items-center gap-1">
                       <input
                         type="number"
                         step="0.01"
                         min="0"
                         disabled={isRowDisabled}
-                        className="w-12 text-center font-mono font-bold text-xs bg-white border border-emerald-300 rounded-md py-0.5 text-slate-800 outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-70"
+                        className="w-12 text-center font-mono font-bold text-xs bg-white border border-emerald-300 rounded-md py-0.5 text-slate-800 outline-none focus:ring-1 focus:ring-primary disabled:opacity-70"
                         value={p.fva}
                         onFocus={(e) => {
                           e.target.select();
@@ -1324,21 +1331,21 @@ export const Calculadora = ({ onGuardar }) => {
               <div className="px-3 py-2 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   {!esPedidoPrevio && (
-                    <label className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-bold transition-colors cursor-pointer select-none ${
-                      p.enConsulta ? 'bg-amber-50 border-amber-300 text-amber-800' : 'bg-white border-slate-200 text-slate-500'
-                    }`}>
-                      <input
-                        type="checkbox"
-                        checked={!!p.enConsulta}
-                        disabled={isRowDisabled}
-                        onChange={(e) => {
-                          updateItem(idx, 'enConsulta', e.target.checked);
-                          setActiveItemIndex(idx);
-                        }}
-                        className="w-3.5 h-3.5 accent-amber-600 rounded cursor-pointer"
-                      />
-                      <HelpCircle size={11} className="text-amber-500 shrink-0" />
-                      <span>En consulta</span>
+                    <label className="inline-flex cursor-pointer select-none">
+                      <Etiqueta tono={p.enConsulta ? 'aviso' : 'neutral'} tamano="compacta" sinIcono>
+                        <input
+                          type="checkbox"
+                          checked={!!p.enConsulta}
+                          disabled={isRowDisabled}
+                          onChange={(e) => {
+                            updateItem(idx, 'enConsulta', e.target.checked);
+                            setActiveItemIndex(idx);
+                          }}
+                          className="w-3.5 h-3.5 accent-amber-600 rounded cursor-pointer"
+                        />
+                        <HelpCircle size={11} className="shrink-0" />
+                        <span>En consulta</span>
+                      </Etiqueta>
                     </label>
                   )}
                 </div>
@@ -1422,7 +1429,7 @@ export const Calculadora = ({ onGuardar }) => {
                       <input
                         type="text"
                         disabled={isRowDisabled}
-                        className="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-800 outline-none focus:border-emerald-500"
+                        className="w-full p-2 border border-slate-200 rounded-lg text-xs font-bold bg-white text-slate-800 outline-none focus:border-primary"
                         placeholder="Ej: 10 d.h."
                         value={p.entregaA}
                         onChange={(e) => handleTableIntegerInput(idx, 'entregaA', e.target.value)}
@@ -1454,7 +1461,7 @@ export const Calculadora = ({ onGuardar }) => {
                     <label className="block text-[9px] font-black text-slate-500 uppercase mb-1">Notas del Repuesto</label>
                     <textarea
                       disabled={isRowDisabled}
-                      className="w-full text-xs border border-slate-200 rounded-lg p-2.5 outline-none bg-white text-slate-800 disabled:bg-slate-100 disabled:opacity-70 focus:border-emerald-500"
+                      className="w-full text-xs border border-slate-200 rounded-lg p-2.5 outline-none bg-white text-slate-800 disabled:bg-slate-100 disabled:opacity-70 focus:border-primary"
                       rows="2"
                       value={p.notas}
                       onChange={(e) => updateItem(idx, 'notas', e.target.value)}
@@ -1481,9 +1488,9 @@ export const Calculadora = ({ onGuardar }) => {
                 {mostrarPicard ? (
                   <>
                     <th className="p-3 w-20 text-center">FOB SKF</th>
-                    <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />Venta (A)</span></th>
-                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />Costo SKF</span></th>
-                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />FV SKF</span></th>
+                    <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-air"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-air" />Venta (A)</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-air"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-air" />Costo SKF</span></th>
+                    <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-air"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-air" />FV SKF</span></th>
                     <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-amber-700"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-amber-700" />FOB Picard</span></th>
                     <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-amber-700"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-amber-700" />Costo Picard</span></th>
                     <th className="px-1.5 py-3 w-20 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-amber-700"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-amber-700" />FV Picard</span></th>
@@ -1491,12 +1498,12 @@ export const Calculadora = ({ onGuardar }) => {
                 ) : (
                   <>
                     <th className="p-3 w-20 text-center">FOB Unit</th>
-                    <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />Venta (A)</span></th>
-                    <th className="px-1.5 py-3 w-16 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-emerald-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-emerald-600" />% Renta</span></th>
+                    <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-air"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-air" />Venta (A)</span></th>
+                    <th className="px-1.5 py-3 w-16 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-air"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-air" />% Renta</span></th>
                   </>
                 )}
-                <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-blue-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-blue-600" />Venta (M)</span></th>
-                <th className="px-1.5 py-3 w-16 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-blue-600"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-blue-600" />% Renta</span></th>
+                <th className="px-1.5 py-3 w-24 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-sea"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-sea" />Venta (M)</span></th>
+                <th className="px-1.5 py-3 w-16 text-center whitespace-normal"><span className="inline-flex items-center justify-center gap-1.5 text-mode-sea"><span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-mode-sea" />% Renta</span></th>
                 <th className="p-3 w-32">Entrega (A/M)</th>
                 <th className="p-3 w-32">Notas</th>
                 <th className="py-3 px-1 w-12 text-center">Acción</th>
@@ -1549,7 +1556,7 @@ export const Calculadora = ({ onGuardar }) => {
                              disabled={isRowDisabled}
                              value={p.desc || p.descripcion} onChange={(e) => updateItem(idx, 'desc', e.target.value)}
                              onFocus={(e) => e.target.select()} />
-                       <input type="text" className="text-[10px] text-blue-600 w-full outline-none bg-transparent italic font-bold disabled:opacity-80" 
+                       <input type="text" className="text-[10px] text-primary-strong w-full outline-none bg-transparent italic font-bold disabled:opacity-80" 
                              disabled={isRowDisabled}
                              value={p.marca} onChange={(e) => updateItem(idx, 'marca', e.target.value)} placeholder="Indicar marca..."
                              onFocus={(e) => e.target.select()} />
@@ -1620,7 +1627,7 @@ export const Calculadora = ({ onGuardar }) => {
                         )
                       )}
                       {Number(p.factorA) > 0 && (
-                        <span className="mt-2 inline-flex border-l-2 border-emerald-400 pl-2 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+                        <span className="mt-2 inline-flex border-l-2 border-emerald-400 pl-2 text-[10px] font-semibold uppercase tracking-wide text-mode-air-strong">
                           FA {Number(p.factorA).toFixed(2)} fijado
                         </span>
                       )}
@@ -1636,20 +1643,20 @@ export const Calculadora = ({ onGuardar }) => {
                       <>
                         {/* FOB SKF */}
                          <td className="p-2 bg-slate-50/20 text-center">
-                          <input type="number" min="0" disabled={isRowDisabled} className="w-full p-1 border rounded text-center font-bold text-emerald-600 bg-white disabled:bg-slate-100 disabled:opacity-70" 
+                          <input type="number" min="0" disabled={isRowDisabled} className="w-full p-1 border rounded text-center font-bold text-slate-800 bg-white disabled:bg-slate-100 disabled:opacity-70" 
                                  value={p.fob} onChange={(e) => handleTableNumericInput(idx, 'fob', e.target.value)}
                                  onFocus={(e) => e.target.select()} />
                          </td>
                          {/* Venta (A) */}
-                         <td className="p-2 text-center bg-emerald-50/20">
-                           <div className="font-black text-emerald-600 text-sm">{ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}</div>
+                         <td className="p-2 text-center bg-mode-air-soft/20">
+                           <div className="font-black text-mode-air text-sm">{ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}</div>
                            <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
-                             <span className="text-slate-400 font-bold italic">FVA:</span>
+                             <span className="text-slate-600 font-bold italic">FVA:</span>
                              <input type="number" step="0.01" min="0" disabled={isRowDisabled} className="w-8 border-b outline-none text-center bg-transparent font-bold disabled:opacity-70" value={p.fva} onChange={(e) => handleTableNumericInput(idx, 'fva', e.target.value)} onFocus={(e) => e.target.select()} />
                            </div>
                          </td>
                          {/* Costo SKF */}
-                        <td className="p-2 text-center bg-emerald-50/10 font-bold text-slate-700">
+                        <td className="p-2 text-center bg-mode-air-soft/10 font-bold text-slate-700">
                           {landedA > 0 ? `$${landedA.toFixed(2)}` : '—'}
                         </td>
                         {/* Factor Venta SKF */}
@@ -1699,22 +1706,22 @@ export const Calculadora = ({ onGuardar }) => {
                       <>
                         {/* FOB Unit */}
                         <td className="p-2">
-                          <input type="number" min="0" disabled={isRowDisabled} className="w-full p-1 border rounded text-center font-bold text-emerald-600 bg-white disabled:bg-slate-100 disabled:opacity-70" 
+                          <input type="number" min="0" disabled={isRowDisabled} className="w-full p-1 border rounded text-center font-bold text-slate-800 bg-white disabled:bg-slate-100 disabled:opacity-70" 
                                  value={p.fob} onChange={(e) => handleTableNumericInput(idx, 'fob', e.target.value)}
                                  onFocus={(e) => e.target.select()} />
                         </td>
                         {/* Venta (A) */}
-                        <td className="p-2 text-center bg-emerald-50/20">
-                           <div className="font-black text-emerald-600 text-sm">{ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}</div>
+                        <td className="p-2 text-center bg-mode-air-soft/20">
+                           <div className="font-black text-mode-air text-sm">{ventaA > 0 ? `$${ventaA.toFixed(2)}` : '—'}</div>
                            <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
-                              <span className="text-slate-400 font-bold italic">FVA:</span>
+                              <span className="text-slate-600 font-bold italic">FVA:</span>
                               <input type="number" step="0.01" min="0" disabled={isRowDisabled} className="w-8 border-b outline-none text-center bg-transparent font-bold disabled:opacity-70" 
                                      value={p.fva} onChange={(e) => handleTableNumericInput(idx, 'fva', e.target.value)}
                                      onFocus={(e) => e.target.select()} />
                            </div>
                         </td>
                         {/* % Renta */}
-                        <td className="p-2 text-center bg-emerald-100/30">
+                        <td className="p-2 text-center bg-mode-air-100/30">
                           <Etiqueta tono={rentaA < 20 ? 'peligro' : 'exito'} tamano="normal">
                               {rentaA > 0 ? `${rentaA.toFixed(0)}%` : '0%'}
                           </Etiqueta>
@@ -1722,16 +1729,16 @@ export const Calculadora = ({ onGuardar }) => {
                       </>
                     )}
 
-                    <td className="p-2 text-center bg-blue-50/20">
-                       <div className="font-black text-blue-600 text-sm">{ventaM > 0 ? `$${ventaM.toFixed(2)}` : '—'}</div>
+                    <td className="p-2 text-center bg-mode-sea-soft/20">
+                       <div className="font-black text-mode-sea text-sm">{ventaM > 0 ? `$${ventaM.toFixed(2)}` : '—'}</div>
                        <div className="flex items-center justify-center gap-1 text-[9px] mt-1">
-                          <span className="text-slate-400 font-bold italic">FVM:</span>
+                          <span className="text-slate-600 font-bold italic">FVM:</span>
                           <input type="number" step="0.01" min="0" disabled={isRowDisabled} className="w-8 border-b outline-none text-center bg-transparent font-bold disabled:opacity-70" 
                                  value={p.fvm} onChange={(e) => handleTableNumericInput(idx, 'fvm', e.target.value)}
                                  onFocus={(e) => e.target.select()} />
                        </div>
                     </td>
-                    <td className="p-2 text-center bg-blue-100/30">
+                    <td className="p-2 text-center bg-mode-sea-100/30">
                       <Etiqueta tono={rentaM < 15 ? 'peligro' : 'azul'} tamano="normal">
                           {rentaM > 0 ? `${rentaM.toFixed(0)}%` : '0%'}
                       </Etiqueta>
@@ -1797,10 +1804,9 @@ export const Calculadora = ({ onGuardar }) => {
           <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-2.5 sm:gap-3 max-w-7xl mx-auto p-2.5 sm:p-3 md:p-0">
             <div className="flex items-center gap-2 min-w-0">
               {tienePendientesGlobales && (
-                <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 text-[10px] font-black uppercase truncate">
-                  <Info className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <Etiqueta tono="info" tamano="normal" icono={Info} className="min-w-0 max-w-full">
                   <span className="truncate">Ítems sin precio: Se guardará COTIZACIÓN PARCIAL.</span>
-                </div>
+                </Etiqueta>
               )}
             </div>
 
@@ -1808,11 +1814,11 @@ export const Calculadora = ({ onGuardar }) => {
               <div className="flex gap-3 sm:gap-4 border-r border-slate-200 pr-3 sm:pr-6 text-xs font-bold uppercase text-slate-500">
                 <div className="text-right">
                   <span className="block text-[8px] font-black text-slate-400">Aéreo (+IVA)</span>
-                  <span className="text-xs sm:text-sm font-black text-blue-600">${tAconIva.toFixed(2)}</span>
+                  <span className="text-xs sm:text-sm font-black text-mode-air-strong">${tAconIva.toFixed(2)}</span>
                 </div>
                 <div className="text-right border-l border-slate-100 pl-3 sm:pl-4">
                   <span className="block text-[8px] font-black text-slate-400">Marítimo (+IVA)</span>
-                  <span className="text-xs sm:text-sm font-black text-teal-600">${tMconIva.toFixed(2)}</span>
+                  <span className="text-xs sm:text-sm font-black text-mode-sea-strong">${tMconIva.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -1826,14 +1832,23 @@ export const Calculadora = ({ onGuardar }) => {
               ) : (
                 <div className="flex items-center gap-2 shrink-0">
                   <button onClick={() => navigate('/compras')} className="hidden sm:inline text-slate-400 hover:text-slate-600 font-bold transition-colors text-xs px-2 min-h-[48px] cursor-pointer">Descartar</button>
-                  <button 
-                    onClick={ejecutarGuardado}
-                    className={`${
-                      tienePendientesGlobales ? 'bg-blue-600 hover:bg-blue-700' : 'bg-slate-900 hover:bg-emerald-600'
-                    } text-white px-4 sm:px-8 py-2.5 sm:py-3 rounded-xl font-black transition-all flex flex-col items-center justify-center leading-none shadow-lg text-xs uppercase tracking-wide shrink-0 min-h-[48px] cursor-pointer`}
-                  >
-                    <span>{tienePendientesGlobales ? 'Guardar Parcial' : 'Finalizar y Enviar'}</span>
-                  </button>
+                  {tienePendientesGlobales ? (
+                    <Button
+                      variant="primary"
+                      size="xl"
+                      onClick={ejecutarGuardado}
+                      className="shrink-0"
+                    >
+                      <span>Guardar Parcial</span>
+                    </Button>
+                  ) : (
+                    <button 
+                      onClick={ejecutarGuardado}
+                      className="bg-slate-900 hover:bg-emerald-600 text-white px-4 sm:px-8 py-2.5 sm:py-3 rounded-xl font-black transition-all flex flex-col items-center justify-center leading-none shadow-lg text-xs uppercase tracking-wide shrink-0 min-h-[48px] cursor-pointer"
+                    >
+                      <span>Finalizar y Enviar</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -1861,7 +1876,7 @@ export const Calculadora = ({ onGuardar }) => {
             titulo="Gastos adicionales"
             subtitulo={`Total aduana: $${aduana.toFixed(2)}`}
             icono={Receipt}
-            tono="exito"
+            tono="rol"
             onCerrar={() => setModalGastosMobile(false)}
           />
 
@@ -1869,33 +1884,33 @@ export const Calculadora = ({ onGuardar }) => {
             <div className="p-5 overflow-y-auto space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Trámite Aduanal</label>
-                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={tramiteAduanal} onChange={handleNumericInput(setTramiteAduanal)} onFocus={(e) => e.target.select()} />
+                  <label className="text-[11px] font-medium text-slate-500 mb-1">Trámite Aduanal</label>
+                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={tramiteAduanal} onChange={handleNumericInput(setTramiteAduanal)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Scan</label>
-                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={scan} onChange={handleNumericInput(setScan)} onFocus={(e) => e.target.select()} />
+                  <label className="text-[11px] font-medium text-slate-500 mb-1">Scan</label>
+                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={scan} onChange={handleNumericInput(setScan)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Adimex</label>
-                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={adimex} onChange={handleNumericInput(setAdimex)} onFocus={(e) => e.target.select()} />
+                  <label className="text-[11px] font-medium text-slate-500 mb-1">Adimex</label>
+                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={adimex} onChange={handleNumericInput(setAdimex)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Manejos</label>
-                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={manejos} onChange={handleNumericInput(setManejos)} onFocus={(e) => e.target.select()} />
+                  <label className="text-[11px] font-medium text-slate-500 mb-1">Manejos</label>
+                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={manejos} onChange={handleNumericInput(setManejos)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Seguro</label>
-                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={seguro} onChange={handleNumericInput(setSeguro)} onFocus={(e) => e.target.select()} />
+                  <label className="text-[11px] font-medium text-slate-500 mb-1">Seguro</label>
+                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={seguro} onChange={handleNumericInput(setSeguro)} onFocus={(e) => e.target.select()} />
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Entrega Local</label>
-                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={entregaLocal} onChange={handleNumericInput(setEntregaLocal)} onFocus={(e) => e.target.select()} />
+                  <label className="text-[11px] font-medium text-slate-500 mb-1">Entrega Local</label>
+                  <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={entregaLocal} onChange={handleNumericInput(setEntregaLocal)} onFocus={(e) => e.target.select()} />
                 </div>
               </div>
               <div className="flex flex-col">
-                <label className="text-[10px] font-black text-slate-500 uppercase mb-1">Otros Gastos</label>
-                <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-emerald-500 disabled:opacity-70" value={otrosGastos} onChange={handleNumericInput(setOtrosGastos)} onFocus={(e) => e.target.select()} />
+                <label className="text-[11px] font-medium text-slate-500 mb-1">Otros Gastos</label>
+                <input type="number" min="0" disabled={esSoloLectura} className="p-2.5 border border-slate-200 rounded-xl font-bold text-sm bg-slate-50 text-slate-800 outline-none focus:bg-white focus:border-primary disabled:opacity-70" value={otrosGastos} onChange={handleNumericInput(setOtrosGastos)} onFocus={(e) => e.target.select()} />
               </div>
 
               <div className="pt-2">
@@ -1918,14 +1933,14 @@ export const Calculadora = ({ onGuardar }) => {
             titulo="Cotizador de flete"
             subtitulo="DHL Bélgica o QuickShipping USA"
             icono={Calculator}
-            tono="azul"
+            tono="rol"
             onCerrar={() => setModalCotizadorMobile(false)}
           />
 
             {/* Selector Tabs */}
             <div className="p-4 overflow-y-auto space-y-4">
               {/* DHL Section */}
-              <div className={`p-4 rounded-2xl border transition-all ${activeProvider === 'dhl' ? 'bg-blue-50/70 border-blue-300 ring-1 ring-blue-300' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`p-4 rounded-2xl border transition-all ${activeProvider === 'dhl' ? 'bg-primary-soft border-primary/40' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center">
@@ -1933,11 +1948,11 @@ export const Calculadora = ({ onGuardar }) => {
                     </div>
                     <div>
                       <h4 className="text-xs font-black text-slate-800 uppercase">DHL Express Bélgica</h4>
-                      <p className="text-[9px] text-slate-400 font-bold">Tarifa por peso volumétrico (kg)</p>
+                      <p className="text-[9px] text-slate-600 font-bold">Tarifa por peso volumétrico (kg)</p>
                     </div>
                   </div>
                   {appliedProvider === 'dhl' && (
-                    <Etiqueta tono="azul">
+                    <Etiqueta tono="info">
                       En uso
                     </Etiqueta>
                   )}
@@ -1945,19 +1960,19 @@ export const Calculadora = ({ onGuardar }) => {
 
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div>
-                    <label className="text-[9px] font-black text-slate-500 uppercase block mb-1">Peso (kg)</label>
+                    <label className={`text-[11px] font-medium ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-500'} block mb-1`}>Peso (kg)</label>
                     <input
                       type="number"
                       step="0.01"
                       min="0"
-                      className="w-full p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-800 outline-none focus:border-blue-500"
+                      className="w-full p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-800 outline-none focus:border-primary"
                       value={dhlWeight}
                       onChange={handleNumericInput(setDhlWeight)}
                       onFocus={(e) => e.target.select()}
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] font-black text-slate-500 uppercase block mb-1">Zona</label>
+                    <label className={`text-[11px] font-medium ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-500'} block mb-1`}>Zona</label>
                     <div className="p-2 border border-slate-200 rounded-lg font-bold text-xs bg-slate-100 text-slate-700 h-9 flex items-center justify-between">
                       <span>Zona {dhlZoneId}</span>
                       <span className="text-[8px] text-slate-400 uppercase">Auto</span>
@@ -1967,14 +1982,16 @@ export const Calculadora = ({ onGuardar }) => {
 
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
                   <div>
-                    <span className="text-[8px] font-black text-slate-400 uppercase block">Facturable</span>
+                    <span className={`text-[11px] font-medium ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-500'} block`}>Facturable</span>
                     <span className="text-xs font-black text-slate-700">{dhlResults.chargeableWeight ? Number(dhlResults.chargeableWeight).toFixed(2) : '0.00'} kg</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[8px] font-black text-slate-400 uppercase block">Costo DHL</span>
+                    <span className={`text-[11px] font-medium ${activeProvider === 'dhl' ? 'text-slate-600' : 'text-slate-500'} block`}>Costo DHL</span>
                     <span className="text-base font-black text-slate-900">${dhlResults.totalUsd ? dhlResults.totalUsd.toFixed(2) : '0.00'}</span>
                   </div>
-                  <button
+                  <Button
+                    variant={appliedProvider === 'dhl' ? 'secondaryBrand' : 'primary'}
+                    size="md"
                     type="button"
                     disabled={!(dhlResults.totalUsd > 0)}
                     onClick={() => {
@@ -1983,15 +2000,15 @@ export const Calculadora = ({ onGuardar }) => {
                       setActiveProvider('dhl');
                       setModalCotizadorMobile(false);
                     }}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-[10px] font-black px-3.5 py-2 rounded-lg uppercase tracking-wide transition-colors"
                   >
+                    {appliedProvider === 'dhl' && <Check size={12} aria-hidden="true" />}
                     {appliedProvider === 'dhl' ? 'Aplicado' : 'Aplicar'}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               {/* QS USA Section */}
-              <div className={`p-4 rounded-2xl border transition-all ${activeProvider === 'qs' ? 'bg-blue-50/70 border-blue-300 ring-1 ring-blue-300' : 'bg-slate-50 border-slate-200'}`}>
+              <div className={`p-4 rounded-2xl border transition-all ${activeProvider === 'qs' ? 'bg-primary-soft border-primary/40' : 'bg-slate-50 border-slate-200'}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-white border border-slate-200 p-0.5 flex items-center justify-center">
@@ -1999,23 +2016,23 @@ export const Calculadora = ({ onGuardar }) => {
                     </div>
                     <div>
                       <h4 className="text-xs font-black text-slate-800 uppercase">QS USA</h4>
-                      <p className="text-[9px] text-slate-400 font-bold">$2.80/lb (mínimo $10.00)</p>
+                      <p className="text-[9px] text-slate-600 font-bold">$2.80/lb (mínimo $10.00)</p>
                     </div>
                   </div>
                   {appliedProvider === 'qs' && (
-                    <Etiqueta tono="azul">
+                    <Etiqueta tono="info">
                       En uso
                     </Etiqueta>
                   )}
                 </div>
 
                 <div className="mb-3">
-                  <label className="text-[9px] font-black text-slate-500 uppercase block mb-1">Peso (libras)</label>
+                  <label className={`text-[11px] font-medium ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-500'} block mb-1`}>Peso (libras)</label>
                   <input
                     type="number"
                     step="0.01"
                     min="0"
-                    className="w-full p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-800 outline-none focus:border-blue-500"
+                    className="w-full p-2 border border-slate-200 rounded-lg font-bold text-sm bg-white text-slate-800 outline-none focus:border-primary"
                     value={qsWeight}
                     onChange={handleNumericInput(setQsWeight)}
                     onFocus={(e) => e.target.select()}
@@ -2024,14 +2041,16 @@ export const Calculadora = ({ onGuardar }) => {
 
                 <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
                   <div>
-                    <span className="text-[8px] font-black text-slate-400 uppercase block">Tarifa</span>
+                    <span className={`text-[11px] font-medium ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-500'} block`}>Tarifa</span>
                     <span className="text-xs font-black text-slate-700">{parseFloat(qsWeight) > 10 ? '$2.80/lb' : 'Mínimo fijo'}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[8px] font-black text-slate-400 uppercase block">Costo QS</span>
+                    <span className={`text-[11px] font-medium ${activeProvider === 'qs' ? 'text-slate-600' : 'text-slate-500'} block`}>Costo QS</span>
                     <span className="text-base font-black text-slate-900">${qsResults.totalUsd ? qsResults.totalUsd.toFixed(2) : '0.00'}</span>
                   </div>
-                  <button
+                  <Button
+                    variant={appliedProvider === 'qs' ? 'secondaryBrand' : 'primary'}
+                    size="md"
                     type="button"
                     disabled={!(qsResults.totalUsd > 0)}
                     onClick={() => {
@@ -2040,10 +2059,10 @@ export const Calculadora = ({ onGuardar }) => {
                       setActiveProvider('qs');
                       setModalCotizadorMobile(false);
                     }}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white text-[10px] font-black px-3.5 py-2 rounded-lg uppercase tracking-wide transition-colors"
                   >
+                    {appliedProvider === 'qs' && <Check size={12} aria-hidden="true" />}
                     {appliedProvider === 'qs' ? 'Aplicado' : 'Aplicar'}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

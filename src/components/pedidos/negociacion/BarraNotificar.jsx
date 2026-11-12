@@ -56,7 +56,7 @@ export const BarraNotificar = ({
             <button
               onClick={() => setShowSheet(true)}
               disabled={isLoading}
-              className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black uppercase tracking-wider text-xs sm:text-sm bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-sm shrink-0 min-h-[48px] cursor-pointer"
+              className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl font-black uppercase tracking-wider text-xs sm:text-sm bg-primary text-primary-foreground hover:bg-primary-strong active:scale-95 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-sm shrink-0 min-h-[48px] cursor-pointer"
             >
               <span className="hidden sm:inline">
                 {isVendedor ? 'Confirmar y notificar a Compras' : 'Notificar al vendedor'}

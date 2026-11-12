@@ -125,7 +125,7 @@ export const SeguimientoClienteBanner = ({
     : esPendiente ? 'pendiente'
       : esProrrogaAprobada ? 'aprobada'
         : esProrrogaRechazada ? 'rechazada'
-          : esVencido ? 'vencida' : 'info';
+          : esVencido ? 'vencida' : 'seguimiento';
 
   const statusLabel = esCierre ? 'Vencida'
     : esPendiente ? 'Pendiente'

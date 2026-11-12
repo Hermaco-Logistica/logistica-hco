@@ -8,13 +8,13 @@ import { Modal, ModalBoton, ModalCuerpo, ModalEncabezado, ModalPie } from './Mod
  */
 export const ModalVistaPrevia = ({ titulo = 'Vista previa de cotización', referencia, onImprimir, onCerrar, children }) => (
   <Modal etiqueta={titulo} variante="hoja" ancho="completo" onCerrar={onCerrar}>
-    <ModalEncabezado titulo={titulo} subtitulo="Documento oficial" referencia={referencia} icono={FileText} tono="neutral" onCerrar={onCerrar} />
+    <ModalEncabezado titulo={titulo} subtitulo="Documento oficial" referencia={referencia} icono={FileText} tono="rol" onCerrar={onCerrar} />
     <ModalCuerpo className="bg-white">
       <div id="cotizacion-print-area" className="overflow-x-auto">{children}</div>
     </ModalCuerpo>
     <ModalPie>
       <ModalBoton onClick={onCerrar}>Cerrar</ModalBoton>
-      <ModalBoton variante="primario" tono="exito" icono={Printer} onClick={onImprimir}>Imprimir / PDF</ModalBoton>
+      <ModalBoton variante="primario" tono="rol" icono={Printer} onClick={onImprimir}>Imprimir / PDF</ModalBoton>
     </ModalPie>
   </Modal>
 );

@@ -137,6 +137,11 @@ export function obtenerFaseItemCacheada(solicitud, indice) {
   return analisis?.items.get(indice)?.fase || null;
 }
 
+/** true si el ítem está en seguimiento (tiene alguna fase); los ítems cerrados y las solicitudes no evaluables dan false. */
+export function itemEnSeguimiento(solicitud, indice) {
+  return Boolean(obtenerFaseItemCacheada(solicitud, indice));
+}
+
 /** Suma una fase al acumulador { enSeguimiento, fasesSeguimiento } de una fila agregada (cliente, vendedor, producto). */
 export function acumularFaseSeguimiento(acumulador, fase) {
   if (!fase) return;

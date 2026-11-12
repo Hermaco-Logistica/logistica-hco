@@ -34,7 +34,7 @@
  *   ambos (emails.test.js solo busca un literal, #e0f2fe).
  *
  * VALORES QUE NO CALZAN CON UN TOKEN (listados, no redondeados):
- *   - mode-air / mode-sea: las tablas de detalle usan emerald-700 y blue-700 (y la Calculadora emerald-600 y blue-600), no estos valores.
+ *   - mode-air / mode-sea: antes #247a9b / #536f9b (solo los leía --detalle-air/-sea, sin uso). Ahora valen emerald-600 / blue-600, el valor real de las vistas.
  *   - Estados: las etiquetas de usuario (TONOS en utils/etiquetas.js) usan pasteles de Tailwind distintos
  *     (emerald-100/800, rose-100/700, amber-100/800, sky-100/700). Irán en la familia tag-* (C2).
  *   - Color del rol fuera de index.css (Sidebar.jsx, BottomTabBar.jsx, roleColors.js, theme.js): migrado en C3b a los
@@ -72,6 +72,7 @@
   --color-warning: #8a5a00;
   --color-warning-soft: #fff7e8;
   --color-danger: #a42b32;
+  --color-danger-strong: #8d252b;
   --color-danger-soft: #fff0f0;
   --color-info: #1d5e87;
   --color-info-soft: #eff6fa;
@@ -119,6 +120,13 @@
   --color-tag-amarillo-soft: var(--color-yellow-100);
   /* "oscuro" no tiene -soft: su fondo sigue siendo bg-slate-800 porque index.css lo remapea por rol (.role-* .bg-slate-800). */
 
+  /* "En seguimiento": los tokens --color-seguimiento* están más abajo, en el bloque `@theme inline` de derivados (siguen al rol).
+     PARA VOLVER AL CIRUELA FIJO (dos cambios): quitar las cuatro líneas de ese bloque y de "Derivados por ámbito", y declarar aquí
+       --color-seguimiento: #72467c;   --color-seguimiento-soft: #e2d8e4;
+       --color-seguimiento-borde: color-mix(in oklab, var(--color-seguimiento) 30%, white);
+       --color-seguimiento-claro: color-mix(in oklab, var(--color-seguimiento) 55%, white);
+     (equivale a git revert del commit "Seguimiento con los colores del rol"). La urgencia de cada fase NO usa este color. */
+
   /* Navegación por rol (Sidebar, tab bar móvil, roleColors.js) y Análisis (theme.js). Valores sin rol = comprador.
      Apuntan a la paleta v4 de Tailwind (valor exacto de las clases que reemplazan). Cada rol los sobrescribe abajo. */
   --color-nav-accent: var(--color-blue-500);          /* Sidebar: ítem activo */
@@ -129,9 +137,24 @@
   --color-analysis-accent: var(--color-slate-800);        /* theme.js textAccent (sin rol: slate-800) */
   --color-analysis-accent-active: var(--color-slate-900); /* theme.js activePeriod (sin rol: slate-900) */
 
-  /* Dominio (valores --detalle-air / --detalle-sea) */
-  --color-mode-air: #247a9b;
-  --color-mode-sea: #536f9b;
+  /* Dominio: aéreo y marítimo. Fijos (no siguen al rol). Apuntan a la paleta v4 con el tono exacto que usaban las clases emerald-* y blue-* de
+     Calculadora, DetalleRFQProductos y DetalleRFQVista. */
+  --color-mode-air: var(--color-emerald-600);
+  --color-mode-air-strong: var(--color-emerald-700);
+  --color-mode-air-soft: var(--color-emerald-50);
+  --color-mode-air-border: var(--color-emerald-200);
+  --color-mode-air-100: var(--color-emerald-100);
+  --color-mode-air-800: var(--color-emerald-800);
+  --color-mode-air-900: var(--color-emerald-900);
+  --color-mode-air-950: var(--color-emerald-950);
+  --color-mode-sea: var(--color-blue-600);
+  --color-mode-sea-strong: var(--color-blue-700);
+  --color-mode-sea-soft: var(--color-blue-50);
+  --color-mode-sea-border: var(--color-blue-200);
+  --color-mode-sea-100: var(--color-blue-100);
+  --color-mode-sea-500: var(--color-blue-500);
+  --color-mode-sea-900: var(--color-blue-900);
+  --color-mode-sea-950: var(--color-blue-950);
 
   /* Gráficos (lista de views/analisis/theme.js y anillos de Análisis) */
   --color-chart-1: #f59e0b;
@@ -154,68 +177,76 @@
 @theme inline static {
   --color-primary-soft: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
   --color-secondary-soft: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
+
+  /* "En seguimiento" con la paleta del rol: relleno oscuro (primary-strong) y letra clara (primary-soft).
+     Ciruela fijo anterior: #72467c y #e2d8e4. Utilidades: bg-seguimiento, text-seguimiento, bg-seguimiento-soft,
+     border-seguimiento/30, from-seguimiento-claro. */
+  --color-seguimiento: var(--color-primary-strong);
+  --color-seguimiento-soft: var(--color-primary-soft);
+  --color-seguimiento-borde: color-mix(in srgb, var(--color-primary-strong) 30%, white);
+  --color-seguimiento-claro: color-mix(in srgb, var(--color-primary-strong) 55%, white);
 }
 
 @layer base {
   /* Valores por rol */
   .role-comprador,
   body[data-role="comprador"] {
-    --color-primary: #3b82f6;
-    --color-primary-strong: #2563eb;
-    --color-secondary: #0b2545;
-    --color-background: #eef4ff;
-    --color-nav-accent: var(--color-blue-500);
-    --color-nav-accent-text: var(--color-blue-300);
-    --color-nav-accent-strong: var(--color-blue-600);
-    --color-nav-accent-hover: var(--color-blue-700);
-    --color-nav-glow: rgb(37 99 235 / 0.18);
-    --color-analysis-accent: var(--color-blue-600);
-    --color-analysis-accent-active: var(--color-blue-600);
+    --color-primary: #3b46f2;
+    --color-primary-strong: #2635d9;
+    --color-secondary: #1b2452;
+    --color-background: #f7f8fc;
+    --color-nav-accent: var(--color-primary);
+    --color-nav-accent-text: #aaaff3;
+    --color-nav-accent-strong: var(--color-primary-strong);
+    --color-nav-accent-hover: #212fbf;
+    --color-nav-glow: rgb(38 53 217 / 0.18);
+    --color-analysis-accent: var(--color-primary-strong);
+    --color-analysis-accent-active: var(--color-primary-strong);
   }
 
   .role-vendedor,
   body[data-role="vendedor"] {
-    --color-primary: #8b5cf6;
-    --color-primary-strong: #7c3aed;
-    --color-secondary: #312e81;
-    --color-background: #f4f0ff;
-    --color-nav-accent: var(--color-violet-500);
-    --color-nav-accent-text: var(--color-violet-300);
-    --color-nav-accent-strong: var(--color-violet-600);
-    --color-nav-accent-hover: var(--color-violet-700);
-    --color-nav-glow: rgb(124 58 237 / 0.18);
-    --color-analysis-accent: var(--color-purple-600);
-    --color-analysis-accent-active: var(--color-purple-600);
+    --color-primary: #7964a9;
+    --color-primary-strong: #614e8c;
+    --color-secondary: #310845;
+    --color-background: #f7eefb;
+    --color-nav-accent: var(--color-primary);
+    --color-nav-accent-text: #afa2cc;
+    --color-nav-accent-strong: var(--color-primary-strong);
+    --color-nav-accent-hover: #534378;
+    --color-nav-glow: rgb(97 78 140 / 0.18);
+    --color-analysis-accent: var(--color-primary-strong);
+    --color-analysis-accent-active: var(--color-primary-strong);
   }
 
   .role-gerente,
   body[data-role="gerente"] {
-    --color-primary: #10b981;
-    --color-primary-strong: #059669;
-    --color-secondary: #14532d;
-    --color-background: #edfdf4;
-    --color-nav-accent: var(--color-primary); /* #10b981: el color de marca que hoy impone el remapeo de bg-emerald-500 */
-    --color-nav-accent-text: var(--color-emerald-300);
-    --color-nav-accent-strong: var(--color-emerald-600);
-    --color-nav-accent-hover: var(--color-emerald-700);
-    --color-nav-glow: rgb(5 150 105 / 0.18);
-    --color-analysis-accent: var(--color-emerald-600);
-    --color-analysis-accent-active: var(--color-emerald-600);
+    --color-primary: #547e52;
+    --color-primary-strong: #40613f;
+    --color-secondary: #243119;
+    --color-background: #f6faf5;
+    --color-nav-accent: var(--color-primary);
+    --color-nav-accent-text: #aceca1;
+    --color-nav-accent-strong: var(--color-primary-strong);
+    --color-nav-accent-hover: #344e33;
+    --color-nav-glow: rgb(64 97 63 / 0.18);
+    --color-analysis-accent: var(--color-primary-strong);
+    --color-analysis-accent-active: var(--color-primary-strong);
   }
 
   .role-administrador,
   body[data-role="administrador"] {
-    --color-primary: #b45366;
-    --color-primary-strong: #9f3650;
-    --color-secondary: #7f1d2d;
-    --color-background: #fff4f4;
-    --color-nav-accent: var(--color-rose-500);
-    --color-nav-accent-text: var(--color-rose-300);
-    --color-nav-accent-strong: var(--color-rose-600);
-    --color-nav-accent-hover: var(--color-rose-700);
-    --color-nav-glow: rgb(225 29 72 / 0.18);
-    --color-analysis-accent: var(--color-rose-700);
-    --color-analysis-accent-active: var(--color-rose-700);
+    --color-primary: #a8606b;
+    --color-primary-strong: #83414d;
+    --color-secondary: #6b2732;
+    --color-background: #faf5f6;
+    --color-nav-accent: var(--color-primary);
+    --color-nav-accent-text: #f1adba;
+    --color-nav-accent-strong: var(--color-primary-strong);
+    --color-nav-accent-hover: #6f3741;
+    --color-nav-glow: rgb(131 65 77 / 0.18);
+    --color-analysis-accent: var(--color-primary-strong);
+    --color-analysis-accent-active: var(--color-primary-strong);
   }
 
   /* Derivados por ámbito: se redeclaran en cada rol para que var() se resuelva con el rol del elemento. */
@@ -228,6 +259,10 @@
     --color-sidebar: var(--color-secondary);
     --color-primary-soft: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
     --color-secondary-soft: color-mix(in srgb, var(--color-secondary) 10%, var(--color-surface));
+    --color-seguimiento: var(--color-primary-strong);
+    --color-seguimiento-soft: var(--color-primary-soft);
+    --color-seguimiento-borde: color-mix(in srgb, var(--color-primary-strong) 30%, white);
+    --color-seguimiento-claro: color-mix(in srgb, var(--color-primary-strong) 55%, white);
   }
 
   /* Alias de compatibilidad (nombres viejos). Solo en :root y en el shell, nunca en body[data-role]. */

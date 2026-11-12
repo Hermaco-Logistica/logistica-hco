@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
 import { useParams, useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
 import { 
@@ -178,7 +179,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
     return (
       <div className="flex min-h-[50vh] py-24 items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-4 border-slate-200 border-t-purple-500 rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-slate-200 border-t-primary rounded-full animate-spin"></div>
           <p className="text-slate-400 font-bold text-sm tracking-widest uppercase">Cargando detalles...</p>
         </div>
       </div>
@@ -513,7 +514,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
           className="w-full p-4 sm:p-6 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors cursor-pointer text-left focus:outline-none"
         >
           <h2 className="text-sm font-black text-slate-800 uppercase flex items-center gap-2">
-            <LinkIcon size={18} className="text-emerald-500" /> Documentación Extra
+            <LinkIcon size={18} className="text-primary" /> Documentación Extra
           </h2>
           <div className={`transform transition-transform duration-300 text-slate-400 ${documentacionOpen ? 'rotate-180' : ''}`}>
             <ChevronDown size={20} />
@@ -528,7 +529,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 italic">Enlace a Orden de Compra</label>
                   <input
                     type="text"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 text-sm outline-none focus:border-emerald-500 transition-all font-bold text-slate-700 disabled:opacity-60"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 text-sm outline-none focus:border-primary transition-all font-bold text-slate-700 disabled:opacity-60"
                     placeholder="https://..."
                     value={linkOC}
                     onChange={(e) => setLinkOC(e.target.value)}
@@ -540,7 +541,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block italic">Notas para Compras</label>
                   </div>
                   <textarea
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 text-sm outline-none focus:border-emerald-500 transition-all font-bold text-slate-700 min-h-20 disabled:opacity-60"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3 text-sm outline-none focus:border-primary transition-all font-bold text-slate-700 min-h-20 disabled:opacity-60"
                     placeholder="Comentarios sobre el pedido..."
                     value={comentariosVendedor}
                     onChange={(e) => setComentariosVendedor(e.target.value)}
@@ -550,13 +551,14 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
               </div>
               {puedeResponder && (
                 <div className="flex justify-end mt-4">
-                  <button 
+                  <Button
+                    variant="primary"
+                    size="lg"
                     onClick={handleGuardarDocumentacion}
                     disabled={editandoDocs}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl font-black text-[10px] uppercase transition-colors shadow-sm disabled:opacity-50"
                   >
                     <Save size={14} /> Guardar Documentación
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -628,7 +630,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                 <th className="p-4">Producto</th>
                 <th className="p-4 text-center">Mensajes</th>
                 <th className="p-4 text-center">Estado</th>
-                {mostrarColumnaAcciones && <th className="p-4 text-right">Acciones</th>}
+                {mostrarColumnaAcciones && <th className="p-4 text-center">Acciones</th>}
               </tr>
             </thead>
             <tbody>
@@ -689,15 +691,17 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                       </td>
                       
                       <td className="p-4 text-center align-top">
-                        <button 
+                        <Button
+                          variant={hiloAbierto === idx ? 'secondaryBrand' : 'secondary'}
+                          size="md"
                           onClick={() => setHiloAbierto(hiloAbierto === idx ? null : idx)} 
-                          className={`relative inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl font-black text-[10px] uppercase transition-colors mt-2 ${hiloAbierto === idx ? 'bg-purple-100 text-purple-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`} 
+                          className="relative mt-2"
                         >
                           <MessageSquare size={14} className={msgCount === 0 ? 'opacity-50' : ''} />
                           <span className={msgCount === 0 ? 'opacity-50' : ''}>Msgs</span>
                           {msgCount > 0 && <span className="ml-0.5 opacity-70">({msgCount})</span>}
                           {unreadCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-blue-500 text-white text-[8px] w-4 h-4 flex items-center justify-center rounded-full shadow-sm">{unreadCount}</span>}
-                        </button>
+                        </Button>
                       </td>
 
                       {/* Columna dedicada: Estado */}
@@ -759,7 +763,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                           {stagedVP ? (
                             <div className="flex items-center gap-2">
                               <span className="text-[10px] font-bold text-rose-600 uppercase">Venta Perdida pendiente</span>
-                              <AccionItemButton id="cancelar-vp" label="Deshacer venta perdida pendiente" text="Deshacer VP" icon={<Undo2 size={14} />} className="border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-rose-700" onConfirm={() => handleCancelarVentaPerdidaPendiente(idx)} />
+                              <AccionItemButton id="cancelar-vp" label="Deshacer venta perdida pendiente" text="Deshacer VP" icon={<Undo2 size={14} />} variant="reject" onConfirm={() => handleCancelarVentaPerdidaPendiente(idx)} />
                             </div>
                           ) : (
                             <>
@@ -770,31 +774,31 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
                                     <>
                                       {/* Acciones Principales: Aceptar y Contraofertar */}
                                       <div className="pedido-item-action-buttons">
-                                        <AccionItemButton id="aceptar" label={`Aceptar oferta vigente de $${Number(currentFob).toFixed(2)}`} text="Aceptar" icon={<Check size={14} />} className="border-emerald-700 bg-emerald-600 text-white hover:bg-emerald-700" onConfirm={() => actions.aceptar(idx, versionEsperada)} />
-                                        <AccionItemButton id="contraofertar" label="Contraofertar" text="Contraofertar" icon={<ArrowLeftRight size={14} />} className="border-amber-300 bg-amber-100 text-amber-900 hover:bg-amber-200" onConfirm={() => updateBorrador(idx, { precio: currentFob, tiempoEntrega, modalidad: neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo' })} />
+                                        <AccionItemButton id="aceptar" label={`Aceptar oferta vigente de $${Number(currentFob).toFixed(2)}`} text="Aceptar" icon={<Check size={14} />} variant="approve" onConfirm={() => actions.aceptar(idx, versionEsperada)} />
+                                        <AccionItemButton id="contraofertar" label="Contraofertar" text="Contraofertar" icon={<ArrowLeftRight size={14} />} variant="counter" onConfirm={() => updateBorrador(idx, { precio: currentFob, tiempoEntrega, modalidad: neg.ofertaVigente?.modalidad || p.modalidad || 'Aéreo' })} />
                                       </div>
 
                                       {/* Rechazar oferta de Compras (negociación interna) */}
                                       <div className="flex justify-center pt-0.5">
-                                        <AccionItemButton id="rechazar" label="Rechazar oferta de Compras" text="Rechazar" icon={<X size={13} />} className="border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200" onConfirm={() => handleAbrirModalRechazar(idx, versionEsperada)} />
+                                        <AccionItemButton id="rechazar" label="Rechazar oferta de Compras" text="Rechazar" icon={<X size={13} />} variant="reject" onConfirm={() => handleAbrirModalRechazar(idx, versionEsperada)} />
                                       </div>
                                     </>
                                   ) : (
                                     <div className="pedido-item-action-buttons">
-                                      <AccionItemButton id="enviar-contraoferta" label="Enviar contraoferta" text="Enviar" icon={<Check size={13} />} className="border-amber-600 bg-amber-500 text-white hover:bg-amber-600" disabled={!draft.precio || isUnchanged} onConfirm={() => { actions.contraofertar(idx, versionEsperada, draft); clearBorrador(idx); }} />
-                                      <AccionItemButton id="cancelar-borrador" label="Cancelar borrador de contraoferta" text="Cancelar" icon={<RotateCcw size={13} />} className="border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200" onConfirm={() => clearBorrador(idx)} />
+                                      <AccionItemButton id="enviar-contraoferta" label="Enviar contraoferta" text="Enviar" icon={<Check size={13} />} variant="counter" disabled={!draft.precio || isUnchanged} onConfirm={() => { actions.contraofertar(idx, versionEsperada, draft); clearBorrador(idx); }} />
+                                      <AccionItemButton id="cancelar-borrador" label="Cancelar borrador de contraoferta" text="Cancelar" icon={<RotateCcw size={13} />} variant="reject" onConfirm={() => clearBorrador(idx)} />
                                     </div>
                                   )}
                                 </div>
                               ) : neg.sinNotificar && neg.ultimoCambio?.rol === currentUser.rol && !draft ? (
                                 <div className="flex justify-center">
-                                  <AccionItemButton id="deshacer" label="Deshacer cambios" text="Deshacer" icon={<Undo2 size={14} />} className="border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200" onConfirm={() => actions.deshacer(idx, versionEsperada)} />
+                                  <AccionItemButton id="deshacer" label="Deshacer cambios" text="Deshacer" icon={<Undo2 size={14} />} variant="reject" onConfirm={() => actions.deshacer(idx, versionEsperada)} />
                                 </div>
                               ) : null}
 
                               {/* Acción Comercial: Venta Perdida */}
                               {puedeRegistrarVentaPerdida && !esCerrado && !stagedVP && (
-                                <AccionItemButton id="venta-perdida" label={esItemEstancado(p, solicitudBase) ? 'Registrar Venta Perdida comercial (>5 días hábiles sin cierre)' : 'Registrar Venta Perdida de este ítem'} text="Venta perdida" icon={<TrendingDown size={12} />} className="border-rose-700 bg-rose-600 text-white hover:border-rose-800 hover:bg-rose-700" onConfirm={() => handleAbrirVentaPerdida([idx])} />
+                                <AccionItemButton id="venta-perdida" label={esItemEstancado(p, solicitudBase) ? 'Registrar Venta Perdida comercial (>5 días hábiles sin cierre)' : 'Registrar Venta Perdida de este ítem'} text="Venta perdida" icon={<TrendingDown size={12} />} variant="lost" onConfirm={() => handleAbrirVentaPerdida([idx])} />
                               )}
                             </>
                           )}

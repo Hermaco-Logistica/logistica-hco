@@ -510,7 +510,7 @@ export const ProrrogaRegistro = ({ record, view, puedeResponder, onAtender, onRe
         </td>
 
         {/* Acción */}
-        <td className="prorrogas-td text-right">
+        <td className="prorrogas-td text-center">
           <div className="prorrogas-actions-desktop">
             {mostrarRespuesta ? (
               <AccionesDropdown

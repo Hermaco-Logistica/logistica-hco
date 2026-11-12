@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { TablePagination } from '../../components/ui/TablePagination';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
 import { collection, onSnapshot, doc, updateDoc, serverTimestamp, getDoc, getDocFromServer, query, where, runTransaction } from 'firebase/firestore';
 import { auth, db } from '../../firebase';
 import { 
@@ -865,12 +866,12 @@ export const DashboardPedidos = ({ role }) => {
         </Modal>
       )}
       <PageHeader
-        title={<>Seguimiento de Pedidos <span className="text-emerald-500">.</span></>}
+        title={<>Seguimiento de Pedidos <span className="text-primary">.</span></>}
         subtitle={`Vista: ${role === 'vendedor' ? 'Ventas y Tiempos' : 'Compras y Logística'}`}
         actions={role === 'comprador' && seleccionados.length > 0 && (
            <button 
              onClick={() => setShowAsignador(!showAsignador)} 
-             className="hidden md:flex justify-center bg-emerald-500 text-white px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-emerald-500/20 items-center gap-3 active:scale-95 transition-all cursor-pointer"
+             className="hidden md:flex justify-center bg-primary text-primary-foreground px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-primary/20 items-center gap-3 active:scale-95 transition-all cursor-pointer"
            >
              <LinkIcon size={16} /> Vincular Selección ({seleccionados.length})
            </button>
@@ -894,7 +895,7 @@ export const DashboardPedidos = ({ role }) => {
             onClick={() => setMostrarFiltrosMobile(!mostrarFiltrosMobile)}
             className={`flex items-center gap-1 px-3 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
               filtrosActivosCount > 0 
-                ? 'bg-emerald-50 border-emerald-300 text-emerald-700' 
+                ? 'bg-primary-soft border-primary/30 text-primary-strong' 
                 : 'bg-slate-50 border-slate-200 text-slate-600'
             }`}
           >
@@ -903,7 +904,9 @@ export const DashboardPedidos = ({ role }) => {
             {mostrarFiltrosMobile ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
           {(searchItemRef || filtrosActivosCount > 0) && (
-            <button
+            <Button
+              variant="secondary"
+              size="iconSm"
               onClick={() => {
                 setSearchItemRef('');
                 setFilterProveedor('');
@@ -915,10 +918,9 @@ export const DashboardPedidos = ({ role }) => {
                 setCurrentPage(1);
               }}
               title="Limpiar filtros"
-              className="p-2.5 rounded-xl bg-slate-50 text-slate-500 hover:text-rose-600 border border-slate-200 transition-colors cursor-pointer"
             >
               <Trash2 size={14} />
-            </button>
+            </Button>
           )}
         </div>
 
@@ -1115,7 +1117,9 @@ export const DashboardPedidos = ({ role }) => {
         </div>
 
         <div className="flex flex-col justify-end w-fit pb-1">
-          <button
+          <Button
+            variant="secondary"
+            size="icon"
             onClick={() => {
               setSearchItemRef('');
               setFilterProveedor('');
@@ -1127,10 +1131,9 @@ export const DashboardPedidos = ({ role }) => {
               setCurrentPage(1);
             }}
             title="Limpiar filtros"
-            className="flex items-center justify-center bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded-xl w-10 h-10 border border-slate-100 transition-all cursor-pointer shadow-sm"
           >
             <Trash2 size={16} />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1239,7 +1242,7 @@ export const DashboardPedidos = ({ role }) => {
                 }}
                 className={`bg-white rounded-2xl p-4 border transition-all shadow-sm active:scale-[0.98] touch-manipulation relative ${
                   isSelected
-                    ? 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/40'
+                    ? 'border-primary ring-2 ring-primary/20 bg-primary-soft/50'
                     : 'border-slate-100 hover:shadow-md hover:border-slate-200'
                 }`}
               >
@@ -1252,13 +1255,13 @@ export const DashboardPedidos = ({ role }) => {
                         onClick={(e) => { e.stopPropagation(); toggleSeleccion(uId); }}
                         className={`w-6 h-6 rounded flex items-center justify-center transition-all shrink-0 cursor-pointer relative ${
                           isSelected
-                            ? 'bg-blue-500 text-white shadow-sm'
+                            ? 'bg-primary text-primary-foreground shadow-sm'
                             : 'bg-slate-100 text-slate-400 hover:text-slate-600'
                         }`}
                         aria-label="Seleccionar ítem para orden de compra"
                       >
                         {isSelected && (
-                          <span className="absolute inset-0 rounded border-2 border-blue-400 animate-expand-wave pointer-events-none" />
+                          <span className="absolute inset-0 rounded border-2 border-primary/60 animate-expand-wave pointer-events-none" />
                         )}
                         {isSelected ? <CheckSquare size={14} className="relative z-10 animate-pop-in" /> : <Square size={14} className="relative z-10" />}
                       </button>
@@ -1276,7 +1279,7 @@ export const DashboardPedidos = ({ role }) => {
                     {item.descripcion || item.desc}
                   </h3>
                   <div className="flex items-center gap-1.5 mt-1 text-[10px]">
-                    <span className="font-bold text-blue-700 uppercase truncate">{item.cliente}</span>
+                    <span className="font-bold text-primary-strong uppercase truncate">{item.cliente}</span>
                     {item.marca && (
                       <>
                         <span className="text-slate-300">·</span>
@@ -1325,12 +1328,7 @@ export const DashboardPedidos = ({ role }) => {
                         e.stopPropagation();
                         openTrackingModal(trackingNumber, rfqLabel, ocDetalle?.id, ocDetalle?.estado, ocDetalle?.fechaUltimoEstado);
                       }}
-                      className={`w-full flex items-center justify-center gap-2 px-3.5 py-3 rounded-xl shadow-xs border transition-all cursor-pointer active:scale-[0.98] touch-manipulation text-white font-black uppercase tracking-widest text-[10px] ${
-                        role === 'vendedor' ? 'bg-violet-500 hover:bg-violet-600 border-violet-600 shadow-violet-500/20' :
-                        role === 'gerente' ? 'bg-emerald-500 hover:bg-emerald-600 border-emerald-600 shadow-emerald-500/20' :
-                        role === 'administrador' ? 'bg-rose-500 hover:bg-rose-600 border-rose-600 shadow-rose-500/20' :
-                        'bg-blue-500 hover:bg-blue-600 border-blue-600 shadow-blue-500/20'
-                      }`}
+                      className="w-full flex items-center justify-center gap-2 px-3.5 py-3 rounded-xl shadow-xs border transition-all cursor-pointer active:scale-[0.98] touch-manipulation text-primary-foreground font-black uppercase tracking-widest text-[10px] bg-primary hover:bg-primary-strong border-primary-strong shadow-primary/20"
                       title="Consultar rastreo logístico"
                     >
                       <Truck size={14} className="group-hover:scale-110 transition-transform" />
@@ -1382,9 +1380,9 @@ export const DashboardPedidos = ({ role }) => {
                 <tr key={uId}>
                   <td className="p-6 text-center">
                     {role === 'comprador' && !item.numOC ? (
-                      <button onClick={() => toggleSeleccion(uId)} className={`relative flex items-center justify-center mx-auto transition-colors ${seleccionados.includes(uId) ? 'text-blue-500' : 'text-slate-200 hover:text-slate-300'}`}>
+                      <button onClick={() => toggleSeleccion(uId)} className={`relative flex items-center justify-center mx-auto transition-colors ${seleccionados.includes(uId) ? 'text-primary' : 'text-slate-200 hover:text-slate-300'}`}>
                         {seleccionados.includes(uId) && (
-                          <span className="absolute inset-0 rounded border-2 border-blue-500 animate-expand-wave pointer-events-none" />
+                          <span className="absolute inset-0 rounded border-2 border-primary animate-expand-wave pointer-events-none" />
                         )}
                         {seleccionados.includes(uId) ? (
                           <CheckSquare size={22} fill="currentColor" className="relative z-10 animate-pop-in" />
@@ -1395,7 +1393,7 @@ export const DashboardPedidos = ({ role }) => {
                     ) : <ClipboardCheck size={20} className="text-slate-200 mx-auto" />}
                   </td>
                   <td className="p-6">
-                    <p className="text-[9px] font-black text-blue-500 flex items-center gap-1 uppercase mb-1">
+                    <p className="text-[9px] font-black text-primary-strong flex items-center gap-1 uppercase mb-1">
                       <Hash size={10}/> {item.correlativo} — {item.cliente}
                     </p>
                     <p className="text-[11px] font-black text-slate-800 uppercase leading-tight">{item.descripcion || item.desc}</p>
@@ -1408,11 +1406,11 @@ export const DashboardPedidos = ({ role }) => {
                   <td className="p-6 text-center font-black text-xs text-slate-400">{item.cantidad || item.cant}</td>
                   <td className="p-6 text-right whitespace-nowrap">
                     <p className="text-[11px] font-black text-slate-800">${Number(item.precio || 0).toFixed(2)}</p>
-                    <p className="text-[9px] font-bold text-emerald-500 uppercase">Total: ${ventaTotal.toFixed(2)}</p>
+                    <p className="text-[9px] font-bold text-slate-800 uppercase">Total: ${ventaTotal.toFixed(2)}</p>
                   </td>
                   {(role === 'comprador' || role === 'administrador') && (
                     <td className="p-6 bg-slate-50/50">
-                      <div className="flex items-center gap-1 border-2 border-slate-200 rounded-lg p-1 bg-white">
+                      <div className="flex items-center justify-center gap-1 border-2 border-slate-200 rounded-lg p-1 bg-white">
                         <span className="text-[9px] font-bold text-slate-400">$</span>
                         <input type="number" value={item.fobReal} disabled={!!item.numOC} onChange={(e) => handleFobChange(uId, e.target.value)} className="w-16 text-[11px] font-black outline-none bg-transparent" />
                       </div>
@@ -1500,7 +1498,7 @@ export const DashboardPedidos = ({ role }) => {
               <button
                 type="button"
                 onClick={() => setShowAsignador(true)}
-                className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full px-6 py-3 shadow-xl shadow-emerald-500/25 flex items-center gap-3 font-black text-xs uppercase tracking-widest active:scale-95 transition-transform min-h-[48px] cursor-pointer"
+                className="bg-primary hover:bg-primary-strong text-primary-foreground rounded-full px-6 py-3 shadow-xl shadow-primary/25 flex items-center gap-3 font-black text-xs uppercase tracking-widest active:scale-95 transition-transform min-h-[48px] cursor-pointer"
               >
                 <LinkIcon size={18} />
                 Vincular Selección ({seleccionados.length})

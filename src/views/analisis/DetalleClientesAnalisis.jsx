@@ -4,6 +4,8 @@ import { ArrowLeft, Search, Building, Download } from 'lucide-react';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { Etiqueta } from '../../components/Etiqueta';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { acumularFaseSeguimiento, describirFasesSeguimiento, obtenerFaseSolicitudCacheada } from '../../utils/faseSeguimiento';
 import { getRoleTheme } from './theme';
 import { contarDecisiones } from './utils/decisionMetrics';
@@ -192,34 +194,18 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
   }
 
   return (
-    <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
-      {/* CABECERA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/analisis')}
-            className="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200/80 transition-colors shadow-xs cursor-pointer"
-            title="Volver a Análisis"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Etiqueta dominio="rol" valor={theme.key}>
-                Directorio
-              </Etiqueta>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Directorio de Clientes
-            </h1>
-            <p className="text-slate-400 text-xs font-medium mt-0.5">
-              Análisis consolidado por cliente ({todosLosClientes.length} empresas registradas)
-            </p>
-          </div>
-        </div>
-
-        {/* ORDENAMIENTO */}
+    <PageContainer className="animate-in fade-in duration-300 space-y-5 pb-12">
+      <PageHeader
+        onBack={() => navigate('/analisis')}
+        backLabel="Volver a Análisis"
+        title="Directorio de Clientes"
+        statusChip={
+          <Etiqueta dominio="rol" valor={theme.key}>
+            Directorio
+          </Etiqueta>
+        }
+        subtitle={<>Análisis consolidado por cliente ({todosLosClientes.length} empresas registradas)</>}
+        actions={
         <div className="flex overflow-x-auto whitespace-nowrap items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <span className="text-[10px] font-medium text-slate-400 ml-2 shrink-0">Ordenar:</span>
           {[
@@ -244,7 +230,9 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
             </button>
           ))}
         </div>
-      </div>
+        }
+      />
+
 
       {/* BUSCADOR */}
       <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
@@ -273,7 +261,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                 periodoLabel
               });
             }}
-            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
             title="Exportar todos los movimientos de clientes a Excel"
           >
             <Download size={13} />
@@ -309,7 +297,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         <Building size={20} />
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-blue-600 transition-colors">{c.cliente}</h3>
+                        <h3 className="font-bold text-slate-900 text-sm line-clamp-1 group-hover:text-primary-strong transition-colors">{c.cliente}</h3>
                       </div>
                     </div>
                     <Etiqueta tono="neutral" mono className="shrink-0">#{numGlobal}</Etiqueta>
@@ -323,7 +311,6 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                     <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-blue-600/70 font-medium">Cotizadas</span>
                       <span className="font-bold font-mono text-blue-700">{c.cotizadas}</span>
-                      <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)} className="mt-1">{c.enSeguimiento > 0 ? `${c.enSeguimiento} en seg.` : null}</Etiqueta>
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-emerald-600/70 font-medium">Pedidos</span>
@@ -344,13 +331,26 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                     navigate={navigate}
                   />
                   <div className="space-y-1.5 border-t border-slate-100 pt-2 text-[11px]">
+                    {c.enSeguimiento > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">En seguimiento de cliente</span>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}?seguimiento=1`)}
+                          aria-label={`Ver ${c.enSeguimiento} solicitudes en seguimiento de ${c.cliente}`}
+                          className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        >
+                          <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento} solicitudes` : null}</Etiqueta>
+                        </button>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Volumen Estimado</span>
                       <span className="font-mono font-bold text-slate-800">{formatearDinero(c.montoTotal)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Conversión</span>
-                      <span className="font-mono font-bold text-blue-600">{convPct}%</span>
+                      <span className="font-mono font-bold text-slate-800">{convPct}%</span>
                     </div>
                   </div>
 
@@ -377,13 +377,14 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                     <th className="py-2.5 px-3.5 whitespace-normal">Cliente</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Total RFQs</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Cotizadas</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-nowrap" title="Solicitudes cotizadas en revisión, prórroga o vencidas">En seguimiento</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Anulaciones</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Ventas perdidas</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Rechazos</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ganadas (Pedidos)</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Conversión</th>
                     <th className="py-2.5 px-3.5 text-right whitespace-normal">Volumen Estimado</th>
-                    <th className="py-2.5 px-3.5 text-right whitespace-normal">Detalle</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Detalle</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -417,7 +418,18 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         </td>
                         <td className="py-2.5 px-3.5 text-center font-mono text-slate-600">
                           {c.cotizadas}
-                          <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(c.fasesSeguimiento)} className="block mt-0.5 mx-auto w-fit">{c.enSeguimiento > 0 ? `${c.enSeguimiento} en seguimiento` : null}</Etiqueta>
+                        </td>
+                        <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
+                          {c.enSeguimiento > 0
+                            ? <button
+                                type="button"
+                                onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}?seguimiento=1`)}
+                                aria-label={`Ver ${c.enSeguimiento} solicitudes en seguimiento de ${c.cliente}`}
+                                className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                              >
+                                <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(c.fasesSeguimiento)}>{c.enSeguimiento > 0 ? `${c.enSeguimiento}` : null}</Etiqueta>
+                              </button>
+                            : <span className="font-mono text-slate-300 text-xs">---</span>}
                         </td>
                         <DecisionSummaryColumns counts={c} basePath={`/analisis/cliente/${encodeURIComponent(c.cliente)}`} navigate={navigate} />
                         <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700 whitespace-nowrap">
@@ -434,7 +446,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                         <td className="py-2.5 px-3.5 text-right font-mono font-semibold text-slate-900">
                           {formatearDinero(c.montoTotal)}
                         </td>
-                        <td className="py-2.5 px-3.5 text-right">
+                        <td className="py-2.5 px-3.5 text-center">
                           <button
                             type="button"
                             onClick={() => navigate(`/analisis/cliente/${encodeURIComponent(c.cliente)}`)}
@@ -460,6 +472,6 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
         noun="clientes"
         onPageChange={setCurrentPage}
       />
-    </div>
+    </PageContainer>
   );
 };

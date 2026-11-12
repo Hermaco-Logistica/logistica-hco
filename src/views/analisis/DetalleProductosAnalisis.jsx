@@ -4,6 +4,8 @@ import { ArrowLeft, Search, Package, ChevronRight, Download, X, User, Building }
 import { extraerTodosLosMovimientos, exportarMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { Etiqueta } from '../../components/Etiqueta';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
@@ -215,61 +217,47 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
   }
 
   return (
-    <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
-      {/* CABECERA */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/analisis')}
-            className="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200/80 transition-colors shadow-xs cursor-pointer"
-            title="Volver a Análisis"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Etiqueta dominio="rol" valor={theme.key}>
-                Catálogo
-              </Etiqueta>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Top Productos Más Cotizados
-            </h1>
-            <p className="text-slate-400 text-xs font-medium mt-0.5">
-              Demanda de productos y unidades solicitadas ({todosLosProductos.length} productos analizados)
-            </p>
-          </div>
-        </div>
+    <PageContainer className="animate-in fade-in duration-300 space-y-5 pb-12">
+      <PageHeader
+        onBack={() => navigate('/analisis')}
+        backLabel="Volver a Análisis"
+        title="Top Productos Más Cotizados"
+        statusChip={
+          <Etiqueta dominio="rol" valor={theme.key}>
+            Catálogo
+          </Etiqueta>
+        }
+        subtitle={<>Demanda de productos y unidades solicitadas ({todosLosProductos.length} productos analizados)</>}
+      />
 
-        {/* SELECTOR DE ORDENAMIENTO */}
-        <div className="flex overflow-x-auto whitespace-nowrap items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <span className="text-[10px] font-medium text-slate-400 ml-2 shrink-0">Ordenar:</span>
-          {[
-            { id: 'veces', label: 'Más cotizados' },
-            { id: 'unidades', label: 'Mayor volumen' },
-            { id: 'pedidos', label: 'Más ganados' },
-            { id: 'anulaciones', label: 'Más anulaciones' },
-            { id: 'decisiones', label: 'Más decisiones' },
-            { id: 'ventasPerdidas', label: 'Más ventas perdidas' },
-            { id: 'rechazos', label: 'Más rechazos' },
-          ].map((btn) => (
-            <button
-              key={btn.id}
-              id={`ord-prod-${btn.id}`}
-              type="button"
-              onClick={() => { setOrdenarPor(btn.id); setCurrentPage(1); }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
-                ordenarPor === btn.id 
-                  ? 'bg-slate-900 text-white shadow-xs font-semibold' 
-                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-              }`}
-            >
-              {btn.label}
-            </button>
-          ))}
-        </div>
+      {/* SELECTOR DE ORDENAMIENTO */}
+      <div className="flex overflow-x-auto whitespace-nowrap items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <span className="text-[10px] font-medium text-slate-400 ml-2 shrink-0">Ordenar:</span>
+        {[
+          { id: 'veces', label: 'Más cotizados' },
+          { id: 'unidades', label: 'Mayor volumen' },
+          { id: 'pedidos', label: 'Más ganados' },
+          { id: 'anulaciones', label: 'Más anulaciones' },
+          { id: 'decisiones', label: 'Más decisiones' },
+          { id: 'ventasPerdidas', label: 'Más ventas perdidas' },
+          { id: 'rechazos', label: 'Más rechazos' },
+        ].map((btn) => (
+          <button
+            key={btn.id}
+            id={`ord-prod-${btn.id}`}
+            type="button"
+            onClick={() => { setOrdenarPor(btn.id); setCurrentPage(1); }}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer shrink-0 ${
+              ordenarPor === btn.id 
+                ? 'bg-slate-900 text-white shadow-xs font-semibold' 
+                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+            }`}
+          >
+            {btn.label}
+          </button>
+        ))}
       </div>
+
 
       {/* BUSCADOR Y FILTROS CONTEXTUALES */}
       <div className="bg-white p-3 rounded-2xl shadow-[var(--tf-shadow-card)] flex flex-col md:flex-row gap-3 items-start md:items-center justify-between">
@@ -344,7 +332,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                 periodoLabel: filtrosActivos.join(' | ')
               });
             }}
-            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
             title="Exportar todos los movimientos de productos a Excel"
           >
             <Download size={13} />
@@ -377,7 +365,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                         <Package size={20} />
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-900 text-sm line-clamp-2 group-hover:text-blue-600 transition-colors uppercase">{p.desc}</h3>
+                        <h3 className="font-bold text-slate-900 text-sm line-clamp-2 group-hover:text-primary-strong transition-colors uppercase">{p.desc}</h3>
                         <p className="text-[10px] text-slate-500 line-clamp-1">{p.marcaPrincipal}</p>
                       </div>
                     </div>
@@ -388,7 +376,6 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-slate-400 font-medium">Cotizados</span>
                       <span className="font-bold font-mono text-slate-700">{p.vecesCotizado} <span className="text-[9px] font-normal">veces</span></span>
-                      <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(p.fasesSeguimiento)} className="mt-1">{p.enSeguimiento > 0 ? `${p.enSeguimiento} en seg.` : null}</Etiqueta>
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-emerald-600/70 font-medium">Ganados</span>
@@ -400,7 +387,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-emerald-600/70 font-medium">Und. Pedidas</span>
-                      <span className="font-bold font-mono text-emerald-700">{p.unidadesPedidas.toLocaleString()}</span>
+                      <span className="font-bold font-mono text-slate-800">{p.unidadesPedidas.toLocaleString()}</span>
                     </div>
                   </div>
                   
@@ -410,6 +397,19 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     navigate={navigate}
                   />
                   <div className="space-y-1.5 border-t border-slate-100 pt-2 text-[11px]">
+                    {p.enSeguimiento > 0 && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-slate-500">En seguimiento</span>
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}?seguimiento=1`)}
+                          aria-label={`Ver ${p.enSeguimiento} ítems en seguimiento de ${p.desc}`}
+                          className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                        >
+                          <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(p.fasesSeguimiento)}>{p.enSeguimiento > 0 ? `${p.enSeguimiento} ítems` : null}</Etiqueta>
+                        </button>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">Clientes</span>
                       <span className="font-mono font-bold text-slate-800">{p.totalClientes}</span>
@@ -438,15 +438,16 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     <th className="py-2.5 px-3.5 whitespace-normal">#</th>
                     <th className="py-2.5 px-3.5 whitespace-normal">Descripción del Producto</th>
                     <th className="py-2.5 px-3.5 whitespace-normal">Marca</th>
-                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Veces Cotizado</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Veces Cotizado</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal" title="Ítems en revisión, prórroga o vencidos">En seguimiento</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Anulaciones</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Ventas perdidas</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Rechazos</th>
-                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Unidades Cotizadas</th>
-                    <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Cotizaciones Ganadas</th>
-                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Unidades Pedidas</th>
-                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Clientes</th>
-                    <th className="py-2.5 px-3.5 text-right whitespace-normal">Historial</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Unidades Cotizadas</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Cotizaciones Ganadas</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Unidades Pedidas</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Clientes</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Historial</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -465,7 +466,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                             <div className="w-6 h-6 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-[10px] shrink-0 group-hover/item:bg-slate-800 group-hover/item:text-white transition-colors">
                               <Package size={12} />
                             </div>
-                            <span className="font-semibold text-slate-800 text-xs max-w-sm truncate group-hover/item:text-blue-600 transition-colors uppercase" title={p.desc}>
+                            <span className="font-semibold text-slate-800 text-xs max-w-sm truncate group-hover/item:text-primary-strong transition-colors uppercase" title={p.desc}>
                               {p.desc}
                             </span>
                           </div>
@@ -475,19 +476,30 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                             {p.marcaPrincipal}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3.5 text-center">
+                        <td className="py-2.5 px-2.5 text-center">
                           <Etiqueta tono="neutral" tamano="normal" mono>
                             {p.vecesCotizado} RFQ{p.vecesCotizado > 1 ? 's' : ''}
                           </Etiqueta>
-                          <Etiqueta tono="violeta" titulo={describirFasesSeguimiento(p.fasesSeguimiento)} className="block mt-0.5 mx-auto w-fit">{p.enSeguimiento > 0 ? `${p.enSeguimiento} ítems en seguimiento` : null}</Etiqueta>
+                        </td>
+                        <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
+                          {p.enSeguimiento > 0
+                            ? <button
+                                type="button"
+                                onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}?seguimiento=1`)}
+                                aria-label={`Ver ${p.enSeguimiento} ítems en seguimiento de ${p.desc}`}
+                                className="inline-flex rounded-lg cursor-pointer transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                              >
+                                <Etiqueta tono="seguimiento" titulo={describirFasesSeguimiento(p.fasesSeguimiento)}>{p.enSeguimiento > 0 ? `${p.enSeguimiento}` : null}</Etiqueta>
+                              </button>
+                            : <span className="font-mono text-slate-300 text-xs">---</span>}
                         </td>
                         <DecisionSummaryColumns counts={p} basePath={`/analisis/producto/${encodeURIComponent(p.desc)}`} navigate={navigate} />
-                        <td className="py-2.5 px-3.5 text-center">
+                        <td className="py-2.5 px-2.5 text-center">
                           <span className="inline-block font-mono text-slate-800 font-semibold text-xs">
                             {p.unidadesCotizadas.toLocaleString()}
                           </span>
                         </td>
-                        <td className="py-2.5 px-3.5 text-center">
+                        <td className="py-2.5 px-2.5 text-center">
                           <Etiqueta tono="exito" tamano="normal" mono>
                             {p.vecesPedido}
                             {p.vecesCotizado > 0 && (
@@ -497,13 +509,13 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                             )}
                           </Etiqueta>
                         </td>
-                        <td className="py-2.5 px-3.5 text-center font-mono font-bold text-emerald-700">
+                        <td className="py-2.5 px-2.5 text-center font-mono font-bold text-slate-800">
                           {p.unidadesPedidas.toLocaleString()}
                         </td>
-                        <td className="py-2.5 px-3.5 text-center font-mono text-slate-500">
+                        <td className="py-2.5 px-2.5 text-center font-mono text-slate-500">
                           {p.totalClientes}
                         </td>
-                        <td className="py-2.5 px-3.5 text-right">
+                        <td className="py-2.5 px-2.5 text-center">
                           <button
                             type="button"
                             onClick={() => navigate(`/analisis/producto/${encodeURIComponent(p.desc)}`)}
@@ -529,6 +541,6 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
         noun="productos"
         onPageChange={setCurrentPage}
       />
-    </div>
+    </PageContainer>
   );
 };

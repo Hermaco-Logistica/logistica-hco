@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Check, X, MessageSquare, ArrowLeftRight, TrendingDown, MessageCircleQuestion, Undo2 } from 'lucide-react';
 import { auth } from '../../firebase';
+import { VARIANTES_ACCION } from './negociacion/variantesAccion';
 import { HiloComentariosItem } from '../hilos/HiloComentariosItem';
 import { EstadoItemChip } from './negociacion/EstadoItemChip';
 import { FormularioOferta } from './negociacion/FormularioOferta';
@@ -144,7 +145,7 @@ export const DetallePedidoMobileCard = ({
           <button
             type="button"
             onClick={() => setHiloAbierto(hiloAbierto === idx ? null : idx)}
-            className={`relative inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${hiloAbierto === idx ? 'border-purple-300 bg-purple-100 text-purple-700' : 'border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            className={`relative inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${hiloAbierto === idx ? 'border-primary/30 bg-primary-soft text-primary-strong hover:bg-primary/15' : 'border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
             aria-label={`Mensajes del ítem${msgCount > 0 ? ` (${msgCount})` : ''}`}
             title={`Mensajes${msgCount > 0 ? ` (${msgCount})` : ''}`}
           >
@@ -210,10 +211,10 @@ export const DetallePedidoMobileCard = ({
         <div className="order-5 pedido-mobile-actions-grid" aria-label="Acciones del ítem">
           {isMyTurn && puedeResponder && !esCerrado && !stagedVP && (
             <>
-              <button type="button" onClick={() => actions.aceptar(idx, versionEsperada)} className="pedido-mobile-action pedido-mobile-action--accept" aria-label={`Aceptar oferta vigente de $${Number(currentFob).toFixed(2)}`}>
+              <button type="button" onClick={() => actions.aceptar(idx, versionEsperada)} className={`pedido-mobile-action ${VARIANTES_ACCION.approve}`} aria-label={`Aceptar oferta vigente de $${Number(currentFob).toFixed(2)}`}>
                 <Check size={16} /><span>Aceptar</span>
               </button>
-              <button type="button" onClick={() => setShowAdjustForm(true)} className="pedido-mobile-action pedido-mobile-action--counter" aria-label="Contraofertar">
+              <button type="button" onClick={() => setShowAdjustForm(true)} className={`pedido-mobile-action ${VARIANTES_ACCION.counter}`} aria-label="Contraofertar">
                 <ArrowLeftRight size={16} /><span>Contraofertar</span>
               </button>
               <button type="button" onClick={() => {
@@ -224,23 +225,23 @@ export const DetallePedidoMobileCard = ({
                   if (!motivo.trim()) { alert('Debes ingresar un motivo para rechazar la oferta.'); return; }
                   actions.rechazar(idx, versionEsperada, motivo.trim());
                 }
-              }} className="pedido-mobile-action pedido-mobile-action--reject" aria-label="Rechazar oferta de Compras">
+              }} className={`pedido-mobile-action ${VARIANTES_ACCION.reject}`} aria-label="Rechazar oferta de Compras">
                 <X size={16} /><span>Rechazar</span>
               </button>
             </>
           )}
           {!isMyTurn && neg.sinNotificar && neg.ultimoCambio?.rol === 'vendedor' && (
-            <button type="button" onClick={() => actions.deshacer(idx, versionEsperada)} className="pedido-mobile-action pedido-mobile-action--neutral" aria-label="Deshacer cambios">
+            <button type="button" onClick={() => actions.deshacer(idx, versionEsperada)} className={`pedido-mobile-action ${VARIANTES_ACCION.reject}`} aria-label="Deshacer cambios">
               <Undo2 size={16} /><span>Deshacer</span>
             </button>
           )}
           {puedeRegistrarVentaPerdida && !esCerrado && !stagedVP && (
-            <button type="button" onClick={onVentaPerdida} className="pedido-mobile-action pedido-mobile-action--loss" aria-label="Registrar venta perdida" title={esEstancado ? 'Registrar Venta Perdida comercial (>5 días hábiles)' : 'Registrar Venta Perdida de este ítem'}>
+            <button type="button" onClick={onVentaPerdida} className={`pedido-mobile-action ${VARIANTES_ACCION.lost}`} aria-label="Registrar venta perdida" title={esEstancado ? 'Registrar Venta Perdida comercial (>5 días hábiles)' : 'Registrar Venta Perdida de este ítem'}>
               <TrendingDown size={16} /><span>Venta perdida</span>
             </button>
           )}
           {stagedVP && onDeshacerVentaPerdida && (
-            <button type="button" onClick={onDeshacerVentaPerdida} className="pedido-mobile-action pedido-mobile-action--neutral" aria-label="Deshacer venta perdida pendiente">
+            <button type="button" onClick={onDeshacerVentaPerdida} className={`pedido-mobile-action ${VARIANTES_ACCION.reject}`} aria-label="Deshacer venta perdida pendiente">
               <Undo2 size={16} /><span>Deshacer VP</span>
             </button>
           )}

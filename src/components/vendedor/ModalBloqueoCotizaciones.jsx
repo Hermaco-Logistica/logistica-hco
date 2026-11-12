@@ -5,6 +5,7 @@ import { Modal, ModalBoton, ModalEncabezado, ModalPestanas, ModalPie } from '../
 import { ESTADOS_SEGUIMIENTO_CLIENTE, obtenerResumenSeguimientoCliente } from '../../utils/seguimientoCliente';
 import { StatusChip } from '../detalle/StatusChip';
 import { Etiqueta } from '../../components/Etiqueta';
+import { Button } from '../ui/Button';
 
 const obtenerIntensidadAntiguedad = (dias) => {
   const diasTranscurridos = Math.max(0, Number(dias) || 0);
@@ -101,7 +102,7 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
       <div className="px-3 pt-3 sm:px-6 sm:pt-5">
         <ModalPestanas
           etiqueta="Filtro de cotizaciones"
-          tono="aviso"
+          tono="rol"
           activa={pestana}
           onElegir={setPestana}
           opciones={[
@@ -122,8 +123,8 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
           ) : (
             <>
               {/* Vista Desktop (≥ 768px): fixed layout sin desborde horizontal en ≥ 1100px */}
-              <div className="hidden md:block rounded-[10px] border border-[var(--detalle-border)] bg-[var(--detalle-surface)] overflow-x-auto">
-                <table className="w-full text-left" style={{ tableLayout: 'fixed', minWidth: '980px' }}>
+              <div className="hidden md:block tf-tabla-card">
+                <table className="tf-tabla text-left" style={{ tableLayout: 'fixed', minWidth: '980px' }}>
                   <colgroup>
                     <col style={{ width: '18%' }} />
                     <col style={{ width: '28%' }} />
@@ -133,21 +134,18 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
                     <col style={{ width: '11%' }} />
                     <col style={{ width: '11%' }} />
                   </colgroup>
-                  <thead
-                    style={{ backgroundColor: 'var(--tf-color-sidebar)' }}
-                    className="sticky top-0 z-10 text-[11px] font-semibold uppercase tracking-wider text-slate-200"
-                  >
-                    <tr>
+                  <thead className="sticky -top-6 z-10">
+                    <tr className="tf-tabla-head">
                       <th className="px-4 py-3">Solicitud</th>
                       <th className="px-4 py-3">Cliente / Ítems</th>
                       <th className="px-4 py-3">Fecha resp.</th>
                       <th className="px-4 py-3">Tiempo</th>
                       <th className="px-4 py-3 text-right">Aéreo</th>
                       <th className="px-4 py-3 text-right">Marítimo</th>
-                      <th className="px-4 py-3 text-right">Acción</th>
+                      <th className="px-4 py-3 text-center">Acción</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[var(--detalle-border)] bg-white text-[13px]">
+                  <tbody className="text-[13px]">
                     {cotizacionesVisibles.map((c) => {
                       const esPedido = c.tipo === 'Pedido Manual';
                       const itemsEst = c.itemsEstancados || [];
@@ -155,7 +153,7 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
                       const totalMaritimoEst = c.totalesEstancados?.totalMaritimo ?? c.totalMaritimo;
 
                       return (
-                        <tr key={c.id} className="hover:bg-[var(--detalle-surface-muted)] transition-colors">
+                        <tr key={c.id}>
                           {/* Solicitud: ref mono + chips */}
                           <td className="px-4 py-3.5 align-top">
                             <span className="font-mono text-[12px] font-semibold text-[var(--detalle-text)]">
@@ -220,17 +218,17 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
                             </div>
                           </td>
 
-                          {/* Acción: botón de 32px con var(--tf-color-brand-strong) */}
+                          {/* Acción: botón primario de 32px */}
                           <td className="px-4 py-3.5 align-top text-right">
-                            <button
-                              type="button"
+                            <Button
+                              variant="primary"
+                              size="sm"
                               onClick={() => handleIrADetalle(c)}
-                              style={{ backgroundColor: 'var(--tf-color-brand-strong)' }}
-                              className="inline-flex h-[32px] w-full items-center justify-center gap-1 rounded-[6px] px-2 text-[12px] font-semibold text-white transition-opacity hover:opacity-90 cursor-pointer"
+                              className="h-8 w-full"
                             >
                               <span>Atender</span>
                               <ArrowRight size={13} />
-                            </button>
+                            </Button>
                           </td>
                         </tr>
                       );
@@ -290,8 +288,7 @@ export const ModalBloqueoCotizaciones = ({ cotizaciones = [], onVolver = null })
                         <button
                           type="button"
                           onClick={() => handleIrADetalle(c)}
-                          style={{ backgroundColor: 'var(--tf-color-brand-strong)' }}
-                          className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-[10px] px-4 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+                          className="inline-flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-[10px] bg-primary px-4 text-[13px] font-semibold text-primary-foreground transition-colors hover:bg-primary-strong"
                         >
                           <span>Atender</span>
                           <ArrowRight size={14} />

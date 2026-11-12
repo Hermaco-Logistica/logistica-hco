@@ -356,7 +356,7 @@
   }
   .tf-tabla-head > th {
     background-color: var(--color-primary-soft);
-    color: color-mix(in srgb, var(--tf-color-brand-strong) 50%, var(--tf-color-sidebar));
+    color: color-mix(in srgb, var(--color-primary-strong) 50%, var(--color-secondary));
     font-size: 12px;
     font-weight: 500;
     white-space: nowrap;

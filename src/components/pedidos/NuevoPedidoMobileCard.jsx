@@ -45,7 +45,7 @@ export const NuevoPedidoMobileCard = ({
           <input 
             type="text" 
             required
-            className={`w-full p-3 rounded-xl outline-none font-bold uppercase text-base transition-all shadow-xs ${intentoGuardar && errores?.desc ? 'border border-rose-500 bg-rose-50 text-rose-700 placeholder-rose-300' : 'bg-white border border-slate-200 text-slate-700 focus:border-emerald-500'}`}
+            className={`w-full p-3 rounded-xl outline-none font-bold uppercase text-base transition-all shadow-xs ${intentoGuardar && errores?.desc ? 'border border-rose-500 bg-rose-50 text-rose-700 placeholder-rose-300' : 'bg-white border border-slate-200 text-slate-700 focus:border-primary'}`}
             placeholder="SKU o nombre del ítem..."
             value={p.desc}
             onFocus={() => {
@@ -110,7 +110,7 @@ export const NuevoPedidoMobileCard = ({
                 <div className="p-2 border-t border-slate-100 bg-slate-50 rounded-b-lg">
                   <button
                     type="button"
-                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded flex items-center gap-2 transition-colors"
+                    className="w-full text-left px-3 py-2 text-xs font-bold text-slate-500 hover:text-primary-strong hover:bg-primary-soft rounded flex items-center gap-2 transition-colors"
                     onMouseDown={() => {
                       setModalNuevoProd({ isOpen: true, idx, sku: p.desc || '', producto: '', marca: p.marca || '', saving: false });
                       updateMarcaState(setMostrarSugerenciasProducto, idx, false);
@@ -134,7 +134,7 @@ export const NuevoPedidoMobileCard = ({
           <div className="relative">
             <input 
               type="text" 
-              className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-blue-600 text-base italic focus:border-emerald-500 transition-all shadow-xs"
+              className="w-full p-3 bg-white border border-slate-200 rounded-xl outline-none font-bold text-primary-strong text-base italic focus:border-primary transition-all shadow-xs"
               placeholder="Marca..."
               value={p.marca}
               onFocus={() => {
@@ -197,7 +197,7 @@ export const NuevoPedidoMobileCard = ({
           <input 
             type="number" 
             min="1"
-            className={`w-full p-3 rounded-xl text-center font-black text-base outline-none transition-all shadow-xs ${intentoGuardar && errores?.cant ? 'border border-rose-500 bg-rose-50 text-rose-700' : 'bg-white border border-slate-200 text-slate-700 focus:border-emerald-500'}`}
+            className={`w-full p-3 rounded-xl text-center font-black text-base outline-none transition-all shadow-xs ${intentoGuardar && errores?.cant ? 'border border-rose-500 bg-rose-50 text-rose-700' : 'bg-white border border-slate-200 text-slate-700 focus:border-primary'}`}
             value={p.cant}
             onChange={(e) => updateProducto(idx, 'cant', parseInt(e.target.value) || 1)}
           />
@@ -214,7 +214,7 @@ export const NuevoPedidoMobileCard = ({
             <input 
               type="number" 
               min="0" step="0.01"
-              className={`w-full p-3 pl-7 rounded-xl font-black text-base outline-none transition-all shadow-xs ${intentoGuardar && errores?.precio ? 'border border-rose-500 bg-rose-50 text-rose-700 placeholder-rose-300' : 'bg-white border border-slate-200 text-emerald-700 focus:border-emerald-500'}`}
+              className={`w-full p-3 pl-7 rounded-xl font-black text-base outline-none transition-all shadow-xs ${intentoGuardar && errores?.precio ? 'border border-rose-500 bg-rose-50 text-rose-700 placeholder-rose-300' : 'bg-white border border-slate-200 text-slate-800 focus:border-primary'}`}
               value={p.precio || ''}
               onChange={(e) => {
                 let val = parseFloat(e.target.value);
@@ -231,7 +231,7 @@ export const NuevoPedidoMobileCard = ({
           </label>
           <input 
             type="number" min="0" step="1"
-            className={`w-full p-3 rounded-xl font-bold text-base outline-none transition-all shadow-xs ${intentoGuardar && errores?.tiempoEntrega ? 'border border-rose-500 bg-rose-50 text-rose-700 placeholder-rose-300' : 'bg-white border border-slate-200 text-slate-700 focus:border-emerald-500'}`}
+            className={`w-full p-3 rounded-xl font-bold text-base outline-none transition-all shadow-xs ${intentoGuardar && errores?.tiempoEntrega ? 'border border-rose-500 bg-rose-50 text-rose-700 placeholder-rose-300' : 'bg-white border border-slate-200 text-slate-700 focus:border-primary'}`}
             value={p.tiempoEntrega || ''}
             onChange={(e) => {
               const val = e.target.value.replace(/\D/g, '');
@@ -249,7 +249,7 @@ export const NuevoPedidoMobileCard = ({
         <select
           value={p.modalidad || 'Aéreo'}
           onChange={(e) => updateProducto(idx, 'modalidad', e.target.value)}
-          className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-slate-700 text-sm outline-none focus:border-emerald-500 transition-all shadow-xs"
+          className="w-full p-3 bg-white border border-slate-200 rounded-xl font-black text-slate-700 text-sm outline-none focus:border-primary transition-all shadow-xs"
         >
           <option value="Aéreo">Aéreo</option>
           <option value="Marítimo">Marítimo</option>

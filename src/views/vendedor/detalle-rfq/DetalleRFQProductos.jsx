@@ -72,7 +72,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
               key={idx}
               className={`bg-white rounded-2xl p-4 border transition-all relative touch-manipulation active:scale-[0.98] ${
                 isSelected
-                  ? 'border-emerald-500 ring-2 ring-emerald-500/20 shadow-md'
+                  ? 'border-primary ring-2 ring-primary/20 shadow-md'
                   : yaFuePedido
                   ? 'border-emerald-200 shadow-sm'
                   : stagedVP
@@ -111,7 +111,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                       disabled={!puedeConfirmarPedido}
                       className={`w-6 h-6 rounded flex items-center justify-center transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-emerald-500 text-white shadow-xs'
+                          ? 'bg-primary text-primary-foreground shadow-xs'
                           : 'bg-slate-100 text-slate-400 hover:text-slate-600'
                       } ${!puedeConfirmarPedido ? 'opacity-40 cursor-not-allowed' : ''}`}
                     >
@@ -239,7 +239,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                 <div className="flex items-center justify-between mt-1.5 text-[10px]">
                   <div className="flex items-center min-w-0 pr-2">
                     {p.marca && (
-                      <span className="font-bold text-blue-700 uppercase truncate italic flex items-center gap-1">
+                      <span className="font-bold text-primary-strong uppercase truncate italic flex items-center gap-1">
                         <Tag size={10} className="shrink-0" /> <span className="truncate">{p.marca}</span>
                       </span>
                     )}
@@ -262,7 +262,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
 
                         <div className="w-px h-6 bg-slate-200 mx-0.5"></div>
                         
-                        <button onClick={(e) => { e.stopPropagation(); handleGuardarCant(idx); }} className="flex items-center justify-center w-8 h-8 bg-emerald-500 text-white hover:bg-emerald-600 rounded-lg shadow-sm transition-all active:scale-95"><CheckSquare size={16}/></button>
+                        <button onClick={(e) => { e.stopPropagation(); handleGuardarCant(idx); }} className="flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground hover:bg-primary-strong rounded-lg shadow-sm transition-all active:scale-95"><CheckSquare size={16}/></button>
                         <button onClick={(e) => { e.stopPropagation(); setEditandoCant({ index: null, value: '' }); }} className="flex items-center justify-center w-8 h-8 bg-white text-rose-500 border border-slate-200 hover:bg-rose-50 rounded-lg shadow-sm transition-all active:scale-95"><X size={18}/></button>
                       </div>
                     ) : (
@@ -273,7 +273,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                         {rfq?.estado === 'Pendiente' && (
                           <button 
                             onClick={(e) => { e.stopPropagation(); setEditandoCant({ index: idx, value: p.cant }); }} 
-                            className="flex items-center justify-center w-8 h-8 bg-white border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 rounded-full shadow-sm transition-all active:scale-95"
+                            className="flex items-center justify-center w-8 h-8 bg-white border border-slate-200 text-slate-500 hover:text-primary-strong hover:border-primary/30 hover:bg-primary-soft rounded-full shadow-sm transition-all active:scale-95"
                             title="Editar cantidad"
                           >
                             <Pencil size={14} />
@@ -294,39 +294,39 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                 <div className="pt-3 border-t border-slate-50 space-y-3">
                   {/* Precios Aéreo y Marítimo en grid de 2 columnas */}
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-emerald-50/40 rounded-xl p-2.5 border border-emerald-100/60 flex flex-col justify-between h-full">
+                    <div className="bg-mode-air-soft/40 rounded-xl p-2.5 border border-mode-air-100/60 flex flex-col justify-between h-full">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-1.5 text-[9px] font-black text-emerald-700 uppercase">
+                        <div className="flex items-center gap-1.5 text-[9px] font-black text-mode-air-strong uppercase">
                           <Plane size={11} className="text-emerald-500" /> Aéreo
                         </div>
-                        <div className="text-[9px] text-emerald-600/70 font-bold flex items-center gap-1">
+                        <div className="text-[9px] text-mode-air/70 font-bold flex items-center gap-1">
                           <Clock size={9}/> {p.entregaA} d
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs font-black text-emerald-950 leading-none">
+                        <div className="text-xs font-black text-mode-air-950 leading-none">
                           ${(ventaA * p.cant).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
-                        <div className="text-[8px] font-bold text-emerald-700/60 uppercase mt-0.5">
+                        <div className="text-[8px] font-bold text-mode-air-strong/60 uppercase mt-0.5">
                           ${ventaA.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ud
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-blue-50/40 rounded-xl p-2.5 border border-blue-100/60 flex flex-col justify-between h-full">
+                    <div className="bg-mode-sea-soft/40 rounded-xl p-2.5 border border-mode-sea-100/60 flex flex-col justify-between h-full">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-1.5 text-[9px] font-black text-blue-700 uppercase">
-                          <Ship size={11} className="text-blue-500" /> Marítimo
+                        <div className="flex items-center gap-1.5 text-[9px] font-black text-mode-sea-strong uppercase">
+                          <Ship size={11} className="text-mode-sea-500" /> Marítimo
                         </div>
-                        <div className="text-[9px] text-blue-600/70 font-bold flex items-center gap-1">
+                        <div className="text-[9px] text-mode-sea/70 font-bold flex items-center gap-1">
                           <Clock size={9}/> {p.entregaM} d
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs font-black text-blue-950 leading-none">
+                        <div className="text-xs font-black text-mode-sea-950 leading-none">
                           ${(ventaM * p.cant).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
-                        <div className="text-[8px] font-bold text-blue-700/60 uppercase mt-0.5">
+                        <div className="text-[8px] font-bold text-mode-sea-strong/60 uppercase mt-0.5">
                           ${ventaM.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ud
                         </div>
                       </div>
@@ -344,7 +344,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                         value={modalidades[idx]}
                         onChange={(e) => setModalidades(prev => ({ ...prev, [idx]: e.target.value }))}
                         disabled={!puedeConfirmarPedido}
-                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-black text-[10px] uppercase text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer shadow-xs"
+                        className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-black text-[10px] uppercase text-slate-800 outline-none focus:ring-2 focus:ring-primary transition-all cursor-pointer shadow-xs"
                       >
                         <option value="A">Aéreo</option>
                         <option value="M">Marítimo</option>
@@ -377,8 +377,8 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                 <th className="p-5 text-center">Pedir</th>
                 <th className="p-5">Producto / Marca</th>
                 <th className="p-5 text-center">Cant.</th>
-                <th className="p-5 text-center"><span className="inline-flex items-center gap-2 text-emerald-700"><span aria-hidden="true" className="size-2 rounded-full bg-emerald-700" />Venta Aéreo</span></th>
-                <th className="p-5 text-center"><span className="inline-flex items-center gap-2 text-blue-700"><span aria-hidden="true" className="size-2 rounded-full bg-blue-700" />Venta Marítimo</span></th>
+                <th className="p-5 text-center"><span className="inline-flex items-center gap-2 text-mode-air-strong"><span aria-hidden="true" className="size-2 rounded-full bg-mode-air-strong" />Venta Aéreo</span></th>
+                <th className="p-5 text-center"><span className="inline-flex items-center gap-2 text-mode-sea-strong"><span aria-hidden="true" className="size-2 rounded-full bg-mode-sea-strong" />Venta Marítimo</span></th>
                 <th className="p-5 text-center">Elegir Modalidad</th>
                 <th className="p-5">Tiempos y Entrega</th>
                 {mostrarColumnaAcciones && <th className="p-5 text-center">Acciones</th>}
@@ -439,7 +439,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                           disabled={!puedeConfirmarPedido}
                           className={`w-7 h-7 rounded-lg border flex items-center justify-center mx-auto transition-all ${
                             seleccionados[idx]
-                              ? 'bg-emerald-500 border-emerald-500 text-white shadow-md'
+                              ? 'bg-primary border-primary text-primary-foreground shadow-md'
                               : 'border-slate-300 text-transparent hover:border-slate-400'
                           } ${!puedeConfirmarPedido ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer active:scale-95'}`}
                         >
@@ -453,7 +453,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                     </td>
                     <td className="p-5">
                       <div className="font-black text-slate-800 uppercase leading-tight">{p.descripcion || p.desc}</div>
-                      <div className="flex items-center gap-1 mt-1 text-blue-600 font-bold italic text-[10px]"><Tag size={10} /> {p.marca || 'N/A'}</div>
+                      <div className="flex items-center gap-1 mt-1 text-primary-strong font-bold italic text-[10px]"><Tag size={10} /> {p.marca || 'N/A'}</div>
                       {estaAnulado ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase mt-2 tracking-widest text-rose-500">
                           <X size={12} strokeWidth={3} />
@@ -528,14 +528,14 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                             onChange={(e) => setEditandoCant({ ...editandoCant, value: e.target.value })}
                             autoFocus
                           />
-                          <button onClick={() => handleGuardarCant(idx)} className="text-emerald-600 hover:text-emerald-700"><CheckSquare size={18}/></button>
+                          <button onClick={() => handleGuardarCant(idx)} className="text-primary-strong hover:text-nav-accent-hover"><CheckSquare size={18}/></button>
                           <button onClick={() => setEditandoCant({ index: null, value: '' })} className="text-rose-600 hover:text-rose-700"><X size={18}/></button>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center gap-2">
                           {p.cant}
                           {rfq?.estado === 'Pendiente' && (
-                            <button title="Editar la cantidad" onClick={(e) => { e.stopPropagation(); setEditandoCant({ index: idx, value: p.cant }); }} className="text-slate-300 hover:text-blue-500 transition-colors">
+                            <button title="Editar la cantidad" onClick={(e) => { e.stopPropagation(); setEditandoCant({ index: idx, value: p.cant }); }} className="text-slate-300 hover:text-primary transition-colors">
                               <Pencil size={14} />
                             </button>
                           )}
@@ -543,7 +543,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                       )}
                     </td>
                     {rfq?.tipo === 'Pedido Manual' ? (
-                      <td className="p-5 text-center bg-emerald-50/30">
+                      <td className="p-5 text-center bg-mode-air-soft/30">
                         {estaCotizado ? (
                           p.estadoItem === 'Cotizado' ? (
                             <div className="flex flex-col gap-2">
@@ -553,22 +553,22 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                                   type="number"
                                   value={contraOfertas[idx]?.fob !== undefined ? contraOfertas[idx].fob : p.fob}
                                   onChange={(e) => setContraOfertas(prev => ({ ...prev, [idx]: { ...prev[idx], fob: e.target.value } }))}
-                                  className="w-24 pl-6 p-1.5 bg-white border border-emerald-300 rounded outline-none focus:border-emerald-500 font-bold text-emerald-700 text-sm mx-auto block"
+                                  className="w-24 pl-6 p-1.5 bg-white border border-primary/40 rounded outline-none focus:border-primary font-bold text-slate-800 text-sm mx-auto block"
                                 />
                               </div>
                             </div>
                           ) : (
-                            <div className="text-emerald-700 font-black text-base">${ventaA.toFixed(2)}</div>
+                            <div className="text-mode-air-strong font-black text-base">${ventaA.toFixed(2)}</div>
                           )
                         ) : <span className="text-slate-300 italic font-bold">---</span>}
                       </td>
                     ) : (
                       <>
-                        <td className="p-5 text-center bg-emerald-50/30">
-                          {estaCotizado ? <><div className="text-emerald-700 font-black text-base">${ventaA.toFixed(2)}</div><div className="text-[9px] text-emerald-500 font-bold uppercase">Total: ${(ventaA * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
+                        <td className="p-5 text-center bg-mode-air-soft/30">
+                          {estaCotizado ? <><div className="text-mode-air-strong font-black text-base">${ventaA.toFixed(2)}</div><div className="text-[9px] text-emerald-500 font-bold uppercase">Total: ${(ventaA * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
                         </td>
-                        <td className="p-5 text-center bg-blue-50/30">
-                          {estaCotizado ? <><div className="text-blue-700 font-black text-base">${ventaM.toFixed(2)}</div><div className="text-[9px] text-blue-500 font-bold uppercase">Total: ${(ventaM * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
+                        <td className="p-5 text-center bg-mode-sea-soft/30">
+                          {estaCotizado ? <><div className="text-mode-sea-strong font-black text-base">${ventaM.toFixed(2)}</div><div className="text-[9px] text-mode-sea-500 font-bold uppercase">Total: ${(ventaM * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
                         </td>
                       </>
                     )}
@@ -585,7 +585,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                             value={modalidades[idx]}
                             onChange={(e) => setModalidades(prev => ({ ...prev, [idx]: e.target.value }))}
                             disabled={!puedeConfirmarPedido}
-                            className="bg-slate-100 border-none rounded-lg p-2 font-black text-[10px] uppercase text-slate-600 outline-none focus:ring-2 focus:ring-emerald-500 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-slate-100 border-none rounded-lg p-2 font-black text-[10px] uppercase text-slate-600 outline-none focus:ring-2 focus:ring-primary transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <option value="A">Aéreo</option><option value="M">Marítimo</option>
                           </select>
@@ -602,7 +602,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                                   type="text"
                                   value={contraOfertas[idx]?.fechaCompromiso !== undefined ? contraOfertas[idx].fechaCompromiso : (p.fechaCompromiso || p.entregaA || '')}
                                   onChange={(e) => setContraOfertas(prev => ({ ...prev, [idx]: { ...prev[idx], fechaCompromiso: e.target.value } }))}
-                                  className="w-full p-1.5 bg-white border border-slate-300 rounded outline-none focus:border-emerald-500 font-bold text-slate-700 text-sm"
+                                  className="w-full p-1.5 bg-white border border-slate-300 rounded outline-none focus:border-primary font-bold text-slate-700 text-sm"
                                 />
                                 {(contraOfertas[idx]?.fob !== undefined || contraOfertas[idx]?.fechaCompromiso !== undefined) && (
                                   <button
@@ -622,11 +622,11 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                         ) : (
                           <div className="space-y-2">
                             <div className="flex flex-col">
-                               <span className="text-[9px] font-black text-emerald-600 uppercase">Aéreo</span>
+                               <span className="text-[9px] font-black text-mode-air uppercase">Aéreo</span>
                                <span className="font-bold text-slate-700">{p.entregaA} d.h. <span className="text-slate-400 font-medium ml-1">({obtenerFechaEstimada(p.entregaA)})</span></span>
                             </div>
                             <div className="flex flex-col">
-                               <span className="text-[9px] font-black text-blue-600 uppercase">Marítimo</span>
+                               <span className="text-[9px] font-black text-mode-sea uppercase">Marítimo</span>
                                <span className="font-bold text-slate-700">{p.entregaM} d.h. <span className="text-slate-400 font-medium ml-1">({obtenerFechaEstimada(p.entregaM)})</span></span>
                             </div>
                           </div>

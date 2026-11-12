@@ -5,16 +5,7 @@ import { useHiloItem } from '../../hooks/useHiloItem';
 import { PropuestaPrecioCard } from './PropuestaPrecioCard';
 import { tonoDe } from '../../utils/etiquetas';
 import { Etiqueta } from '../Etiqueta';
-
-const getRolColor = (rol) => {
-  switch (rol?.toLowerCase()) {
-    case 'vendedor': return 'bg-blue-500 text-white';
-    case 'comprador': return 'bg-purple-600 text-white';
-    case 'gerente': return 'bg-amber-500 text-white';
-    case 'administrador': return 'bg-rose-600 text-white';
-    default: return 'bg-slate-500 text-white';
-  }
-};
+import { Button } from '../ui/Button';
 
 const getIniciales = (nombre) => {
   if (!nombre) return '?';
@@ -274,7 +265,7 @@ export const HiloComentariosItem = ({
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
               <div className="relative">
-                <div className="w-10 h-10 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs shadow-xs">
+                <div className="w-10 h-10 rounded-full bg-primary-soft border border-primary/20 flex items-center justify-center text-primary-strong font-bold text-xs shadow-xs">
                   #{itemId + 1}
                 </div>
                 <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
@@ -304,15 +295,15 @@ export const HiloComentariosItem = ({
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4.5 bg-[#f0f2f5]">
           {loading && mensajes.length === 0 ? (
             <div className="flex justify-center items-center h-full">
-              <Loader2 className="animate-spin text-blue-500" size={28} />
+              <Loader2 className="animate-spin text-primary" size={28} />
             </div>
           ) : mensajes.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
-              <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mb-2">
+              <div className="w-12 h-12 rounded-full bg-primary-soft text-primary flex items-center justify-center mb-2">
                 <Send size={20} className="ml-0.5" />
               </div>
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Aún no hay mensajes en este ítem</p>
-              <p className="text-xs text-slate-400 mt-1">Escribe una nota o propuesta para iniciar la negociación.</p>
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-wider">Aún no hay mensajes en este ítem</p>
+              <p className="text-xs text-slate-600 mt-1">Escribe una nota o propuesta para iniciar la negociación.</p>
             </div>
           ) : (
             mensajes.map((m, index) => {
@@ -327,13 +318,13 @@ export const HiloComentariosItem = ({
                       <div className={`flex ${esPropio ? 'justify-end' : 'justify-start'} mb-1`}>
                         <div className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm shadow-xs ${
                           esPropio 
-                            ? 'bg-blue-600 text-white rounded-tr-xs' 
-                            : 'bg-white text-slate-800 border border-slate-200/90 rounded-tl-xs'
+                            ? 'bg-primary-strong text-white rounded-tr-xs' 
+                            : 'bg-primary-soft text-slate-800 border border-primary/40 rounded-tl-xs'
                         }`}>
                           <div className="flex items-center gap-2 mb-0.5">
-                            <p className={`text-[11px] font-bold ${esPropio ? 'text-blue-100' : 'text-slate-500'}`}>{m.autor?.nombre || 'Usuario'}</p>
+                            <p className={`text-[11px] font-bold ${esPropio ? 'text-white/80' : 'text-primary-strong'}`}>{m.autor?.nombre || 'Usuario'}</p>
                             {formatearHoraMensaje(m.createdAt) && (
-                              <span className={`text-[9px] font-medium ${esPropio ? 'text-blue-200' : 'text-slate-400'}`}>
+                              <span className={`text-[9px] font-medium ${esPropio ? 'text-white/80' : 'text-slate-500'}`}>
                                 {formatearHoraMensaje(m.createdAt)}
                               </span>
                             )}
@@ -392,7 +383,7 @@ export const HiloComentariosItem = ({
                 <div key={m.id || index} className={`flex gap-2.5 max-w-[85%] ${esPropio ? 'ml-auto flex-row-reverse' : ''}`}>
                   {!esPropio && (
                     <div 
-                      className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shadow-xs select-none mt-1 ${getRolColor(m.autor?.rol)}`}
+                      className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-black shadow-xs select-none mt-1 bg-primary-soft border border-primary/25 text-primary-strong`}
                       title={m.autor?.rol}
                     >
                       {getIniciales(m.autor?.nombre)}
@@ -401,21 +392,21 @@ export const HiloComentariosItem = ({
                   
                   <div className={`flex flex-col ${esPropio ? 'items-end' : 'items-start'}`}>
                     {!esPropio && (
-                      <span className="text-[11px] font-semibold text-slate-500 mb-0.5 ml-1">
+                      <span className="text-[11px] font-semibold text-primary-strong mb-0.5 ml-1">
                         {m.autor?.nombre}
                       </span>
                     )}
                     
                     <div className={`px-4 py-2.5 text-sm leading-relaxed shadow-xs ${
                       esPropio 
-                        ? 'bg-blue-600 text-white rounded-2xl rounded-tr-xs' 
-                        : 'bg-white border border-slate-200/90 text-slate-800 rounded-2xl rounded-tl-xs'
+                        ? 'bg-primary-strong text-white rounded-2xl rounded-tr-xs' 
+                        : 'bg-primary-soft border border-primary/40 text-slate-800 rounded-2xl rounded-tl-xs'
                     }`}>
                       <p className="whitespace-pre-wrap">{m.texto}</p>
                     </div>
 
                     {formatearHoraMensaje(m.createdAt) && (
-                      <span className="text-[9px] text-slate-400 font-medium mt-1 px-1">
+                      <span className="text-[9px] text-slate-600 font-medium mt-1 px-1">
                         {formatearHoraMensaje(m.createdAt)}
                       </span>
                     )}
@@ -442,7 +433,7 @@ export const HiloComentariosItem = ({
               }}
               onKeyDown={handleKeyDown}
               placeholder="Escribe un mensaje..."
-              className="w-full bg-[#f0f2f5] focus:bg-white border border-transparent focus:border-blue-500 rounded-2xl p-3 text-sm text-slate-800 outline-none resize-none max-h-30 transition-all min-h-11 mb-2 shadow-xs"
+              className="w-full bg-[#f0f2f5] focus:bg-white border border-transparent focus:border-primary rounded-2xl p-3 text-sm text-slate-800 outline-none resize-none max-h-30 transition-all min-h-11 mb-2 shadow-xs"
               rows={2}
             />
             
@@ -461,15 +452,16 @@ export const HiloComentariosItem = ({
                 )}
               </div>
               <div className="flex gap-2">
-                <button
+                <Button
+                  variant="primary"
+                  size="pill"
                   type="button"
                   onClick={handleEnviarTextoNormal}
                   disabled={procesando || !texto.trim()}
-                  className="px-5 py-2.5 rounded-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white shadow-sm disabled:opacity-40 disabled:bg-slate-300 transition-all font-bold uppercase text-[10px] tracking-wider flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {procesando ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                   Enviar
-                </button>
+                </Button>
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { TablePagination } from '../../components/ui/TablePagination';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 import { 
   Printer, X, Calendar as CalendarIcon, Trash2, Filter, 
@@ -206,7 +207,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
       return 'bg-white text-rose-600 border-rose-200 hover:bg-rose-50 hover:border-rose-300 cursor-pointer';
     }
     if ((estado === 'Pedido' || estado === 'Cotizado Parcial') && tienePendientes) {
-      return 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700';
+      return 'bg-primary text-primary-foreground border-primary hover:bg-primary-strong';
     }
     if (estado === 'Cotizado' || estado === 'Cotizado Parcial' || estado === 'Pedido') {
       return 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200';
@@ -431,7 +432,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             onClick={() => setMostrarFiltrosMobile(!mostrarFiltrosMobile)}
             className={`flex items-center gap-1 px-3 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer select-none ${
               filtrosActivosCount > 0 
-                ? 'bg-blue-50 border-blue-300 text-blue-700' 
+                ? 'bg-primary-soft border-primary/30 text-primary-strong' 
                 : 'bg-slate-50 border-slate-200 text-slate-600'
             }`}
           >
@@ -440,7 +441,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
             {mostrarFiltrosMobile ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
           {(searchTerm || filtrosActivosCount > 0) && (
-            <button
+            <Button
+              variant="secondary"
+              size="iconSm"
               onClick={() => {
                 setSearchTerm('');
                 setFilterEstado('');
@@ -451,10 +454,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                 setCurrentPage(1);
               }}
               title="Limpiar filtros"
-              className="p-2.5 rounded-xl bg-slate-50 text-slate-500 hover:text-rose-600 border border-slate-200 transition-colors cursor-pointer"
             >
               <Trash2 size={14} />
-            </button>
+            </Button>
           )}
         </div>
 
@@ -645,7 +647,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
         </div>
 
         <div className="flex flex-col justify-end w-fit pb-1">
-          <button
+          <Button
+            variant="secondary"
+            size="icon"
             onClick={() => {
               setSearchTerm('');
               setFilterAccion('');
@@ -657,10 +661,9 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
               setCurrentPage(1);
             }}
             title="Limpiar filtros"
-            className="flex items-center justify-center bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded-xl w-10 h-10 border border-slate-100 transition-all cursor-pointer shadow-sm"
           >
             <Trash2 size={16} />
-          </button>
+          </Button>
         </div>
       </div>
       
@@ -726,7 +729,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                             abrirConsultaVentaPerdida(s);
                           }}
                           title="Ver motivo de venta perdida"
-                          className="hidden md:inline-flex p-0.5 rounded-xl text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                          className="hidden md:inline-flex p-0.5 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
                         >
                           <MessageCircleQuestion size={13} />
                         </button>
@@ -758,7 +761,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                                 abrirConsultaVentaPerdida(s);
                               }}
                               title="Ver motivo de venta perdida"
-                              className="hidden md:inline-flex p-0.5 rounded-xl text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                              className="hidden md:inline-flex p-0.5 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
                             >
                               <MessageCircleQuestion size={13} />
                             </button>
@@ -821,12 +824,13 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                   >
                     {s.tipo === 'Pedido Manual' ? (
                       readOnly ? (
-                        <button 
+                        <Button
+                          variant="secondary"
+                          size="lg"
                           onClick={() => navigate(`/vendedor/pedido-manual/${s.id}`)}
-                          className="px-5 py-2 rounded-xl text-[10px] font-black uppercase bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 transition-all shadow-sm"
                         >
                           Ver Pedido
-                        </button>
+                        </Button>
                       ) : (
                         <>
                           <button
@@ -862,13 +866,14 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                           PDF
                         </button>
                         {!readOnly && (
-                          <button
+                          <Button
+                            variant="secondary"
+                            size="lg"
                             type="button"
                             onClick={() => navigate(`/calculadora/${s.id}?readOnly=true`)}
-                            className="px-5 py-2 rounded-xl text-[10px] font-black uppercase bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all shadow-sm border border-emerald-200"
                           >
                             Detalle RFQ
-                          </button>
+                          </Button>
                         )}
                       </>
                     ) : (s.estado === 'Cotizado Parcial' || s.estado === 'Pedido Parcial') ? (
@@ -881,13 +886,14 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                           PDF
                         </button>
                         {!readOnly && (
-                          <button
+                          <Button
+                            variant="primary"
+                            size="lg"
                             type="button"
                             onClick={() => navigate(`/calculadora/${s.id}`)}
-                            className="px-4 py-2 rounded-xl text-[10px] font-black bg-blue-600 text-white hover:bg-blue-700 uppercase transition-all shadow-sm"
                           >
                             Cotizar Restante
-                          </button>
+                          </Button>
                         )}
                       </>
                     ) : (
@@ -959,7 +965,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                         onClick={() => abrirConsultaVentaPerdida(s)}
                         aria-label="Consultar motivo de venta perdida"
                         title="Consultar motivo de venta perdida"
-                        className={`flex h-10 w-10 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-600 shadow-sm transition-transform active:scale-95 ${indiceConsultaAnimada === (hayMotivoDecision ? 1 : 0) ? 'animate-consulta-motivo' : ''}`}
+                        className={`flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-sm transition-transform active:scale-95 ${indiceConsultaAnimada === (hayMotivoDecision ? 1 : 0) ? 'animate-consulta-motivo' : ''}`}
                       >
                         <MessageCircleQuestion size={17} />
                       </button>
@@ -1010,7 +1016,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                 <tr key={s.id}>
                   <td className="p-4">
                     <span className="block font-black text-slate-800 text-lg leading-none">{s.correlativo}</span>
-                    <span className="text-[10px] font-bold text-blue-600 uppercase italic">{s.cliente}</span>
+                    <span className="text-[10px] font-bold text-primary-strong uppercase italic">{s.cliente}</span>
                   </td>
                   <td className="p-4">
                     <div className="flex flex-col">
@@ -1055,7 +1061,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                               abrirConsultaVentaPerdida(s);
                             }}
                             title="Ver motivo de venta perdida"
-                            className="hidden md:inline-flex p-0.5 rounded-xl text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                            className="hidden md:inline-flex p-0.5 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
                           >
                             <MessageCircleQuestion size={13} />
                           </button>
@@ -1087,7 +1093,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                                   abrirConsultaVentaPerdida(s);
                                 }}
                                 title="Ver motivo de venta perdida"
-                                className="hidden md:inline-flex p-0.5 rounded-xl text-rose-500 hover:bg-rose-100 hover:text-rose-700 transition-colors cursor-pointer"
+                                className="hidden md:inline-flex p-0.5 rounded-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
                               >
                                 <MessageCircleQuestion size={13} />
                               </button>
@@ -1100,12 +1106,13 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                     <div className="flex items-center justify-center gap-2">
                       {s.tipo === 'Pedido Manual' ? (
                         readOnly ? (
-                          <button 
+                          <Button
+                            variant="secondary"
+                            size="lg"
                             onClick={() => navigate(`/vendedor/pedido-manual/${s.id}`)}
-                            className="px-5 py-2 rounded-xl text-[10px] font-black uppercase bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 transition-all shadow-sm"
                           >
                             Ver Pedido
-                          </button>
+                          </Button>
                         ) : (
                           <>
                             <button
@@ -1141,13 +1148,14 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                             {readOnly ? 'Ver Cotización' : (s.estado === 'Cotizado Parcial' ? 'Cotizado' : 'PDF')}
                           </button>
                           {!readOnly && (
-                            <button
+                            <Button
+                              variant="secondary"
+                              size="md"
                               onClick={() => navigate(`/calculadora/${s.id}?readOnly=true`)}
                               title="Ver desglose completo en la calculadora (Solo lectura)"
-                              className="px-3 py-1.5 rounded-xl text-[10px] font-black bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-all uppercase shadow-sm"
                             >
                               Detalle RFQ
-                            </button>
+                            </Button>
                           )}
                         </>
                       ) : (s.estado === 'Cotizado Parcial' || s.estado === 'Pedido Parcial') ? (
@@ -1160,13 +1168,14 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
                             {readOnly ? 'Ver Cotización' : 'PDF'}
                           </button>
                           {!readOnly && (
-                            <button
+                            <Button
+                              variant="primary"
+                              size="md"
                               onClick={() => navigate(`/calculadora/${s.id}`)}
                               title="Continuar cotizando los ítems restantes"
-                              className="px-4 py-1.5 rounded-xl text-[10px] font-black bg-blue-600 text-white hover:bg-blue-700 border border-blue-600 transition-all uppercase shadow-sm"
                             >
                               Cotizar Restante
-                            </button>
+                            </Button>
                           )}
                         </>
                       ) : (

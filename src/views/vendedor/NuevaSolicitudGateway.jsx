@@ -31,17 +31,17 @@ export const NuevaSolicitudGateway = ({ role }) => {
         {/* Opción RFQ */}
         <button
           onClick={() => navigate('/vendedor/nueva-rfq')}
-          className="group relative bg-white rounded-3xl p-6 sm:p-8 text-left hover:border-violet-400 hover:shadow-xl hover:shadow-violet-500/10 transition-all duration-300 overflow-hidden shadow-[var(--tf-shadow-card)]"
+          className="group relative bg-white border border-transparent rounded-3xl p-6 sm:p-8 text-left hover:border-primary hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 overflow-hidden shadow-[var(--tf-shadow-card)]"
         >
           <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300">
-            <ArrowRight className="text-violet-500" size={24} />
+            <ArrowRight className="text-primary" size={24} />
           </div>
           
-          <div className="w-14 h-14 bg-violet-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-            <FilePlus className="text-violet-600" size={28} />
+          <div className="w-14 h-14 bg-primary-soft rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+            <FilePlus className="text-primary-strong" size={28} />
           </div>
           
-          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2 group-hover:text-violet-700 transition-colors">
+          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2 group-hover:text-primary-strong transition-colors">
             Solicitud de Compra (RFQ)
           </h2>
           <p className="text-slate-500 text-sm leading-relaxed font-medium">
@@ -52,20 +52,20 @@ export const NuevaSolicitudGateway = ({ role }) => {
         {/* Opción Pedido Manual */}
         <button
           onClick={() => navigate('/vendedor/nuevo-pedido')}
-          className="group relative bg-white rounded-3xl p-6 sm:p-8 text-left hover:border-emerald-400 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 overflow-hidden shadow-[var(--tf-shadow-card)]"
+          className="group relative bg-primary-soft border border-primary/30 rounded-3xl p-6 sm:p-8 text-left hover:border-primary hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 overflow-hidden shadow-[var(--tf-shadow-card)]"
         >
           <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all duration-300">
-            <ArrowRight className="text-emerald-500" size={24} />
+            <ArrowRight className="text-primary-strong" size={24} />
           </div>
 
-          <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-            <ShoppingCart className="text-emerald-600" size={28} />
+          <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+            <ShoppingCart className="text-primary-strong" size={28} />
           </div>
           
-          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2 group-hover:text-emerald-700 transition-colors">
+          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight mb-2 group-hover:text-primary-strong transition-colors">
             Pedido Manual
           </h2>
-          <p className="text-slate-500 text-sm leading-relaxed font-medium">
+          <p className="text-slate-600 text-sm leading-relaxed font-medium">
             Registra un pedido que ya cuenta con un precio acordado para que compras proceda directamente con la validación y compra.
           </p>
         </button>

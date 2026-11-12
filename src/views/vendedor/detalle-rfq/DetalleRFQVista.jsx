@@ -379,24 +379,24 @@ export const DetalleRFQVista = ({ viewModel }) => {
 
         {totalGeneralA > 0 || totalGeneralM > 0 ? (
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
-            <div className="bg-emerald-50/60 rounded-xl p-2.5 border border-emerald-100 flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+            <div className="bg-mode-air-soft/60 rounded-xl p-2.5 border border-mode-air-100 flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-mode-air-100 text-mode-air-strong flex items-center justify-center shrink-0">
                 <Plane size={14} />
               </div>
               <div className="min-w-0">
-                <span className="text-[9px] font-black text-emerald-600 uppercase block leading-none">Total Aéreo</span>
+                <span className="text-[9px] font-black text-mode-air uppercase block leading-none">Total Aéreo</span>
                 <span className="font-mono font-black text-xs text-slate-900 tracking-tight block mt-0.5">
                   ${totalGeneralA.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
 
-            <div className="bg-blue-50/60 rounded-xl p-2.5 border border-blue-100 flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0">
+            <div className="bg-mode-sea-soft/60 rounded-xl p-2.5 border border-mode-sea-100 flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-mode-sea-100 text-mode-sea-strong flex items-center justify-center shrink-0">
                 <Ship size={14} />
               </div>
               <div className="min-w-0">
-                <span className="text-[9px] font-black text-blue-600 uppercase block leading-none">Total Marítimo</span>
+                <span className="text-[9px] font-black text-mode-sea uppercase block leading-none">Total Marítimo</span>
                 <span className="font-mono font-black text-xs text-slate-900 tracking-tight block mt-0.5">
                   ${totalGeneralM.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
@@ -448,7 +448,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
       <div className="rfq-detail-lower-grid">
         <div className="rfq-documentation-panel bg-white rounded-2xl sm:rounded-[2.5rem] shadow-[var(--tf-shadow-card)] sm:shadow-[var(--tf-shadow-card)] overflow-hidden transition-all duration-300 self-start w-full">
           <button type="button" onClick={() => setDocumentacionOpen(!documentacionOpen)} className="w-full p-4 sm:p-8 flex items-center justify-between bg-white hover:bg-slate-50 transition-colors cursor-pointer text-left focus:outline-none">
-            <h2 className="text-sm font-black text-slate-800 uppercase flex items-center gap-2"><LinkIcon size={18} className="text-emerald-500" /> Documentación Extra</h2>
+            <h2 className="text-sm font-black text-slate-800 uppercase flex items-center gap-2"><LinkIcon size={18} className="text-primary" /> Documentación Extra</h2>
             <div className={`transform transition-transform duration-300 text-slate-400 ${documentacionOpen ? 'rotate-180' : ''}`}><ChevronDown size={20} /></div>
           </button>
           <div className={`grid transition-all duration-300 ease-in-out ${documentacionOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
@@ -458,7 +458,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 italic">Enlace a Orden de Compra</label>
                   <input
                     type="text"
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3.5 sm:p-4 text-base md:text-sm outline-none focus:border-emerald-500 transition-all font-bold text-slate-700"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3.5 sm:p-4 text-base md:text-sm outline-none focus:border-primary transition-all font-bold text-slate-700"
                     placeholder="https://..."
                     value={linkOC}
                     onChange={(e) => setLinkOC(e.target.value)}
@@ -468,7 +468,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
                 <div>
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 italic">Comentarios del Pedido</label>
                   <textarea
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3.5 sm:p-4 text-base md:text-sm outline-none focus:border-emerald-500 transition-all font-bold text-slate-700"
+                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-3.5 sm:p-4 text-base md:text-sm outline-none focus:border-primary transition-all font-bold text-slate-700"
                     rows="3"
                     placeholder="Notas adicionales para compras/logística..."
                     value={notasPedido}
@@ -536,13 +536,13 @@ export const DetalleRFQVista = ({ viewModel }) => {
 
             {/* Desglose Aéreo / Marítimo */}
             <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="bg-emerald-50/50 rounded-xl p-3 border border-emerald-100/80">
-                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest block mb-1">Aéreo</span>
-                <span className="font-mono text-sm font-black text-emerald-900">${desgloseVendedor.aereo.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              <div className="bg-mode-air-soft/50 rounded-xl p-3 border border-mode-air-100/80">
+                <span className="text-[9px] font-black text-mode-air uppercase tracking-widest block mb-1">Aéreo</span>
+                <span className="font-mono text-sm font-black text-mode-air-900">${desgloseVendedor.aereo.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
               </div>
-              <div className="bg-blue-50/50 rounded-xl p-3 border border-blue-100/80">
-                <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest block mb-1">Marítimo</span>
-                <span className="font-mono text-sm font-black text-blue-900">${desgloseVendedor.maritimo.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              <div className="bg-mode-sea-soft/50 rounded-xl p-3 border border-mode-sea-100/80">
+                <span className="text-[9px] font-black text-mode-sea uppercase tracking-widest block mb-1">Marítimo</span>
+                <span className="font-mono text-sm font-black text-mode-sea-900">${desgloseVendedor.maritimo.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
 
@@ -636,7 +636,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
               className={`rfq-summary-action rfq-summary-action--primary py-4 px-5 sm:px-6 rounded-2xl font-black uppercase tracking-wider shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer min-h-[48px] text-xs sm:text-sm ${
                 totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
                   ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-900/20'
-                  : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-900/20'
+                  : 'bg-primary hover:bg-primary-strong text-primary-foreground shadow-secondary/20'
               }`}
             >
               {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0 ? (
@@ -720,7 +720,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
                   className={`active:scale-95 text-white px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 shadow-md disabled:opacity-50 whitespace-nowrap min-h-[48px] ${
                     totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0
                       ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-500/20'
-                      : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20'
+                      : 'bg-primary hover:bg-primary-strong shadow-primary/20'
                   }`}
                 >
                   {totalItemsSeleccionados === 0 && totalVentasPerdidasPendientes > 0 ? (

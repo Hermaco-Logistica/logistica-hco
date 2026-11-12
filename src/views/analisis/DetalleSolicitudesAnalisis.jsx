@@ -4,6 +4,8 @@ import { ArrowLeft, Search, Package, ExternalLink, Calendar, User, Building, Lin
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { MotivoAnulacionModal } from '../../components/MotivoAnulacionModal';
 import { Etiqueta } from '../../components/Etiqueta';
+import { PageContainer } from '../../components/ui/PageContainer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, evaluarEstadoGanada } from './theme';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
@@ -268,7 +270,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
     { id: 'cotizadas', label: 'Cotizadas', dot: theme.flujoEstados?.cotizadas?.dot },
     { id: 'pedidos', label: 'Pedidos', dot: theme.flujoEstados?.pedidos?.dot },
     { id: 'parciales', label: 'Pedidos Parciales', dot: 'bg-sky-500' },
-    { id: 'seguimiento', label: 'En seguimiento', dot: 'bg-violet-500' },
+    { id: 'seguimiento', label: 'En seguimiento', dot: 'bg-seguimiento' },
     { id: 'anuladas', label: 'Anuladas', dot: 'bg-rose-500' },
     { id: 'anuladas-parcial', label: 'Con ítems anulados', dot: 'bg-rose-300' },
     { id: 'ventas-perdidas', label: 'Ventas perdidas / rechazos', dot: 'bg-orange-500' }
@@ -283,55 +285,40 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
   return (
     <>
       <MotivoAnulacionModal movimientos={itemsMotivo} onClose={() => setItemsMotivo([])} />
-      <div className="animate-in fade-in duration-300 max-w-7xl mx-auto space-y-5 pb-12">
-      {/* CABECERA: título arriba y filtro de estado debajo */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/analisis')}
-            className="p-2 bg-white hover:bg-slate-50 text-slate-600 rounded-xl border border-slate-200/80 transition-colors shadow-xs cursor-pointer"
-            title="Volver a Análisis"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Etiqueta dominio="rol" valor={theme.key}>
-                Solicitudes
-              </Etiqueta>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-              Detalle de Solicitudes
-            </h1>
-            <p className="text-slate-400 text-xs font-medium mt-0.5">
-              Explorador del flujo de estados — RFQs y Pedidos Manuales
-            </p>
-          </div>
-        </div>
+      <PageContainer className="animate-in fade-in duration-300 space-y-5 pb-12">
+      <PageHeader
+        onBack={() => navigate('/analisis')}
+        backLabel="Volver a Análisis"
+        title="Detalle de Solicitudes"
+        statusChip={
+          <Etiqueta dominio="rol" valor={theme.key}>
+            Solicitudes
+          </Etiqueta>
+        }
+        subtitle="Explorador del flujo de estados — RFQs y Pedidos Manuales"
+      />
 
-        {/* TABS DE ESTADO (Sticky en móvil) */}
-        <div className="sticky top-0 z-20 bg-slate-50/80 backdrop-blur-md pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 sm:bg-transparent">
-          <div className="flex overflow-x-auto whitespace-nowrap gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                id={`tab-sol-${t.id}`}
-                type="button"
-                onClick={() => { setTabActual(t.id); setCurrentPage(1); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
-                  tabActual === t.id 
-                    ? 'bg-slate-900 text-white shadow-xs font-semibold' 
-                    : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
-                }`}
-              >
-                {t.dot && (
-                  <span className={`w-2 h-2 rounded-full ${t.dot}`} />
-                )}
-                {t.label}
-              </button>
-            ))}
-          </div>
+      {/* TABS DE ESTADO (Sticky en móvil) */}
+      <div className="sticky top-0 z-20 bg-slate-50/80 backdrop-blur-md pb-2 -mx-[var(--tf-pad-x)] px-[var(--tf-pad-x)] sm:mx-0 sm:px-0 sm:pb-0 sm:bg-transparent">
+        <div className="flex overflow-x-auto whitespace-nowrap gap-1.5 bg-white p-1 rounded-xl border border-slate-200/80 shadow-xs w-full sm:w-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              id={`tab-sol-${t.id}`}
+              type="button"
+              onClick={() => { setTabActual(t.id); setCurrentPage(1); }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer inline-flex items-center gap-1.5 shrink-0 ${
+                tabActual === t.id 
+                  ? 'bg-slate-900 text-white shadow-xs font-semibold' 
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+              }`}
+            >
+              {t.dot && (
+                <span className={`w-2 h-2 rounded-full ${t.dot}`} />
+              )}
+              {t.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -409,7 +396,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                 }
               );
             }}
-            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/80 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-3 py-1.5 bg-white text-slate-700 hover:bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-xs"
             title="Exportar todos los movimientos de las solicitudes filtradas a Excel"
           >
             <Download size={13} />
@@ -457,7 +444,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                         onClick={() => s.cliente && navigate(`/analisis/cliente/${encodeURIComponent(s.cliente)}`)}
                       >
                         <Building size={12} className="text-slate-400 shrink-0" />
-                        <span className="font-medium text-xs truncate group-hover:text-blue-600 transition-colors">
+                        <span className="font-medium text-xs truncate group-hover:text-primary-strong transition-colors">
                           {s.cliente || 'Consumidor Final'}
                         </span>
                       </div>
@@ -466,7 +453,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                         onClick={() => s.vendedorNombre && navigate(`/analisis/vendedor/${encodeURIComponent(s.vendedorNombre)}`)}
                       >
                         <User size={12} className="text-slate-400 shrink-0" />
-                        <span className="font-medium text-[11px] truncate group-hover:text-blue-600 transition-colors">
+                        <span className="font-medium text-[11px] truncate group-hover:text-primary-strong transition-colors">
                           {s.vendedorNombre || 'Sin asignar'}
                         </span>
                       </div>
@@ -509,7 +496,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                             href={s.linkOC}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold text-blue-600 hover:underline bg-blue-50 px-2 py-0.5 rounded-md"
+                            className="inline-flex items-center gap-1 font-mono text-[10px] font-semibold text-primary-strong hover:text-nav-accent-hover hover:underline bg-primary-soft px-2 py-0.5 rounded-md"
                           >
                             <LinkIcon size={10} /> Ver archivo
                           </a>
@@ -553,7 +540,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                       <th className="py-2.5 px-3.5 whitespace-nowrap">OC Ref</th>
                       <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Estado</th>
                       <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Resultado</th>
-                      <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Acción</th>
+                      <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Acción</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -578,7 +565,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                               <button
                                 type="button"
                                 onClick={() => s.cliente && navigate(`/analisis/cliente/${encodeURIComponent(s.cliente)}`)}
-                                className="font-medium text-slate-800 hover:text-blue-600 transition-colors text-left truncate max-w-[200px] cursor-pointer"
+                                className="font-medium text-slate-800 hover:text-primary-strong transition-colors text-left truncate max-w-[200px] cursor-pointer"
                                 title={`Ver historial de ${s.cliente || 'Consumidor Final'}`}
                               >
                                 {s.cliente || 'Consumidor Final'}
@@ -591,7 +578,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                               <button
                                 type="button"
                                 onClick={() => s.vendedorNombre && navigate(`/analisis/vendedor/${encodeURIComponent(s.vendedorNombre)}`)}
-                                className="font-medium text-slate-700 hover:text-blue-600 transition-colors text-left truncate max-w-[150px] cursor-pointer"
+                                className="font-medium text-slate-700 hover:text-primary-strong transition-colors text-left truncate max-w-[150px] cursor-pointer"
                                 title={`Ver historial de ${s.vendedorNombre || 'Sin asignar'}`}
                               >
                                 {s.vendedorNombre || 'Sin asignar'}
@@ -631,7 +618,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                                     href={s.linkOC}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-blue-600 hover:underline bg-blue-50 px-2 py-0.5 rounded-md"
+                                    className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-primary-strong hover:text-nav-accent-hover hover:underline bg-primary-soft px-2 py-0.5 rounded-md"
                                     title="Ver archivo de OC"
                                   >
                                     <LinkIcon size={11} />
@@ -643,7 +630,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                                 href={s.linkOC}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-blue-600 hover:underline bg-blue-50 px-2 py-0.5 rounded-md"
+                                className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-primary-strong hover:text-nav-accent-hover hover:underline bg-primary-soft px-2 py-0.5 rounded-md"
                               >
                                 <LinkIcon size={11} /> Ver OC
                               </a>
@@ -675,7 +662,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                               )}
                             </div>
                           </td>
-                          <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                          <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                             <button
                               type="button"
                               onClick={() => irADetalle(s)}
@@ -703,7 +690,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
         noun="solicitudes"
         onPageChange={setCurrentPage}
       />
-      </div>
+      </PageContainer>
     </>
   );
 };

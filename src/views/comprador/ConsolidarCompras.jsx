@@ -218,14 +218,14 @@ export const ConsolidarCompras = () => {
               <div 
                 key={idx} 
                 className={`p-4 sm:p-5 rounded-2xl sm:rounded-3xl border-2 transition-all flex flex-col sm:flex-row justify-between sm:items-center gap-3 ${
-                  isSel ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 bg-white'
+                  isSel ? 'border-primary bg-primary-soft' : 'border-slate-100 bg-white'
                 }`}
               >
                 <div className="flex gap-3 sm:gap-4 items-center">
                   <button 
                     type="button"
                     onClick={() => toggleSeleccion(item)} 
-                    className={`min-w-[36px] min-h-[36px] sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center cursor-pointer touch-manipulation shrink-0 ${isSel ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-200'}`}
+                    className={`min-w-[36px] min-h-[36px] sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center cursor-pointer touch-manipulation shrink-0 ${isSel ? 'bg-primary border-primary text-primary-foreground' : 'border-slate-200'}`}
                   >
                     <Plus size={14} />
                   </button>
@@ -240,7 +240,7 @@ export const ConsolidarCompras = () => {
                     <div className="flex flex-col items-start sm:items-end">
                       <span className="text-[8.5px] font-black text-slate-400 uppercase tracking-widest">Confirmar FOB</span>
                       <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 mt-0.5">
-                        <span className="text-emerald-500 font-black text-xs">$</span>
+                        <span className="text-primary font-black text-xs">$</span>
                         <input 
                           type="number" 
                           className="w-20 outline-none font-black text-base sm:text-xs text-slate-700 bg-transparent"

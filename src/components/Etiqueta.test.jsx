@@ -3,7 +3,7 @@ import React from 'react';
 import { describe, expect, it } from 'vitest';
 import { render } from '@testing-library/react';
 import { Etiqueta } from './Etiqueta';
-import { resolverEtiqueta, tonoDe } from '../utils/etiquetas';
+import { resolverEtiqueta, tonoDe, TONOS, TEXTO_TONO } from '../utils/etiquetas';
 
 describe('Etiqueta', () => {
   it('pinta texto, tono e ícono del catálogo sin borde', () => {
@@ -24,6 +24,16 @@ describe('Etiqueta', () => {
   it('no pinta nada sin texto', () => {
     const { container } = render(<Etiqueta dominio="faseSeguimiento" valor={undefined} />);
     expect(container.firstChild).toBeNull();
+  });
+
+  it('el tono "seguimiento" usa el color único de seguimiento, distinto de "violeta"', () => {
+    const { container } = render(<Etiqueta tono="seguimiento">3</Etiqueta>);
+    const clases = container.firstChild.className;
+    expect(clases).toContain('bg-seguimiento');
+    expect(clases).toContain('text-seguimiento-soft');
+    expect(clases).not.toContain('tag-violeta');
+    expect(TEXTO_TONO.seguimiento).toBe('text-seguimiento');
+    expect(TONOS.violeta).toBe('bg-tag-violeta-soft text-tag-violeta');
   });
 
   it('el color de "cotizado" depende del rol', () => {

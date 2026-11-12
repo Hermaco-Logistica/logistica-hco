@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { TablePagination } from '../../components/ui/TablePagination';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { Button } from '../../components/ui/Button';
 import { collection, query, onSnapshot, doc, updateDoc, orderBy, serverTimestamp, addDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import {
@@ -430,19 +431,19 @@ export const GestionOC = ({ readOnly = false }) => {
             <div className="p-6 bg-blue-50 border-y border-blue-100 flex flex-col sm:flex-row gap-4 items-end">
                <div className="flex-1 w-full">
                  <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Correlativo Aduana</label>
-                 <input type="text" value={nuevoRetaceo.correlativo} onChange={e => setNuevoRetaceo({...nuevoRetaceo, correlativo: e.target.value.toUpperCase()})} className="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold uppercase outline-none focus:border-blue-500" placeholder="Libre..." />
+                 <input type="text" value={nuevoRetaceo.correlativo} onChange={e => setNuevoRetaceo({...nuevoRetaceo, correlativo: e.target.value.toUpperCase()})} className="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold uppercase outline-none focus:border-primary" placeholder="Libre..." />
                </div>
                <div className="flex-1 w-full">
                  <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Guía / BL</label>
-                 <input type="text" value={nuevoRetaceo.guia} onChange={e => setNuevoRetaceo({...nuevoRetaceo, guia: e.target.value.toUpperCase()})} className="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold uppercase outline-none focus:border-blue-500" placeholder="Opcional..." />
+                 <input type="text" value={nuevoRetaceo.guia} onChange={e => setNuevoRetaceo({...nuevoRetaceo, guia: e.target.value.toUpperCase()})} className="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold uppercase outline-none focus:border-primary" placeholder="Opcional..." />
                </div>
                <div className="flex-1 w-full">
                  <label className="text-[10px] font-black text-slate-500 uppercase block mb-1">Fecha Recibido</label>
-                 <input type="date" value={nuevoRetaceo.fechaStr} onChange={e => setNuevoRetaceo({...nuevoRetaceo, fechaStr: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold uppercase outline-none focus:border-blue-500" />
+                 <input type="date" value={nuevoRetaceo.fechaStr} onChange={e => setNuevoRetaceo({...nuevoRetaceo, fechaStr: e.target.value})} className="w-full p-3 rounded-xl border border-slate-200 text-xs font-bold uppercase outline-none focus:border-primary" />
                </div>
                <div className="flex gap-2 w-full sm:w-auto mt-4 sm:mt-0">
                  <button onClick={() => setShowRetaceoModal(false)} className="px-4 py-3 bg-slate-200 text-slate-600 hover:bg-slate-300 rounded-xl font-black text-xs uppercase flex-1">Cancelar</button>
-                 <button onClick={handleCrearRetaceo} className="px-4 py-3 bg-emerald-500 text-white hover:bg-emerald-600 rounded-xl font-black text-xs uppercase shadow-md flex-1">Guardar</button>
+                 <button onClick={handleCrearRetaceo} className="px-4 py-3 bg-primary text-primary-foreground hover:bg-primary-strong rounded-xl font-black text-xs uppercase shadow-md flex-1">Guardar</button>
                </div>
             </div>
           )}
@@ -473,7 +474,7 @@ export const GestionOC = ({ readOnly = false }) => {
               <div className="flex flex-col md:flex-row md:items-start gap-4 sm:gap-6">
                 <div className="flex-1 min-w-0">
                   <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mb-2">
-                    <Globe size={13} className="text-emerald-500" /> Número de Seguimiento (Tracking)
+                    <Globe size={13} className="text-primary" /> Número de Seguimiento (Tracking)
                   </label>
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <input
@@ -483,7 +484,7 @@ export const GestionOC = ({ readOnly = false }) => {
                       onBlur={(e) => guardarTracking(ocSeleccionada.id, e.target.value)}
                       disabled={readOnly}
                       placeholder="Ingresa tracking (ej. 1234567890)..."
-                      className="w-full bg-white border border-slate-200 focus:border-emerald-500 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-xs font-black outline-none transition-all uppercase shadow-2xs"
+                      className="w-full bg-white border border-slate-200 focus:border-primary rounded-xl sm:rounded-2xl p-3 sm:p-4 text-xs font-black outline-none transition-all uppercase shadow-2xs"
                     />
                     <button
                       type="button"
@@ -691,12 +692,13 @@ export const GestionOC = ({ readOnly = false }) => {
                   <span className="truncate">{formattedRangoText()}</span>
                 </div>
                 {(fechaInicio || fechaFin) && (
-                  <button 
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => { setFechaInicio(null); setFechaFin(null); }}
-                    className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl border border-rose-200 text-xs font-black"
                   >
                     Borrar
-                  </button>
+                  </Button>
                 )}
               </div>
               {mostrarCalendario && (
@@ -732,7 +734,9 @@ export const GestionOC = ({ readOnly = false }) => {
               )}
             </div>
             <div className="pt-2 flex justify-end">
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 type="button"
                 onClick={() => {
                   setSearchOCNum('');
@@ -741,10 +745,9 @@ export const GestionOC = ({ readOnly = false }) => {
                   setFechaInicio(null);
                   setFechaFin(null);
                 }}
-                className="text-xs font-black text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200 flex items-center gap-1"
               >
                 <Trash2 size={13} /> Limpiar Filtros
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -843,7 +846,9 @@ export const GestionOC = ({ readOnly = false }) => {
         </div>
 
         <div className="flex flex-col justify-end w-fit pb-1">
-          <button
+          <Button
+            variant="secondary"
+            size="icon"
             onClick={() => {
               setSearchOCNum('');
               setFilterProveedor('');
@@ -852,10 +857,9 @@ export const GestionOC = ({ readOnly = false }) => {
               setFechaFin(null);
             }}
             title="Limpiar filtros"
-            className="flex items-center justify-center bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded-xl w-10 h-10 border border-slate-100 transition-all cursor-pointer shadow-sm"
           >
             <Trash2 size={16} />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -987,7 +991,7 @@ export const GestionOC = ({ readOnly = false }) => {
                 >
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-3">
-                      <div className="bg-slate-100 p-2 rounded-lg text-slate-400 group-hover:bg-emerald-500 group-hover:text-white transition-all shadow-sm">
+                      <div className="bg-slate-100 p-2 rounded-lg text-slate-400 group-hover:bg-primary group-hover:text-primary-foreground transition-all shadow-sm">
                         <Hash size={14} />
                       </div>
                       <span className="font-black text-xs uppercase text-slate-800">{oc.numeroOC}</span>
@@ -1000,7 +1004,7 @@ export const GestionOC = ({ readOnly = false }) => {
                     </span>
                   </td>
                   <td className="px-8 py-6 text-center">
-                    <span className="text-[10px] font-black text-emerald-600 uppercase italic">
+                    <span className="text-[10px] font-black text-slate-800 uppercase italic">
                       {formatFechaHora(oc.fechaUltimoEstado)}
                     </span>
                   </td>
@@ -1017,7 +1021,7 @@ export const GestionOC = ({ readOnly = false }) => {
                   <td className="px-8 py-6 text-right font-black text-xs text-slate-900">
                     ${calcularTotalOC(oc.items).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </td>
-                  <td className="px-8 py-6 text-right">
+                  <td className="px-8 py-6 text-center">
                     <ChevronRight size={18} className="text-slate-300 group-hover:text-slate-800 transition-all group-hover:translate-x-1" />
                   </td>
                 </tr>
