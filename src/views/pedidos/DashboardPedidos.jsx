@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { avisarExito } from '../../components/ui/avisarExito';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { TablePagination } from '../../components/ui/TablePagination';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -704,7 +705,7 @@ export const DashboardPedidos = ({ role }) => {
       );
       // ─────────────────────────────────────────────────────────────────────
 
-      alert(`Éxito: Items vinculados a la OC ${numOC}`);
+      avisarExito(`Éxito: Items vinculados a la OC ${numOC}`);
       setSeleccionados([]);
       setShowAsignador(false);
       correlativoAutomaticoRef.current = '';

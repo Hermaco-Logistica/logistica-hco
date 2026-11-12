@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { avisarExito } from '../../components/ui/avisarExito';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { collection, query, onSnapshot, addDoc, doc, updateDoc, serverTimestamp, getDocs } from 'firebase/firestore';
@@ -191,7 +192,7 @@ export const ConsolidarCompras = () => {
         await updateDoc(rfqRef, { productos: nuevosProductos });
       }
 
-      alert("Orden de Compra Generada");
+      avisarExito("Orden de Compra Generada");
       setSeleccionados([]);
       setDatosOC({ numeroOC: '', proveedor: '', notas: '' });
     } catch (e) { 

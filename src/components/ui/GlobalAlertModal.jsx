@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Info } from 'lucide-react';
+import { CheckCircle2, Info } from 'lucide-react';
 import { Modal, ModalBoton, ModalCuerpo, ModalEncabezado, ModalPie } from '../Modal';
+import { TONO_AVISO_EXITO } from './avisarExito';
 
 // onClose callback: ejecutado únicamente cuando el usuario presiona OK.
 // Esto permite que el código que llama a alert() encadene un navigate()
@@ -17,13 +18,16 @@ export const GlobalAlertModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [onClose, setOnClose] = useState(null);
+  const [esExito, setEsExito] = useState(false);
 
   useEffect(() => {
     const originalAlert = window.alert;
 
-    window.alert = (msg, closeCb) => {
+    // Tercer argumento opcional: avisarExito lo manda como TONO_AVISO_EXITO; vacío u otro valor deja el aspecto de siempre.
+    window.alert = (msg, closeCb, tono) => {
       setMessage(String(msg ?? ''));
       setOnClose(() => closeCb || null);
+      setEsExito(tono === TONO_AVISO_EXITO);
       setIsOpen(true);
       // Si hay un resolver pendiente de showAlert, no lo resolvemos aquí;
       // se resuelve al presionar OK.
@@ -51,12 +55,12 @@ export const GlobalAlertModal = () => {
 
   return (
     <Modal etiqueta="Aviso" ancho="sm" capa="aviso" onCerrar={handleClose}>
-      <ModalEncabezado titulo="Aviso" icono={Info} tono="exito" />
+      <ModalEncabezado titulo="Aviso" icono={esExito ? CheckCircle2 : Info} tono="exito" />
       <ModalCuerpo>
         <p className="break-words text-[15px] leading-[1.45] text-neutral-900">{message}</p>
       </ModalCuerpo>
       <ModalPie>
-        <ModalBoton variante="primario" tono="exito" autoFocus onClick={handleClose}>OK</ModalBoton>
+        <ModalBoton variante="primario" tono={esExito ? 'rol' : 'exito'} autoFocus onClick={handleClose}>OK</ModalBoton>
       </ModalPie>
     </Modal>
   );

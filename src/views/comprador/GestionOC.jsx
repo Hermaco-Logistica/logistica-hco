@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { avisarExito } from '../../components/ui/avisarExito';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { TablePagination } from '../../components/ui/TablePagination';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -168,7 +169,7 @@ export const GestionOC = ({ readOnly = false }) => {
       });
       setShowRetaceoModal(false);
       setNuevoRetaceo({ correlativo: '', guia: '', fechaStr: new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10) });
-      alert('Retaceo registrado exitosamente');
+      avisarExito('Retaceo registrado exitosamente');
     } catch (e) {
       console.error(e);
       alert('Error registrando retaceo');
