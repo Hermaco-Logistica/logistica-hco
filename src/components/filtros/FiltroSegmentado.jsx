@@ -18,7 +18,7 @@ const MAX_OPCIONES_SEGMENTADO_EN_HOJA = 3;
  * acordeón), repartiendo el ancho a partes iguales.
  * `peso` (opcional, solo en la barra de escritorio): peso del control en el reparto de la rejilla (ancho mínimo = 160 px × peso).
  * `colapsable` (solo en la barra de escritorio): si la celda que le toca es más estrecha que la fila de botones (se mide el ancho natural
- * de la fila), se muestra como desplegable `FiltroSelect` sin "Todos" ("Ordenar: Más RFQs", con `prefijo`) y vuelve a la fila de botones
+ * de la fila), se muestra como desplegable `FiltroSelect` sin "Todos" ("Ordenar: Más Solicitudes", con `prefijo`) y vuelve a la fila de botones
  * cuando la celda vuelve a caber; el estado, las opciones y `onChange` son los mismos.
  * `carrusel` (solo en la barra; excluyente con `colapsable`, que se ignora): en vez de colapsar a un desplegable, la fila de opciones se
  * desplaza en horizontal dentro de la misma pista gris, con difuminado en los bordes con más contenido, la última opción asomando cortada a
