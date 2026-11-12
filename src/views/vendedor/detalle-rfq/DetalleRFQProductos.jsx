@@ -566,7 +566,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                     ) : (
                       <>
                         <td className="p-5 text-center bg-mode-air-soft/30">
-                          {estaCotizado ? <><div className="text-mode-air-strong font-black text-base">${ventaA.toFixed(2)}</div><div className="text-[9px] text-emerald-500 font-bold uppercase">Total: ${(ventaA * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
+                          {estaCotizado ? <><div className="text-mode-air-strong font-black text-base">${ventaA.toFixed(2)}</div><div className={`text-[9px] ${TEXTO_TONO.exito} font-bold uppercase`}>Total: ${(ventaA * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
                         </td>
                         <td className="p-5 text-center bg-mode-sea-soft/30">
                           {estaCotizado ? <><div className="text-mode-sea-strong font-black text-base">${ventaM.toFixed(2)}</div><div className="text-[9px] text-mode-sea-500 font-bold uppercase">Total: ${(ventaM * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
