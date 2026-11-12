@@ -22,7 +22,7 @@ import { TablePagination } from '../../components/ui/TablePagination';
 
 /** Opciones de "Ordenar" (mismo orden y rótulos que antes). El peso reserva el ancho de la fila de botones en la barra. */
 const OPCIONES_ORDEN_VENDEDORES = [
-  { value: 'total', label: 'Más RFQs' },
+  { value: 'total', label: 'Más Solicitudes' },
   { value: 'pedidos', label: 'Más Pedidos' },
   { value: 'efectividad', label: 'Efectividad' },
   { value: 'monto', label: 'Mayor Monto' },
@@ -358,7 +358,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                   
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                      <span className="text-[10px] text-slate-400 font-medium">RFQs</span>
+                      <span className="text-[10px] text-slate-400 font-medium">solicitudes</span>
                       <span className="font-bold font-mono text-slate-700">{v.totalRFQs}</span>
                     </div>
                     <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50 flex flex-col items-center justify-center text-center">
@@ -440,7 +440,7 @@ export const DetalleVendedoresAnalisis = ({ role, solicitudes = [], ordenesCompr
                 <tr className="tf-tabla-head">
                   <th className="py-2.5 px-3.5 whitespace-nowrap">#</th>
                   <th className="py-2.5 px-3.5 whitespace-nowrap">Vendedor</th>
-                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Total RFQs</th>
+                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Total Solicitudes</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Cotizadas</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap" title="Solicitudes cotizadas en revisión, prórroga o vencidas (ya incluidas en Cotizadas)">En seguimiento</th>
                   <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Ganadas (Pedidos)</th>
