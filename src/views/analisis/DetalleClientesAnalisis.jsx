@@ -22,7 +22,7 @@ import { TablePagination } from '../../components/ui/TablePagination';
 
 /** Opciones de "Ordenar" (mismo orden y rótulos que antes). El peso reserva el ancho de la fila de botones en la barra. */
 const OPCIONES_ORDEN_CLIENTES = [
-  { value: 'total', label: 'Más RFQs' },
+  { value: 'total', label: 'Más Solicitudes' },
   { value: 'pedidos', label: 'Más Pedidos' },
   { value: 'monto', label: 'Mayor Monto' },
   { value: 'anulaciones', label: 'Más anulaciones' },
@@ -300,7 +300,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                   
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                      <span className="text-[10px] text-slate-400 font-medium">RFQs</span>
+                      <span className="text-[10px] text-slate-400 font-medium">solicitudes</span>
                       <span className="font-bold font-mono text-slate-700">{c.totalRFQs}</span>
                     </div>
                     <div className="bg-blue-50/50 p-2 rounded-xl border border-blue-100/50 flex flex-col items-center justify-center text-center">
@@ -370,7 +370,7 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
                   <tr className="tf-tabla-head">
                     <th className="py-2.5 px-3.5 whitespace-normal">#</th>
                     <th className="py-2.5 px-3.5 whitespace-normal">Cliente</th>
-                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Total RFQs</th>
+                    <th className="py-2.5 px-3.5 text-center whitespace-normal">Total Solicitudes</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Cotizadas</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-nowrap" title="Solicitudes cotizadas en revisión, prórroga o vencidas">En seguimiento</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Anulaciones</th>
