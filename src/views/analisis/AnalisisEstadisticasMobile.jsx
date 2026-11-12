@@ -1,4 +1,5 @@
 import React from 'react';
+import { pluralizar } from '../../utils/pluralizar';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useInView, useCountUp } from '../../hooks/useInView';
@@ -689,7 +690,7 @@ export const AnalisisEstadisticasMobile = ({
     return {
       initials: v.nombre[0] || 'V',
       title: v.nombre,
-      subtitle: `${v.total} RFQs · ${v.cotizadas} cotizadas`,
+      subtitle: `${v.total} ${pluralizar(v.total, 'solicitud', 'solicitudes')} · ${v.cotizadas} cotizadas`,
       badgeValue: `${efectividad}% conv`,
       badgeTono: 'exito',
       index: idx,
@@ -706,7 +707,7 @@ export const AnalisisEstadisticasMobile = ({
     return {
       initials: c.cliente[0] || 'C',
       title: c.cliente,
-      subtitle: `${c.total} RFQs`,
+      subtitle: `${c.total} ${pluralizar(c.total, 'solicitud', 'solicitudes')}`,
       badgeValue: `${efectividad}% conv`,
       badgeTono: 'neutral',
       index: idx,

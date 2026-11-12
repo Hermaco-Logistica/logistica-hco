@@ -859,9 +859,9 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                     (Pedidos Ganados ÷ Total Cotizadas) × 100
                   </div>
                   <ul className="text-slate-300 text-[10px] space-y-1 leading-tight list-disc pl-3">
-                    <li><strong className="text-white">Numerador:</strong> RFQs cerradas como Pedido (100% ganadas).</li>
-                    <li><strong className="text-white">Denominador:</strong> Total de RFQs cotizadas (Cotizadas + Pedidos + Parciales).</li>
-                    <li><strong className="text-white">Excluye:</strong> RFQs que aún están en estado Pendiente (sin cotizar).</li>
+                    <li><strong className="text-white">Numerador:</strong> Solicitudes cerradas como Pedido (100% ganadas).</li>
+                    <li><strong className="text-white">Denominador:</strong> Total de solicitudes cotizadas (Cotizadas + Pedidos + Parciales).</li>
+                    <li><strong className="text-white">Excluye:</strong> Solicitudes que aún están en estado Pendiente (sin cotizar).</li>
                   </ul>
                 </div>
               </div>
@@ -1242,7 +1242,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
 
                         <div className="flex items-center gap-1.5 shrink-0 font-mono text-[11px]">
                           <span className="font-bold text-slate-800">{c.total}</span>
-                          <span className="text-slate-400 text-[10px]">RFQ</span>
+                          <span className="text-slate-400 text-[10px]">{pluralizar(c.total, 'solicitud', 'solicitudes')}</span>
                           {c.pedidos > 0 && (
                             <Etiqueta tono="exito" mono title={`${c.pedidos} ${pluralizar(c.pedidos, 'pedido ganado', 'pedidos ganados')}`}>
                               {pedidosPct}% conv
@@ -1533,7 +1533,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                   <thead className="sticky top-0 z-10">
                     <tr className="tf-tabla-head">
                       <th className="py-2.5 px-3 whitespace-nowrap">Vendedor</th>
-                      <th className="py-2.5 px-3 text-center whitespace-nowrap">Total RFQs</th>
+                      <th className="py-2.5 px-3 text-center whitespace-nowrap">Total Solicitudes</th>
                       <th className="py-2.5 px-3 text-center whitespace-nowrap">Cotizadas</th>
                       <th className="py-2.5 px-3 text-center whitespace-nowrap">Pedidos</th>
                       <th className="py-2.5 px-3 text-right whitespace-nowrap">Efectividad</th>
