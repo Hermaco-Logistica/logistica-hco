@@ -12,6 +12,7 @@ import { acumularFaseSeguimiento, describirFasesSeguimiento, obtenerFaseSolicitu
 import { getRoleTheme } from './theme';
 import { contarDecisiones } from './utils/decisionMetrics';
 import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
+import { ChipsFiltroContexto } from './components/ChipsFiltroContexto';
 import { cumpleFiltroPeriodoAnalisis } from './utils/periodoAnalisis';
 import { useSessionState } from '../../hooks/usePersistedState';
 import {
@@ -35,6 +36,8 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
   const navigate = useNavigate();
   const theme = useMemo(() => getRoleTheme(role), [role]);
   const [searchTerm, setSearchTerm] = useSessionState('analisis_clientes_dir_search', '');
+  // Filtro de vendedor que llega desde el dashboard (clave compartida con Análisis, Productos, Solicitudes y los Historiales)
+  const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [criterioOrden, setCriterioOrden] = useSessionState('analisis_clientes_dir_orden', ORDEN_INICIAL_CLIENTES); // 'total' | 'pedidos' | 'monto' | 'anulaciones' | 'decisiones'
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -82,6 +85,8 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
       // Filtro por fecha (respeta el período seleccionado en el dashboard)
       const fechaSol = parseDate(s.fechaS || s.fechaCreacion);
       if (!cumpleFiltroPeriodoAnalisis({ fecha: fechaSol, filtroPeriodo, rangoEsteMes, ahora })) return;
+
+      if (vendedorFilter && s.vendedorNombre !== vendedorFilter) return;
 
       const nombre = (s.cliente || 'Consumidor Final').trim();
       const key = normalizarBusqueda(nombre) || 'consumidor final';
@@ -155,7 +160,13 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
     });
 
     return Object.values(map);
-  }, [solicitudes, filtroPeriodo, rangoEsteMes]);
+  }, [solicitudes, vendedorFilter, filtroPeriodo, rangoEsteMes]);
+
+  // Solicitudes que exporta el Excel sin búsqueda: todas, o solo las del vendedor filtrado
+  const solicitudesContexto = useMemo(
+    () => (vendedorFilter ? solicitudes.filter((s) => s.vendedorNombre === vendedorFilter) : solicitudes),
+    [solicitudes, vendedorFilter]
+  );
 
   // Filtrado por búsqueda
   const clientesFiltrados = useMemo(() => {
@@ -221,6 +232,9 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
         busquedaEnBarraMovil
         resultados={clientesFiltrados.length}
         filtrosActivos={criterioOrden !== ORDEN_INICIAL_CLIENTES ? 1 : 0}
+        encabezado={vendedorFilter ? (
+          <ChipsFiltroContexto plana vendedor={vendedorFilter} onQuitarVendedor={() => { setVendedorFilter(''); setCurrentPage(1); }} />
+        ) : null}
         busqueda={(
           <FiltroBusqueda
             value={searchTerm}
@@ -254,10 +268,10 @@ export const DetalleClientesAnalisis = ({ role, solicitudes = [], ordenesCompra 
             onClick={() => {
           const solsAExportar = searchTerm.trim()
             ? clientesFiltrados.flatMap(c => c.solicitudesList || [])
-            : solicitudes;
-          const periodoLabel = searchTerm.trim()
+            : solicitudesContexto;
+          const periodoLabel = (searchTerm.trim()
             ? `Todos los registros | Búsqueda cliente: "${searchTerm.trim()}"`
-            : 'Todos los registros de clientes';
+            : 'Todos los registros de clientes') + (vendedorFilter ? ` | Vendedor: ${vendedorFilter}` : '');
           exportarTodosLosMovimientosExcel(solsAExportar, ordenesCompra, 'movimientos_clientes', {
             titulo: 'CONTROL DE LOGÍSTICA - MOVIMIENTOS POR CLIENTES',
             periodoLabel
