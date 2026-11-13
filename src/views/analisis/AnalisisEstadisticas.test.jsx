@@ -653,3 +653,55 @@ describe('Análisis y Estadísticas: foco del modal de Rango', () => {
     expect(document.activeElement).toBe(container.querySelector('[data-linea-fechas]'));
   });
 });
+
+/**
+ * Tarjeta "Top Productos" del dashboard (F8b): "Veces solicitadas" cuenta solicitudes distintas en cualquier estado. Hasta F8b decía
+ * "Cotizado N veces" y contaba líneas sin decisión.
+ */
+describe('Análisis y Estadísticas: Top Productos, veces solicitadas', () => {
+  const l = (desc, estadoItem, cant = 1) => ({ desc, marca: 'X', cant, estadoItem, precio: 10 });
+  const s = (id, estado, productos, extra = {}) => ({ id, correlativo: `RFQ-${id}`, cliente: `Cliente ${id}`, estado, vendedorNombre: 'Ana', tipo: 'Aéreo', fechaS: dia(1), fechaCreacion: dia(1), productos, ...extra });
+  // bomba: 1 solicitud con dos líneas, 1 venta perdida y 1 anulada → 3 solicitudes (hoy: 2); tubo: 1 solicitud con 3 líneas (hoy: 3)
+  const DATOS = [
+    s('r0', 'Cotizado', [l('bomba', 'Cotizado'), l('bomba', 'Cotizado')]),
+    s('r1', 'Venta Perdida', [l('bomba', 'Venta Perdida')]),
+    s('r2', 'Anulado', [l('bomba', 'Anulado')]),
+    s('t0', 'Cotizado', [l('tubo', 'Cotizado'), l('tubo', 'Cotizado'), l('tubo', 'Cotizado')])
+  ];
+  const tarjeta = (r, desc, clase = '.cursor-pointer') => [...r.container.querySelectorAll('h3')].find((h) => h.textContent.trim() === desc).closest(clase);
+
+  it('escritorio: título, interruptor y tarjeta dicen "Más solicitados" y "Veces solicitadas" con solicitudes distintas', () => {
+    const r = montar('comprador', { periodo: 'historico', anio: 'todos' }, DATOS);
+    expect(screen.getByText('Top Productos Más Solicitados')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Más solicitados' })).toBeTruthy();
+    expect(screen.queryByText('Top Productos Más Cotizados')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Más cotizados' })).toBeNull();
+    const bomba = tarjeta(r, 'BOMBA');
+    expect(within(bomba).getByText('Veces solicitadas')).toBeTruthy();
+    expect(within(bomba).getByText('3')).toBeTruthy();
+    expect(within(bomba).queryByText(/veces$/)).toBeNull();
+    expect(within(tarjeta(r, 'TUBO')).getByText('1')).toBeTruthy();
+  });
+
+  it('"Más solicitados" pone primero al producto con más solicitudes aunque tenga menos líneas (bomba antes que tubo)', () => {
+    const r = montar('comprador', { periodo: 'historico', anio: 'todos' }, DATOS);
+    const nombres = [...r.container.querySelectorAll('h3')].map((h) => h.textContent.trim()).filter((t) => t === 'BOMBA' || t === 'TUBO');
+    expect(nombres).toEqual(['BOMBA', 'TUBO']);
+  });
+
+  it('sin id cuenta por correlativo: dos solicitudes con correlativo distinto son 2 veces solicitadas', () => {
+    const sinId = (correlativo) => ({ correlativo, estado: 'Cotizado', cliente: correlativo, vendedorNombre: 'Ana', tipo: 'Aéreo', fechaS: dia(1), fechaCreacion: dia(1), productos: [l('codo', 'Cotizado')] });
+    const r = montar('comprador', { periodo: 'historico', anio: 'todos' }, [sinId('RFQ-A'), sinId('RFQ-B')]);
+    expect(within(tarjeta(r, 'CODO')).getByText('Veces solicitadas').parentElement.textContent).toBe('Veces solicitadas2');
+  });
+
+  it('móvil: el subtítulo dice "Más solicitados en el período" y la tarjeta "Solicitado 3x"', () => {
+    window.innerWidth = 400; mm(true);
+    const r = montar('vendedor', { periodo: 'historico', anio: 'todos' }, DATOS);
+    expect(screen.getByText('Más solicitados en el período')).toBeTruthy();
+    expect(screen.queryByText('Más cotizados en el período')).toBeNull();
+    const bomba = tarjeta(r, 'BOMBA', '.snap-start');
+    expect(within(bomba).getByText('Solicitado')).toBeTruthy();
+    expect(within(bomba).getByText('3x')).toBeTruthy();
+  });
+});

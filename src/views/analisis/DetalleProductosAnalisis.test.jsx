@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../../utils/exportarExcel', () => ({ extraerTodosLosMovimientos: vi.fn(() => []), exportarMovimientosExcel: vi.fn() }));
@@ -49,7 +49,7 @@ describe('DetalleProductosAnalisis: barra de filtros en móvil', () => {
     expect(limpiar()).toBeNull();
   });
 
-  it('elegir un orden distinto del inicial muestra (1) y Limpiar con 1; Limpiar vuelve a "Más cotizados"', async () => {
+  it('elegir un orden distinto del inicial muestra (1) y Limpiar con 1; Limpiar vuelve a "Más solicitados"', async () => {
     montar();
     await esperar();
     await elegirOrden('Más rechazos');
@@ -66,14 +66,14 @@ describe('DetalleProductosAnalisis: barra de filtros en móvil', () => {
     await esperar();
     expect(botonFiltros().textContent).toBe('Filtros');
     expect(limpiar()).toBeNull();
-    await elegirOrden('Más cotizados');
+    await elegirOrden('Más solicitados');
     expect(botonFiltros().textContent).toBe('Filtros (1)');
     fireEvent.click(limpiar());
     await esperar();
     expect(botonFiltros().textContent).toBe('Filtros');
     expect(limpiar()).toBeNull();
-    // el orden volvió a "Más rechazos": elegir "Más cotizados" lo vuelve a contar
-    await elegirOrden('Más cotizados');
+    // el orden volvió a "Más rechazos": elegir "Más solicitados" lo vuelve a contar
+    await elegirOrden('Más solicitados');
     expect(botonFiltros().textContent).toBe('Filtros (1)');
   });
 
@@ -81,7 +81,7 @@ describe('DetalleProductosAnalisis: barra de filtros en móvil', () => {
     montar('/analisis/productos?orden=ganadas');
     await esperar();
     expect(botonFiltros().textContent).toBe('Filtros');
-    await elegirOrden('Más cotizados');
+    await elegirOrden('Más solicitados');
     expect(botonFiltros().textContent).toBe('Filtros (1)');
   });
 
@@ -132,5 +132,86 @@ describe('DetalleProductosAnalisis: barra de filtros en móvil', () => {
     await esperar();
     expect(screen.getByRole('button', { name: /Exportar movimientos/ })).toBeTruthy();
     expect(screen.queryByText('Exportar Movimientos')).toBeNull();
+  });
+});
+
+/**
+ * "Veces solicitadas" (F8b, docs/metricas.md sección 3): solicitudes distintas en las que aparece el producto, en cualquier estado.
+ * Hasta F8b la columna se llamaba "Veces Cotizado" y contaba líneas sin decisión ("N RFQs").
+ */
+describe('DetalleProductosAnalisis: Veces solicitadas', () => {
+  const l = (desc, estadoItem, cant = 1) => ({ desc, marca: 'X', cant, estadoItem, precio: 10 });
+  const s = (id, estado, productos, extra = {}) => ({ id, correlativo: `RFQ-${id}`, cliente: `Cliente ${id}`, estado, vendedorNombre: 'Ana', tipo: 'Aéreo', fechaS: dia(1), fechaCreacion: dia(1), productos, ...extra });
+  const montarCon = (solicitudes, url = '/analisis/productos') => render(<MemoryRouter initialEntries={[url]}><Vista role="comprador" solicitudes={solicitudes} ordenesCompra={[]} /></MemoryRouter>);
+  const filas = () => [...document.querySelectorAll('tbody tr')].map((tr) => tr.textContent.replace(/\s+/g, ' ').trim());
+
+  beforeEach(() => mm(false));
+
+  it('el título y la columna dicen "Más solicitados" y "Veces solicitadas"', async () => {
+    montarCon([s('1', 'Cotizado', [l('bomba', 'Cotizado')])]);
+    await esperar();
+    expect(screen.getByText('Top Productos Más Solicitados')).toBeTruthy();
+    expect(screen.getByText('Veces solicitadas')).toBeTruthy();
+    expect(screen.queryByText('Veces Cotizado')).toBeNull();
+    expect(screen.queryByText('Top Productos Más Cotizados')).toBeNull();
+  });
+
+  it('cuenta solicitudes distintas, no líneas sin decisión: un producto repetido en una solicitud, una venta perdida y un anulado dan 3 (hoy daba 2)', async () => {
+    montarCon([
+      s('r0', 'Cotizado', [l('bomba', 'Cotizado'), l('bomba', 'Cotizado')]),
+      s('r1', 'Venta Perdida', [l('bomba', 'Venta Perdida')]),
+      s('r2', 'Anulado', [l('bomba', 'Anulado')])
+    ]);
+    await esperar();
+    expect(screen.getByText('3 solicitudes')).toBeTruthy();
+    expect(screen.queryByText(/RFQs?$/)).toBeNull();
+  });
+
+  it('en singular dice "1 solicitud"', async () => {
+    montarCon([s('1', 'Cotizado', [l('bomba', 'Cotizado'), l('bomba', 'Cotizado')])]);
+    await esperar();
+    expect(screen.getByText('1 solicitud')).toBeTruthy();
+  });
+
+  it('sin id cuenta por correlativo: dos solicitudes con correlativo distinto son 2', async () => {
+    montarCon([
+      { correlativo: 'RFQ-A', estado: 'Cotizado', cliente: 'A', vendedorNombre: 'Ana', fechaS: dia(1), fechaCreacion: dia(1), productos: [l('tubo', 'Cotizado')] },
+      { correlativo: 'RFQ-B', estado: 'Cotizado', cliente: 'B', vendedorNombre: 'Ana', fechaS: dia(1), fechaCreacion: dia(1), productos: [l('tubo', 'Cotizado')] }
+    ]);
+    await esperar();
+    expect(screen.getByText('2 solicitudes')).toBeTruthy();
+  });
+
+  it('"Más solicitados" ordena por solicitudes distintas: 2 solicitudes con 1 línea van antes que 1 solicitud con 3 líneas', async () => {
+    montarCon([
+      s('x', 'Cotizado', [l('pieza x', 'Cotizado'), l('pieza x', 'Cotizado'), l('pieza x', 'Cotizado')]),
+      s('y1', 'Cotizado', [l('pieza y', 'Cotizado')]),
+      s('y2', 'Cotizado', [l('pieza y', 'Cotizado')])
+    ]);
+    await esperar();
+    const f = filas();
+    expect(f[0]).toContain('PIEZA Y');
+    expect(f[1]).toContain('PIEZA X');
+  });
+
+  it('la clave de orden sigue siendo "veces": ?orden=veces y el valor por defecto dan el mismo resultado', async () => {
+    const datos = [s('x', 'Cotizado', [l('pieza x', 'Cotizado'), l('pieza x', 'Cotizado')]), s('y1', 'Cotizado', [l('pieza y', 'Cotizado')]), s('y2', 'Cotizado', [l('pieza y', 'Cotizado')])];
+    montarCon(datos, '/analisis/productos?orden=veces');
+    await esperar();
+    expect(filas()[0]).toContain('PIEZA Y');
+  });
+
+  it('móvil: la tarjeta dice "Solicitados" con las solicitudes distintas (3 veces) y el singular "1 vez"', async () => {
+    mm(true);
+    montarCon([
+      s('r0', 'Cotizado', [l('bomba', 'Cotizado'), l('bomba', 'Cotizado')]), s('r1', 'Venta Perdida', [l('bomba', 'Venta Perdida')]), s('r2', 'Anulado', [l('bomba', 'Anulado')]),
+      s('u0', 'Cotizado', [l('tubo', 'Cotizado'), l('tubo', 'Cotizado')])
+    ]);
+    await esperar();
+    const tarjetaDe = (desc) => [...document.querySelectorAll('h3')].find((h) => h.textContent.trim() === desc).closest('.surface');
+    const solicitados = (desc) => within(tarjetaDe(desc)).getByText('Solicitados').parentElement.textContent.replace(/\s+/g, ' ').trim();
+    expect(solicitados('BOMBA')).toBe('Solicitados3 veces');
+    expect(solicitados('TUBO')).toBe('Solicitados1 vez');
+    expect(screen.queryByText('Cotizados')).toBeNull();
   });
 });

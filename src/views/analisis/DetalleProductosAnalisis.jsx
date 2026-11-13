@@ -13,6 +13,7 @@ import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
+import { claveSolicitud } from './utils/resumenProductos';
 import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
 import { acumularFaseSeguimiento, describirFasesSeguimiento, obtenerFaseItemCacheada } from '../../utils/faseSeguimiento';
 import { cumpleFiltroPeriodoAnalisis } from './utils/periodoAnalisis';
@@ -24,7 +25,7 @@ import { TablePagination } from '../../components/ui/TablePagination';
 
 /** Opciones de "Ordenar" (mismos valores, orden y rótulos que antes). El peso reserva el ancho de la fila de botones en la barra. */
 const OPCIONES_ORDEN_PRODUCTOS = [
-  { value: 'veces', label: 'Más cotizados' },
+  { value: 'veces', label: 'Más solicitados' },
   { value: 'unidades', label: 'Mayor volumen' },
   { value: 'pedidos', label: 'Más ganados' },
   { value: 'anulaciones', label: 'Más anulaciones' },
@@ -100,7 +101,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
     const map = {};
     const ahora = new Date();
 
-    solicitudes.forEach((s) => {
+    solicitudes.forEach((s, indiceSolicitud) => {
       // Filtro por fecha (respeta el período seleccionado en el dashboard)
       const fechaSol = parseDate(s.fechaS || s.fechaCreacion);
       if (!cumpleFiltroPeriodoAnalisis({ fecha: fechaSol, filtroPeriodo, rangoEsteMes, ahora })) return;
@@ -138,7 +139,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
             ventasPerdidas: 0,
             rechazos: 0,
             clientes: new Set(),
-            rfqIds: new Set(),
+            solicitudesIds: new Set(),
             enSeguimiento: 0,
             fasesSeguimiento: {}
           };
@@ -147,7 +148,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
         const item = map[key];
         if (marca) item.marcas.add(marca);
         if (s.cliente) item.clientes.add(s.cliente.trim());
-        if (s.id) item.rfqIds.add(s.id);
+        item.solicitudesIds.add(claveSolicitud(s, indiceSolicitud));
         acumularFaseSeguimiento(item, obtenerFaseItemCacheada(s, indiceProducto));
 
         const decision = obtenerDecisionItem(s, p);
@@ -174,7 +175,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
     return Object.values(map).map(p => ({
       ...p,
       marcaPrincipal: Array.from(p.marcas).join(', ') || 'Sin marca',
-      totalClientes: p.clientes.size
+      totalClientes: p.clientes.size,
+      vecesSolicitadas: p.solicitudesIds.size
     }));
   }, [solicitudes, vendedorFilter, clienteFilter, resultadoFilter, filtroPeriodo, rangoEsteMes]);
 
@@ -212,8 +214,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
       if (ordenarPor === 'decisiones') {
         return (b.ventasPerdidas + b.rechazos + b.anulaciones) - (a.ventasPerdidas + a.rechazos + a.anulaciones) || b.vecesCotizado - a.vecesCotizado;
       }
-      // 'veces' por defecto (más veces cotizado)
-      return b.vecesCotizado - a.vecesCotizado || b.unidadesCotizadas - a.unidadesCotizadas;
+      // 'veces' por defecto (más solicitudes distintas)
+      return b.vecesSolicitadas - a.vecesSolicitadas || b.unidadesCotizadas - a.unidadesCotizadas;
     });
   }, [productosFiltrados, ordenarPor]);
 
@@ -259,7 +261,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
       <PageHeader
         onBack={() => navigate('/analisis')}
         backLabel="Volver a Análisis"
-        title="Top Productos Más Cotizados"
+        title="Top Productos Más Solicitados"
         statusChip={
           <Etiqueta dominio="rol" valor={theme.key}>
             Catálogo
@@ -348,8 +350,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                   
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                      <span className="text-[10px] text-slate-400 font-medium">Cotizados</span>
-                      <span className="font-bold font-mono text-slate-700">{p.vecesCotizado} <span className="text-[9px] font-normal">veces</span></span>
+                      <span className="text-[10px] text-slate-400 font-medium">Solicitados</span>
+                      <span className="font-bold font-mono text-slate-700">{p.vecesSolicitadas} <span className="text-[9px] font-normal">{p.vecesSolicitadas === 1 ? 'vez' : 'veces'}</span></span>
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-emerald-600/70 font-medium">Ganados</span>
@@ -412,7 +414,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     <th className="py-2.5 px-3.5 whitespace-normal">#</th>
                     <th className="py-2.5 px-3.5 whitespace-normal">Descripción del Producto</th>
                     <th className="py-2.5 px-3.5 whitespace-normal">Marca</th>
-                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Veces Cotizado</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Veces solicitadas</th>
                     <th className="py-2.5 px-2.5 text-center whitespace-normal" title="Ítems en revisión, prórroga o vencidos">En seguimiento</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Anulaciones</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Ventas perdidas</th>
@@ -452,7 +454,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                         </td>
                         <td className="py-2.5 px-2.5 text-center">
                           <Etiqueta tono="neutral" tamano="normal" mono>
-                            {p.vecesCotizado} RFQ{p.vecesCotizado > 1 ? 's' : ''}
+                            {p.vecesSolicitadas} {pluralizar(p.vecesSolicitadas, 'solicitud', 'solicitudes')}
                           </Etiqueta>
                         </td>
                         <td className="py-2.5 px-2.5 text-center whitespace-nowrap">

@@ -555,7 +555,7 @@ function MobileProductosScroll({ productos, onSelect, onVerTodos }) {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="text-sm font-bold text-slate-900 tracking-tight">Top Productos</h2>
-            <p className="text-[11px] text-slate-400 font-medium">Más cotizados en el período</p>
+            <p className="text-[11px] text-slate-400 font-medium">Más solicitados en el período</p>
           </div>
           <button type="button" onClick={onVerTodos} className="text-[11px] font-bold text-slate-500 flex items-center gap-0.5 shrink-0">
             Todos <ArrowUpRight size={12} />
@@ -585,8 +585,8 @@ function MobileProductosScroll({ productos, onSelect, onVerTodos }) {
                 </h3>
                 <div className="pt-2 border-t border-slate-200/60 space-y-1.5 text-[11px]">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400">Cotizado</span>
-                    <span className="font-mono font-semibold text-slate-700">{p.veces}x</span>
+                    <span className="text-[10px] text-slate-400">Solicitado</span>
+                    <span className="font-mono font-semibold text-slate-700">{p.vecesSolicitadas}x</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] text-slate-400">Ganado</span>

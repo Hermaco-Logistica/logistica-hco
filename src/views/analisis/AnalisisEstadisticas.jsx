@@ -27,6 +27,7 @@ import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, formatearTiempoRespuesta, formatearTiempoCierre } from './theme';
 import { contarDecisiones, obtenerDecisionItem } from './utils/decisionMetrics';
+import { claveSolicitud } from './utils/resumenProductos';
 import {
   getHoyElSalvador,
   getAnioActualElSalvador,
@@ -412,7 +413,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
 
   const topProductos = useMemo(() => {
     const map = {};
-    solicitudesFiltradas.forEach((s) => {
+    solicitudesFiltradas.forEach((s, indiceSolicitud) => {
       if (!Array.isArray(s.productos)) return;
       s.productos.forEach((p) => {
         const desc = (p.desc || p.descripcion || '').trim().toUpperCase();
@@ -425,6 +426,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
             desc,
             marca,
             veces: 0,
+            solicitudesIds: new Set(),
             unidades: 0,
             ganadas: 0,
             unidadesGanadas: 0,
@@ -433,6 +435,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
             rechazos: 0
           };
         }
+        map[key].solicitudesIds.add(claveSolicitud(s, indiceSolicitud));
         const decision = obtenerDecisionItem(s, p);
         if (decision) {
           if (decision === 'Anulado') map[key].anulaciones++;
@@ -453,6 +456,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       });
     });
     return Object.values(map)
+      .map((p) => ({ ...p, vecesSolicitadas: p.solicitudesIds.size }))
       .sort((a, b) => {
         if (ordenarProductosPor === 'unidades') return b.unidades - a.unidades || b.veces - a.veces;
         if (ordenarProductosPor === 'ganadas') {
@@ -461,7 +465,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         if (ordenarProductosPor === 'anulaciones') return b.anulaciones - a.anulaciones || b.veces - a.veces;
         if (ordenarProductosPor === 'ventasPerdidas') return b.ventasPerdidas - a.ventasPerdidas || b.veces - a.veces;
         if (ordenarProductosPor === 'rechazos') return b.rechazos - a.rechazos || b.veces - a.veces;
-        return b.veces - a.veces || b.unidades - a.unidades;
+        return b.vecesSolicitadas - a.vecesSolicitadas || b.unidades - a.unidades;
       })
       .slice(0, 5);
   }, [solicitudesFiltradas, ordenarProductosPor]);
@@ -1301,7 +1305,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
             </div>
             <div>
               <h2 className="text-sm font-bold text-slate-900 tracking-tight">
-                Top Productos Más Cotizados
+                Top Productos Más Solicitados
               </h2>
               <p className="text-[11px] text-slate-400 font-medium">
                 Artículos con mayor demanda y recurrencia
@@ -1321,7 +1325,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                Más cotizados
+                Más solicitados
               </button>
               <button
                 type="button"
@@ -1437,9 +1441,9 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 </div>
                 <div className="pt-2.5 border-t border-slate-200/60 space-y-2 text-[11px]">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400 font-medium">Cotizado</span>
+                    <span className="text-[10px] text-slate-400 font-medium">Veces solicitadas</span>
                     <Etiqueta tono="neutral" tamano="normal" mono>
-                      {p.veces} {p.veces === 1 ? 'vez' : 'veces'}
+                      {p.vecesSolicitadas}
                     </Etiqueta>
                   </div>
                   <div className="flex items-center justify-between">
