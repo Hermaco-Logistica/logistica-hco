@@ -50,15 +50,15 @@ Notación: `E` = `estadoFinalItem(solicitud, ítem)`. Un ítem está **cerrado**
 ## 4. Regla de estado del ítem: `estadoFinalItem(solicitud, ítem)`
 Archivo previsto: `src/utils/estadoFinalItem.js`, con su prueba por tabla (F8a, segundo commit). Devuelve uno de seis valores: `Ganado`, `Venta perdida`, `Rechazo`, `Anulado`, `Cotizado` o `Pendiente`. No existe un valor "sin clasificar": toda combinación se resuelve y lo dudoso se señala aparte con `datoARevisarItem`.
 
-**Nota sobre los motivos sueltos.** Si el ítem tiene `estadoItem` explícito "Pedido" o "Comprado" y además un `motivoRechazo` o un `motivoAnulacion` suelto, **gana el estado propio explícito (Ganado)** y el conflicto se anota en `datoARevisarItem`. Un residuo no debe rebajar una conversión en silencio. Esta protección se confirmará con la auditoría de producción (sección 10).
+**Nota sobre los motivos sueltos.** Si el ítem tiene `estadoItem` explícito "Pedido" o "Comprado" y además un `motivoVentaPerdida`, un `motivoRechazo` o un `motivoAnulacion` suelto, **gana el estado propio explícito (Ganado)** y el conflicto se anota en `datoARevisarItem`. Un residuo no debe rebajar una conversión en silencio. Esta protección se confirmará con la auditoría de producción (sección 10). **Límite conocido:** un `estadoItem` "Pedido Parcial" a nivel de ítem **no** tiene esta protección: sigue siendo Ganado por la regla 5, sin aviso, y un motivo suelto en él se resuelve como en la regla que corresponda (venta perdida, rechazo o anulado).
 
 Orden de evaluación (la primera regla que coincide gana). Los valores se comparan sin espacios sobrantes y con las mayúsculas con que se guardan hoy.
 
-1. `estadoItem` = "Venta Perdida", o el ítem tiene `motivoVentaPerdida` propio → **Venta perdida**.
-2. `estadoItem` = "Pedido" o "Comprado" → **Ganado**. Si además el ítem tiene `motivoRechazo`, `datoARevisarItem` devuelve `estado_ganado_con_motivo_de_rechazo`; si tiene `motivoAnulacion`, devuelve `estado_ganado_con_motivo_de_anulacion` (si tuviera los dos, se informa el de rechazo).
+1. `estadoItem` = "Pedido" o "Comprado" → **Ganado**. Si además el ítem tiene `motivoVentaPerdida`, `datoARevisarItem` devuelve `estado_ganado_con_motivo_de_venta_perdida`; si tiene `motivoRechazo`, `estado_ganado_con_motivo_de_rechazo`; si tiene `motivoAnulacion`, `estado_ganado_con_motivo_de_anulacion`. Si tuviera varios, se informa uno solo, en este orden: venta perdida, rechazo, anulación.
+2. `estadoItem` = "Venta Perdida", o el ítem tiene `motivoVentaPerdida` propio → **Venta perdida**.
 3. `estadoItem` en {Rechazado, Cancelado, Denegado}, o el ítem tiene `motivoRechazo` → **Rechazo**.
 4. `estadoItem` = "Anulado", o el ítem tiene `motivoAnulacion` → **Anulado**.
-5. `estadoItem` = "Pedido Parcial" → **Ganado**.
+5. `estadoItem` = "Pedido Parcial" → **Ganado** (sin la protección de motivos sueltos ni aviso: límite conocido de la nota anterior).
 6. `estadoItem` = "Cotizado" → **Cotizado**; `estadoItem` = "Pendiente" → **Pendiente**.
 7. Sin `estadoItem`, o con un valor que ninguna regla reconoce (este último caso se señala como `estado_item_desconocido`): se decide por el estado de la solicitud.
 
@@ -78,7 +78,7 @@ Un ítem o una solicitud nulos se tratan como objetos vacíos y dan Pendiente.
 ### `datoARevisarItem(solicitud, ítem)`
 Devuelve `null` o un motivo, para el contador de "datos a revisar". No cambia el estado del ítem. Los motivos son:
 - `cotizado_en_pedido`: `estadoItem` = "Cotizado" dentro de una solicitud en estado Pedido o Comprado (cuenta como abierto).
-- `estado_ganado_con_motivo_de_rechazo` y `estado_ganado_con_motivo_de_anulacion`: el conflicto de la nota anterior.
+- `estado_ganado_con_motivo_de_venta_perdida`, `estado_ganado_con_motivo_de_rechazo` y `estado_ganado_con_motivo_de_anulacion`: el conflicto de la nota anterior (un ítem Pedido o Comprado con un motivo suelto).
 - `estado_item_desconocido`: `estadoItem` no vacío que ninguna regla reconoce.
 
 ### Tabla de casos (entradas y salida)
@@ -92,7 +92,9 @@ Devuelve `null` o un motivo, para el contador de "datos a revisar". No cambia el
 | Cotizado | Pedido | no | **Cotizado** (`cotizado_en_pedido`) | `esItemPedido` lo cuenta como pedido si el ítem no dice "Cotizado" |
 | Pedido, con `motivoRechazo` del ítem | Pedido | no | **Ganado** (`estado_ganado_con_motivo_de_rechazo`) | Rechazo |
 | Comprado, con `motivoAnulacion` del ítem | Pedido | no | **Ganado** (`estado_ganado_con_motivo_de_anulacion`) | se cuenta como pedido |
-| Pedido, con `motivoVentaPerdida` del ítem | Pedido | no | **Venta perdida** (el motivo propio de venta perdida se mantiene) | Venta perdida |
+| Pedido, con `motivoVentaPerdida` del ítem | Pedido | no | **Ganado** (`estado_ganado_con_motivo_de_venta_perdida`) | Venta perdida |
+| Pedido Parcial, con `motivoRechazo` del ítem | Pedido Parcial | no | **Rechazo** (sin protección ni aviso: límite conocido) | Rechazo |
+| Venta Perdida, con `motivoVentaPerdida` del ítem | Pedido | no | **Venta perdida** (el motivo propio de un ítem que ya es Venta Perdida no es residuo) | Venta perdida |
 | *(vacío)* | Pedido | no | **Ganado** | Ganado |
 | *(vacío)* | Cotizado | no | **Cotizado** o **Pendiente** según precio | según pantalla |
 | *(vacío)* | Venta Perdida | sí | **Venta perdida** | Venta perdida |
@@ -105,15 +107,16 @@ Archivo previsto: `src/utils/resultadoSolicitud.js` (F8a, segundo commit). No se
 | --- | --- |
 | **Ganada** | Todos los ítems están en Ganado (y hay al menos uno). |
 | **Ganada parcial** | Hay al menos un ítem Ganado y al menos otro que no lo está. |
-| **Perdida** | Ningún ítem Ganado y ningún ítem abierto (todos Venta perdida, Rechazo o Anulado). |
+| **Perdida** | Ningún ítem Ganado, ningún ítem abierto y al menos un ítem en Venta perdida o Rechazo (los Anulados que haya no cambian el resultado). |
+| **Anulada** | Ningún ítem Ganado, ningún ítem abierto y todos los ítems cerrados son Anulado. |
 | **En curso** | Ningún ítem Ganado y al menos un ítem abierto. |
 | **Sin ítems** | La solicitud no tiene productos. |
 
-Devuelve además los conteos por ítem (`total`, `ganados`, `abiertos`, `cerrados`). `resumirGanadas(solicitudes)` cuenta cuántas solicitudes son Ganada (`ganadas`) y cuántas Ganada parcial (`parciales`), y `formatoGanadas` produce el texto "N (+M parc.)" (solo "N" si no hay parciales).
+Un ítem Anulado cuenta como "no ganado": dos ítems Ganado y uno Anulado dan "Ganada parcial" (coherente con Conversión, donde el Anulado es un ítem cerrado que no se ganó). Devuelve además los conteos por ítem (`total`, `ganados`, `abiertos`, `cerrados`, `ventasPerdidas`, `rechazos` y `anulados`). `resumirGanadas(solicitudes)` cuenta cuántas solicitudes son Ganada (`ganadas`) y cuántas Ganada parcial (`parciales`), y `formatoGanadas` produce el texto "N (+M parc.)" (solo "N" si no hay parciales).
 
 Este resultado **no** sustituye a `RESULTADOS_SOLICITUD` de `clasificarSolicitud.js`, que sigue sirviendo al filtro de resultado del dashboard hasta que F8c y F8d decidan su destino.
 
-Puntos que aún dependen del responsable del producto (sección 10): si un ítem Anulado cuenta como "no ganado" (valor propuesto, coherente con Conversión) o se ignora, y si una solicitud toda anulada se llama "Perdida" o "Anulada".
+Estas dos reglas (Anulado cuenta como no ganado; "Perdida" frente a "Anulada") las decidió el responsable del producto.
 
 ## 6. Casos de prueba (anonimizados)
 - **PED-0030 (caso real, anonimizado):** pedido manual del "Cliente A", con `solicitud.estado` = "Pedido", `tipo` "Pedido Manual", `motivoVentaPerdida` en la raíz, `resumenNegociacion` con 1 acordado y 2 denegados, vendedor `vendedor@ejemplo.test` y usuario `uid-1`. Tres ítems de 3 unidades cada uno:
@@ -126,7 +129,7 @@ Puntos que aún dependen del responsable del producto (sección 10): si un ítem
 - **Cliente K (cifras de desarrollo):** 39 solicitudes (20 pedidos manuales y 19 RFQs), 69 ítems, 2 variantes de nombre normalizado. Directorio hoy: 24 ventas perdidas, 1 rechazo, 16 anulaciones y conversión de 88,9 % (pedidos ÷ cotizadas, por solicitud). Con las reglas: 15 ventas perdidas, 2 rechazos, 20 anuladas y 29 ganadas de 66 cerrados, es decir **43,9 %**, y ganadas por solicitud "16 (+2 parc.)".
 - **Producto repetido:** un producto en dos líneas de la misma solicitud da "Veces solicitadas" = 1 y "Mayor volumen" suma las dos líneas.
 - **Ítem sin estado en un Pedido:** sin `estadoItem` en una solicitud Pedido es Ganado (en desarrollo no ocurre: los 7 ítems sin estado están en otras solicitudes).
-- **Estado ganado con motivo suelto:** `estadoItem` "Pedido" o "Comprado" con `motivoRechazo` o `motivoAnulacion` es Ganado y se anota en `datoARevisarItem`; una prueba por cada combinación.
+- **Estado ganado con motivo suelto:** `estadoItem` "Pedido" o "Comprado" con `motivoVentaPerdida`, `motivoRechazo` o `motivoAnulacion` es Ganado y se anota en `datoARevisarItem`; una prueba por cada combinación. El límite conocido de "Pedido Parcial" también tiene su prueba.
 
 ## 7. Matriz pantalla × métrica
 Unidad: S = solicitud, I = ítem, L = línea o movimiento. "Qué cambia" resume el efecto sobre lo que ve el usuario. Nada de esto cambia en F8a.
@@ -148,7 +151,7 @@ Unidad: S = solicitud, I = ítem, L = línea o movimiento. "Qué cambia" resume 
 | Historial de Producto | Veces Cotizado / En diferentes solicitudes | Veces solicitadas / En diferentes solicitudes | L → S | El número pasa a solicitudes distintas (`rfqsUnicas`). |
 | Excel, Resumen general | Total Solicitudes, Cotizadas, Pedidos Ganados, Tasa Éxito (%), Cotizado (veces) | Total Solicitudes, Cotizadas, Ganadas, Conversión (%), Veces solicitadas | S → S e I | Mismas fórmulas que las pantallas. |
 | Excel, Movimientos y Solicitudes | Correlativo, Estado, Resultado | igual | L y S | Estado = estado del ítem (`E`); "Pedido parcial" con una sola función. |
-| Listas de solicitudes | Estado, Resultado | Estado (de la solicitud), Resultado (Ganada, Ganada parcial, Perdida, En curso) | S | Una sola función de resultado de solicitud. |
+| Listas de solicitudes | Estado, Resultado | Estado (de la solicitud), Resultado (Ganada, Ganada parcial, Perdida, Anulada, En curso) | S | Una sola función de resultado de solicitud. |
 
 ## 8. Plan por fases
 Cada fase es un conjunto de commits independiente, con pruebas de cifras **antes y después** (la cifra anterior se guarda como constante en la prueba para documentar el cambio). Orden: F8a, F8b, F8c, F8d, F8e.
@@ -183,7 +186,7 @@ Qué avisar y a quién:
 
 ## 10. Dudas abiertas
 1. **Nombre del KPI "Cotizadas" del dashboard.** Tras unificar el conjunto (con Comprado), el KPI actual (solo Cotizado y Cotizado Parcial) deja de coincidir con el nombre. Lo decide el responsable más adelante; el candidato es **"Cotizadas sin pedido"**. No hay propuesta distinta.
-2. **Ítems Anulados en `resultadoSolicitud`**: cuentan como "no ganado" (propuesto, coherente con Conversión: dos ítems Ganado y uno Anulado dan "Ganada parcial") o se ignoran (dan "Ganada"). Pendiente de confirmar.
-3. **Nombre de la solicitud toda anulada**: "Perdida" (propuesto) o un valor aparte ("Anulada"). Pendiente de confirmar.
-4. **Residuos de motivos en producción.** Se confirmará con la auditoría de producción cuántos ítems en Pedido o Comprado conservan un `motivoRechazo` o `motivoAnulacion`. El `motivoVentaPerdida` propio del ítem sigue ganando sobre el estado Pedido; si la auditoría muestra residuos también ahí, habrá que aplicarle la misma protección.
-5. **Auditoría en producción antes de F8d**, con autorización explícita (sección 9).
+2. **Residuos de motivos en producción.** La auditoría de producción dirá cuántos ítems en Pedido o Comprado conservan un `motivoVentaPerdida`, un `motivoRechazo` o un `motivoAnulacion` suelto (hoy la regla los protege y los lista en `datoARevisarItem`), y si hay ítems con estado "Pedido Parcial" a nivel de ítem, que no tienen esa protección.
+3. **Auditoría en producción antes de F8d**, con autorización explícita (sección 9).
+
+Decididas: los ítems Anulados cuentan como "no ganado" en `resultadoSolicitud` (2 Ganado y 1 Anulado dan "Ganada parcial"); una solicitud sin ganados ni abiertos es "Perdida" si tiene al menos un ítem en Venta perdida o Rechazo, y "Anulada" si todos sus ítems cerrados son Anulado; la protección de motivos sueltos cubre `motivoVentaPerdida`, `motivoRechazo` y `motivoAnulacion`.
