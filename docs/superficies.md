@@ -43,7 +43,7 @@ menú o de un popover es **plano**: la elevación la pone el contenedor.
 4. **Los botones llevan sombra y no borde.** Etiqueta y StatusChip (estados) no llevan sombra. Los enlaces de texto tampoco.
 5. **Se quedan:** separadores (`border-t/b/l/r`, `divide-*`) y bordes de estado (selección, error, foco, `dashed`, `border-primary`, `rose` y `emerald` de validación).
 6. **Hover de elevación** en tarjetas clicables: `hover:shadow-flotante` (por ejemplo las tarjetas del Gateway y la tarjeta móvil de `DashboardVendedor`).
-7. **Sombras sueltas de color** (`shadow-primary/20`, `shadow-emerald-*`) no se usan: el botón usa el token.
+7. **Sombras sueltas de color** (`shadow-primary/20`, `shadow-emerald-*`) no se usan: el botón usa el token. Excepciones conocidas, sin migrar: el botón "Listo" del modal Gastos adicionales de la Calculadora (`shadow-md`, negra) y el botón flotante de opciones de DetalleRFQ en móvil (`shadow-xl shadow-slate-900/25`) conservan su sombra antigua en lugar de `shadow-boton`.
 
 ## 5. Relleno inferior del `main`
 La sombra de reposo se extiende unos 24 px a los lados y unos 36 px abajo; un ancestro con `overflow` la recorta si su padding es menor. El `main` (`App.jsx`) tiene `pb-[calc(var(--bottom-dock-h,0px)+16px)]` en móvil y **`md:pb-10` (40 px)** desde `md`: con 40 px la sombra de la última tarjeta no se corta (ΔE 0.0; con 16 px era 2.4). Antes un `style` en línea anulaba `md:pb-8`. El único coste es un scroll nuevo para páginas cuyo contenido queda a menos de 24 px de la altura de la ventana.

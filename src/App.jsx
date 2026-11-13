@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { avisarExito } from './components/ui/avisarExito';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { auth, db, provider } from './firebase'; 
 import { onAuthStateChanged, signOut, signInWithPopup } from 'firebase/auth';
@@ -320,7 +321,7 @@ function App() {
       }
 
       const esParcial = estadoFinal === 'Cotizado Parcial' || estadoFinal === 'Pedido Parcial';
-      alert(esParcial ? "Avance Parcial Guardado" : "Cotización Finalizada");
+      avisarExito(esParcial ? "Avance Parcial Guardado" : "Cotización Finalizada");
       return true;
     } catch (e) { 
       console.error(e); 

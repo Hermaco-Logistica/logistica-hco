@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { X, CheckCircle, AlertTriangle, Info, XCircle } from 'lucide-react';
+import { TONOS, TEXTO_TONO } from '../../utils/etiquetas';
 
 const ToastContext = createContext(null);
 
@@ -74,14 +75,17 @@ const ToastItem = ({ toast, onRemove }) => {
   const handleFocus = () => setIsPaused(true);
   const handleBlur = () => setIsPaused(false);
 
+  // El éxito usa el tono fijo "exito" de las etiquetas (sin borde) y un check verde que ningún rol remapea
+  // (TEXTO_TONO.exito no es text-emerald-500, que index.css cambia al color del rol). Es un estado, no una acción:
+  // con el color del rol el administrador (vino) se confundía con el error.
   const styleMap = {
-    success: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    success: TONOS.exito,
     error: 'bg-rose-50 text-rose-800 border-rose-200',
     warning: 'bg-amber-50 text-amber-800 border-amber-200',
     info: 'bg-blue-50 text-blue-800 border-blue-200',
   };
   const iconMap = {
-    success: <CheckCircle className="w-5 h-5 text-emerald-500" />,
+    success: <CheckCircle className={`w-5 h-5 ${TEXTO_TONO.exito}`} />,
     error: <XCircle className="w-5 h-5 text-rose-500" />,
     warning: <AlertTriangle className="w-5 h-5 text-amber-500" />,
     info: <Info className="w-5 h-5 text-blue-500" />,
@@ -89,7 +93,7 @@ const ToastItem = ({ toast, onRemove }) => {
 
   return (
     <div
-      className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl border shadow-lg transition-all ${styleMap[type] || styleMap.info}`}
+      className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl ${type === 'success' ? '' : 'border'} shadow-lg transition-all ${styleMap[type] || styleMap.info}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onFocus={handleFocus}

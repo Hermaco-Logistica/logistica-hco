@@ -16,24 +16,24 @@ export const ModalProductoLocal = ({ estado, onCambiar, onGuardar, onCerrar }) =
         titulo="Nuevo producto local"
         subtitulo="Se guardará en tu catálogo para usarlo en futuras solicitudes."
         icono={PlusCircle}
-        tono="azul"
+        tono="rol"
         onCerrar={onCerrar}
         cerrarDeshabilitado={guardando}
       />
       <ModalCuerpo>
         <ModalSeccion etiqueta="Código (SKU)" htmlFor="producto-local-sku">
-          <ModalCampo id="producto-local-sku" tono="azul" type="text" className="uppercase" value={estado.sku} onChange={campo('sku')} placeholder="SKU" autoFocus />
+          <ModalCampo id="producto-local-sku" tono="rol" type="text" className="uppercase" value={estado.sku} onChange={campo('sku')} placeholder="SKU" autoFocus />
         </ModalSeccion>
         <ModalSeccion etiqueta="Nombre / descripción" htmlFor="producto-local-nombre">
-          <ModalCampo id="producto-local-nombre" tono="azul" type="text" className="uppercase" value={estado.producto} onChange={campo('producto')} placeholder="Descripción" />
+          <ModalCampo id="producto-local-nombre" tono="rol" type="text" className="uppercase" value={estado.producto} onChange={campo('producto')} placeholder="Descripción" />
         </ModalSeccion>
         <ModalSeccion etiqueta="Marca" htmlFor="producto-local-marca">
-          <ModalCampo id="producto-local-marca" tono="azul" type="text" className="uppercase" value={estado.marca} onChange={campo('marca')} placeholder="Marca" />
+          <ModalCampo id="producto-local-marca" tono="rol" type="text" className="uppercase" value={estado.marca} onChange={campo('marca')} placeholder="Marca" />
         </ModalSeccion>
       </ModalCuerpo>
       <ModalPie>
         <ModalBoton onClick={onCerrar} disabled={guardando}>Cancelar</ModalBoton>
-        <ModalBoton variante="primario" tono="azul" icono={guardando ? Loader2 : PlusCircle} onClick={onGuardar} disabled={guardando || !estado.sku || !estado.producto}>
+        <ModalBoton variante="primario" tono="rol" icono={guardando ? Loader2 : PlusCircle} onClick={onGuardar} disabled={guardando || !estado.sku || !estado.producto}>
           Guardar
         </ModalBoton>
       </ModalPie>

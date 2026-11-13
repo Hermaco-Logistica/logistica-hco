@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { avisarExito } from '../../components/ui/avisarExito';
 import { Loader2, PlusCircle, X, Package } from 'lucide-react';
 import { auth, db } from '../../firebase';
 import { serverTimestamp, collection, doc, runTransaction } from 'firebase/firestore';
@@ -430,7 +431,7 @@ export const NuevaRFQ = ({ role }) => {
 
       // navigate se ejecuta SOLO cuando el usuario presiona OK en el modal
       const msg = emailExitoso ? "Solicitud Creada" : "Solicitud Creada (Advertencia: Correo no enviado)";
-      window.alert(msg, () => navigate('/vendedor'));
+      avisarExito(msg, () => navigate('/vendedor'));
       
     } catch (error) {
       // Solo permitir reintentar si la solicitud AÚN NO fue creada en Firestore.

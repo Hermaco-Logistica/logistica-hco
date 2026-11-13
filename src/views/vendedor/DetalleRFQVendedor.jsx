@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { avisarExito } from '../../components/ui/avisarExito';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, collection, addDoc, serverTimestamp, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db, auth } from '../../firebase';
@@ -90,7 +91,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         conteoItems: clasificacion.conteoItems
       });
 
-      alert('Ítem anulado correctamente');
+      avisarExito('Ítem anulado correctamente');
       setModalAnulacion({ open: false, index: null, motivo: '', enviando: false });
     } catch (error) {
       console.error(error);
@@ -129,7 +130,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         conteoItems: clasificacion.conteoItems
       });
 
-      alert('Contraoferta enviada a Compras');
+      avisarExito('Contraoferta enviada a Compras');
       
       // Limpiar estado local
       setContraOfertas(prev => {
@@ -695,7 +696,7 @@ export const DetalleRFQVendedor = ({ canGenerarPedido = true, soloPropiasParaPed
         if (ok) await updateDoc(doc(db, 'solicitudes', id), { pedidoEmailEnviado: true });
       }
 
-      alert("Operación completada con éxito.");
+      avisarExito("Operación completada con éxito.");
       navigate('/vendedor'); 
     } catch (error) {
       console.error("Error al procesar pedido o ventas perdidas:", error);

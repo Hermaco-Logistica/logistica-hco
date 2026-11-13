@@ -20,6 +20,8 @@ import './detalleRFQResponsive.css';
 import { Etiqueta } from '../../../components/Etiqueta';
 import { ModalConsultaTexto, ModalMotivo } from '../../../components/Modal';
 import { ModalVistaPrevia } from '../../../components/ModalVistaPrevia';
+import { contarOpcionesMoviles } from './opcionesMoviles';
+import { TONOS, TEXTO_TONO } from '../../../utils/etiquetas';
 
 export const DetalleRFQVista = ({ viewModel }) => {
   const {
@@ -168,11 +170,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
     };
   };
 
-  const opcionesMovilesCount = [
-    rfq?.estado !== 'Pendiente',
-    hayDecisionesEnParcial,
-    hayVentaPerdidaEnParcial
-  ].filter(Boolean).length;
+  const opcionesMovilesCount = contarOpcionesMoviles({ estado: rfq?.estado, hayDecisionesEnParcial, hayVentaPerdidaEnParcial });
   const alturaMenuMovil = opcionesMovilesCount * 52 + Math.max(0, opcionesMovilesCount - 1) * 8;
   const menuHaciaAbajo = stickyPosicion.y < alturaMenuMovil + 24;
 
@@ -320,7 +318,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
         </div>
       )}
 
-      {typeof document !== 'undefined' && createPortal((
+      {typeof document !== 'undefined' && opcionesMovilesCount > 0 && createPortal((
       <div ref={opcionesMovilesRef} style={{ left: stickyPosicion.x, top: stickyPosicion.y }} className={`fixed z-40 flex flex-col items-end md:hidden ${stickyArrastrando ? '' : 'transition-[left,top] duration-300 ease-out'}`}>
         {opcionesMovilesAbiertas && (
           <div className={`absolute right-0 flex flex-col items-end gap-2 origin-bottom-right [&>button:first-child>span]:hidden animate-in duration-200 ${menuHaciaAbajo ? 'top-[calc(100%+0.75rem)] slide-in-from-top-3' : 'bottom-[calc(100%+0.75rem)] slide-in-from-bottom-3'}`}>
@@ -351,7 +349,7 @@ export const DetalleRFQVista = ({ viewModel }) => {
             )}
           </div>
         )}
-        <button type="button" aria-label={opcionesMovilesAbiertas ? 'Cerrar opciones' : 'Abrir opciones'} aria-expanded={opcionesMovilesAbiertas} onPointerDown={iniciarArrastreSticky} onClick={() => { if (bloquearClickStickyRef.current) { bloquearClickStickyRef.current = false; return; } setOpcionesMovilesAbiertas((abiertas) => !abiertas); }} className={`flex h-11 w-11 touch-none items-center justify-center rounded-full text-white shadow-xl shadow-slate-900/25 transition-all duration-200 ${opcionesMovilesAbiertas ? 'rotate-90 bg-slate-700' : 'bg-slate-900'}`}>
+        <button type="button" aria-label={opcionesMovilesAbiertas ? 'Cerrar opciones' : 'Abrir opciones'} aria-expanded={opcionesMovilesAbiertas} onPointerDown={iniciarArrastreSticky} onClick={() => { if (bloquearClickStickyRef.current) { bloquearClickStickyRef.current = false; return; } setOpcionesMovilesAbiertas((abiertas) => !abiertas); }} className={`flex h-11 w-11 touch-none items-center justify-center rounded-full text-primary-foreground shadow-xl shadow-slate-900/25 transition-all duration-200 ${opcionesMovilesAbiertas ? 'rotate-90 bg-primary-strong' : 'bg-primary'}`}>
           {opcionesMovilesAbiertas ? <X size={23} /> : <MoreVertical size={23} />}
         </button>
       </div>
@@ -379,25 +377,25 @@ export const DetalleRFQVista = ({ viewModel }) => {
 
         {totalGeneralA > 0 || totalGeneralM > 0 ? (
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
-            <div className="bg-mode-air-soft/60 rounded-xl p-2.5 border border-mode-air-100 flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-mode-air-100 text-mode-air-strong flex items-center justify-center shrink-0">
+            <div className={`${TONOS.exito} rounded-xl p-2.5 flex items-center gap-2`}>
+              <div className={`w-7 h-7 rounded-lg bg-white/50 ${TEXTO_TONO.exito} flex items-center justify-center shrink-0`}>
                 <Plane size={14} />
               </div>
               <div className="min-w-0">
-                <span className="text-[9px] font-black text-mode-air uppercase block leading-none">Total Aéreo</span>
-                <span className="font-mono font-black text-xs text-slate-900 tracking-tight block mt-0.5">
+                <span className={`text-[9px] font-black ${TEXTO_TONO.exito} uppercase block leading-none`}>Total Aéreo</span>
+                <span className={`font-mono font-black text-xs ${TEXTO_TONO.exito} tracking-tight block mt-0.5`}>
                   ${totalGeneralA.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
             </div>
 
-            <div className="bg-mode-sea-soft/60 rounded-xl p-2.5 border border-mode-sea-100 flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-mode-sea-100 text-mode-sea-strong flex items-center justify-center shrink-0">
+            <div className={`${TONOS.azul} rounded-xl p-2.5 flex items-center gap-2`}>
+              <div className={`w-7 h-7 rounded-lg bg-white/50 ${TEXTO_TONO.azul} flex items-center justify-center shrink-0`}>
                 <Ship size={14} />
               </div>
               <div className="min-w-0">
-                <span className="text-[9px] font-black text-mode-sea uppercase block leading-none">Total Marítimo</span>
-                <span className="font-mono font-black text-xs text-slate-900 tracking-tight block mt-0.5">
+                <span className={`text-[9px] font-black ${TEXTO_TONO.azul} uppercase block leading-none`}>Total Marítimo</span>
+                <span className={`font-mono font-black text-xs ${TEXTO_TONO.azul} tracking-tight block mt-0.5`}>
                   ${totalGeneralM.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
@@ -536,13 +534,13 @@ export const DetalleRFQVista = ({ viewModel }) => {
 
             {/* Desglose Aéreo / Marítimo */}
             <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="bg-mode-air-soft/50 rounded-xl p-3 border border-mode-air-100/80">
-                <span className="text-[9px] font-black text-mode-air uppercase tracking-widest block mb-1">Aéreo</span>
-                <span className="font-mono text-sm font-black text-mode-air-900">${desgloseVendedor.aereo.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              <div className={`${TONOS.exito} rounded-xl p-3`}>
+                <span className={`text-[9px] font-black ${TEXTO_TONO.exito} uppercase tracking-widest block mb-1`}>Aéreo</span>
+                <span className={`font-mono text-sm font-black ${TEXTO_TONO.exito}`}>${desgloseVendedor.aereo.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
               </div>
-              <div className="bg-mode-sea-soft/50 rounded-xl p-3 border border-mode-sea-100/80">
-                <span className="text-[9px] font-black text-mode-sea uppercase tracking-widest block mb-1">Marítimo</span>
-                <span className="font-mono text-sm font-black text-mode-sea-900">${desgloseVendedor.maritimo.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              <div className={`${TONOS.azul} rounded-xl p-3`}>
+                <span className={`text-[9px] font-black ${TEXTO_TONO.azul} uppercase tracking-widest block mb-1`}>Marítimo</span>
+                <span className={`font-mono text-sm font-black ${TEXTO_TONO.azul}`}>${desgloseVendedor.maritimo.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
               </div>
             </div>
 

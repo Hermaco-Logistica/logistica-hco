@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { avisarExito } from '../../components/ui/avisarExito';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Button } from '../../components/ui/Button';
@@ -152,7 +153,7 @@ export const RevisionPedidoManual = ({ role = 'comprador' }) => {
         }, { attachments: pdfBase64 ? [{ content: pdfBase64, nombre: `Anulacion_${solicitudBase.correlativo}.pdf` }] : undefined });
       }
 
-      alert('Ítem anulado correctamente');
+      avisarExito('Ítem anulado correctamente');
       setModalAnulacion({ open: false, index: null, motivo: '', enviando: false });
     } catch (error) {
       console.error(error);

@@ -36,6 +36,21 @@ describe('Etiqueta', () => {
     expect(TONOS.violeta).toBe('bg-tag-violeta-soft text-tag-violeta');
   });
 
+  it('el tono "rol" sigue el color del rol del usuario (tokens primary), sin colores tag-* ni fijos', () => {
+    const { container } = render(<Etiqueta tono="rol">Éxito</Etiqueta>);
+    const clases = container.firstChild.className;
+    expect(clases).toContain('bg-primary-soft');
+    expect(clases).toContain('text-primary-strong');
+    expect(clases).not.toMatch(/tag-|emerald|slate/);
+    expect(container.firstChild.className).not.toContain('border');
+  });
+
+  it('el tono "rol" tiene su color de texto en TEXTO_TONO y no cae al tono neutral', () => {
+    expect(TONOS.rol).toBe('bg-primary-soft text-primary-strong');
+    expect(TEXTO_TONO.rol).toBe('text-primary-strong');
+    expect(TONOS.rol).not.toBe(TONOS.neutral);
+  });
+
   it('el color de "cotizado" depende del rol', () => {
     expect(resolverEtiqueta('estadoSolicitud', 'Cotizado', { rol: 'vendedor' }).tono).toBe('morado');
     expect(resolverEtiqueta('estadoSolicitud', 'Cotizado', { rol: 'gerente' }).tono).toBe('turquesa');

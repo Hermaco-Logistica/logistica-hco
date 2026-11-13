@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { avisarExito } from '../../components/ui/avisarExito';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Button } from '../../components/ui/Button';
@@ -155,7 +156,7 @@ export const DetallePedidoManual = ({ role = 'vendedor' }) => {
         linkOC: linkOC.trim(),
         comentariosVendedor: comentariosVendedor.trim()
       });
-      alert("Documentación guardada (visible para Compras)");
+      avisarExito("Documentación guardada (visible para Compras)");
     } catch (err) {
       console.error(err);
       alert("Error al guardar");

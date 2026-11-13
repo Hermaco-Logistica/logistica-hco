@@ -5,7 +5,7 @@
     "src/utils/etiquetas.js"
   ],
   "totales": {
-    "clases": 975,
+    "clases": 964,
     "literales": 77
   },
   "archivos": {
@@ -86,7 +86,7 @@
       "literales": 0
     },
     "src/components/ui/Toast.jsx": {
-      "clases": 16,
+      "clases": 12,
       "literales": 0
     },
     "src/components/vendedor/ModalVentaPerdida.jsx": {
@@ -186,7 +186,7 @@
       "literales": 0
     },
     "src/views/pedidos/DashboardPedidos.jsx": {
-      "clases": 50,
+      "clases": 45,
       "literales": 0
     },
     "src/views/pedidos/RetaceosView.jsx": {
@@ -210,7 +210,7 @@
       "literales": 0
     },
     "src/views/vendedor/detalle-rfq/DetalleRFQProductos.jsx": {
-      "clases": 54,
+      "clases": 52,
       "literales": 0
     },
     "src/views/vendedor/detalle-rfq/DetalleRFQVista.jsx": {

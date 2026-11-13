@@ -1,5 +1,6 @@
 ﻿import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { avisarExito } from '../../components/ui/avisarExito';
 import { Etiqueta } from '../../components/Etiqueta';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { TablePagination } from '../../components/ui/TablePagination';
@@ -100,7 +101,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       const { ok } = await enviarEvento('solicitud_creada', { solicitud: s });
       if (!ok) throw new Error('Fallo al enviar correo');
       await updateDoc(doc(db, 'solicitudes', s.id), { emailEnviado: true });
-      alert('Correo reenviado exitosamente');
+      avisarExito('Correo reenviado exitosamente');
     } catch (e) {
       alert('No se pudo reenviar el correo. Intenta de nuevo.');
       console.error(e);
@@ -128,7 +129,7 @@ export const DashboardVendedor = ({ solicitudes, canCreate = true, title = 'Mis 
       const { ok } = await enviarEvento('pedido_confirmado', { pedido, solicitud: s });
       if (!ok) throw new Error('Fallo al enviar correo de pedido');
       await updateDoc(doc(db, 'solicitudes', s.id), { pedidoEmailEnviado: true });
-      alert('Correo de pedido reenviado exitosamente');
+      avisarExito('Correo de pedido reenviado exitosamente');
     } catch (e) {
       alert('No se pudo reenviar el correo de pedido. Intenta de nuevo.');
       console.error(e);

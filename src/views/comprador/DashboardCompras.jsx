@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { avisarExito } from '../../components/ui/avisarExito';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { TablePagination } from '../../components/ui/TablePagination';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -114,7 +115,7 @@ export const DashboardCompras = ({ solicitudes, readOnly = false }) => {
         }, { attachments: pdfBase64 ? [{ content: pdfBase64, nombre: `Anulacion_${rfqData.correlativo}.pdf` }] : undefined });
       }
 
-      alert('Solicitud anulada correctamente');
+      avisarExito('Solicitud anulada correctamente');
       setModalAnulacionGlobal({ open: false, rfqId: null, rfqData: null, motivo: '', enviando: false });
     } catch (error) {
       console.error(error);

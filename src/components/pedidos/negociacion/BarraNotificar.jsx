@@ -76,7 +76,7 @@ export const BarraNotificar = ({
     <>
       {showSheet && (
         <Modal etiqueta="Confirmar notificación" ancho="sm" onCerrar={() => setShowSheet(false)}>
-          <ModalEncabezado titulo="Confirmar notificación" subtitulo="Revisa el resumen antes de enviar." icono={Send} tono="exito" onCerrar={() => setShowSheet(false)} />
+          <ModalEncabezado titulo="Confirmar notificación" subtitulo="Revisa el resumen antes de enviar." icono={Send} tono="rol" onCerrar={() => setShowSheet(false)} />
           <ModalCuerpo>
             <p className="flex flex-wrap justify-center gap-x-2 text-[14.5px] font-semibold">
               <span className="text-emerald-700">{resumenAcciones?.aprobados || 0} aprobados</span> &bull;
@@ -90,7 +90,7 @@ export const BarraNotificar = ({
           </ModalCuerpo>
           <ModalPie>
             <ModalBoton onClick={() => setShowSheet(false)}>Cancelar</ModalBoton>
-            <ModalBoton variante="primario" tono="exito" icono={Send} onClick={handleConfirm} disabled={isLoading}>Enviar</ModalBoton>
+            <ModalBoton variante="primario" tono="rol" icono={Send} onClick={handleConfirm} disabled={isLoading}>Enviar</ModalBoton>
           </ModalPie>
         </Modal>
       )}

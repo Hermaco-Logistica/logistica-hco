@@ -1917,7 +1917,7 @@ export const Calculadora = ({ onGuardar }) => {
                 <button
                   type="button"
                   onClick={() => setModalGastosMobile(false)}
-                  className="w-full bg-slate-900 text-white font-black py-3 rounded-xl uppercase tracking-wide text-xs shadow-md hover:bg-slate-800 transition-colors"
+                  className="w-full bg-primary hover:bg-primary-strong text-primary-foreground font-black py-3 rounded-xl uppercase tracking-wide text-xs shadow-md transition-colors"
                 >
                   Listo (Aduana: ${aduana.toFixed(2)})
                 </button>

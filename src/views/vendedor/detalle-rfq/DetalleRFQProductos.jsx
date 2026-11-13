@@ -3,6 +3,7 @@ import { Ban, CheckCircle2, CheckSquare, Clock, MessageCircleQuestion, MessageSq
 import { crearContextoProducto } from './productoContext';
 import { SeguimientoItemCondicion } from '../../../components/seguimiento/SeguimientoItemCondicion';
 import { Etiqueta } from '../../../components/Etiqueta';
+import { TONOS, TEXTO_TONO } from '../../../utils/etiquetas';
 
 /** Props: viewModel contiene los datos y handlers del flujo de detalle RFQ. */
 export const DetalleRFQProductos = ({ viewModel }) => {
@@ -294,39 +295,39 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                 <div className="pt-3 border-t border-slate-50 space-y-3">
                   {/* Precios Aéreo y Marítimo en grid de 2 columnas */}
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-mode-air-soft/40 rounded-xl p-2.5 border border-mode-air-100/60 flex flex-col justify-between h-full">
+                    <div className={`${TONOS.exito} rounded-xl p-2.5 flex flex-col justify-between h-full`}>
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-1.5 text-[9px] font-black text-mode-air-strong uppercase">
-                          <Plane size={11} className="text-emerald-500" /> Aéreo
+                        <div className={`flex items-center gap-1.5 text-[9px] font-black ${TEXTO_TONO.exito} uppercase`}>
+                          <Plane size={11} /> Aéreo
                         </div>
-                        <div className="text-[9px] text-mode-air/70 font-bold flex items-center gap-1">
+                        <div className="text-[9px] opacity-70 font-bold flex items-center gap-1">
                           <Clock size={9}/> {p.entregaA} d
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs font-black text-mode-air-950 leading-none">
+                        <div className={`text-xs font-black ${TEXTO_TONO.exito} leading-none`}>
                           ${(ventaA * p.cant).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
-                        <div className="text-[8px] font-bold text-mode-air-strong/60 uppercase mt-0.5">
+                        <div className="text-[8px] font-bold opacity-70 uppercase mt-0.5">
                           ${ventaA.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ud
                         </div>
                       </div>
                     </div>
 
-                    <div className="bg-mode-sea-soft/40 rounded-xl p-2.5 border border-mode-sea-100/60 flex flex-col justify-between h-full">
+                    <div className={`${TONOS.azul} rounded-xl p-2.5 flex flex-col justify-between h-full`}>
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-1.5 text-[9px] font-black text-mode-sea-strong uppercase">
-                          <Ship size={11} className="text-mode-sea-500" /> Marítimo
+                        <div className={`flex items-center gap-1.5 text-[9px] font-black ${TEXTO_TONO.azul} uppercase`}>
+                          <Ship size={11} /> Marítimo
                         </div>
-                        <div className="text-[9px] text-mode-sea/70 font-bold flex items-center gap-1">
+                        <div className="text-[9px] opacity-70 font-bold flex items-center gap-1">
                           <Clock size={9}/> {p.entregaM} d
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs font-black text-mode-sea-950 leading-none">
+                        <div className={`text-xs font-black ${TEXTO_TONO.azul} leading-none`}>
                           ${(ventaM * p.cant).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
-                        <div className="text-[8px] font-bold text-mode-sea-strong/60 uppercase mt-0.5">
+                        <div className="text-[8px] font-bold opacity-70 uppercase mt-0.5">
                           ${ventaM.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / ud
                         </div>
                       </div>
@@ -565,7 +566,7 @@ export const DetalleRFQProductos = ({ viewModel }) => {
                     ) : (
                       <>
                         <td className="p-5 text-center bg-mode-air-soft/30">
-                          {estaCotizado ? <><div className="text-mode-air-strong font-black text-base">${ventaA.toFixed(2)}</div><div className="text-[9px] text-emerald-500 font-bold uppercase">Total: ${(ventaA * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
+                          {estaCotizado ? <><div className="text-mode-air-strong font-black text-base">${ventaA.toFixed(2)}</div><div className={`text-[9px] ${TEXTO_TONO.exito} font-bold uppercase`}>Total: ${(ventaA * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
                         </td>
                         <td className="p-5 text-center bg-mode-sea-soft/30">
                           {estaCotizado ? <><div className="text-mode-sea-strong font-black text-base">${ventaM.toFixed(2)}</div><div className="text-[9px] text-mode-sea-500 font-bold uppercase">Total: ${(ventaM * p.cant).toFixed(2)}</div></> : <span className="text-slate-300 italic font-bold">---</span>}
