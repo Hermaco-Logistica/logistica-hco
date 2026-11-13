@@ -6,7 +6,7 @@ React (Vite) SPA for Hermaco logistics (RFQ/cotización/pedidos/tracking), deplo
 - `npm run dev` — local dev via **Netlify Dev** (runs serverless functions locally). This is the recommended command; plain `vite` (`npm run dev:vite`) won't serve functions.
 - `npm run build` — `vite build` (outputs `dist/`).
 - `npm run lint` — `eslint .` (hoy hay 9 problemas preexistentes en `src/` y `netlify/`; no se deben añadir más).
-- `npm test` — `vitest run` (jsdom + Testing Library). Hay pruebas junto al código en `src/` (36 archivos); `src/services/pedidoManualNegociacionService.test.js` tiene 8 fallos preexistentes.
+- `npm test` — `vitest run` (jsdom + Testing Library). Hay pruebas junto al código en `src/` (los archivos `*.test.*`); `src/services/pedidoManualNegociacionService.test.js` tiene 8 fallos preexistentes.
 - `npm run check:colores` / `npm run check:superficies` — guardas de estilo (colores sueltos y superficies hechas a mano) con tope en `scripts/*-baseline.json` que solo puede bajar (`-- --update` fija una mejora; `scripts/` está en `.gitignore`, así que los topes se añaden con `git add -f`). Ver `docs/colores.md` y `docs/superficies.md`; los filtros, en `docs/filtros.md`.
 - Data import scripts: `npm run import:clientes`, `npm run import:proveedores`, `npm run db:push-dhl` (Node scripts in `scripts/`).
 
