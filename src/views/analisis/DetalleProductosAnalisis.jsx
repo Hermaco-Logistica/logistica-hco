@@ -453,8 +453,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                           </span>
                         </td>
                         <td className="py-2.5 px-2.5 text-center">
-                          <Etiqueta tono="neutral" tamano="normal" mono>
-                            {p.vecesSolicitadas} {pluralizar(p.vecesSolicitadas, 'solicitud', 'solicitudes')}
+                          <Etiqueta tono="neutral" tamano="compacta" mono titulo={`${p.vecesSolicitadas} ${pluralizar(p.vecesSolicitadas, 'solicitud', 'solicitudes')}`}>
+                            {p.vecesSolicitadas} solic.
                           </Etiqueta>
                         </td>
                         <td className="py-2.5 px-2.5 text-center whitespace-nowrap">

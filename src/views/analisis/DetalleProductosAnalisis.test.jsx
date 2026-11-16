@@ -163,14 +163,16 @@ describe('DetalleProductosAnalisis: Veces solicitadas', () => {
       s('r2', 'Anulado', [l('bomba', 'Anulado')])
     ]);
     await esperar();
-    expect(screen.getByText('3 solicitudes')).toBeTruthy();
+    expect(screen.getByText('3 solic.')).toBeTruthy();
+    expect(screen.getByTitle('3 solicitudes')).toBeTruthy();
     expect(screen.queryByText(/RFQs?$/)).toBeNull();
   });
 
-  it('en singular dice "1 solicitud"', async () => {
+  it('en singular dice "1 solic." con el texto completo "1 solicitud" en el title', async () => {
     montarCon([s('1', 'Cotizado', [l('bomba', 'Cotizado'), l('bomba', 'Cotizado')])]);
     await esperar();
-    expect(screen.getByText('1 solicitud')).toBeTruthy();
+    expect(screen.getByText('1 solic.')).toBeTruthy();
+    expect(screen.getByTitle('1 solicitud')).toBeTruthy();
   });
 
   it('sin id cuenta por correlativo: dos solicitudes con correlativo distinto son 2', async () => {
@@ -179,7 +181,8 @@ describe('DetalleProductosAnalisis: Veces solicitadas', () => {
       { correlativo: 'RFQ-B', estado: 'Cotizado', cliente: 'B', vendedorNombre: 'Ana', fechaS: dia(1), fechaCreacion: dia(1), productos: [l('tubo', 'Cotizado')] }
     ]);
     await esperar();
-    expect(screen.getByText('2 solicitudes')).toBeTruthy();
+    expect(screen.getByText('2 solic.')).toBeTruthy();
+    expect(screen.getByTitle('2 solicitudes')).toBeTruthy();
   });
 
   it('"Más solicitados" ordena por solicitudes distintas: 2 solicitudes con 1 línea van antes que 1 solicitud con 3 líneas', async () => {
