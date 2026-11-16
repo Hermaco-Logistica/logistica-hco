@@ -305,3 +305,32 @@ describe('normalizarClaveOrden y compararProductos', () => {
     expect(ordenar(lista, 'nada')).toEqual(ordenar(lista, 'veces'));
   });
 });
+
+describe('resumirProductos: unidades abiertas (Cotizado y Pendiente por separado)', () => {
+  it('separa las unidades abiertas: el estado Cotizado en `cotizado` y el Pendiente en `pendiente`', () => {
+    const r = uno([
+      sol('1', 'Cotizado', [linea('P', 'Cotizado', 5)]),
+      sol('2', 'Pendiente', [linea('P', 'Pendiente', 2)]),
+      sol('3', 'Cotizado', [linea('P', 'Cotizado', 1)])
+    ], 'P');
+    expect(r.unidadesAbiertas).toEqual({ cotizado: 6, pendiente: 2 });
+  });
+
+  it('suman las abiertas: cotizado + pendiente es `unidades.abierto`', () => {
+    const r = uno([sol('1', 'Cotizado', [linea('P', 'Cotizado', 5), linea('P', 'Pendiente', 2), linea('P', 'Pedido', 3), linea('P', 'Anulado', 4)])], 'P');
+    expect(r.unidadesAbiertas.cotizado + r.unidadesAbiertas.pendiente).toBe(r.unidades.abierto);
+    expect(r.unidades.abierto).toBe(7);
+  });
+
+  it('un ítem sin estado se reparte según la solicitud: con precio es Cotizado y sin precio es Pendiente; los ya cerrados no cuentan', () => {
+    const r = uno([
+      sol('1', 'Cotizado', [linea('P', undefined, 3, { fob: 10 }), linea('P', undefined, 2)]),
+      sol('2', 'Pedido', [linea('P', 'Pedido', 9)])
+    ], 'P');
+    expect(r.unidadesAbiertas).toEqual({ cotizado: 3, pendiente: 2 });
+  });
+
+  it('sin líneas abiertas quedan en cero', () => {
+    expect(uno([sol('1', 'Pedido', [linea('P', 'Pedido', 3)])], 'P').unidadesAbiertas).toEqual({ cotizado: 0, pendiente: 0 });
+  });
+});

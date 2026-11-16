@@ -27,7 +27,9 @@ import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, formatearTiempoRespuesta, formatearTiempoCierre } from './theme';
 import { contarDecisiones, obtenerDecisionItem } from './utils/decisionMetrics';
-import { claveSolicitud } from './utils/resumenProductos';
+import { claveSolicitud, resumirProductos } from './utils/resumenProductos';
+import { segmentosDeVolumen, volumenPorEstado } from './utils/segmentosVolumen';
+import { BarraApilada } from '../../components/BarraApilada';
 import {
   getHoyElSalvador,
   getAnioActualElSalvador,
@@ -455,10 +457,12 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
         if (!map[key].marca && marca) map[key].marca = marca;
       });
     });
+    // Volumen por estado final (F8a): el único cálculo de "Mayor volumen" y de su barra.
+    const resumenes = new Map(resumirProductos(solicitudesFiltradas).map((r) => [r.desc, r]));
     return Object.values(map)
-      .map((p) => ({ ...p, vecesSolicitadas: p.solicitudesIds.size }))
+      .map((p) => ({ ...p, vecesSolicitadas: p.solicitudesIds.size, volumen: resumenes.get(p.desc)?.volumen ?? 0, unidadesPorEstado: volumenPorEstado(resumenes.get(p.desc)) }))
       .sort((a, b) => {
-        if (ordenarProductosPor === 'unidades') return b.unidades - a.unidades || b.veces - a.veces;
+        if (ordenarProductosPor === 'unidades') return b.volumen - a.volumen || b.vecesSolicitadas - a.vecesSolicitadas;
         if (ordenarProductosPor === 'ganadas') {
           return b.ganadas - a.ganadas || b.unidadesGanadas - a.unidadesGanadas || b.veces - a.veces;
         }
@@ -1347,7 +1351,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                Por unidades
+                Mayor volumen
               </button>
               <button
                 type="button"
@@ -1465,11 +1469,12 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                     )}
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400 font-medium">Unidades</span>
+                    <span className="text-[10px] text-slate-400 font-medium">Volumen</span>
                     <span className="font-mono font-semibold text-slate-700 text-xs">
-                      {p.unidades.toLocaleString()}
+                      {p.volumen.toLocaleString()}
                     </span>
                   </div>
+                  <BarraApilada titulo="Volumen por estado" unidad="u." reinicio={ordenarProductosPor} segmentos={segmentosDeVolumen(p.unidadesPorEstado)} />
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] text-slate-400 font-medium">Anulaciones</span>
                     <span className={`font-mono font-semibold text-xs ${p.anulaciones > 0 ? 'text-rose-700' : 'text-slate-400'}`}>

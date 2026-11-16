@@ -471,6 +471,38 @@ aside {
   color: var(--color-sidebar-foreground);
 }
 
+/* Barra apilada (BarraApilada.jsx): al entrar en el viewport los segmentos crecen de 0 a su ancho desde la izquierda, con una pequeña escalonada
+   (--i = posición del segmento). Solo transform y opacity: no mueve el layout. data-anim lo pone el componente: 'espera' oculta los segmentos hasta
+   que la barra se ve y 'activa' los anima. Sin data-anim (sin IntersectionObserver o con prefers-reduced-motion) la barra se ve terminada. */
+@keyframes barra-crecer { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+.barra-seg { transform-origin: left center; transition: scale 120ms var(--ease-abrir), filter 120ms linear; }
+/* Segmento bajo el cursor (data-hover) o tocado con el popover abierto (data-seleccion): se engrosa 2 px (scale en Y con --escala-resalte, que pone BarraApilada según su alto; no mueve el layout)
+   y se aviva. Se usa la propiedad `scale` para no chocar con el `transform` de la animación de entrada. */
+.barra-seg[data-hover='true'],
+.barra-seg[data-seleccion='true'] { scale: 1 var(--escala-resalte, 1.34); filter: brightness(1.1) saturate(1.05); }
+/* Zona de pulsación más alta que la barra (6 px a cada lado), sin cambiar el layout. */
+.barra-apilada::before { content: ''; position: absolute; inset: -6px 0; }
+.barra-apilada[data-anim='espera'] .barra-seg { transform: scaleX(0); opacity: 0; }
+.barra-apilada[data-anim='activa'] .barra-seg {
+  animation: barra-crecer var(--anim-abrir) var(--ease-abrir) both;
+  animation-delay: calc(var(--i, 0) * 35ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .barra-apilada .barra-seg { animation: none !important; transform: none !important; opacity: 1 !important; transition: none; }
+}
+
+/* Popover de la barra (PopoverBarra.jsx): aparece con escala de 0,96 a 1 y opacidad desde el lado de la barra. Solo transform y opacity.
+   --origen-x y data-dir los pone el componente al medirlo y posicionarlo. */
+@keyframes popover-barra-in { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.popover-barra {
+  transform-origin: var(--origen-x, 50%) 0;
+  animation: popover-barra-in var(--anim-abrir) var(--ease-abrir) backwards;
+}
+.popover-barra[data-dir='arriba'] { transform-origin: var(--origen-x, 50%) 100%; }
+@media (prefers-reduced-motion: reduce) {
+  .popover-barra { animation: none !important; }
+}
+
 @media print {
   @page {
     size: letter;

@@ -126,6 +126,43 @@ export const tamanoIcono = (tamano) => (TAMANOS[tamano] || TAMANOS.compacta).ico
 
 export const textoDeTono = (tono) => TEXTO_TONO[tono] || TEXTO_TONO.neutral;
 
+/**
+ * Aspecto de un segmento de barra (BarraApilada): el MISMO fondo suave (tag-*-soft) que la Etiqueta de ese tono, sin contorno (prueba de aspecto).
+ * El fondo suave solo da 1,0 a 1,2 de contraste contra la superficie: los segmentos se distinguen por el matiz, no por el contraste.
+ * Las utilidades van completas para que Tailwind las detecte.
+ */
+const RELLENO_SEGMENTO = {
+  exito: 'bg-tag-exito-soft',
+  aviso: 'bg-tag-aviso-soft',
+  info: 'bg-tag-info-soft',
+  apagado: 'bg-tag-apagado-soft',
+  peligro: 'bg-tag-peligro-soft'
+};
+
+/**
+ * Contorno interior de 1 px con el color de TEXTO_TONO del mismo tono (la variante A medida en F8b: `inset-ring` es una sombra interior que no
+ * cambia el tamaño del segmento; da 4,4 a 5,9 de contraste contra la superficie). Cada color debe coincidir con TEXTO_TONO[tono] (hay una prueba).
+ */
+const CONTORNO_SEGMENTO = {
+  exito: 'inset-ring-1 inset-ring-tag-exito-text',
+  aviso: 'inset-ring-1 inset-ring-tag-aviso-text',
+  info: 'inset-ring-1 inset-ring-tag-info',
+  apagado: 'inset-ring-1 inset-ring-tag-apagado',
+  peligro: 'inset-ring-1 inset-ring-tag-peligro-text'
+};
+
+/** Para recuperar el contorno de la variante A en todas las barras basta con poner esta constante en `true`. */
+const CON_CONTORNO = false;
+
+/**
+ * Clases del fondo (y, con `contorno`, del contorno interior) de un segmento de barra según su tono (`exito`, `aviso`, `info`, `apagado` o `peligro`);
+ * un tono desconocido cae en `apagado`. Sin opciones usa CON_CONTORNO.
+ */
+export const clasesSegmento = (tono, { contorno = CON_CONTORNO } = {}) => {
+  const clave = RELLENO_SEGMENTO[tono] ? tono : 'apagado';
+  return contorno ? `${RELLENO_SEGMENTO[clave]} ${CONTORNO_SEGMENTO[clave]}` : RELLENO_SEGMENTO[clave];
+};
+
 /** Color de texto de un rol (comprador azul, vendedor morado, gerente verde, administrador rojo). */
 export const textoDeRol = (rol) => textoDeTono(TONO_POR_ROL[rol] || TONO_POR_ROL.default);
 

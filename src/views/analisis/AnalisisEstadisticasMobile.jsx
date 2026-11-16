@@ -19,6 +19,8 @@ import {
 import { MetricasRotativas } from './components/MetricasRotativas';
 import { FASES_SEGUIMIENTO } from '../../utils/faseSeguimiento';
 import { Etiqueta } from '../../components/Etiqueta';
+import { BarraApilada } from '../../components/BarraApilada';
+import { segmentosDeVolumen } from './utils/segmentosVolumen';
 import { FiltroSegmentado } from '../../components/filtros';
 import { OPCIONES_PERIODO } from './opcionesPeriodo';
 import { EtiquetaFechasRango } from './components/EtiquetaFechasRango';
@@ -602,9 +604,10 @@ function MobileProductosScroll({ productos, onSelect, onVerTodos }) {
                     )}
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400">Unidades</span>
-                    <span className="font-mono font-semibold text-slate-700">{p.unidades.toLocaleString()}</span>
+                    <span className="text-[10px] text-slate-400">Volumen</span>
+                    <span className="font-mono font-semibold text-slate-700">{p.volumen.toLocaleString()}</span>
                   </div>
+                  <BarraApilada titulo="Volumen por estado" unidad="u." segmentos={segmentosDeVolumen(p.unidadesPorEstado)} />
                 </div>
               </div>
             ))}

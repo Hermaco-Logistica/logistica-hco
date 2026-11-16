@@ -67,6 +67,7 @@ const nuevoResumen = (desc) => ({
   marcas: [],
   volumen: 0,
   unidades: ceros(),
+  unidadesAbiertas: { cotizado: 0, pendiente: 0 },
   items: ceros(),
   datosARevisar: { total: 0, porMotivo: {} },
   // Conjuntos de trabajo: se sustituyen por sus conteos al cerrar el resumen.
@@ -96,7 +97,8 @@ const cerrarResumen = (r) => {
  * Agrupa las líneas de las solicitudes por producto. Devuelve un resumen por producto, sin ordenar:
  *  - `vecesSolicitadas`: solicitudes distintas en las que aparece (cualquier estado, con pendientes y decisiones; un producto repetido
  *    dentro de una solicitud cuenta una vez).
- *  - `volumen`: unidades de todas las líneas en cualquier estado; `unidades[clave]` las reparte por estado final (la barra).
+ *  - `volumen`: unidades de todas las líneas en cualquier estado; `unidades[clave]` las reparte por estado final (la barra) y
+ *    `unidadesAbiertas` separa las abiertas en Cotizado y Pendiente.
  *  - `items[clave]`, `ganadas`, `unidadesGanadas`, `ventasPerdidas`, `rechazos`, `anulaciones`, `abiertos` y `cerrados`: líneas por estado final.
  *  - `conversion`: ganadas ÷ cerradas × 100 (sin redondear), o `null` si no hay ninguna cerrada.
  *  - `clientesDistintos`: clientes con el nombre normalizado como `normalizarBusqueda`.
@@ -121,6 +123,7 @@ export function resumirProductos(solicitudes, { porLinea } = {}) {
       r._solicitudes.add(idSolicitud);
       r.volumen += cant;
       r.unidades[clave] += cant;
+      if (clave === CLAVE_ESTADO.ABIERTO) r.unidadesAbiertas[estado === ESTADO_FINAL.PENDIENTE ? 'pendiente' : 'cotizado'] += cant;
       r.items[clave] += 1;
 
       const cliente = normalizarBusqueda(solicitud.cliente);

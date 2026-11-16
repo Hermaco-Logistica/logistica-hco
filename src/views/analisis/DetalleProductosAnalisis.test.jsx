@@ -8,6 +8,7 @@ vi.mock('../../utils/exportarExcel', () => ({ extraerTodosLosMovimientos: vi.fn(
 
 import { DetalleProductosAnalisis as Vista } from './DetalleProductosAnalisis';
 import { reiniciarCapasParaPruebas } from '../../components/filtros/capasAtras';
+import { reiniciarObservadorVisible } from '../../utils/observadorVisible';
 
 /**
  * Top de productos en móvil: "Filtros (N)" cuenta el orden cuando es distinto del inicial (el de ?orden= de la URL, o 'veces'), "Limpiar" cuenta
@@ -216,5 +217,98 @@ describe('DetalleProductosAnalisis: Veces solicitadas', () => {
     expect(solicitados('BOMBA')).toBe('Solicitados3 veces');
     expect(solicitados('TUBO')).toBe('Solicitados1 vez');
     expect(screen.queryByText('Cotizados')).toBeNull();
+  });
+});
+
+/**
+ * "Mayor volumen" (F8b, commit 3): el volumen suma las unidades de todas las líneas en cualquier estado (antes "Unidades Cotizadas" dejaba fuera
+ * las decisiones) y la barra bajo la descripción lo reparte por estado final.
+ */
+describe('DetalleProductosAnalisis: Mayor volumen y barra', () => {
+  const l = (desc, estadoItem, cant = 1) => ({ desc, marca: 'X', cant, estadoItem, precio: 10 });
+  const s = (id, estado, productos) => ({ id, correlativo: `RFQ-${id}`, cliente: `Cliente ${id}`, estado, vendedorNombre: 'Ana', tipo: 'Aéreo', fechaS: dia(1), fechaCreacion: dia(1), productos });
+  const montarCon = (solicitudes, url = '/analisis/productos') => render(<MemoryRouter initialEntries={[url]}><Vista role="comprador" solicitudes={solicitudes} ordenesCompra={[]} /></MemoryRouter>);
+  const DATOS = [s('a', 'Cotizado', [l('bomba', 'Cotizado', 5)]), s('b', 'Venta Perdida', [l('bomba', 'Venta Perdida', 4)]), s('c', 'Pedido', [l('bomba', 'Pedido', 3)])];
+
+  beforeEach(() => mm(false));
+
+  it('el encabezado dice "Volumen" y la celda suma todos los estados (12), no solo las líneas sin decisión (8)', async () => {
+    montarCon(DATOS);
+    await esperar();
+    const encabezados = [...document.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+    expect(encabezados).toContain('Volumen');
+    expect(encabezados).not.toContain('Unidades Cotizadas');
+    expect(document.querySelector('tbody tr').textContent).toContain('12');
+  });
+
+  it('la barra va en la celda de la descripción, sin columna nueva, con los segmentos no vacíos en su aria-label', async () => {
+    montarCon(DATOS);
+    await esperar();
+    const fila = document.querySelector('tbody tr');
+    const barra = fila.querySelectorAll('td')[1].querySelector('.barra-apilada');
+    expect(barra.getAttribute('aria-label')).toBe('Volumen por estado: Ganado 3 u., Cotizado 5 u., Venta perdida 4 u.');
+    expect(fila.querySelectorAll('.barra-apilada')).toHaveLength(1);
+    expect(document.querySelectorAll('thead th')).toHaveLength(13);
+  });
+
+  it('?orden=unidades ordena por volumen total: una venta perdida de 50 unidades va antes que una línea abierta de 2', async () => {
+    montarCon([s('x', 'Cotizado', [l('pieza x', 'Cotizado', 2)]), s('y', 'Venta Perdida', [l('pieza y', 'Venta Perdida', 50)])], '/analisis/productos?orden=unidades');
+    await esperar();
+    const f = [...document.querySelectorAll('tbody tr')].map((tr) => tr.textContent);
+    expect(f[0]).toContain('PIEZA Y');
+    expect(f[1]).toContain('PIEZA X');
+  });
+
+  it('móvil: la tarjeta dice "Volumen" con el total y lleva la barra', async () => {
+    mm(true);
+    montarCon(DATOS);
+    await esperar();
+    const tarjeta = [...document.querySelectorAll('h3')].find((h) => h.textContent.trim() === 'BOMBA').closest('.surface');
+    expect(within(tarjeta).getByText('Volumen').parentElement.textContent.replace(/\s+/g, '')).toBe('Volumen12');
+    expect(within(tarjeta).queryByText('Und. Cotizadas')).toBeNull();
+    expect(tarjeta.querySelector('.barra-apilada').getAttribute('aria-label')).toContain('Venta perdida 4 u.');
+  });
+});
+
+/** La animación de las barras se reinicia al cambiar el orden (prop `reinicio` de BarraApilada). */
+describe('DetalleProductosAnalisis: animación de la barra', () => {
+  class ObservadorFalso {
+    static ultimo = null;
+    constructor(alCambiar) { this.alCambiar = alCambiar; this.observados = new Set(); ObservadorFalso.ultimo = this; }
+    observe(el) { this.observados.add(el); }
+    unobserve(el) { this.observados.delete(el); }
+    mostrarTodo() { this.alCambiar([...this.observados].map((target) => ({ target, isIntersecting: true }))); }
+  }
+
+  afterEach(() => { vi.unstubAllGlobals(); reiniciarObservadorVisible(); });
+
+  it('al elegir otro orden las barras vuelven a espera y se animan otra vez al verse', async () => {
+    reiniciarObservadorVisible();
+    vi.stubGlobal('IntersectionObserver', ObservadorFalso);
+    // Pantalla móvil, pero sin prefers-reduced-motion (con mm(true) todas las consultas darían verdadero)
+    window.matchMedia = (consulta) => ({ matches: !/reduced-motion/.test(consulta), addEventListener() {}, removeEventListener() {} });
+    montar();
+    await esperar();
+    const barras = () => [...document.querySelectorAll('.barra-apilada')];
+    expect(barras().length).toBeGreaterThan(0);
+    act(() => ObservadorFalso.ultimo.mostrarTodo());
+    expect(barras().every((b) => b.dataset.anim === 'activa')).toBe(true);
+    await elegirOrden('Más rechazos');
+    expect(barras().every((b) => b.dataset.anim === 'espera')).toBe(true);
+  });
+
+  it('escritorio: al elegir otro orden las barras de la tabla vuelven a espera', async () => {
+    reiniciarObservadorVisible();
+    vi.stubGlobal('IntersectionObserver', ObservadorFalso);
+    window.matchMedia = (consulta) => ({ matches: !/reduced-motion/.test(consulta) && !/max-width/.test(consulta), addEventListener() {}, removeEventListener() {} });
+    montar();
+    await esperar();
+    const barras = () => [...document.querySelectorAll('tbody .barra-apilada')];
+    expect(barras().length).toBeGreaterThan(0);
+    act(() => ObservadorFalso.ultimo.mostrarTodo());
+    expect(barras().every((b) => b.dataset.anim === 'activa')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Más rechazos' }));
+    await esperar();
+    expect(barras().every((b) => b.dataset.anim === 'espera')).toBe(true);
   });
 });

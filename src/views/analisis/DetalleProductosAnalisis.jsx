@@ -13,7 +13,9 @@ import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
-import { claveSolicitud } from './utils/resumenProductos';
+import { claveSolicitud, compararProductos, resumirProductos } from './utils/resumenProductos';
+import { segmentosDeVolumen, volumenPorEstado } from './utils/segmentosVolumen';
+import { BarraApilada } from '../../components/BarraApilada';
 import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
 import { acumularFaseSeguimiento, describirFasesSeguimiento, obtenerFaseItemCacheada } from '../../utils/faseSeguimiento';
 import { cumpleFiltroPeriodoAnalisis } from './utils/periodoAnalisis';
@@ -100,6 +102,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
   const todosLosProductos = useMemo(() => {
     const map = {};
     const ahora = new Date();
+    const solicitudesDelFiltro = [];
 
     solicitudes.forEach((s, indiceSolicitud) => {
       // Filtro por fecha (respeta el período seleccionado en el dashboard)
@@ -117,6 +120,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
         if (resultado !== resultadoFilter) return;
       }
       if (!Array.isArray(s.productos)) return;
+      solicitudesDelFiltro.push(s);
 
       s.productos.forEach((p, indiceProducto) => {
         const desc = (p.desc || p.descripcion || '').trim().toUpperCase();
@@ -172,8 +176,13 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
       });
     });
 
+    // Volumen por estado final (F8a): el único cálculo de "Mayor volumen" y de su barra.
+    const resumenes = new Map(resumirProductos(solicitudesDelFiltro).map((r) => [r.desc, r]));
+
     return Object.values(map).map(p => ({
       ...p,
+      volumen: resumenes.get(p.desc)?.volumen ?? 0,
+      unidadesPorEstado: volumenPorEstado(resumenes.get(p.desc)),
       marcaPrincipal: Array.from(p.marcas).join(', ') || 'Sin marca',
       totalClientes: p.clientes.size,
       vecesSolicitadas: p.solicitudesIds.size
@@ -197,7 +206,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
   const productosOrdenados = useMemo(() => {
     return [...productosFiltrados].sort((a, b) => {
       if (ordenarPor === 'unidades') {
-        return b.unidadesCotizadas - a.unidadesCotizadas || b.vecesCotizado - a.vecesCotizado;
+        return compararProductos('unidades')(a, b);
       }
       if (ordenarPor === 'pedidos') {
         return b.vecesPedido - a.vecesPedido || b.unidadesPedidas - a.unidadesPedidas || b.vecesCotizado - a.vecesCotizado;
@@ -358,8 +367,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                       <span className="font-bold font-mono text-emerald-700">{p.vecesPedido} <span className="text-[9px] font-normal">veces</span></span>
                     </div>
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                      <span className="text-[10px] text-slate-400 font-medium">Und. Cotizadas</span>
-                      <span className="font-bold font-mono text-slate-700">{p.unidadesCotizadas.toLocaleString()}</span>
+                      <span className="text-[10px] text-slate-400 font-medium">Volumen</span>
+                      <span className="font-bold font-mono text-slate-700">{p.volumen.toLocaleString()}</span>
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-emerald-600/70 font-medium">Und. Pedidas</span>
@@ -367,6 +376,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     </div>
                   </div>
                   
+                  <BarraApilada titulo="Volumen por estado" unidad="u." reinicio={ordenarPor} segmentos={segmentosDeVolumen(p.unidadesPorEstado)} />
+
                   <DecisionSummaryMobile
                     counts={p}
                     basePath={`/analisis/producto/${encodeURIComponent(p.desc)}`}
@@ -419,7 +430,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Anulaciones</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Ventas perdidas</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Rechazos</th>
-                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Unidades Cotizadas</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal" title="Unidades solicitadas en cualquier estado">Volumen</th>
                     <th className="py-2.5 px-2.5 text-center whitespace-normal">Cotizaciones Ganadas</th>
                     <th className="py-2.5 px-2.5 text-center whitespace-normal">Unidades Pedidas</th>
                     <th className="py-2.5 px-2.5 text-center whitespace-normal">Clientes</th>
@@ -446,6 +457,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                               {p.desc}
                             </span>
                           </div>
+                          <BarraApilada className="mt-1.5" titulo="Volumen por estado" unidad="u." reinicio={ordenarPor} segmentos={segmentosDeVolumen(p.unidadesPorEstado)} />
                         </td>
                         <td className="py-2.5 px-3.5 text-slate-600">
                           <span className="truncate max-w-[150px] inline-block text-[11px]" title={p.marcaPrincipal}>
@@ -472,7 +484,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                         <DecisionSummaryColumns counts={p} basePath={`/analisis/producto/${encodeURIComponent(p.desc)}`} navigate={navigate} />
                         <td className="py-2.5 px-2.5 text-center">
                           <span className="inline-block font-mono text-slate-800 font-semibold text-xs">
-                            {p.unidadesCotizadas.toLocaleString()}
+                            {p.volumen.toLocaleString()}
                           </span>
                         </td>
                         <td className="py-2.5 px-2.5 text-center">
