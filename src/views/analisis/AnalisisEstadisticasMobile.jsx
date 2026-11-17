@@ -302,17 +302,17 @@ function MobileFlujoCard({ theme, metricas, onVerTodas, onVerEstado }) {
     },
     { 
       tipo: 'cotizadas',
-      label: 'Cotizadas / Parciales', 
-      count: metricas.cotizadas, 
+      label: 'Respondido por Compras',
+      count: metricas.cotizadas,
       icon: DollarSign,
       iconBg: theme.flujoEstados?.cotizadas?.iconBg || 'bg-sky-50 text-sky-600 border-sky-200/80',
       barGradient: theme.flujoEstados?.cotizadas?.barGradient || 'from-sky-500 to-blue-600',
       subGradient: theme.flujoEstados?.cotizadas?.subGradient || 'from-sky-400 to-blue-400',
       textColor: theme.flujoEstados?.cotizadas?.textColor || 'text-sky-700',
-      desc: 'Precios enviados al vendedor o cliente',
-      completas: metricas.cotizadasCompletas,
-      parciales: metricas.cotizadasParciales,
-      subdetail: `${metricas.cotizadasCompletas} completas · ${metricas.cotizadasParciales} parciales`
+      desc: 'Con respuesta de Compras, sin pedido aún',
+      completas: metricas.respondidasCompletas,
+      parciales: metricas.respondidasParciales,
+      subdetail: `${metricas.respondidasCompletas} completas · ${metricas.respondidasParciales} parciales`
     },
     { 
       tipo: 'pedidos',
@@ -337,7 +337,7 @@ function MobileFlujoCard({ theme, metricas, onVerTodas, onVerEstado }) {
       barGradient: 'from-seguimiento-claro to-seguimiento',
       subGradient: 'from-seguimiento-soft to-seguimiento-claro',
       textColor: 'text-seguimiento',
-      desc: 'Cotizadas en revisión, prórroga o vencidas (incluidas en Cotizadas)',
+      desc: 'Cotizadas en revisión, prórroga o vencidas (ya incluidas en Respondido por Compras)',
       completas: metricas.enSeguimiento?.solicitudes || 0,
       parciales: 0,
       subdetail: metricas.enSeguimiento?.solicitudes > 0

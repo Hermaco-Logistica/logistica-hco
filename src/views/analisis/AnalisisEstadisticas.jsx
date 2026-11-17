@@ -29,6 +29,7 @@ import { getRoleTheme, formatearTiempoRespuesta, formatearTiempoCierre } from '.
 import { contarDecisiones, obtenerDecisionItem } from './utils/decisionMetrics';
 import { compararProductos, describirConversion, formatearConversion, resumirProductos } from './utils/resumenProductos';
 import { segmentosDeVolumen, volumenPorEstado } from './utils/segmentosVolumen';
+import { esRespondidaCompleta } from './utils/respondidoPorCompras';
 import { BarraApilada } from '../../components/BarraApilada';
 import {
   getHoyElSalvador,
@@ -234,6 +235,8 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     let pendientes = 0;
     let cotizadas = 0;
     let cotizadasParcial = 0;
+    let respondidasCompletas = 0; // reparto de "Respondido por Compras" por estado final de cada ítem (esRespondidaCompleta)
+    let respondidasParciales = 0;
     let pedidos = 0;
     let pedidosParcial = 0;
     let pedidosConAnulaciones = 0;
@@ -268,6 +271,11 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       }
       else if (estado === 'Pedido Parcial') pedidosParcial++;
       else if (estado === 'Anulado') anuladas++;
+
+      if (estado === 'Cotizado' || estado === 'Cotizado Parcial') {
+        if (esRespondidaCompleta(s)) respondidasCompletas++;
+        else respondidasParciales++;
+      }
 
       if ((estado === 'Cotizado' || estado === 'Cotizado Parcial') && clasificacion.tieneAnulaciones) {
         cotizadasConAnulaciones++;
@@ -381,6 +389,8 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       cotizadas: cotizadas + cotizadasParcial,
       cotizadasCompletas: cotizadas,
       cotizadasParciales: cotizadasParcial,
+      respondidasCompletas,
+      respondidasParciales,
       pedidos,
       pedidosCompletos: pedidos - pedidosConAnulaciones,
       pedidosParciales: pedidosParcial,
@@ -981,17 +991,17 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
               },
               { 
                 tipo: 'cotizadas',
-                label: 'Cotizadas / Parciales', 
+                label: 'Respondido por Compras',
                 count: metricas.cotizadas, 
                 icon: DollarSign,
                 iconBg: theme.flujoEstados?.cotizadas?.iconBg || 'bg-sky-50 text-sky-600 border-sky-200/80',
                 barGradient: theme.flujoEstados?.cotizadas?.barGradient || 'from-sky-500 to-blue-600',
                 subGradient: theme.flujoEstados?.cotizadas?.subGradient || 'from-sky-400 to-blue-400',
                 textColor: theme.flujoEstados?.cotizadas?.textColor || 'text-sky-700',
-                desc: 'Precios enviados al vendedor o cliente',
-                completas: metricas.cotizadasCompletas,
-                parciales: metricas.cotizadasParciales,
-                subdetail: `${metricas.cotizadasCompletas} completas · ${metricas.cotizadasParciales} parciales`
+                desc: 'Con respuesta de Compras, sin pedido aún',
+                completas: metricas.respondidasCompletas,
+                parciales: metricas.respondidasParciales,
+                subdetail: `${metricas.respondidasCompletas} completas · ${metricas.respondidasParciales} parciales`
               },
               { 
                 tipo: 'pedidos',
@@ -1016,7 +1026,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 barGradient: 'from-seguimiento-claro to-seguimiento',
                 subGradient: 'from-seguimiento-soft to-seguimiento-claro',
                 textColor: 'text-seguimiento',
-                desc: 'Solicitudes cotizadas en revisión, prórroga o vencidas (ya incluidas en Cotizadas / Parciales)',
+                desc: 'Cotizadas en revisión, prórroga o vencidas (ya incluidas en Respondido por Compras)',
                 completas: metricas.enSeguimiento.solicitudes,
                 parciales: 0,
                 subdetail: metricas.enSeguimiento.solicitudes > 0
