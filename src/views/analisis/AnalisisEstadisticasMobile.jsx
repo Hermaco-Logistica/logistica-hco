@@ -20,6 +20,7 @@ import { MetricasRotativas } from './components/MetricasRotativas';
 import { FASES_SEGUIMIENTO } from '../../utils/faseSeguimiento';
 import { Etiqueta } from '../../components/Etiqueta';
 import { BarraApilada } from '../../components/BarraApilada';
+import { describirConversion, formatearConversion } from './utils/resumenProductos';
 import { segmentosDeVolumen } from './utils/segmentosVolumen';
 import { FiltroSegmentado } from '../../components/filtros';
 import { OPCIONES_PERIODO } from './opcionesPeriodo';
@@ -576,7 +577,7 @@ function MobileProductosScroll({ productos, onSelect, onVerTodos }) {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-mono font-bold text-slate-400">#{idx + 1}</span>
-                  {p.ganadas > 0 && p.ganadas === p.veces && (
+                  {p.ganadas > 0 && p.abiertos === 0 && (
                     <Etiqueta tono="exito">
                       <CheckCircle2 size={9} /> Ganado
                     </Etiqueta>
@@ -591,12 +592,12 @@ function MobileProductosScroll({ productos, onSelect, onVerTodos }) {
                     <span className="font-mono font-semibold text-slate-700">{p.vecesSolicitadas}x</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400">Ganado</span>
+                    <span className="text-[10px] text-slate-400">Ganados</span>
                     {p.ganadas > 0 ? (
-                      <Etiqueta tono="exito" mono>
+                      <Etiqueta tono="exito" mono titulo={describirConversion(p)}>
                         {p.ganadas}x
                         <span className="text-[9px] text-emerald-600 font-sans ml-0.5">
-                          ({Math.round((p.ganadas / p.veces) * 100)}%)
+                          ({formatearConversion(p.conversion)})
                         </span>
                       </Etiqueta>
                     ) : (

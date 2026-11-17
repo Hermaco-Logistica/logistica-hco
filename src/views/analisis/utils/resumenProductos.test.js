@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CLAVES_ORDEN, CLAVE_ESTADO, ORDEN_CLAVES_ESTADO, claveEstadoFinal, claveProducto, claveSolicitud, compararProductos, normalizarClaveOrden, resumirProductos
+  CLAVES_ORDEN, CLAVE_ESTADO, ORDEN_CLAVES_ESTADO, claveEstadoFinal, claveProducto, claveSolicitud, compararProductos, describirConversion, formatearConversion, normalizarClaveOrden, resumirProductos
 } from './resumenProductos';
 import { ESTADO_FINAL as E, DATO_A_REVISAR } from '../../../utils/estadoFinalItem';
 import { PED_0030 } from '../../../utils/casosMetricas.fixtures';
@@ -332,5 +332,101 @@ describe('resumirProductos: unidades abiertas (Cotizado y Pendiente por separado
 
   it('sin líneas abiertas quedan en cero', () => {
     expect(uno([sol('1', 'Pedido', [linea('P', 'Pedido', 3)])], 'P').unidadesAbiertas).toEqual({ cotizado: 0, pendiente: 0 });
+  });
+});
+
+describe('resumirProductos: cifras de las pantallas (conversión, ganadas, decisiones y clientes distintos), por estado final', () => {
+  const cifras = (r) => ({ ganadas: r.ganadas, cerrados: r.cerrados, abiertos: r.abiertos, conversion: r.conversion, anulaciones: r.anulaciones, ventasPerdidas: r.ventasPerdidas, rechazos: r.rechazos });
+  const fob = { fob: 10 };
+
+  it.each([
+    ['producto repetido en una solicitud: una línea ganada y otra cotizada', [sol('1', 'Pedido Parcial', [linea('P', 'Pedido'), linea('P', 'Cotizado', 1, fob)])], { ganadas: 1, cerrados: 1, abiertos: 1, conversion: 100, anulaciones: 0, ventasPerdidas: 0, rechazos: 0 }],
+    ['Ganado = Pedido = Comprado', [sol('1', 'Pedido', [linea('P', 'Pedido'), linea('P', 'Comprado')])], { ganadas: 2, cerrados: 2, abiertos: 0, conversion: 100, anulaciones: 0, ventasPerdidas: 0, rechazos: 0 }],
+    ['Cancelado, Rechazado y Denegado son rechazo', [sol('1', 'Cotizado', [linea('P', 'Cancelado'), linea('P', 'Rechazado'), linea('P', 'Denegado')])], { ganadas: 0, cerrados: 3, abiertos: 0, conversion: 0, anulaciones: 0, ventasPerdidas: 0, rechazos: 3 }],
+    ['ganadas sobre cerradas: 2 ganadas de 5 cerradas es 40', [sol('1', 'Pedido', [linea('P', 'Pedido'), linea('P', 'Pedido'), linea('P', 'Venta Perdida'), linea('P', 'Anulado'), linea('P', 'Cancelado'), linea('P', 'Cotizado', 1, fob), linea('P', 'Pendiente')])], { ganadas: 2, cerrados: 5, abiertos: 2, conversion: 40, anulaciones: 1, ventasPerdidas: 1, rechazos: 1 }],
+    ['sin cerrados no hay conversión (null), aunque haya ítems abiertos', [sol('1', 'Cotizado', [linea('P', 'Cotizado', 1, fob), linea('P', 'Pendiente')])], { ganadas: 0, cerrados: 0, abiertos: 2, conversion: null, anulaciones: 0, ventasPerdidas: 0, rechazos: 0 }],
+    ['un pedido con un motivoRechazo suelto es ganado y no cuenta como rechazo (hoy contaba como rechazo)', [sol('1', 'Pedido', [linea('P', 'Pedido', 1, { motivoRechazo: 'Residuo' })])], { ganadas: 1, cerrados: 1, abiertos: 0, conversion: 100, anulaciones: 0, ventasPerdidas: 0, rechazos: 0 }],
+    ['la bandera motivoVentaPerdida de la raíz no arrastra a un ítem con estado propio (hoy lo contaba como venta perdida)', [sol('1', 'Pedido', [linea('P', 'Pedido'), linea('P', 'Cotizado', 1, fob)], { motivoVentaPerdida: { motivo: 'Precio' } })], { ganadas: 1, cerrados: 1, abiertos: 1, conversion: 100, anulaciones: 0, ventasPerdidas: 0, rechazos: 0 }],
+    ['ítem sin estadoItem en una solicitud Pedido es ganado', [sol('1', 'Pedido', [linea('P', undefined)])], { ganadas: 1, cerrados: 1, abiertos: 0, conversion: 100, anulaciones: 0, ventasPerdidas: 0, rechazos: 0 }],
+    ['ítem sin estadoItem en una solicitud Venta Perdida es venta perdida', [sol('1', 'Venta Perdida', [linea('P', undefined)])], { ganadas: 0, cerrados: 1, abiertos: 0, conversion: 0, anulaciones: 0, ventasPerdidas: 1, rechazos: 0 }],
+    ['ítem sin estadoItem en una solicitud Anulado es anulado', [sol('1', 'Anulado', [linea('P', undefined)])], { ganadas: 0, cerrados: 1, abiertos: 0, conversion: 0, anulaciones: 1, ventasPerdidas: 0, rechazos: 0 }],
+    ['ítem sin estadoItem en una solicitud Denegado es rechazo', [sol('1', 'Denegado', [linea('P', undefined)])], { ganadas: 0, cerrados: 1, abiertos: 0, conversion: 0, anulaciones: 0, ventasPerdidas: 0, rechazos: 1 }],
+    ['ítem sin estadoItem en una solicitud Cotizado con precio es abierto (no cuenta como cerrado)', [sol('1', 'Cotizado', [linea('P', undefined, 1, fob)])], { ganadas: 0, cerrados: 0, abiertos: 1, conversion: null, anulaciones: 0, ventasPerdidas: 0, rechazos: 0 }],
+    ['ítem sin estadoItem en una solicitud Pendiente es abierto', [sol('1', 'Pendiente', [linea('P', undefined)])], { ganadas: 0, cerrados: 0, abiertos: 1, conversion: null, anulaciones: 0, ventasPerdidas: 0, rechazos: 0 }],
+    ['un Pedido Parcial a nivel de ítem es ganado', [sol('1', 'Pedido Parcial', [linea('P', 'Pedido Parcial')])], { ganadas: 1, cerrados: 1, abiertos: 0, conversion: 100, anulaciones: 0, ventasPerdidas: 0, rechazos: 0 }]
+  ])('%s', (_nombre, solicitudes, esperado) => {
+    expect(cifras(uno(solicitudes, 'P'))).toEqual(esperado);
+  });
+
+  it('PED-0030: el ítem ganado deja de contar como venta perdida (ganadas 0 → 1), el cancelado es rechazo y el de venta perdida lo sigue siendo', () => {
+    const r = resumirProductos([PED_0030]);
+    const por = Object.fromEntries(r.map((x) => [x.desc, cifras(x)]));
+    expect(por['PRODUCTO 2']).toEqual({ ganadas: 1, cerrados: 1, abiertos: 0, conversion: 100, anulaciones: 0, ventasPerdidas: 0, rechazos: 0 });
+    expect(por['PRODUCTO 1']).toEqual({ ganadas: 0, cerrados: 1, abiertos: 0, conversion: 0, anulaciones: 0, ventasPerdidas: 1, rechazos: 0 });
+    expect(por['PRODUCTO 0']).toEqual({ ganadas: 0, cerrados: 1, abiertos: 0, conversion: 0, anulaciones: 0, ventasPerdidas: 0, rechazos: 1 });
+  });
+
+  it('clientes distintos: el mismo cliente escrito de dos formas cuenta una vez (hoy contaba dos)', () => {
+    const r = uno([
+      sol('1', 'Cotizado', [linea('P', 'Cotizado', 1, fob)], { cliente: 'Cliente Uno, S.A.' }),
+      sol('2', 'Cotizado', [linea('P', 'Cotizado', 1, fob)], { cliente: 'CLIENTE UNO SA' }),
+      sol('3', 'Cotizado', [linea('P', 'Cotizado', 1, fob)], { cliente: 'Cliente Dos' })
+    ], 'P');
+    expect(r.clientesDistintos).toBe(2);
+  });
+
+  it('los datos a revisar se calculan (un Pedido con motivo suelto y un Cotizado dentro de un Pedido) y no cambian ninguna cifra', () => {
+    const r = uno([sol('1', 'Pedido', [linea('P', 'Pedido', 1, { motivoRechazo: 'Residuo' }), linea('P', 'Cotizado', 1, fob)])], 'P');
+    expect(r.datosARevisar.total).toBe(2);
+    expect(cifras(r)).toEqual({ ganadas: 1, cerrados: 1, abiertos: 1, conversion: 100, anulaciones: 0, ventasPerdidas: 0, rechazos: 0 });
+  });
+
+  it('las unidades ganadas salen del estado final: PED-0030 da 3 unidades ganadas en el producto ganado', () => {
+    expect(resumirProductos([PED_0030]).find((x) => x.desc === 'PRODUCTO 2').unidadesGanadas).toBe(3);
+  });
+});
+
+describe('formatearConversion y describirConversion', () => {
+  it('sin cerrados no hay porcentaje: guion', () => {
+    expect(formatearConversion(null)).toBe('—');
+    expect(formatearConversion(undefined)).toBe('—');
+  });
+
+  it('con cerrados da el porcentaje redondeado, y el 0 % es un porcentaje, no un guion', () => {
+    expect(formatearConversion(0)).toBe('0%');
+    expect(formatearConversion(100)).toBe('100%');
+    expect(formatearConversion((10 / 42) * 100)).toBe('24%');
+    expect(formatearConversion((1 / 3) * 100)).toBe('33%');
+  });
+
+  it('el texto largo da el porcentaje con un decimal y coma, y las ganadas sobre las cerradas', () => {
+    expect(describirConversion({ ganadas: 10, cerrados: 42, conversion: (10 / 42) * 100 })).toBe('Conversión 23,8 %: 10 ítems ganados de 42 cerrados');
+    expect(describirConversion({ ganadas: 1, cerrados: 1, conversion: 100 })).toBe('Conversión 100 %: 1 ítem ganado de 1 cerrado');
+    expect(describirConversion({ ganadas: 0, cerrados: 0, conversion: null })).toBe('Sin ítems cerrados: no hay conversión');
+    expect(describirConversion(undefined)).toBe('Sin ítems cerrados: no hay conversión');
+  });
+});
+
+describe('claves de orden (?orden= y analisis_top_prod_orden)', () => {
+  it('conservan sus nombres: una clave vieja sigue valiendo, "ganadas" es un alias de "pedidos" y una desconocida cae en "veces"', () => {
+    ['veces', 'unidades', 'pedidos', 'anulaciones', 'decisiones', 'ventasPerdidas', 'rechazos'].forEach((k) => expect(normalizarClaveOrden(k)).toBe(k));
+    expect(normalizarClaveOrden('ganadas')).toBe('pedidos');
+    expect(normalizarClaveOrden('cotizados')).toBe('veces');
+    expect(normalizarClaveOrden(undefined)).toBe('veces');
+    expect(normalizarClaveOrden(null)).toBe('veces');
+  });
+
+  it('cada clave ordena por la cifra del estado final: ganadas, anulaciones, ventas perdidas, rechazos y decisiones', () => {
+    const datos = [
+      sol('1', 'Pedido', [linea('A', 'Pedido'), linea('A', 'Pedido'), linea('B', 'Venta Perdida'), linea('B', 'Venta Perdida'), linea('C', 'Cancelado'), linea('C', 'Cancelado'), linea('C', 'Cancelado'), linea('D', 'Anulado')])
+    ];
+    const orden = (clave) => resumirProductos(datos).sort(compararProductos(clave)).map((r) => r.desc);
+    expect(orden('pedidos')[0]).toBe('A');
+    expect(orden('ganadas')[0]).toBe('A');
+    expect(orden('ventasPerdidas')[0]).toBe('B');
+    expect(orden('rechazos')[0]).toBe('C');
+    expect(orden('anulaciones')[0]).toBe('D');
+    expect(orden('decisiones')[0]).toBe('C');
+    expect(orden('clave-que-no-existe')[0]).toBe(orden('veces')[0]);
   });
 });

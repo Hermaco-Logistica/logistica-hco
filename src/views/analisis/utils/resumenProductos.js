@@ -172,3 +172,15 @@ export const compararProductos = (clave) => {
       return (a, b) => porVeces(a, b) || b.volumen - a.volumen;
   }
 };
+
+/** Conversión para mostrar en una celda: "—" si el producto no tiene ítems cerrados y, si no, el porcentaje redondeado ("24%"). */
+export const formatearConversion = (conversion) => (conversion === null || conversion === undefined ? '—' : `${Math.round(conversion)}%`);
+
+const decimalEs = (n) => String(Math.round(n * 10) / 10).replace('.', ',');
+
+/** Texto largo de la conversión (para un `title`): "Conversión 23,8 %: 10 ítems ganados de 42 cerrados". Sin cerrados no hay porcentaje. */
+export const describirConversion = (resumen) => {
+  const { ganadas = 0, cerrados = 0, conversion = null } = resumen || {};
+  if (conversion === null || conversion === undefined || cerrados <= 0) return 'Sin ítems cerrados: no hay conversión';
+  return `Conversión ${decimalEs(conversion)} %: ${ganadas} ${ganadas === 1 ? 'ítem ganado' : 'ítems ganados'} de ${cerrados} ${cerrados === 1 ? 'cerrado' : 'cerrados'}`;
+};

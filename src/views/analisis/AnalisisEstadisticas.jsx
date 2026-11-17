@@ -27,7 +27,7 @@ import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, formatearTiempoRespuesta, formatearTiempoCierre } from './theme';
 import { contarDecisiones, obtenerDecisionItem } from './utils/decisionMetrics';
-import { claveSolicitud, resumirProductos } from './utils/resumenProductos';
+import { compararProductos, describirConversion, formatearConversion, resumirProductos } from './utils/resumenProductos';
 import { segmentosDeVolumen, volumenPorEstado } from './utils/segmentosVolumen';
 import { BarraApilada } from '../../components/BarraApilada';
 import {
@@ -413,66 +413,12 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
   }, [solicitudesFiltradasDiferidas]);
   const metricas = useMemo(() => ({ ...metricasBase, enSeguimiento }), [metricasBase, enSeguimiento]);
 
-  const topProductos = useMemo(() => {
-    const map = {};
-    solicitudesFiltradas.forEach((s, indiceSolicitud) => {
-      if (!Array.isArray(s.productos)) return;
-      s.productos.forEach((p) => {
-        const desc = (p.desc || p.descripcion || '').trim().toUpperCase();
-        if (!desc) return;
-        const key = desc;
-        const cant = Number(p.cant || 1);
-        const marca = (p.marca || '').trim();
-        if (!map[key]) {
-          map[key] = {
-            desc,
-            marca,
-            veces: 0,
-            solicitudesIds: new Set(),
-            unidades: 0,
-            ganadas: 0,
-            unidadesGanadas: 0,
-            anulaciones: 0,
-            ventasPerdidas: 0,
-            rechazos: 0
-          };
-        }
-        map[key].solicitudesIds.add(claveSolicitud(s, indiceSolicitud));
-        const decision = obtenerDecisionItem(s, p);
-        if (decision) {
-          if (decision === 'Anulado') map[key].anulaciones++;
-          if (decision === 'Venta Perdida') map[key].ventasPerdidas++;
-          if (decision === 'Rechazo') map[key].rechazos++;
-          if (!map[key].marca && marca) map[key].marca = marca;
-          return;
-        }
-        const ganado = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' ||
-          (s.estado === 'Pedido' && p.estadoItem !== 'Cotizado' && p.estadoItem !== 'Pendiente');
-        map[key].veces++;
-        map[key].unidades += cant;
-        if (ganado) {
-          map[key].ganadas++;
-          map[key].unidadesGanadas += cant;
-        }
-        if (!map[key].marca && marca) map[key].marca = marca;
-      });
-    });
-    // Volumen por estado final (F8a): el único cálculo de "Mayor volumen" y de su barra.
-    const resumenes = new Map(resumirProductos(solicitudesFiltradas).map((r) => [r.desc, r]));
-    return Object.values(map)
-      .map((p) => ({ ...p, vecesSolicitadas: p.solicitudesIds.size, volumen: resumenes.get(p.desc)?.volumen ?? 0, unidadesPorEstado: volumenPorEstado(resumenes.get(p.desc)) }))
-      .sort((a, b) => {
-        if (ordenarProductosPor === 'unidades') return b.volumen - a.volumen || b.vecesSolicitadas - a.vecesSolicitadas;
-        if (ordenarProductosPor === 'ganadas') {
-          return b.ganadas - a.ganadas || b.unidadesGanadas - a.unidadesGanadas || b.veces - a.veces;
-        }
-        if (ordenarProductosPor === 'anulaciones') return b.anulaciones - a.anulaciones || b.veces - a.veces;
-        if (ordenarProductosPor === 'ventasPerdidas') return b.ventasPerdidas - a.ventasPerdidas || b.veces - a.veces;
-        if (ordenarProductosPor === 'rechazos') return b.rechazos - a.rechazos || b.veces - a.veces;
-        return b.vecesSolicitadas - a.vecesSolicitadas || b.unidades - a.unidades;
-      })
-      .slice(0, 5);
-  }, [solicitudesFiltradas, ordenarProductosPor]);
+  // Cálculo único por producto con el estado final de cada ítem (el mismo del Directorio de productos); la clave de orden no cambia:
+  // "ganadas" es un alias de "pedidos" y una clave desconocida (por ejemplo una guardada en la sesión) cae en "veces".
+  const topProductos = useMemo(() => resumirProductos(solicitudesFiltradas)
+    .map((r) => ({ ...r, marca: r.marcas[0] || '', unidadesPorEstado: volumenPorEstado(r) }))
+    .sort(compararProductos(ordenarProductosPor))
+    .slice(0, 5), [solicitudesFiltradas, ordenarProductosPor]);
 
   const statsVendedores = useMemo(() => {
     const map = {};
@@ -1426,7 +1372,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                       <span className="text-[10px] font-mono font-bold text-slate-400">
                         #{idx + 1}
                       </span>
-                      {p.ganadas > 0 && p.ganadas === p.veces && (
+                      {p.ganadas > 0 && p.abiertos === 0 && (
                         <Etiqueta tono="exito">
                           <CheckCircle2 size={10} className="shrink-0 text-emerald-600" />
                           Ganado
@@ -1451,20 +1397,18 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                     </Etiqueta>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400 font-medium">Cotizaciones Ganadas</span>
+                    <span className="text-[10px] text-slate-400 font-medium">Ganados</span>
                     {p.ganadas > 0 ? (
-                      <Etiqueta tono="exito" tamano="normal" mono>
+                      <Etiqueta tono="exito" tamano="normal" mono titulo={describirConversion(p)}>
                         <CheckCircle2 size={10} className="shrink-0 text-emerald-600" />
                         <span>{p.ganadas}</span>
-                        {p.veces > 0 && (
-                          <span className="text-[9px] font-medium text-emerald-600 font-sans">
-                            ({Math.round((p.ganadas / p.veces) * 100)}%)
-                          </span>
-                        )}
+                        <span className="text-[9px] font-medium text-emerald-600 font-sans">
+                          ({formatearConversion(p.conversion)})
+                        </span>
                       </Etiqueta>
                     ) : (
-                      <Etiqueta tono="apagado" tamano="normal" mono>
-                        0 (0%)
+                      <Etiqueta tono="apagado" tamano="normal" mono titulo={describirConversion(p)}>
+                        0 ({formatearConversion(p.conversion)})
                       </Etiqueta>
                     )}
                   </div>
