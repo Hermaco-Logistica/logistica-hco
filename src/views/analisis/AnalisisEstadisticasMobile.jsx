@@ -19,6 +19,9 @@ import {
 import { MetricasRotativas } from './components/MetricasRotativas';
 import { FASES_SEGUIMIENTO } from '../../utils/faseSeguimiento';
 import { Etiqueta } from '../../components/Etiqueta';
+import { BarraApilada } from '../../components/BarraApilada';
+import { describirConversion, formatearConversion } from './utils/resumenProductos';
+import { segmentosDeVolumen } from './utils/segmentosVolumen';
 import { FiltroSegmentado } from '../../components/filtros';
 import { OPCIONES_PERIODO } from './opcionesPeriodo';
 import { EtiquetaFechasRango } from './components/EtiquetaFechasRango';
@@ -299,17 +302,17 @@ function MobileFlujoCard({ theme, metricas, onVerTodas, onVerEstado }) {
     },
     { 
       tipo: 'cotizadas',
-      label: 'Cotizadas / Parciales', 
-      count: metricas.cotizadas, 
+      label: 'Respondido por Compras',
+      count: metricas.cotizadas,
       icon: DollarSign,
       iconBg: theme.flujoEstados?.cotizadas?.iconBg || 'bg-sky-50 text-sky-600 border-sky-200/80',
       barGradient: theme.flujoEstados?.cotizadas?.barGradient || 'from-sky-500 to-blue-600',
       subGradient: theme.flujoEstados?.cotizadas?.subGradient || 'from-sky-400 to-blue-400',
       textColor: theme.flujoEstados?.cotizadas?.textColor || 'text-sky-700',
-      desc: 'Precios enviados al vendedor o cliente',
-      completas: metricas.cotizadasCompletas,
-      parciales: metricas.cotizadasParciales,
-      subdetail: `${metricas.cotizadasCompletas} completas · ${metricas.cotizadasParciales} parciales`
+      desc: 'Con respuesta de Compras, sin pedido aún',
+      completas: metricas.respondidasCompletas,
+      parciales: metricas.respondidasParciales,
+      subdetail: `${metricas.respondidasCompletas} completas · ${metricas.respondidasParciales} parciales`
     },
     { 
       tipo: 'pedidos',
@@ -334,7 +337,7 @@ function MobileFlujoCard({ theme, metricas, onVerTodas, onVerEstado }) {
       barGradient: 'from-seguimiento-claro to-seguimiento',
       subGradient: 'from-seguimiento-soft to-seguimiento-claro',
       textColor: 'text-seguimiento',
-      desc: 'Cotizadas en revisión, prórroga o vencidas (incluidas en Cotizadas)',
+      desc: 'Cotizadas en revisión, prórroga o vencidas (ya incluidas en Respondido por Compras)',
       completas: metricas.enSeguimiento?.solicitudes || 0,
       parciales: 0,
       subdetail: metricas.enSeguimiento?.solicitudes > 0
@@ -555,7 +558,7 @@ function MobileProductosScroll({ productos, onSelect, onVerTodos }) {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="text-sm font-bold text-slate-900 tracking-tight">Top Productos</h2>
-            <p className="text-[11px] text-slate-400 font-medium">Más cotizados en el período</p>
+            <p className="text-[11px] text-slate-400 font-medium">Más solicitados en el período</p>
           </div>
           <button type="button" onClick={onVerTodos} className="text-[11px] font-bold text-slate-500 flex items-center gap-0.5 shrink-0">
             Todos <ArrowUpRight size={12} />
@@ -574,7 +577,7 @@ function MobileProductosScroll({ productos, onSelect, onVerTodos }) {
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] font-mono font-bold text-slate-400">#{idx + 1}</span>
-                  {p.ganadas > 0 && p.ganadas === p.veces && (
+                  {p.ganadas > 0 && p.abiertos === 0 && (
                     <Etiqueta tono="exito">
                       <CheckCircle2 size={9} /> Ganado
                     </Etiqueta>
@@ -585,16 +588,16 @@ function MobileProductosScroll({ productos, onSelect, onVerTodos }) {
                 </h3>
                 <div className="pt-2 border-t border-slate-200/60 space-y-1.5 text-[11px]">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400">Cotizado</span>
-                    <span className="font-mono font-semibold text-slate-700">{p.veces}x</span>
+                    <span className="text-[10px] text-slate-400">Solicitado</span>
+                    <span className="font-mono font-semibold text-slate-700">{p.vecesSolicitadas}x</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400">Ganado</span>
+                    <span className="text-[10px] text-slate-400">Ganados</span>
                     {p.ganadas > 0 ? (
-                      <Etiqueta tono="exito" mono>
+                      <Etiqueta tono="exito" mono titulo={describirConversion(p)}>
                         {p.ganadas}x
                         <span className="text-[9px] text-emerald-600 font-sans ml-0.5">
-                          ({Math.round((p.ganadas / p.veces) * 100)}%)
+                          ({formatearConversion(p.conversion)})
                         </span>
                       </Etiqueta>
                     ) : (
@@ -602,9 +605,10 @@ function MobileProductosScroll({ productos, onSelect, onVerTodos }) {
                     )}
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400">Unidades</span>
-                    <span className="font-mono font-semibold text-slate-700">{p.unidades.toLocaleString()}</span>
+                    <span className="text-[10px] text-slate-400">Volumen</span>
+                    <span className="font-mono font-semibold text-slate-700">{p.volumen.toLocaleString()}</span>
                   </div>
+                  <BarraApilada titulo="Volumen por estado" unidad="u." segmentos={segmentosDeVolumen(p.unidadesPorEstado)} />
                 </div>
               </div>
             ))}

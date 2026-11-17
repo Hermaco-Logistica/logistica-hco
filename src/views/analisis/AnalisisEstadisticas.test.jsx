@@ -10,6 +10,7 @@ vi.mock('../../utils/exportarExcel', () => ({ exportarTodosLosMovimientosExcel: 
 
 import { AnalisisEstadisticas as Vista } from './AnalisisEstadisticas';
 import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
+import { reiniciarObservadorVisible } from '../../utils/observadorVisible';
 import { RESULTADOS_SOLICITUD } from '../../utils/clasificarSolicitud';
 import { FASES_SEGUIMIENTO } from '../../utils/faseSeguimiento';
 import { reiniciarCapasParaPruebas } from '../../components/filtros/capasAtras';
@@ -651,5 +652,120 @@ describe('Análisis y Estadísticas: foco del modal de Rango', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     await esperar(320);
     expect(document.activeElement).toBe(container.querySelector('[data-linea-fechas]'));
+  });
+});
+
+/**
+ * Tarjeta "Top Productos" del dashboard (F8b): "Veces solicitadas" cuenta solicitudes distintas en cualquier estado. Hasta F8b decía
+ * "Cotizado N veces" y contaba líneas sin decisión.
+ */
+describe('Análisis y Estadísticas: Top Productos, veces solicitadas', () => {
+  const l = (desc, estadoItem, cant = 1) => ({ desc, marca: 'X', cant, estadoItem, precio: 10 });
+  const s = (id, estado, productos, extra = {}) => ({ id, correlativo: `RFQ-${id}`, cliente: `Cliente ${id}`, estado, vendedorNombre: 'Ana', tipo: 'Aéreo', fechaS: dia(1), fechaCreacion: dia(1), productos, ...extra });
+  // bomba: 1 solicitud con dos líneas, 1 venta perdida y 1 anulada → 3 solicitudes (hoy: 2); tubo: 1 solicitud con 3 líneas (hoy: 3)
+  const DATOS = [
+    s('r0', 'Cotizado', [l('bomba', 'Cotizado'), l('bomba', 'Cotizado')]),
+    s('r1', 'Venta Perdida', [l('bomba', 'Venta Perdida')]),
+    s('r2', 'Anulado', [l('bomba', 'Anulado')]),
+    s('t0', 'Cotizado', [l('tubo', 'Cotizado'), l('tubo', 'Cotizado'), l('tubo', 'Cotizado')])
+  ];
+  const tarjeta = (r, desc, clase = '.cursor-pointer') => [...r.container.querySelectorAll('h3')].find((h) => h.textContent.trim() === desc).closest(clase);
+
+  it('escritorio: título, interruptor y tarjeta dicen "Más solicitados" y "Veces solicitadas" con solicitudes distintas', () => {
+    const r = montar('comprador', { periodo: 'historico', anio: 'todos' }, DATOS);
+    expect(screen.getByText('Top Productos Más Solicitados')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Más solicitados' })).toBeTruthy();
+    expect(screen.queryByText('Top Productos Más Cotizados')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Más cotizados' })).toBeNull();
+    const bomba = tarjeta(r, 'BOMBA');
+    expect(within(bomba).getByText('Veces solicitadas')).toBeTruthy();
+    expect(within(bomba).getByText('3')).toBeTruthy();
+    expect(within(bomba).queryByText(/veces$/)).toBeNull();
+    expect(within(tarjeta(r, 'TUBO')).getByText('1')).toBeTruthy();
+  });
+
+  it('"Más solicitados" pone primero al producto con más solicitudes aunque tenga menos líneas (bomba antes que tubo)', () => {
+    const r = montar('comprador', { periodo: 'historico', anio: 'todos' }, DATOS);
+    const nombres = [...r.container.querySelectorAll('h3')].map((h) => h.textContent.trim()).filter((t) => t === 'BOMBA' || t === 'TUBO');
+    expect(nombres).toEqual(['BOMBA', 'TUBO']);
+  });
+
+  it('sin id cuenta por correlativo: dos solicitudes con correlativo distinto son 2 veces solicitadas', () => {
+    const sinId = (correlativo) => ({ correlativo, estado: 'Cotizado', cliente: correlativo, vendedorNombre: 'Ana', tipo: 'Aéreo', fechaS: dia(1), fechaCreacion: dia(1), productos: [l('codo', 'Cotizado')] });
+    const r = montar('comprador', { periodo: 'historico', anio: 'todos' }, [sinId('RFQ-A'), sinId('RFQ-B')]);
+    expect(within(tarjeta(r, 'CODO')).getByText('Veces solicitadas').parentElement.textContent).toBe('Veces solicitadas2');
+  });
+
+  it('móvil: el subtítulo dice "Más solicitados en el período" y la tarjeta "Solicitado 3x"', () => {
+    window.innerWidth = 400; mm(true);
+    const r = montar('vendedor', { periodo: 'historico', anio: 'todos' }, DATOS);
+    expect(screen.getByText('Más solicitados en el período')).toBeTruthy();
+    expect(screen.queryByText('Más cotizados en el período')).toBeNull();
+    const bomba = tarjeta(r, 'BOMBA', '.snap-start');
+    expect(within(bomba).getByText('Solicitado')).toBeTruthy();
+    expect(within(bomba).getByText('3x')).toBeTruthy();
+  });
+});
+
+/** Tarjeta "Top Productos" (F8b, commit 3): "Por unidades" pasa a "Mayor volumen" (todas las unidades, en cualquier estado) y la tarjeta lleva la barra. */
+describe('Análisis y Estadísticas: Top Productos, mayor volumen', () => {
+  const l = (desc, estadoItem, cant = 1) => ({ desc, marca: 'X', cant, estadoItem, precio: 10 });
+  const s = (id, estado, productos) => ({ id, correlativo: `RFQ-${id}`, cliente: `Cliente ${id}`, estado, vendedorNombre: 'Ana', tipo: 'Aéreo', fechaS: dia(1), fechaCreacion: dia(1), productos });
+  const DATOS = [s('a', 'Cotizado', [l('bomba', 'Cotizado', 5)]), s('b', 'Venta Perdida', [l('bomba', 'Venta Perdida', 4)]), s('c', 'Pedido', [l('bomba', 'Pedido', 3)])];
+  const tarjeta = (r, desc, clase = '.cursor-pointer') => [...r.container.querySelectorAll('h3')].find((h) => h.textContent.trim() === desc).closest(clase);
+
+  it('escritorio: el interruptor dice "Mayor volumen" (no "Por unidades") y la tarjeta muestra el volumen total (12) con su barra', () => {
+    const r = montar('comprador', { periodo: 'historico', anio: 'todos' }, DATOS);
+    expect(screen.getByRole('button', { name: 'Mayor volumen' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Por unidades' })).toBeNull();
+    const bomba = tarjeta(r, 'BOMBA');
+    expect(within(bomba).getByText('Volumen').parentElement.textContent).toBe('Volumen12');
+    expect(bomba.querySelector('.barra-apilada').getAttribute('aria-label')).toBe('Volumen por estado: Ganado 3 u., Cotizado 5 u., Venta perdida 4 u.');
+  });
+
+  it('"Mayor volumen" ordena por el volumen total: una venta perdida de 50 unidades va antes que una línea abierta de 2', () => {
+    const datos = [s('x', 'Cotizado', [l('pieza x', 'Cotizado', 2)]), s('y', 'Venta Perdida', [l('pieza y', 'Venta Perdida', 50)])];
+    const r = montar('comprador', { periodo: 'historico', anio: 'todos' }, datos);
+    fireEvent.click(screen.getByRole('button', { name: 'Mayor volumen' }));
+    const nombres = [...r.container.querySelectorAll('h3')].map((h) => h.textContent.trim()).filter((t) => t.startsWith('PIEZA'));
+    expect(nombres).toEqual(['PIEZA Y', 'PIEZA X']);
+  });
+
+  it('móvil: la tarjeta dice "Volumen" con el total y lleva la barra', () => {
+    window.innerWidth = 400; mm(true);
+    const r = montar('vendedor', { periodo: 'historico', anio: 'todos' }, DATOS);
+    const bomba = tarjeta(r, 'BOMBA', '.snap-start');
+    expect(within(bomba).getByText('Volumen').parentElement.textContent).toBe('Volumen12');
+    expect(within(bomba).queryByText('Unidades')).toBeNull();
+    expect(bomba.querySelector('.barra-apilada').getAttribute('aria-label')).toContain('Cotizado 5 u.');
+  });
+});
+
+/** La animación de las barras se reinicia al cambiar el orden (prop `reinicio` de BarraApilada). */
+describe('Análisis y Estadísticas: Top Productos, animación de la barra', () => {
+  class ObservadorFalso {
+    static ultimo = null;
+    constructor(alCambiar) { this.alCambiar = alCambiar; this.observados = new Set(); ObservadorFalso.ultimo = this; }
+    observe(el) { this.observados.add(el); }
+    unobserve(el) { this.observados.delete(el); }
+    mostrarTodo() { this.alCambiar([...this.observados].map((target) => ({ target, isIntersecting: true }))); }
+  }
+  const l = (desc, estadoItem, cant = 1) => ({ desc, marca: 'X', cant, estadoItem, precio: 10 });
+  const s = (id, estado, productos) => ({ id, correlativo: `RFQ-${id}`, cliente: `Cliente ${id}`, estado, vendedorNombre: 'Ana', tipo: 'Aéreo', fechaS: dia(1), fechaCreacion: dia(1), productos });
+
+  afterEach(() => { vi.unstubAllGlobals(); reiniciarObservadorVisible(); });
+
+  it('al elegir "Mayor volumen" las barras vuelven a espera y se animan otra vez al verse', () => {
+    reiniciarObservadorVisible();
+    vi.stubGlobal('IntersectionObserver', ObservadorFalso);
+    const r = montar('comprador', { periodo: 'historico', anio: 'todos' }, [s('a', 'Cotizado', [l('bomba', 'Cotizado', 5)]), s('b', 'Pedido', [l('tubo', 'Pedido', 2)])]);
+    const barras = () => [...r.container.querySelectorAll('.barra-apilada')];
+    expect(barras().length).toBeGreaterThan(0);
+    act(() => ObservadorFalso.ultimo.mostrarTodo());
+    expect(barras().every((b) => b.dataset.anim === 'activa')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Mayor volumen' }));
+    expect(barras().every((b) => b.dataset.anim === 'espera')).toBe(true);
+    act(() => ObservadorFalso.ultimo.mostrarTodo());
+    expect(barras().every((b) => b.dataset.anim === 'activa')).toBe(true);
   });
 });

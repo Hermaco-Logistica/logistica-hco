@@ -1,13 +1,14 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 vi.mock('../../utils/exportarExcel', () => ({ extraerTodosLosMovimientos: vi.fn(() => []), exportarMovimientosExcel: vi.fn() }));
 
 import { DetalleProductosAnalisis as Vista } from './DetalleProductosAnalisis';
 import { reiniciarCapasParaPruebas } from '../../components/filtros/capasAtras';
+import { reiniciarObservadorVisible } from '../../utils/observadorVisible';
 
 /**
  * Top de productos en móvil: "Filtros (N)" cuenta el orden cuando es distinto del inicial (el de ?orden= de la URL, o 'veces'), "Limpiar" cuenta
@@ -49,7 +50,7 @@ describe('DetalleProductosAnalisis: barra de filtros en móvil', () => {
     expect(limpiar()).toBeNull();
   });
 
-  it('elegir un orden distinto del inicial muestra (1) y Limpiar con 1; Limpiar vuelve a "Más cotizados"', async () => {
+  it('elegir un orden distinto del inicial muestra (1) y Limpiar con 1; Limpiar vuelve a "Más solicitados"', async () => {
     montar();
     await esperar();
     await elegirOrden('Más rechazos');
@@ -66,14 +67,14 @@ describe('DetalleProductosAnalisis: barra de filtros en móvil', () => {
     await esperar();
     expect(botonFiltros().textContent).toBe('Filtros');
     expect(limpiar()).toBeNull();
-    await elegirOrden('Más cotizados');
+    await elegirOrden('Más solicitados');
     expect(botonFiltros().textContent).toBe('Filtros (1)');
     fireEvent.click(limpiar());
     await esperar();
     expect(botonFiltros().textContent).toBe('Filtros');
     expect(limpiar()).toBeNull();
-    // el orden volvió a "Más rechazos": elegir "Más cotizados" lo vuelve a contar
-    await elegirOrden('Más cotizados');
+    // el orden volvió a "Más rechazos": elegir "Más solicitados" lo vuelve a contar
+    await elegirOrden('Más solicitados');
     expect(botonFiltros().textContent).toBe('Filtros (1)');
   });
 
@@ -81,7 +82,7 @@ describe('DetalleProductosAnalisis: barra de filtros en móvil', () => {
     montar('/analisis/productos?orden=ganadas');
     await esperar();
     expect(botonFiltros().textContent).toBe('Filtros');
-    await elegirOrden('Más cotizados');
+    await elegirOrden('Más solicitados');
     expect(botonFiltros().textContent).toBe('Filtros (1)');
   });
 
@@ -132,5 +133,182 @@ describe('DetalleProductosAnalisis: barra de filtros en móvil', () => {
     await esperar();
     expect(screen.getByRole('button', { name: /Exportar movimientos/ })).toBeTruthy();
     expect(screen.queryByText('Exportar Movimientos')).toBeNull();
+  });
+});
+
+/**
+ * "Veces solicitadas" (F8b, docs/metricas.md sección 3): solicitudes distintas en las que aparece el producto, en cualquier estado.
+ * Hasta F8b la columna se llamaba "Veces Cotizado" y contaba líneas sin decisión ("N RFQs").
+ */
+describe('DetalleProductosAnalisis: Veces solicitadas', () => {
+  const l = (desc, estadoItem, cant = 1) => ({ desc, marca: 'X', cant, estadoItem, precio: 10 });
+  const s = (id, estado, productos, extra = {}) => ({ id, correlativo: `RFQ-${id}`, cliente: `Cliente ${id}`, estado, vendedorNombre: 'Ana', tipo: 'Aéreo', fechaS: dia(1), fechaCreacion: dia(1), productos, ...extra });
+  const montarCon = (solicitudes, url = '/analisis/productos') => render(<MemoryRouter initialEntries={[url]}><Vista role="comprador" solicitudes={solicitudes} ordenesCompra={[]} /></MemoryRouter>);
+  const filas = () => [...document.querySelectorAll('tbody tr')].map((tr) => tr.textContent.replace(/\s+/g, ' ').trim());
+
+  beforeEach(() => mm(false));
+
+  it('el título y la columna dicen "Más solicitados" y "Veces solicitadas"', async () => {
+    montarCon([s('1', 'Cotizado', [l('bomba', 'Cotizado')])]);
+    await esperar();
+    expect(screen.getByText('Top Productos Más Solicitados')).toBeTruthy();
+    expect(screen.getByText('Veces solicitadas')).toBeTruthy();
+    expect(screen.queryByText('Veces Cotizado')).toBeNull();
+    expect(screen.queryByText('Top Productos Más Cotizados')).toBeNull();
+  });
+
+  it('cuenta solicitudes distintas, no líneas sin decisión: un producto repetido en una solicitud, una venta perdida y un anulado dan 3 (hoy daba 2)', async () => {
+    montarCon([
+      s('r0', 'Cotizado', [l('bomba', 'Cotizado'), l('bomba', 'Cotizado')]),
+      s('r1', 'Venta Perdida', [l('bomba', 'Venta Perdida')]),
+      s('r2', 'Anulado', [l('bomba', 'Anulado')])
+    ]);
+    await esperar();
+    expect(screen.getByText('3 solic.')).toBeTruthy();
+    expect(screen.getByTitle('3 solicitudes')).toBeTruthy();
+    expect(screen.queryByText(/RFQs?$/)).toBeNull();
+  });
+
+  it('en singular dice "1 solic." con el texto completo "1 solicitud" en el title', async () => {
+    montarCon([s('1', 'Cotizado', [l('bomba', 'Cotizado'), l('bomba', 'Cotizado')])]);
+    await esperar();
+    expect(screen.getByText('1 solic.')).toBeTruthy();
+    expect(screen.getByTitle('1 solicitud')).toBeTruthy();
+  });
+
+  it('sin id cuenta por correlativo: dos solicitudes con correlativo distinto son 2', async () => {
+    montarCon([
+      { correlativo: 'RFQ-A', estado: 'Cotizado', cliente: 'A', vendedorNombre: 'Ana', fechaS: dia(1), fechaCreacion: dia(1), productos: [l('tubo', 'Cotizado')] },
+      { correlativo: 'RFQ-B', estado: 'Cotizado', cliente: 'B', vendedorNombre: 'Ana', fechaS: dia(1), fechaCreacion: dia(1), productos: [l('tubo', 'Cotizado')] }
+    ]);
+    await esperar();
+    expect(screen.getByText('2 solic.')).toBeTruthy();
+    expect(screen.getByTitle('2 solicitudes')).toBeTruthy();
+  });
+
+  it('"Más solicitados" ordena por solicitudes distintas: 2 solicitudes con 1 línea van antes que 1 solicitud con 3 líneas', async () => {
+    montarCon([
+      s('x', 'Cotizado', [l('pieza x', 'Cotizado'), l('pieza x', 'Cotizado'), l('pieza x', 'Cotizado')]),
+      s('y1', 'Cotizado', [l('pieza y', 'Cotizado')]),
+      s('y2', 'Cotizado', [l('pieza y', 'Cotizado')])
+    ]);
+    await esperar();
+    const f = filas();
+    expect(f[0]).toContain('PIEZA Y');
+    expect(f[1]).toContain('PIEZA X');
+  });
+
+  it('la clave de orden sigue siendo "veces": ?orden=veces y el valor por defecto dan el mismo resultado', async () => {
+    const datos = [s('x', 'Cotizado', [l('pieza x', 'Cotizado'), l('pieza x', 'Cotizado')]), s('y1', 'Cotizado', [l('pieza y', 'Cotizado')]), s('y2', 'Cotizado', [l('pieza y', 'Cotizado')])];
+    montarCon(datos, '/analisis/productos?orden=veces');
+    await esperar();
+    expect(filas()[0]).toContain('PIEZA Y');
+  });
+
+  it('móvil: la tarjeta dice "Solicitados" con las solicitudes distintas (3 veces) y el singular "1 vez"', async () => {
+    mm(true);
+    montarCon([
+      s('r0', 'Cotizado', [l('bomba', 'Cotizado'), l('bomba', 'Cotizado')]), s('r1', 'Venta Perdida', [l('bomba', 'Venta Perdida')]), s('r2', 'Anulado', [l('bomba', 'Anulado')]),
+      s('u0', 'Cotizado', [l('tubo', 'Cotizado'), l('tubo', 'Cotizado')])
+    ]);
+    await esperar();
+    const tarjetaDe = (desc) => [...document.querySelectorAll('h3')].find((h) => h.textContent.trim() === desc).closest('.surface');
+    const solicitados = (desc) => within(tarjetaDe(desc)).getByText('Solicitados').parentElement.textContent.replace(/\s+/g, ' ').trim();
+    expect(solicitados('BOMBA')).toBe('Solicitados3 veces');
+    expect(solicitados('TUBO')).toBe('Solicitados1 vez');
+    expect(screen.queryByText('Cotizados')).toBeNull();
+  });
+});
+
+/**
+ * "Mayor volumen" (F8b, commit 3): el volumen suma las unidades de todas las líneas en cualquier estado (antes "Unidades Cotizadas" dejaba fuera
+ * las decisiones) y la barra bajo la descripción lo reparte por estado final.
+ */
+describe('DetalleProductosAnalisis: Mayor volumen y barra', () => {
+  const l = (desc, estadoItem, cant = 1) => ({ desc, marca: 'X', cant, estadoItem, precio: 10 });
+  const s = (id, estado, productos) => ({ id, correlativo: `RFQ-${id}`, cliente: `Cliente ${id}`, estado, vendedorNombre: 'Ana', tipo: 'Aéreo', fechaS: dia(1), fechaCreacion: dia(1), productos });
+  const montarCon = (solicitudes, url = '/analisis/productos') => render(<MemoryRouter initialEntries={[url]}><Vista role="comprador" solicitudes={solicitudes} ordenesCompra={[]} /></MemoryRouter>);
+  const DATOS = [s('a', 'Cotizado', [l('bomba', 'Cotizado', 5)]), s('b', 'Venta Perdida', [l('bomba', 'Venta Perdida', 4)]), s('c', 'Pedido', [l('bomba', 'Pedido', 3)])];
+
+  beforeEach(() => mm(false));
+
+  it('el encabezado dice "Volumen" y la celda suma todos los estados (12), no solo las líneas sin decisión (8)', async () => {
+    montarCon(DATOS);
+    await esperar();
+    const encabezados = [...document.querySelectorAll('thead th')].map((th) => th.textContent.trim());
+    expect(encabezados).toContain('Volumen');
+    expect(encabezados).not.toContain('Unidades Cotizadas');
+    expect(document.querySelector('tbody tr').textContent).toContain('12');
+  });
+
+  it('la barra va en la celda de la descripción, sin columna nueva, con los segmentos no vacíos en su aria-label', async () => {
+    montarCon(DATOS);
+    await esperar();
+    const fila = document.querySelector('tbody tr');
+    const barra = fila.querySelectorAll('td')[1].querySelector('.barra-apilada');
+    expect(barra.getAttribute('aria-label')).toBe('Volumen por estado: Ganado 3 u., Cotizado 5 u., Venta perdida 4 u.');
+    expect(fila.querySelectorAll('.barra-apilada')).toHaveLength(1);
+    expect(document.querySelectorAll('thead th')).toHaveLength(13);
+  });
+
+  it('?orden=unidades ordena por volumen total: una venta perdida de 50 unidades va antes que una línea abierta de 2', async () => {
+    montarCon([s('x', 'Cotizado', [l('pieza x', 'Cotizado', 2)]), s('y', 'Venta Perdida', [l('pieza y', 'Venta Perdida', 50)])], '/analisis/productos?orden=unidades');
+    await esperar();
+    const f = [...document.querySelectorAll('tbody tr')].map((tr) => tr.textContent);
+    expect(f[0]).toContain('PIEZA Y');
+    expect(f[1]).toContain('PIEZA X');
+  });
+
+  it('móvil: la tarjeta dice "Volumen" con el total y lleva la barra', async () => {
+    mm(true);
+    montarCon(DATOS);
+    await esperar();
+    const tarjeta = [...document.querySelectorAll('h3')].find((h) => h.textContent.trim() === 'BOMBA').closest('.surface');
+    expect(within(tarjeta).getByText('Volumen').parentElement.textContent.replace(/\s+/g, '')).toBe('Volumen12');
+    expect(within(tarjeta).queryByText('Und. Cotizadas')).toBeNull();
+    expect(tarjeta.querySelector('.barra-apilada').getAttribute('aria-label')).toContain('Venta perdida 4 u.');
+  });
+});
+
+/** La animación de las barras se reinicia al cambiar el orden (prop `reinicio` de BarraApilada). */
+describe('DetalleProductosAnalisis: animación de la barra', () => {
+  class ObservadorFalso {
+    static ultimo = null;
+    constructor(alCambiar) { this.alCambiar = alCambiar; this.observados = new Set(); ObservadorFalso.ultimo = this; }
+    observe(el) { this.observados.add(el); }
+    unobserve(el) { this.observados.delete(el); }
+    mostrarTodo() { this.alCambiar([...this.observados].map((target) => ({ target, isIntersecting: true }))); }
+  }
+
+  afterEach(() => { vi.unstubAllGlobals(); reiniciarObservadorVisible(); });
+
+  it('al elegir otro orden las barras vuelven a espera y se animan otra vez al verse', async () => {
+    reiniciarObservadorVisible();
+    vi.stubGlobal('IntersectionObserver', ObservadorFalso);
+    // Pantalla móvil, pero sin prefers-reduced-motion (con mm(true) todas las consultas darían verdadero)
+    window.matchMedia = (consulta) => ({ matches: !/reduced-motion/.test(consulta), addEventListener() {}, removeEventListener() {} });
+    montar();
+    await esperar();
+    const barras = () => [...document.querySelectorAll('.barra-apilada')];
+    expect(barras().length).toBeGreaterThan(0);
+    act(() => ObservadorFalso.ultimo.mostrarTodo());
+    expect(barras().every((b) => b.dataset.anim === 'activa')).toBe(true);
+    await elegirOrden('Más rechazos');
+    expect(barras().every((b) => b.dataset.anim === 'espera')).toBe(true);
+  });
+
+  it('escritorio: al elegir otro orden las barras de la tabla vuelven a espera', async () => {
+    reiniciarObservadorVisible();
+    vi.stubGlobal('IntersectionObserver', ObservadorFalso);
+    window.matchMedia = (consulta) => ({ matches: !/reduced-motion/.test(consulta) && !/max-width/.test(consulta), addEventListener() {}, removeEventListener() {} });
+    montar();
+    await esperar();
+    const barras = () => [...document.querySelectorAll('tbody .barra-apilada')];
+    expect(barras().length).toBeGreaterThan(0);
+    act(() => ObservadorFalso.ultimo.mostrarTodo());
+    expect(barras().every((b) => b.dataset.anim === 'activa')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Más rechazos' }));
+    await esperar();
+    expect(barras().every((b) => b.dataset.anim === 'espera')).toBe(true);
   });
 });

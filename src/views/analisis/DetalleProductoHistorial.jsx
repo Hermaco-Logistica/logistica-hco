@@ -670,14 +670,14 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
         <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <Package size={14} className="text-slate-400 shrink-0" />
-            <span className="text-[10px] font-bold uppercase tracking-wider truncate">Veces Cotizado</span>
+            <span className="text-[10px] font-bold uppercase tracking-wider truncate">Veces solicitadas</span>
           </div>
           <div>
             <div className="text-lg sm:text-2xl font-bold font-mono text-slate-800 tracking-tight">
-              {metricas.totalMovimientos}
+              {metricas.rfqsUnicas}
             </div>
             <div className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate">
-              En diferentes RFQs
+              En diferentes solicitudes
             </div>
           </div>
         </div>

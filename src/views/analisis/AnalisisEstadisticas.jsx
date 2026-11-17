@@ -27,6 +27,10 @@ import { exportarTodosLosMovimientosExcel } from '../../utils/exportarExcel';
 import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme, formatearTiempoRespuesta, formatearTiempoCierre } from './theme';
 import { contarDecisiones, obtenerDecisionItem } from './utils/decisionMetrics';
+import { compararProductos, describirConversion, formatearConversion, resumirProductos } from './utils/resumenProductos';
+import { segmentosDeVolumen, volumenPorEstado } from './utils/segmentosVolumen';
+import { esRespondidaCompleta } from './utils/respondidoPorCompras';
+import { BarraApilada } from '../../components/BarraApilada';
 import {
   getHoyElSalvador,
   getAnioActualElSalvador,
@@ -231,6 +235,8 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
     let pendientes = 0;
     let cotizadas = 0;
     let cotizadasParcial = 0;
+    let respondidasCompletas = 0; // reparto de "Respondido por Compras" por estado final de cada ítem (esRespondidaCompleta)
+    let respondidasParciales = 0;
     let pedidos = 0;
     let pedidosParcial = 0;
     let pedidosConAnulaciones = 0;
@@ -265,6 +271,11 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       }
       else if (estado === 'Pedido Parcial') pedidosParcial++;
       else if (estado === 'Anulado') anuladas++;
+
+      if (estado === 'Cotizado' || estado === 'Cotizado Parcial') {
+        if (esRespondidaCompleta(s)) respondidasCompletas++;
+        else respondidasParciales++;
+      }
 
       if ((estado === 'Cotizado' || estado === 'Cotizado Parcial') && clasificacion.tieneAnulaciones) {
         cotizadasConAnulaciones++;
@@ -378,6 +389,8 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
       cotizadas: cotizadas + cotizadasParcial,
       cotizadasCompletas: cotizadas,
       cotizadasParciales: cotizadasParcial,
+      respondidasCompletas,
+      respondidasParciales,
       pedidos,
       pedidosCompletos: pedidos - pedidosConAnulaciones,
       pedidosParciales: pedidosParcial,
@@ -410,61 +423,12 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
   }, [solicitudesFiltradasDiferidas]);
   const metricas = useMemo(() => ({ ...metricasBase, enSeguimiento }), [metricasBase, enSeguimiento]);
 
-  const topProductos = useMemo(() => {
-    const map = {};
-    solicitudesFiltradas.forEach((s) => {
-      if (!Array.isArray(s.productos)) return;
-      s.productos.forEach((p) => {
-        const desc = (p.desc || p.descripcion || '').trim().toUpperCase();
-        if (!desc) return;
-        const key = desc;
-        const cant = Number(p.cant || 1);
-        const marca = (p.marca || '').trim();
-        if (!map[key]) {
-          map[key] = {
-            desc,
-            marca,
-            veces: 0,
-            unidades: 0,
-            ganadas: 0,
-            unidadesGanadas: 0,
-            anulaciones: 0,
-            ventasPerdidas: 0,
-            rechazos: 0
-          };
-        }
-        const decision = obtenerDecisionItem(s, p);
-        if (decision) {
-          if (decision === 'Anulado') map[key].anulaciones++;
-          if (decision === 'Venta Perdida') map[key].ventasPerdidas++;
-          if (decision === 'Rechazo') map[key].rechazos++;
-          if (!map[key].marca && marca) map[key].marca = marca;
-          return;
-        }
-        const ganado = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' ||
-          (s.estado === 'Pedido' && p.estadoItem !== 'Cotizado' && p.estadoItem !== 'Pendiente');
-        map[key].veces++;
-        map[key].unidades += cant;
-        if (ganado) {
-          map[key].ganadas++;
-          map[key].unidadesGanadas += cant;
-        }
-        if (!map[key].marca && marca) map[key].marca = marca;
-      });
-    });
-    return Object.values(map)
-      .sort((a, b) => {
-        if (ordenarProductosPor === 'unidades') return b.unidades - a.unidades || b.veces - a.veces;
-        if (ordenarProductosPor === 'ganadas') {
-          return b.ganadas - a.ganadas || b.unidadesGanadas - a.unidadesGanadas || b.veces - a.veces;
-        }
-        if (ordenarProductosPor === 'anulaciones') return b.anulaciones - a.anulaciones || b.veces - a.veces;
-        if (ordenarProductosPor === 'ventasPerdidas') return b.ventasPerdidas - a.ventasPerdidas || b.veces - a.veces;
-        if (ordenarProductosPor === 'rechazos') return b.rechazos - a.rechazos || b.veces - a.veces;
-        return b.veces - a.veces || b.unidades - a.unidades;
-      })
-      .slice(0, 5);
-  }, [solicitudesFiltradas, ordenarProductosPor]);
+  // Cálculo único por producto con el estado final de cada ítem (el mismo del Directorio de productos); la clave de orden no cambia:
+  // "ganadas" es un alias de "pedidos" y una clave desconocida (por ejemplo una guardada en la sesión) cae en "veces".
+  const topProductos = useMemo(() => resumirProductos(solicitudesFiltradas)
+    .map((r) => ({ ...r, marca: r.marcas[0] || '', unidadesPorEstado: volumenPorEstado(r) }))
+    .sort(compararProductos(ordenarProductosPor))
+    .slice(0, 5), [solicitudesFiltradas, ordenarProductosPor]);
 
   const statsVendedores = useMemo(() => {
     const map = {};
@@ -1027,17 +991,17 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
               },
               { 
                 tipo: 'cotizadas',
-                label: 'Cotizadas / Parciales', 
+                label: 'Respondido por Compras',
                 count: metricas.cotizadas, 
                 icon: DollarSign,
                 iconBg: theme.flujoEstados?.cotizadas?.iconBg || 'bg-sky-50 text-sky-600 border-sky-200/80',
                 barGradient: theme.flujoEstados?.cotizadas?.barGradient || 'from-sky-500 to-blue-600',
                 subGradient: theme.flujoEstados?.cotizadas?.subGradient || 'from-sky-400 to-blue-400',
                 textColor: theme.flujoEstados?.cotizadas?.textColor || 'text-sky-700',
-                desc: 'Precios enviados al vendedor o cliente',
-                completas: metricas.cotizadasCompletas,
-                parciales: metricas.cotizadasParciales,
-                subdetail: `${metricas.cotizadasCompletas} completas · ${metricas.cotizadasParciales} parciales`
+                desc: 'Con respuesta de Compras, sin pedido aún',
+                completas: metricas.respondidasCompletas,
+                parciales: metricas.respondidasParciales,
+                subdetail: `${metricas.respondidasCompletas} completas · ${metricas.respondidasParciales} parciales`
               },
               { 
                 tipo: 'pedidos',
@@ -1062,7 +1026,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 barGradient: 'from-seguimiento-claro to-seguimiento',
                 subGradient: 'from-seguimiento-soft to-seguimiento-claro',
                 textColor: 'text-seguimiento',
-                desc: 'Solicitudes cotizadas en revisión, prórroga o vencidas (ya incluidas en Cotizadas / Parciales)',
+                desc: 'Cotizadas en revisión, prórroga o vencidas (ya incluidas en Respondido por Compras)',
                 completas: metricas.enSeguimiento.solicitudes,
                 parciales: 0,
                 subdetail: metricas.enSeguimiento.solicitudes > 0
@@ -1301,7 +1265,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
             </div>
             <div>
               <h2 className="text-sm font-bold text-slate-900 tracking-tight">
-                Top Productos Más Cotizados
+                Top Productos Más Solicitados
               </h2>
               <p className="text-[11px] text-slate-400 font-medium">
                 Artículos con mayor demanda y recurrencia
@@ -1321,7 +1285,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                Más cotizados
+                Más solicitados
               </button>
               <button
                 type="button"
@@ -1343,7 +1307,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                Por unidades
+                Mayor volumen
               </button>
               <button
                 type="button"
@@ -1418,7 +1382,7 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                       <span className="text-[10px] font-mono font-bold text-slate-400">
                         #{idx + 1}
                       </span>
-                      {p.ganadas > 0 && p.ganadas === p.veces && (
+                      {p.ganadas > 0 && p.abiertos === 0 && (
                         <Etiqueta tono="exito">
                           <CheckCircle2 size={10} className="shrink-0 text-emerald-600" />
                           Ganado
@@ -1437,35 +1401,34 @@ export const AnalisisEstadisticas = ({ role, solicitudes = [], ordenesCompra = [
                 </div>
                 <div className="pt-2.5 border-t border-slate-200/60 space-y-2 text-[11px]">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400 font-medium">Cotizado</span>
+                    <span className="text-[10px] text-slate-400 font-medium">Veces solicitadas</span>
                     <Etiqueta tono="neutral" tamano="normal" mono>
-                      {p.veces} {p.veces === 1 ? 'vez' : 'veces'}
+                      {p.vecesSolicitadas}
                     </Etiqueta>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400 font-medium">Cotizaciones Ganadas</span>
+                    <span className="text-[10px] text-slate-400 font-medium">Ganados</span>
                     {p.ganadas > 0 ? (
-                      <Etiqueta tono="exito" tamano="normal" mono>
+                      <Etiqueta tono="exito" tamano="normal" mono titulo={describirConversion(p)}>
                         <CheckCircle2 size={10} className="shrink-0 text-emerald-600" />
                         <span>{p.ganadas}</span>
-                        {p.veces > 0 && (
-                          <span className="text-[9px] font-medium text-emerald-600 font-sans">
-                            ({Math.round((p.ganadas / p.veces) * 100)}%)
-                          </span>
-                        )}
+                        <span className="text-[9px] font-medium text-emerald-600 font-sans">
+                          ({formatearConversion(p.conversion)})
+                        </span>
                       </Etiqueta>
                     ) : (
-                      <Etiqueta tono="apagado" tamano="normal" mono>
-                        0 (0%)
+                      <Etiqueta tono="apagado" tamano="normal" mono titulo={describirConversion(p)}>
+                        0 ({formatearConversion(p.conversion)})
                       </Etiqueta>
                     )}
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-slate-400 font-medium">Unidades</span>
+                    <span className="text-[10px] text-slate-400 font-medium">Volumen</span>
                     <span className="font-mono font-semibold text-slate-700 text-xs">
-                      {p.unidades.toLocaleString()}
+                      {p.volumen.toLocaleString()}
                     </span>
                   </div>
+                  <BarraApilada titulo="Volumen por estado" unidad="u." reinicio={ordenarProductosPor} segmentos={segmentosDeVolumen(p.unidadesPorEstado)} />
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] text-slate-400 font-medium">Anulaciones</span>
                     <span className={`font-mono font-semibold text-xs ${p.anulaciones > 0 ? 'text-rose-700' : 'text-slate-400'}`}>

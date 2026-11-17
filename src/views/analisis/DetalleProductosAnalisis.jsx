@@ -12,7 +12,9 @@ import { ChipsFiltroContexto } from './components/ChipsFiltroContexto';
 import { getRoleTheme } from './theme';
 import { useSessionState } from '../../hooks/usePersistedState';
 import { clasificarSolicitud } from '../../utils/clasificarSolicitud';
-import { obtenerDecisionItem } from './utils/decisionMetrics';
+import { compararProductos, describirConversion, formatearConversion, normalizarClaveOrden, resumirProductos } from './utils/resumenProductos';
+import { segmentosDeVolumen, volumenPorEstado } from './utils/segmentosVolumen';
+import { BarraApilada } from '../../components/BarraApilada';
 import { DecisionSummaryMobile, DecisionSummaryColumns } from './components/DecisionSummary';
 import { acumularFaseSeguimiento, describirFasesSeguimiento, obtenerFaseItemCacheada } from '../../utils/faseSeguimiento';
 import { cumpleFiltroPeriodoAnalisis } from './utils/periodoAnalisis';
@@ -24,7 +26,7 @@ import { TablePagination } from '../../components/ui/TablePagination';
 
 /** Opciones de "Ordenar" (mismos valores, orden y rótulos que antes). El peso reserva el ancho de la fila de botones en la barra. */
 const OPCIONES_ORDEN_PRODUCTOS = [
-  { value: 'veces', label: 'Más cotizados' },
+  { value: 'veces', label: 'Más solicitados' },
   { value: 'unidades', label: 'Mayor volumen' },
   { value: 'pedidos', label: 'Más ganados' },
   { value: 'anulaciones', label: 'Más anulaciones' },
@@ -42,10 +44,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
   const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [clienteFilter, setClienteFilter] = useSessionState('analisis_cliente_search', '');
   const [resultadoFilter] = useSessionState('analisis_resultado_filter', '');
-  const ordenInicial = useMemo(() => {
-    const orden = searchParams.get('orden');
-    return orden === 'ganadas' ? 'pedidos' : ['veces', 'unidades', 'pedidos', 'anulaciones', 'decisiones', 'ventasPerdidas', 'rechazos'].includes(orden) ? orden : 'veces';
-  }, [searchParams]);
+  // Las claves de ?orden= no cambian: "ganadas" es un alias de "pedidos" y una clave desconocida cae en "veces".
+  const ordenInicial = useMemo(() => normalizarClaveOrden(searchParams.get('orden')), [searchParams]);
   const [ordenarPor, setOrdenarPor] = useState(ordenInicial); // 'veces' | 'unidades' | 'pedidos' | 'anulaciones'
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -97,8 +97,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
 
   // Agrupar productos de todas las solicitudes (filtradas por vendedor / cliente si están activos)
   const todosLosProductos = useMemo(() => {
-    const map = {};
     const ahora = new Date();
+    const solicitudesDelFiltro = [];
 
     solicitudes.forEach((s) => {
       // Filtro por fecha (respeta el período seleccionado en el dashboard)
@@ -116,65 +116,21 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
         if (resultado !== resultadoFilter) return;
       }
       if (!Array.isArray(s.productos)) return;
-
-      s.productos.forEach((p, indiceProducto) => {
-        const desc = (p.desc || p.descripcion || '').trim().toUpperCase();
-        if (!desc) return;
-        const key = desc;
-
-        const cant = Number(p.cant || 1);
-        const marca = p.marca?.trim() || '';
-
-        if (!map[key]) {
-          map[key] = {
-            id: key,
-            desc: desc,
-            marcas: new Set(),
-            vecesCotizado: 0,
-            unidadesCotizadas: 0,
-            vecesPedido: 0,
-            unidadesPedidas: 0,
-            anulaciones: 0,
-            ventasPerdidas: 0,
-            rechazos: 0,
-            clientes: new Set(),
-            rfqIds: new Set(),
-            enSeguimiento: 0,
-            fasesSeguimiento: {}
-          };
-        }
-
-        const item = map[key];
-        if (marca) item.marcas.add(marca);
-        if (s.cliente) item.clientes.add(s.cliente.trim());
-        if (s.id) item.rfqIds.add(s.id);
-        acumularFaseSeguimiento(item, obtenerFaseItemCacheada(s, indiceProducto));
-
-        const decision = obtenerDecisionItem(s, p);
-        if (decision === 'Anulado' || decision === 'Venta Perdida' || decision === 'Rechazo') {
-          if (decision === 'Anulado') item.anulaciones++;
-          if (decision === 'Venta Perdida') item.ventasPerdidas++;
-          if (decision === 'Rechazo') item.rechazos++;
-          return;
-        }
-
-        const esPedido = p.estadoItem === 'Pedido' || p.estadoItem === 'Comprado' ||
-          (s.estado === 'Pedido' && p.estadoItem !== 'Cotizado' && p.estadoItem !== 'Pendiente');
-
-        item.vecesCotizado++;
-        item.unidadesCotizadas += cant;
-
-        if (esPedido) {
-          item.vecesPedido++;
-          item.unidadesPedidas += cant;
-        }
-      });
+      solicitudesDelFiltro.push(s);
     });
 
-    return Object.values(map).map(p => ({
-      ...p,
-      marcaPrincipal: Array.from(p.marcas).join(', ') || 'Sin marca',
-      totalClientes: p.clientes.size
+    // Cálculo único por producto con el estado final de cada ítem (F8a/F8b): veces solicitadas, volumen y su reparto por estado, ganadas,
+    // conversión, anulaciones, ventas perdidas, rechazos y clientes distintos salen de aquí y coinciden con la barra del mismo producto.
+    // Solo el seguimiento se suma aparte, línea a línea.
+    return resumirProductos(solicitudesDelFiltro, {
+      porLinea: (resumen, solicitud, item, indiceItem) => acumularFaseSeguimiento(resumen, obtenerFaseItemCacheada(solicitud, indiceItem))
+    }).map((r) => ({
+      ...r,
+      id: r.desc,
+      enSeguimiento: r.enSeguimiento || 0,
+      fasesSeguimiento: r.fasesSeguimiento || {},
+      unidadesPorEstado: volumenPorEstado(r),
+      marcaPrincipal: r.marcas.join(', ') || 'Sin marca'
     }));
   }, [solicitudes, vendedorFilter, clienteFilter, resultadoFilter, filtroPeriodo, rangoEsteMes]);
 
@@ -192,30 +148,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
   }, [todosLosProductos, searchTerm]);
 
   // Ordenar productos
-  const productosOrdenados = useMemo(() => {
-    return [...productosFiltrados].sort((a, b) => {
-      if (ordenarPor === 'unidades') {
-        return b.unidadesCotizadas - a.unidadesCotizadas || b.vecesCotizado - a.vecesCotizado;
-      }
-      if (ordenarPor === 'pedidos') {
-        return b.vecesPedido - a.vecesPedido || b.unidadesPedidas - a.unidadesPedidas || b.vecesCotizado - a.vecesCotizado;
-      }
-      if (ordenarPor === 'anulaciones') {
-        return b.anulaciones - a.anulaciones || b.vecesCotizado - a.vecesCotizado;
-      }
-      if (ordenarPor === 'ventasPerdidas') {
-        return b.ventasPerdidas - a.ventasPerdidas || b.vecesCotizado - a.vecesCotizado;
-      }
-      if (ordenarPor === 'rechazos') {
-        return b.rechazos - a.rechazos || b.vecesCotizado - a.vecesCotizado;
-      }
-      if (ordenarPor === 'decisiones') {
-        return (b.ventasPerdidas + b.rechazos + b.anulaciones) - (a.ventasPerdidas + a.rechazos + a.anulaciones) || b.vecesCotizado - a.vecesCotizado;
-      }
-      // 'veces' por defecto (más veces cotizado)
-      return b.vecesCotizado - a.vecesCotizado || b.unidadesCotizadas - a.unidadesCotizadas;
-    });
-  }, [productosFiltrados, ordenarPor]);
+  const productosOrdenados = useMemo(() => [...productosFiltrados].sort(compararProductos(ordenarPor)), [productosFiltrados, ordenarPor]);
 
   const totalPages = Math.max(1, Math.ceil(productosOrdenados.length / itemsPerPage));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -259,7 +192,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
       <PageHeader
         onBack={() => navigate('/analisis')}
         backLabel="Volver a Análisis"
-        title="Top Productos Más Cotizados"
+        title="Top Productos Más Solicitados"
         statusChip={
           <Etiqueta dominio="rol" valor={theme.key}>
             Catálogo
@@ -348,23 +281,25 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                   
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                      <span className="text-[10px] text-slate-400 font-medium">Cotizados</span>
-                      <span className="font-bold font-mono text-slate-700">{p.vecesCotizado} <span className="text-[9px] font-normal">veces</span></span>
+                      <span className="text-[10px] text-slate-400 font-medium">Solicitados</span>
+                      <span className="font-bold font-mono text-slate-700">{p.vecesSolicitadas} <span className="text-[9px] font-normal">{p.vecesSolicitadas === 1 ? 'vez' : 'veces'}</span></span>
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
                       <span className="text-[10px] text-emerald-600/70 font-medium">Ganados</span>
-                      <span className="font-bold font-mono text-emerald-700">{p.vecesPedido} <span className="text-[9px] font-normal">veces</span></span>
+                      <span className="font-bold font-mono text-emerald-700" title={describirConversion(p)}>{p.ganadas} <span className="text-[9px] font-normal">({formatearConversion(p.conversion)})</span></span>
                     </div>
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
-                      <span className="text-[10px] text-slate-400 font-medium">Und. Cotizadas</span>
-                      <span className="font-bold font-mono text-slate-700">{p.unidadesCotizadas.toLocaleString()}</span>
+                      <span className="text-[10px] text-slate-400 font-medium">Volumen</span>
+                      <span className="font-bold font-mono text-slate-700">{p.volumen.toLocaleString()}</span>
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
-                      <span className="text-[10px] text-emerald-600/70 font-medium">Und. Pedidas</span>
-                      <span className="font-bold font-mono text-slate-800">{p.unidadesPedidas.toLocaleString()}</span>
+                      <span className="text-[10px] text-emerald-600/70 font-medium">Und. ganadas</span>
+                      <span className="font-bold font-mono text-slate-800">{p.unidadesGanadas.toLocaleString()}</span>
                     </div>
                   </div>
                   
+                  <BarraApilada titulo="Volumen por estado" unidad="u." reinicio={ordenarPor} segmentos={segmentosDeVolumen(p.unidadesPorEstado)} />
+
                   <DecisionSummaryMobile
                     counts={p}
                     basePath={`/analisis/producto/${encodeURIComponent(p.desc)}`}
@@ -385,8 +320,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                       </div>
                     )}
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-500">Clientes</span>
-                      <span className="font-mono font-bold text-slate-800">{p.totalClientes}</span>
+                      <span className="text-slate-500">Clientes distintos</span>
+                      <span className="font-mono font-bold text-slate-800">{p.clientesDistintos}</span>
                     </div>
                   </div>
 
@@ -412,15 +347,15 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     <th className="py-2.5 px-3.5 whitespace-normal">#</th>
                     <th className="py-2.5 px-3.5 whitespace-normal">Descripción del Producto</th>
                     <th className="py-2.5 px-3.5 whitespace-normal">Marca</th>
-                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Veces Cotizado</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Veces solicitadas</th>
                     <th className="py-2.5 px-2.5 text-center whitespace-normal" title="Ítems en revisión, prórroga o vencidos">En seguimiento</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Anulaciones</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Ventas perdidas</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Rechazos</th>
-                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Unidades Cotizadas</th>
-                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Cotizaciones Ganadas</th>
-                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Unidades Pedidas</th>
-                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Clientes</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal" title="Unidades solicitadas en cualquier estado">Volumen</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal" title="Ítems ganados. Entre paréntesis, la conversión: ganados ÷ cerrados (ganados, ventas perdidas, rechazos y anulaciones)">Ganados</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Unidades ganadas</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal">Clientes distintos</th>
                     <th className="py-2.5 px-2.5 text-center whitespace-normal">Historial</th>
                   </tr>
                 </thead>
@@ -444,6 +379,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                               {p.desc}
                             </span>
                           </div>
+                          <BarraApilada className="mt-1.5" titulo="Volumen por estado" unidad="u." reinicio={ordenarPor} segmentos={segmentosDeVolumen(p.unidadesPorEstado)} />
                         </td>
                         <td className="py-2.5 px-3.5 text-slate-600">
                           <span className="truncate max-w-[150px] inline-block text-[11px]" title={p.marcaPrincipal}>
@@ -451,8 +387,8 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                           </span>
                         </td>
                         <td className="py-2.5 px-2.5 text-center">
-                          <Etiqueta tono="neutral" tamano="normal" mono>
-                            {p.vecesCotizado} RFQ{p.vecesCotizado > 1 ? 's' : ''}
+                          <Etiqueta tono="neutral" tamano="compacta" mono titulo={`${p.vecesSolicitadas} ${pluralizar(p.vecesSolicitadas, 'solicitud', 'solicitudes')}`}>
+                            {p.vecesSolicitadas} solic.
                           </Etiqueta>
                         </td>
                         <td className="py-2.5 px-2.5 text-center whitespace-nowrap">
@@ -470,24 +406,22 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                         <DecisionSummaryColumns counts={p} basePath={`/analisis/producto/${encodeURIComponent(p.desc)}`} navigate={navigate} />
                         <td className="py-2.5 px-2.5 text-center">
                           <span className="inline-block font-mono text-slate-800 font-semibold text-xs">
-                            {p.unidadesCotizadas.toLocaleString()}
+                            {p.volumen.toLocaleString()}
                           </span>
                         </td>
                         <td className="py-2.5 px-2.5 text-center">
-                          <Etiqueta tono="exito" tamano="normal" mono>
-                            {p.vecesPedido}
-                            {p.vecesCotizado > 0 && (
-                              <span className="text-[10px] font-medium text-emerald-600">
-                                ({Math.round((p.vecesPedido / p.vecesCotizado) * 100)}%)
-                              </span>
-                            )}
+                          <Etiqueta tono="exito" tamano="normal" mono titulo={describirConversion(p)}>
+                            {p.ganadas}
+                            <span className="text-[10px] font-medium text-emerald-600">
+                              ({formatearConversion(p.conversion)})
+                            </span>
                           </Etiqueta>
                         </td>
                         <td className="py-2.5 px-2.5 text-center font-mono font-bold text-slate-800">
-                          {p.unidadesPedidas.toLocaleString()}
+                          {p.unidadesGanadas.toLocaleString()}
                         </td>
                         <td className="py-2.5 px-2.5 text-center font-mono text-slate-500">
-                          {p.totalClientes}
+                          {p.clientesDistintos}
                         </td>
                         <td className="py-2.5 px-2.5 text-center">
                           <button

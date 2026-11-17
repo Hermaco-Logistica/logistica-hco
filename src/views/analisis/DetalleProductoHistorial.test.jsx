@@ -25,9 +25,9 @@ const SOL = Array.from({ length: 6 }, (_, i) => ({
 
 const mm = (matches) => { window.matchMedia = () => ({ matches, addEventListener() {}, removeEventListener() {} }); };
 const matchMediaOriginal = window.matchMedia;
-const montar = ({ url = '/analisis/producto/bomba', soloAnulados = false } = {}) => render(
+const montar = ({ url = '/analisis/producto/bomba', soloAnulados = false, solicitudes = SOL } = {}) => render(
   <MemoryRouter initialEntries={[url]}>
-    <Routes><Route path="/analisis/producto/:productId" element={<Vista role="comprador" solicitudes={SOL} ordenesCompra={[]} soloAnulados={soloAnulados} />} /></Routes>
+    <Routes><Route path="/analisis/producto/:productId" element={<Vista role="comprador" solicitudes={solicitudes} ordenesCompra={[]} soloAnulados={soloAnulados} />} /></Routes>
   </MemoryRouter>
 );
 const esperar = (ms = 80) => act(async () => { await new Promise((r) => setTimeout(r, ms)); });
@@ -161,5 +161,39 @@ describe('DetalleProductoHistorial: barra de filtros', () => {
     expect(lista).toHaveLength(2);
     expect(nombre).toMatch(/^historial_producto_/);
     expect(opciones.periodoLabel).toBe('Historial Completo | Estado: Pedido | Búsqueda: "RFQ"');
+  });
+});
+
+describe('DetalleProductoHistorial: tarjeta "Veces solicitadas"', () => {
+  const linea = (marca, estadoItem = 'Cotizado') => ({ desc: 'bomba', marca, cant: 1, estadoItem, precio: 10 });
+  // r0: el mismo producto en dos líneas; r1: una línea; r2: una línea con venta perdida → 4 movimientos en 3 solicitudes distintas
+  const REPETIDO = [
+    { ...SOL[0], id: 'r0', correlativo: 'RFQ-0101', estado: 'Cotizado', productos: [linea('A'), linea('B')] },
+    { ...SOL[1], id: 'r1', correlativo: 'RFQ-0102', estado: 'Cotizado', productos: [linea('A')] },
+    { ...SOL[2], id: 'r2', correlativo: 'RFQ-0103', estado: 'Venta Perdida', productos: [linea('A', 'Venta Perdida')] }
+  ];
+  const tarjeta = () => screen.getByText('Veces solicitadas').closest('.surface');
+
+  it('muestra las solicitudes distintas y no los movimientos (producto repetido en una misma solicitud)', async () => {
+    montar({ solicitudes: REPETIDO });
+    await esperar();
+    expect(contador()).toBe('Mostrando 4 movimientos');
+    expect(within(tarjeta()).getByText('3')).toBeTruthy();
+    expect(within(tarjeta()).queryByText('4')).toBeNull();
+    expect(within(tarjeta()).getByText('En diferentes solicitudes')).toBeTruthy();
+    expect(screen.queryByText('Veces Cotizado')).toBeNull();
+  });
+
+  it('con el producto una sola vez por solicitud los dos números coinciden', async () => {
+    montar();
+    await esperar();
+    expect(contador()).toBe('Mostrando 6 movimientos');
+    expect(within(tarjeta()).getByText('6')).toBeTruthy();
+  });
+
+  it('la tarjeta "Efectividad" se conserva hasta F8c (el Directorio ya dice Conversión): inconsistencia temporal conocida', async () => {
+    montar();
+    await esperar();
+    expect(screen.getByText('Efectividad')).toBeTruthy();
   });
 });
