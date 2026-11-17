@@ -285,7 +285,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                       <span className="font-bold font-mono text-slate-700">{p.vecesSolicitadas} <span className="text-[9px] font-normal">{p.vecesSolicitadas === 1 ? 'vez' : 'veces'}</span></span>
                     </div>
                     <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100/50 flex flex-col items-center justify-center text-center">
-                      <span className="text-[10px] text-emerald-600/70 font-medium">Ganadas</span>
+                      <span className="text-[10px] text-emerald-600/70 font-medium">Ganados</span>
                       <span className="font-bold font-mono text-emerald-700" title={describirConversion(p)}>{p.ganadas} <span className="text-[9px] font-normal">({formatearConversion(p.conversion)})</span></span>
                     </div>
                     <div className="bg-slate-50 p-2 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
@@ -353,7 +353,7 @@ export const DetalleProductosAnalisis = ({ role, solicitudes = [], ordenesCompra
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Ventas perdidas</th>
                     <th className="py-2.5 px-3.5 text-center whitespace-normal">Rechazos</th>
                     <th className="py-2.5 px-2.5 text-center whitespace-normal" title="Unidades solicitadas en cualquier estado">Volumen</th>
-                    <th className="py-2.5 px-2.5 text-center whitespace-normal" title="Ítems ganados. Entre paréntesis, la conversión: ganados ÷ cerrados (ganados, ventas perdidas, rechazos y anulaciones)">Ganadas</th>
+                    <th className="py-2.5 px-2.5 text-center whitespace-normal" title="Ítems ganados. Entre paréntesis, la conversión: ganados ÷ cerrados (ganados, ventas perdidas, rechazos y anulaciones)">Ganados</th>
                     <th className="py-2.5 px-2.5 text-center whitespace-normal">Unidades ganadas</th>
                     <th className="py-2.5 px-2.5 text-center whitespace-normal">Clientes distintos</th>
                     <th className="py-2.5 px-2.5 text-center whitespace-normal">Historial</th>

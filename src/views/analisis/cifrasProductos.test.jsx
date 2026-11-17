@@ -74,19 +74,19 @@ describe('Directorio de productos (tabla): ganadas, conversión, decisiones y cl
     return fila(c, desc).querySelectorAll('td')[cabeceras.indexOf(columna)].textContent.replace(/\s+/g, '');
   };
 
-  it('los encabezados son Ganadas, Unidades ganadas y Clientes distintos (antes Cotizaciones Ganadas, Unidades Pedidas y Clientes)', async () => {
+  it('los encabezados son Ganados, Unidades ganadas y Clientes distintos (antes Cotizaciones Ganadas, Unidades Pedidas y Clientes)', async () => {
     const { container } = directorio();
     await esperar();
     const cabeceras = [...container.querySelectorAll('thead th')].map((th) => th.textContent.trim());
-    expect(cabeceras).toEqual(expect.arrayContaining(['Ganadas', 'Unidades ganadas', 'Clientes distintos', 'Anulaciones', 'Ventas perdidas', 'Rechazos', 'Volumen']));
-    ['Cotizaciones Ganadas', 'Unidades Pedidas', 'Clientes', 'Unidades Cotizadas'].forEach((viejo) => expect(cabeceras).not.toContain(viejo));
+    expect(cabeceras).toEqual(expect.arrayContaining(['Ganados', 'Unidades ganadas', 'Clientes distintos', 'Anulaciones', 'Ventas perdidas', 'Rechazos', 'Volumen']));
+    ['Ganadas', 'Cotizaciones Ganadas', 'Unidades Pedidas', 'Clientes', 'Unidades Cotizadas'].forEach((viejo) => expect(cabeceras).not.toContain(viejo));
   });
 
   it('BOMBA: 3 ganadas con 50 % de conversión, 1 anulación, 1 venta perdida, 1 rechazo y 4 clientes distintos', async () => {
     const { container } = directorio();
     await esperar();
-    expect(entero(celda(container, 'BOMBA', 'Ganadas'))).toBe(BOMBA.ganadas);
-    expect(porcentaje(celda(container, 'BOMBA', 'Ganadas'))).toBe(BOMBA.conversion);
+    expect(entero(celda(container, 'BOMBA', 'Ganados'))).toBe(BOMBA.ganadas);
+    expect(porcentaje(celda(container, 'BOMBA', 'Ganados'))).toBe(BOMBA.conversion);
     expect(entero(celda(container, 'BOMBA', 'Anulaciones'))).toBe(BOMBA.anulaciones);
     expect(entero(celda(container, 'BOMBA', 'Ventas perdidas'))).toBe(BOMBA.ventasPerdidas);
     expect(entero(celda(container, 'BOMBA', 'Rechazos'))).toBe(BOMBA.rechazos);
@@ -97,8 +97,8 @@ describe('Directorio de productos (tabla): ganadas, conversión, decisiones y cl
   it('las cifras cambian frente a las de hoy: ganadas 2 → 3, conversión 67 % → 50 %, ventas perdidas 3 → 1 y clientes 5 → 4', async () => {
     const { container } = directorio();
     await esperar();
-    expect(entero(celda(container, 'BOMBA', 'Ganadas'))).not.toBe(HOY_BOMBA.ganadas);
-    expect(porcentaje(celda(container, 'BOMBA', 'Ganadas'))).not.toBe(HOY_BOMBA.conversion);
+    expect(entero(celda(container, 'BOMBA', 'Ganados'))).not.toBe(HOY_BOMBA.ganadas);
+    expect(porcentaje(celda(container, 'BOMBA', 'Ganados'))).not.toBe(HOY_BOMBA.conversion);
     expect(entero(celda(container, 'BOMBA', 'Ventas perdidas'))).not.toBe(HOY_BOMBA.ventasPerdidas);
     expect(entero(celda(container, 'BOMBA', 'Clientes distintos'))).not.toBe(HOY_BOMBA.clientes);
     expect(entero(celda(container, 'BOMBA', 'Rechazos'))).toBe(HOY_BOMBA.rechazos);
@@ -108,7 +108,7 @@ describe('Directorio de productos (tabla): ganadas, conversión, decisiones y cl
   it('un producto sin ítems cerrados (TUBO) muestra 0 con un guion en lugar de un porcentaje', async () => {
     const { container } = directorio();
     await esperar();
-    expect(celda(container, 'TUBO', 'Ganadas')).toBe('0(—)');
+    expect(celda(container, 'TUBO', 'Ganados')).toBe('0(—)');
   });
 
   it('el title de la conversión da la cuenta: ganados de cerrados con un decimal y coma', async () => {
@@ -119,11 +119,47 @@ describe('Directorio de productos (tabla): ganadas, conversión, decisiones y cl
     expect(fila(container, 'TUBO').querySelector('[title^="Sin ítems cerrados"]')).not.toBeNull();
   });
 
-  it('el encabezado de Ganadas explica la conversión y los datos a revisar no se muestran en ninguna parte', async () => {
+  it('el encabezado de Ganados explica la conversión y los datos a revisar no se muestran en ninguna parte', async () => {
     const { container } = directorio();
     await esperar();
-    expect([...container.querySelectorAll('thead th')].find((th) => th.textContent.trim() === 'Ganadas').getAttribute('title')).toMatch(/conversión: ganados ÷ cerrados/);
+    expect([...container.querySelectorAll('thead th')].find((th) => th.textContent.trim() === 'Ganados').getAttribute('title')).toMatch(/conversión: ganados ÷ cerrados/);
     expect(document.body.textContent.toLowerCase()).not.toMatch(/a revisar|dato a revisar|datosarevisar/);
+  });
+});
+
+describe('Ganados (ítems) en todas las pantallas de Productos; "Ganadas" queda para las columnas por solicitud', () => {
+  const sinGanadas = (el) => expect(within(el).queryByText('Ganadas')).toBeNull();
+
+  it('Directorio, tabla: el encabezado es "Ganados" (con su title) y ya no "Ganadas"', async () => {
+    const { container } = directorio();
+    await esperar();
+    const ths = [...container.querySelectorAll('thead th')];
+    expect(ths.filter((th) => th.textContent.trim() === 'Ganados')).toHaveLength(1);
+    expect(ths.filter((th) => th.textContent.trim() === 'Ganadas')).toHaveLength(0);
+    expect(ths.find((th) => th.textContent.trim() === 'Ganados').getAttribute('title')).toMatch(/^Ítems ganados\./);
+  });
+
+  it('Directorio, tarjeta móvil: la etiqueta es "Ganados" y ya no "Ganadas"', async () => {
+    const { container } = directorio('/analisis/productos', true);
+    await esperar();
+    const t = tarjeta(container, 'BOMBA', '.surface');
+    expect(within(t).queryByText('Ganados')).not.toBeNull();
+    sinGanadas(t);
+    sinGanadas(container);
+  });
+
+  it('tarjeta Top, escritorio: la etiqueta es "Ganados" y no aparece "Ganadas"', () => {
+    const { container } = dashboard();
+    const t = tarjeta(container, 'BOMBA', '.cursor-pointer');
+    expect(within(t).queryByText('Ganados')).not.toBeNull();
+    sinGanadas(t);
+  });
+
+  it('tarjeta Top, móvil: la etiqueta es "Ganados" y no aparece "Ganadas"', () => {
+    const { container } = dashboard(true);
+    const t = tarjeta(container, 'BOMBA', '.snap-start');
+    expect(within(t).queryByText('Ganados')).not.toBeNull();
+    sinGanadas(t);
   });
 });
 
@@ -151,18 +187,18 @@ describe('Directorio de productos: lo que no cambia con el estado final', () => 
 });
 
 describe('Directorio de productos (tarjeta móvil)', () => {
-  it('las etiquetas son Ganadas, Und. ganadas y Clientes distintos, con las mismas cifras que la tabla', async () => {
+  it('las etiquetas son Ganados, Und. ganadas y Clientes distintos, con las mismas cifras que la tabla', async () => {
     const { container } = directorio('/analisis/productos', true);
     await esperar();
     const t = tarjeta(container, 'BOMBA', '.surface');
-    expect(entero(texto(t, 'Ganadas'))).toBe(BOMBA.ganadas);
-    expect(porcentaje(texto(t, 'Ganadas'))).toBe(BOMBA.conversion);
+    expect(entero(texto(t, 'Ganados'))).toBe(BOMBA.ganadas);
+    expect(porcentaje(texto(t, 'Ganados'))).toBe(BOMBA.conversion);
     expect(entero(texto(t, 'Anulaciones'))).toBe(BOMBA.anulaciones);
     expect(entero(texto(t, 'Ventas perdidas'))).toBe(BOMBA.ventasPerdidas);
     expect(entero(texto(t, 'Rechazos'))).toBe(BOMBA.rechazos);
     expect(entero(texto(t, 'Clientes distintos'))).toBe(BOMBA.clientes);
     expect(entero(texto(t, 'Und. ganadas'))).toBe(3);
-    ['Ganados', 'Und. Pedidas', 'Clientes'].forEach((viejo) => expect(within(t).queryByText(viejo)).toBeNull());
+    ['Ganadas', 'Und. Pedidas', 'Clientes'].forEach((viejo) => expect(within(t).queryByText(viejo)).toBeNull());
   });
 });
 
@@ -254,7 +290,7 @@ describe('Cruce de pantallas: la misma cifra en el Directorio, la tarjeta Top y 
     const t = tarjeta(top.container, 'BOMBA', '.cursor-pointer');
     const delTop = (etiqueta) => entero(texto(t, etiqueta));
     const barraTop = cifrasDeLaBarra(t.querySelector('.barra-apilada').getAttribute('aria-label'));
-    expect([delDir('Ganadas'), delDir('Anulaciones'), delDir('Ventas perdidas'), delDir('Rechazos')]).toEqual([delTop('Ganados'), delTop('Anulaciones'), delTop('Ventas perdidas'), delTop('Rechazos')]);
+    expect([delDir('Ganados'), delDir('Anulaciones'), delDir('Ventas perdidas'), delDir('Rechazos')]).toEqual([delTop('Ganados'), delTop('Anulaciones'), delTop('Ventas perdidas'), delTop('Rechazos')]);
     [barraDir, barraTop].forEach((barra) => expect([barra.Ganado, barra.Anulado, barra['Venta perdida'], barra.Rechazo]).toEqual([BOMBA.ganadas, BOMBA.anulaciones, BOMBA.ventasPerdidas, BOMBA.rechazos]));
     expect(filaDir.querySelector('.barra-apilada').getAttribute('aria-label')).toBe(BOMBA.barra);
     expect(t.querySelector('.barra-apilada').getAttribute('aria-label')).toBe(BOMBA.barra);
@@ -264,7 +300,7 @@ describe('Cruce de pantallas: la misma cifra en el Directorio, la tarjeta Top y 
     const dir = directorio('/analisis/productos', true);
     await esperar();
     const tDir = tarjeta(dir.container, 'BOMBA', '.surface');
-    const ganadasDir = entero(texto(tDir, 'Ganadas')); const convDir = porcentaje(texto(tDir, 'Ganadas'));
+    const ganadasDir = entero(texto(tDir, 'Ganados')); const convDir = porcentaje(texto(tDir, 'Ganados'));
     expect(tDir.querySelector('.barra-apilada').getAttribute('aria-label')).toBe(BOMBA.barra);
     cleanup();
     const top = dashboard(true);
