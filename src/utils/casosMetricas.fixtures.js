@@ -22,6 +22,30 @@ export const PED_0030 = {
   ]
 };
 
+/**
+ * PED-0020 (caso real de desarrollo, anonimizado; F8c commit 8): pedido manual "Pendiente" con dos ítems que Compras APROBÓ y todavía NO notificó:
+ * `estadoItem` "Pedido", `negociacion` acordada con `sinNotificar` verdadero y último cambio "aprobar" del comprador, y SIN `pedidoGenerado` (el pedido
+ * no existe hasta que Compras notifica). El vendedor sigue viendo "Pendiente · Turno Compras". Con la regla de pedido confirmado son dos ítems
+ * Cotizado (tienen precio) y la solicitud es "En curso"; antes de F8c, "Ganada".
+ */
+const aprobadoSinNotificar = (desc, fob) => ({
+  desc, cant: 4, fob, precio: fob, selected: true, modalidad: 'Aéreo', estadoItem: 'Pedido',
+  negociacion: {
+    turno: null, resultado: 'acordado', ronda: 1, version: 1, sinNotificar: true,
+    ofertaVigente: { precio: fob, tiempoEntrega: '10', modalidad: 'Aéreo', autorRol: 'vendedor' },
+    ofertaAnterior: null,
+    ultimoCambio: { accion: 'aprobar', rol: 'comprador', estadoPrevio: { estadoItem: 'Pendiente', negociacion: { turno: 'compras', resultado: 'pendiente' } } }
+  }
+});
+export const PED_0020 = {
+  id: 'ped-0020',
+  correlativo: 'PED-0020',
+  tipo: 'Pedido Manual',
+  estado: 'Pendiente',
+  cliente: 'Cliente C',
+  productos: [aprobadoSinNotificar('Producto 0', 8.54), aprobadoSinNotificar('Producto 1', 10.23)]
+};
+
 /** Caso tipo (no es PED-0030): bandera en la raíz y tres ítems [Pedido, Pedido, Venta Perdida]. */
 export const CASO_TIPO = {
   id: 'caso-tipo',

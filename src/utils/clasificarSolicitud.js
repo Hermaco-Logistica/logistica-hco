@@ -1,3 +1,5 @@
+import { estadoDePedidoSinConfirmar, pedidoSinConfirmar } from './estadoFinalItem';
+
 const ESTADOS_PEDIDO = ['Pedido', 'Comprado'];
 const ESTADOS_DENEGADOS = ['Denegado', 'Rechazado', 'Cancelado', 'Venta Perdida'];
 
@@ -12,6 +14,14 @@ export const RESULTADOS_SOLICITUD = {
   VENTA_PERDIDA: 'venta_perdida',
   EN_PROCESO: 'en_proceso'
 };
+
+/**
+ * Estado del ítem para clasificar la solicitud (F8c): un pedido sin confirmar (negociación sin `pedidoGenerado`, ver estadoFinalItem.js) no cuenta como
+ * pedido: es Cotizado si tiene precio y Pendiente si no. Los demás ítems conservan su `estadoItem`.
+ */
+const estadoParaClasificar = (p) => (
+  ESTADOS_PEDIDO.includes(p?.estadoItem) && pedidoSinConfirmar(p) ? estadoDePedidoSinConfirmar(p) : p?.estadoItem
+);
 
 export const clasificarSolicitud = (productos = [], estadoActual = 'Pendiente') => {
   if (estadoActual === 'Venta Perdida') {
@@ -33,7 +43,10 @@ export const clasificarSolicitud = (productos = [], estadoActual = 'Pendiente') 
       tieneAnulaciones: anulados.length > 0
     };
   }
-  const lista = Array.isArray(productos) ? productos : [];
+  const lista = (Array.isArray(productos) ? productos : []).map((p) => {
+    const estadoItem = estadoParaClasificar(p);
+    return estadoItem === p?.estadoItem ? p : { ...p, estadoItem };
+  });
   const anulados = lista.filter((p) => p?.estadoItem === 'Anulado');
   const activos = lista.filter((p) => p?.estadoItem !== 'Anulado');
   const pedidos = activos.filter((p) => ESTADOS_PEDIDO.includes(p?.estadoItem));
