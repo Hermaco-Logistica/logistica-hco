@@ -10,6 +10,7 @@ import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme } from './theme';
 import { resultadoSolicitud } from '../../utils/resultadoSolicitud';
 import { claveResultadoSolicitud } from './utils/claveResultadoSolicitud';
+import { esPestanaPorEstado, perteneceAPestanaPorEstado } from './utils/pestanaSolicitud';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
 import { useSessionState } from '../../hooks/usePersistedState';
 import { obtenerFaseSolicitudCacheada } from '../../utils/faseSeguimiento';
@@ -204,19 +205,11 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
 
       if (tabActual === 'seguimiento') return Boolean(obtenerFaseSolicitudCacheada(s));
 
+      // Pendientes, Cotizadas, Pedidos y Pedidos Parciales: por el estado RECALCULADO desde los ítems (F8c), como las filas del dashboard.
+      // La columna "Estado" sigue mostrando el estado guardado.
+      if (esPestanaPorEstado(tabActual)) return perteneceAPestanaPorEstado(s, tabActual);
+
       const est = s.estado || 'Pendiente';
-      if (tabActual === 'pendiente') {
-        return est === 'Pendiente';
-      }
-      if (tabActual === 'cotizadas') {
-        return est === 'Cotizado' || est === 'Cotizado Parcial';
-      }
-      if (tabActual === 'pedidos') {
-        return est === 'Pedido' || est === 'Comprado';
-      }
-      if (tabActual === 'parciales') {
-        return est === 'Pedido Parcial';
-      }
       if (tabActual === 'anuladas') {
         return est === 'Anulado';
       }
