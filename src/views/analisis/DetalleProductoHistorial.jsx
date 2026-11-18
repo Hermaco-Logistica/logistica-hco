@@ -43,7 +43,10 @@ import {
   obtenerMotivoMovimiento,
   obtenerOpcionesMovimiento
 } from './utils/normalizarMovimiento';
-import { getRoleTheme, evaluarEstadoGanada } from './theme';
+import { getRoleTheme } from './theme';
+import { ESTADO_FINAL, estadoFinalItem } from '../../utils/estadoFinalItem';
+import { resumirGanadas } from '../../utils/resultadoSolicitud';
+import { describirConversion, resumirLineas } from './utils/resumenProductos';
 import { useSessionState } from '../../hooks/usePersistedState';
 import {
   getHoyElSalvador,
@@ -54,11 +57,11 @@ import {
 } from '../../utils/dateValidation';
 import { TablePagination } from '../../components/ui/TablePagination';
 
-const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGanada, irADetalle, onMostrarMotivo, soloAnulados = false, decisionFilter = 'anulados' }) => {
+const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, irADetalle, onMostrarMotivo, soloAnulados = false, decisionFilter = 'anulados' }) => {
   const [expanded, setExpanded] = useState(false);
   const esAereo = m.modalidad === 'Aéreo';
   const esMaritimo = m.modalidad === 'Marítimo';
-  const res = evaluarEstadoGanada(m);
+  const solicitudParcial = m.solicitudOriginal?.estado === 'Pedido Parcial';
 
   return (
     <div className="surface relative rounded-xl overflow-hidden transition-all duration-300 group">
@@ -80,12 +83,10 @@ const MovimientoCard = ({ m, theme, formatFecha, formatMoneda, evaluarEstadoGana
         <div className="flex justify-between items-start w-full gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-              <Etiqueta dominio="resultado" valor={res.clave}>
-                {res.label}
-              </Etiqueta>
+              <Etiqueta dominio="resultadoItem" valor={m.estadoFinal} />
               <span className="text-slate-300 text-[9px]">•</span>
               <span className="text-slate-500 font-mono font-medium text-[10px] uppercase">{m.correlativo}</span>
-              {!soloAnulados && res.esParcial && (
+              {!soloAnulados && solicitudParcial && (
                 <Etiqueta tono="aviso">Parcial</Etiqueta>
               )}
               {soloAnulados && <DecisionBadge decisionFilter={decisionFilter} withIcon />}
@@ -480,6 +481,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
             ocRef: ocRef,
             estado: s.estado || 'Pendiente',
             estadoItem: estadoItem,
+            estadoFinal: estadoFinalItem(s, p),
             motivoAnulacion: obtenerMotivoMovimiento(p),
             fob: Number(p.fob || 0),
             itemOriginal: p,
@@ -544,8 +546,8 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
     let sumaValorNeto = 0;
     let sumaTotalConIva = 0;
     const clientesSet = new Set();
-    const rfqResultados = new Map();
     const rfqsSet = new Set();
+    const solicitudesDeLasFilas = new Map();
 
     movimientosFiltrados.forEach((m) => {
       unidadesTotales += Number(m.unidades || 0);
@@ -553,24 +555,28 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
       sumaTotalConIva += Number(m.totalConIva || 0);
       if (m.cliente) clientesSet.add(normalizarBusqueda(m.cliente));
       const rfqKey = m.rfqId || m.correlativo || m.idMov;
-      if (rfqKey) rfqsSet.add(rfqKey);
-      const resGanada = evaluarEstadoGanada(m);
-      const resultado = rfqResultados.get(rfqKey) || { ganada: false, parcial: false };
-      if (resGanada.esGanada) {
-        resultado.ganada = true;
-        unidadesEnPedido += Number(m.unidades || 0);
-      } else if (resGanada.esParcial && (m.estado === 'Pedido Parcial' || m.estado === 'Pedido' || m.estado === 'Comprado')) {
-        resultado.parcial = true;
-        unidadesEnPedido += Number(m.unidades || 0);
+      if (rfqKey) {
+        rfqsSet.add(rfqKey);
+        // La solicitud con SOLO los ítems de las filas filtradas: el title cuenta las solicitudes por lo que pasó con este producto
+        if (!solicitudesDeLasFilas.has(rfqKey)) solicitudesDeLasFilas.set(rfqKey, { ...m.solicitudOriginal, productos: [] });
+        solicitudesDeLasFilas.get(rfqKey).productos.push(m.itemOriginal);
       }
-      if (rfqKey) rfqResultados.set(rfqKey, resultado);
+      // Unidades en pedido: las de los ítems cuyo estado final es Ganado (F8c; antes salían de evaluarEstadoGanada)
+      if (m.estadoFinal === ESTADO_FINAL.GANADO) unidadesEnPedido += Number(m.unidades || 0);
     });
 
-    const pedidosCount = [...rfqResultados.values()].filter((r) => r.ganada).length;
-    const parcialesCount = [...rfqResultados.values()].filter((r) => !r.ganada && r.parcial).length;
-    const tasaConversion = rfqsSet.size > 0
-      ? ((pedidosCount / rfqsSet.size) * 100).toFixed(1)
-      : 0;
+    // Conversión por ítems (F8c): el mismo cálculo que el Directorio, sobre las filas ya filtradas de la tabla (búsqueda, estado, modalidad,
+    // seguimiento y vista de decisión). Sin filas no hay resumen; sin ítems cerrados la conversión es null y se muestra un guion.
+    const resumen = resumirLineas(
+      movimientosFiltrados.map((m, indice) => ({ solicitud: m.solicitudOriginal, item: m.itemOriginal, indiceSolicitud: indice, indiceItem: m.idxProducto })),
+      { clave: () => 'producto' }
+    )[0];
+    const conversion = resumen?.conversion ?? null;
+    const itemsGanados = resumen?.ganadas ?? 0;
+    const itemsCerrados = resumen?.cerrados ?? 0;
+    // Solo para el title: solicitudes distintas de esas filas por su resultado, con solo los ítems de esas filas (no los otros productos de la solicitud)
+    const { ganadas: pedidosCount, parciales: parcialesCount } = resumirGanadas([...solicitudesDeLasFilas.values()]);
+    const tituloConversion = `${describirConversion(resumen)} (${pedidosCount} ${pedidosCount === 1 ? 'solicitud ganada' : 'solicitudes ganadas'} + ${parcialesCount} ${parcialesCount === 1 ? 'parcial' : 'parciales'})`;
 
     return {
       totalMovimientos,
@@ -579,12 +585,13 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
       rfqsUnicas: rfqsSet.size,
       unidadesTotales,
       unidadesEnPedido,
-      pedidosCount,
-      parcialesCount,
       sumaValorNeto,
       sumaTotalConIva,
       clientesUnicos: clientesSet.size,
-      tasaConversion
+      conversion,
+      itemsGanados,
+      itemsCerrados,
+      tituloConversion
     };
   }, [movimientosFiltrados, movimientos.length]);
 
@@ -666,7 +673,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
       />
 
       {/* TARJETAS RESUMEN DEL PRODUCTO */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-4">
+      <div className={`grid grid-cols-2 ${soloAnulados ? 'lg:grid-cols-4' : 'lg:grid-cols-5'} gap-2.5 sm:gap-4`}>
         <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between">
           <div className="flex items-center gap-2 text-slate-400 mb-1.5">
             <Package size={14} className="text-slate-400 shrink-0" />
@@ -727,24 +734,32 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
           </div>
         </div>
 
-        <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between col-span-2 lg:col-span-1">
-          <div className="flex items-center gap-2 text-slate-400 mb-1.5">
-            <TrendingUp size={14} className="text-slate-400 shrink-0" />
-            <span className="text-[10px] font-bold uppercase tracking-wider truncate">Efectividad</span>
-          </div>
-          <div>
-            <div className="text-lg sm:text-2xl font-bold font-mono text-slate-800 tracking-tight flex items-baseline gap-1">
-              {metricas.tasaConversion}
-              <span className="text-[10px] sm:text-xs font-normal text-slate-400">%</span>
+        {/* Conversión por ítems; en las vistas de decisión (anulaciones, ventas perdidas) no tiene sentido: solo hay ítems de esa decisión */}
+        {!soloAnulados && (
+          <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between col-span-2 lg:col-span-1">
+            <div className="flex items-center gap-2 text-slate-400 mb-1.5">
+              <TrendingUp size={14} className="text-slate-400 shrink-0" />
+              <span className="text-[10px] font-bold uppercase tracking-wider truncate">Conversión</span>
             </div>
-            <div
-              className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 truncate cursor-help"
-              title={`${metricas.pedidosCount} solicitudes ganadas + ${metricas.parcialesCount} solicitudes parciales de ${metricas.rfqsUnicas} solicitudes totales`}
-            >
-              {metricas.pedidosCount} gan. {metricas.parcialesCount > 0 && <span className="text-amber-600 font-semibold">(+{metricas.parcialesCount} pc.)</span>} / {metricas.rfqsUnicas} solicitudes
+            <div>
+              <div className="text-lg sm:text-2xl font-bold font-mono text-slate-800 tracking-tight flex items-baseline gap-1">
+                {metricas.conversion === null ? '—' : (
+                  <>
+                    {Math.round(metricas.conversion)}
+                    <span className="text-[10px] sm:text-xs font-normal text-slate-400">%</span>
+                  </>
+                )}
+              </div>
+              {/* Sin truncar: con cifras de cuatro dígitos o más no cabe en una línea en la tarjeta de 1/5 del ancho; envuelve en la barra, no a mitad de una cifra */}
+              <div
+                className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 cursor-help"
+                title={metricas.tituloConversion}
+              >
+                <span className="whitespace-nowrap">{metricas.itemsGanados.toLocaleString()} {metricas.itemsGanados === 1 ? 'ganado' : 'ganados'}</span> / <span className="whitespace-nowrap">{metricas.itemsCerrados.toLocaleString()} {metricas.itemsCerrados === 1 ? 'cerrado' : 'cerrados'}</span>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* FILTROS: chips de contexto, búsqueda, Estado, Modalidad, seguimiento, Limpiar, Exportar y contador */}
@@ -793,7 +808,6 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                 theme={theme} 
                 formatFecha={formatFecha} 
                 formatMoneda={formatMoneda} 
-                evaluarEstadoGanada={evaluarEstadoGanada} 
                 irADetalle={irADetalle} 
                 onMostrarMotivo={abrirConsultaMotivo}
                 soloAnulados={soloAnulados}
@@ -1009,17 +1023,10 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
                         </div>
                       </td>}
 
-                      {/* Resultado (Ganada / Cotizada / Pendiente) */}
+                      {/* Resultado del ítem (Ganado, Venta perdida, Rechazo, Anulado, Cotizado o Pendiente) */}
                       {!soloAnulados && <td className="py-2.5 px-3 text-center whitespace-nowrap">
                         <div className="flex flex-col items-center gap-1">
-                          {(() => {
-                            const res = evaluarEstadoGanada(m);
-                            return (
-                              <Etiqueta dominio="resultado" valor={res.clave}>
-                                <span>{res.label}</span>
-                              </Etiqueta>
-                            );
-                          })()}
+                          <Etiqueta dominio="resultadoItem" valor={m.estadoFinal} />
                           {m.solicitudOriginal?.estado !== 'Anulado' && (m.estado === 'Anulado' || m.solicitudOriginal?.productos?.some(p => p.estadoItem === 'Anulado')) && (
                             <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-rose-500">
                               <Ban size={9} className="shrink-0" />

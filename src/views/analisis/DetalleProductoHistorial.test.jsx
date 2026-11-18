@@ -191,9 +191,10 @@ describe('DetalleProductoHistorial: tarjeta "Veces solicitadas"', () => {
     expect(within(tarjeta()).getByText('6')).toBeTruthy();
   });
 
-  it('la tarjeta "Efectividad" se conserva hasta F8c (el Directorio ya dice Conversión): inconsistencia temporal conocida', async () => {
+  it('la tarjeta "Efectividad" pasó a "Conversión" en F8c, como el Directorio', async () => {
     montar();
     await esperar();
-    expect(screen.getByText('Efectividad')).toBeTruthy();
+    expect(screen.getByText('Conversión')).toBeTruthy();
+    expect(screen.queryByText('Efectividad')).toBeNull();
   });
 });
