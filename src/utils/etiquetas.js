@@ -210,14 +210,22 @@ const ESTADOS_ITEM = {
   Anulado: { tono: 'apagado', icono: Ban }
 };
 
-/** Resultado comercial (Ganada, Ganado parcial...). Lo calcula evaluarEstadoGanada en views/analisis/theme.js. */
+/**
+ * Resultado comercial (Ganada, Ganado parcial...). Lo calculan evaluarEstadoGanada (views/analisis/theme.js: Excel de movimientos) y, desde F8c,
+ * resultadoSolicitud (lista de solicitudes; claves ganada, ganada_parcial, perdida, anulada, en_curso y sin_items).
+ */
 const RESULTADOS = {
   ganada: { texto: 'Ganada', tono: 'exito', icono: CheckCircle2 },
   ganado_parcial: { texto: 'Ganado parcial', tono: 'info', icono: PieChart },
   no_comprado: { texto: 'No comprado', tono: 'apagado', icono: MinusCircle },
   cotizada: { texto: 'Cotizada', tono: 'azul', icono: FileText },
   anulada: { texto: 'Anulada', tono: 'peligro', icono: Ban },
-  pendiente: { texto: 'Pendiente', tono: 'aviso', icono: Clock }
+  pendiente: { texto: 'Pendiente', tono: 'aviso', icono: Clock },
+  // F8c: resultado por solicitud de `resultadoSolicitud` (utils/resultadoSolicitud.js); tonos que ya existían
+  ganada_parcial: { texto: 'Ganada parcial', tono: 'info', icono: PieChart },
+  perdida: { texto: 'Perdida', tono: 'peligro', icono: TrendingDown },
+  en_curso: { texto: 'En curso', tono: 'azul', icono: FileText },
+  sin_items: { texto: 'Sin ítems', tono: 'apagado', icono: MinusCircle }
 };
 
 /**

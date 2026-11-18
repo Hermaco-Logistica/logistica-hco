@@ -7,7 +7,9 @@ import { Etiqueta } from '../../components/Etiqueta';
 import { PageContainer } from '../../components/ui/PageContainer';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { normalizarBusqueda } from '../../utils/normalizers';
-import { getRoleTheme, evaluarEstadoGanada } from './theme';
+import { getRoleTheme } from './theme';
+import { resultadoSolicitud } from '../../utils/resultadoSolicitud';
+import { claveResultadoSolicitud } from './utils/claveResultadoSolicitud';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
 import { useSessionState } from '../../hooks/usePersistedState';
 import { obtenerFaseSolicitudCacheada } from '../../utils/faseSeguimiento';
@@ -609,14 +611,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                           </td>
                           <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                             <div className="flex flex-col items-center gap-1">
-                              {(() => {
-                                const res = evaluarEstadoGanada(s);
-                                return (
-                                  <Etiqueta dominio="resultado" valor={res.clave}>
-                                    <span>{res.label}</span>
-                                  </Etiqueta>
-                                );
-                              })()}
+                              <Etiqueta dominio="resultado" valor={claveResultadoSolicitud(resultadoSolicitud(s).resultado)} />
                               {s.estado !== 'Anulado' && s.productos?.some(p => p.estadoItem === 'Anulado') && (
                                 <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-rose-500">
                                   <Ban size={9} className="shrink-0" />
