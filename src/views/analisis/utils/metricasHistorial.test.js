@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resumirMovimientosHistorial } from './metricasHistorial';
+import { PRODUCTO_RELLENO, resumirMovimientosHistorial } from './metricasHistorial';
 import { ESTADO_FINAL } from '../../../utils/estadoFinalItem';
 
 /**
@@ -66,5 +66,20 @@ describe('resumirMovimientosHistorial', () => {
     const b = solicitud(undefined, 'Pedido', [item('b', 'Pedido')]);
     const f = [fila(a, 0, G, { rfqId: undefined, correlativo: undefined, idMov: 'x-0' }), fila(b, 0, G, { rfqId: undefined, correlativo: undefined, idMov: 'y-0' })];
     expect(resumirMovimientosHistorial(f).tituloConversion).toContain('(2 solicitudes ganadas + 0 parciales)');
+  });
+
+  it('la fila de relleno (solicitud sin productos) no cuenta en la conversión, las unidades, el monto ni el title', () => {
+    const vacia = solicitud('v', 'Pedido', []);
+    const relleno = { idMov: 'v-0', rfqId: 'v', correlativo: 'RFQ-v', idxProducto: 0, solicitudOriginal: vacia, itemOriginal: PRODUCTO_RELLENO, estadoFinal: G, esRelleno: true, unidades: 1, valorNeto: 10, totalConIva: 11.3 };
+    const con = resumirMovimientosHistorial([...filas, relleno]);
+    const sin = resumirMovimientosHistorial(filas);
+    expect(con).toEqual(sin);
+    const solo = resumirMovimientosHistorial([relleno]);
+    expect([solo.conversion, solo.itemsGanados, solo.itemsCerrados, solo.unidadesEnPedido, solo.montoPedidosNeto]).toEqual([null, 0, 0, 0, 0]);
+  });
+
+  it('la fila de relleno es un objeto propio: una fila con el mismo texto pero sin la marca sí cuenta', () => {
+    const real = solicitud('r', 'Pedido', [item('Sin productos detallados', 'Pedido')]);
+    expect(resumirMovimientosHistorial([fila(real, 0, G)]).itemsGanados).toBe(1);
   });
 });
