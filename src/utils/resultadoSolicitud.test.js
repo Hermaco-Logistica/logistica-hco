@@ -13,7 +13,8 @@ const sol = (estados, estado = 'Cotizado Parcial') => ({
 
 describe('resultadoSolicitud: valores', () => {
   it('los resultados tienen los nombres del documento', () => {
-    expect(Object.values(R)).toEqual(['Ganada', 'Ganada parcial', 'Perdida', 'Anulada', 'En curso', 'Sin ítems']);
+    expect(Object.values(R)).toEqual(['Ganada', 'Ganada parcial', 'Venta perdida', 'Rechazada', 'Anulada', 'En curso', 'Sin ítems']);
+    expect(R.PERDIDA).toBeUndefined();
   });
 });
 
@@ -27,11 +28,19 @@ describe('resultadoSolicitud: tabla de resultados', () => {
     [['Pedido', 'Rechazado'], R.GANADA_PARCIAL],
     [['Pedido', 'Pedido', 'Anulado'], R.GANADA_PARCIAL], // un Anulado cuenta como "no ganado"
     [['Anulado', 'Pedido'], R.GANADA_PARCIAL],
-    [['Venta Perdida'], R.PERDIDA],
-    [['Rechazado'], R.PERDIDA],
-    [['Cancelado', 'Denegado'], R.PERDIDA],
-    [['Venta Perdida', 'Anulado'], R.PERDIDA], // los Anulados no cambian una pérdida
-    [['Rechazado', 'Anulado', 'Anulado'], R.PERDIDA],
+    [['Venta Perdida'], R.VENTA_PERDIDA],
+    [['Venta Perdida', 'Venta Perdida'], R.VENTA_PERDIDA],
+    [['Rechazado'], R.RECHAZADA],
+    [['Cancelado'], R.RECHAZADA], // Cancelado es un rechazo (el vendedor rechazó la oferta de Compras)
+    [['Denegado'], R.RECHAZADA], // Denegado: Compras no cotiza
+    [['Cancelado', 'Denegado'], R.RECHAZADA],
+    [['Rechazado', 'Cancelado', 'Denegado'], R.RECHAZADA],
+    [['Venta Perdida', 'Anulado'], R.VENTA_PERDIDA], // los Anulados no cambian una pérdida
+    [['Rechazado', 'Anulado', 'Anulado'], R.RECHAZADA],
+    [['Venta Perdida', 'Rechazado'], R.VENTA_PERDIDA], // mixta: la venta perdida manda
+    [['Rechazado', 'Venta Perdida'], R.VENTA_PERDIDA], // el orden de los ítems no importa
+    [['Cancelado', 'Venta Perdida', 'Anulado'], R.VENTA_PERDIDA],
+    [['Denegado', 'Denegado', 'Venta Perdida'], R.VENTA_PERDIDA],
     [['Anulado'], R.ANULADA],
     [['Anulado', 'Anulado', 'Anulado'], R.ANULADA],
     [['Cotizado'], R.EN_CURSO],
@@ -52,15 +61,39 @@ describe('resultadoSolicitud: tabla de resultados', () => {
 
   it('los ítems sin estado propio se resuelven por el estado de la solicitud', () => {
     expect(resultadoSolicitud({ estado: 'Pedido', productos: [{}, {}] }).resultado).toBe(R.GANADA);
-    expect(resultadoSolicitud({ estado: 'Venta Perdida', productos: [{}] }).resultado).toBe(R.PERDIDA);
+    expect(resultadoSolicitud({ estado: 'Venta Perdida', productos: [{}] }).resultado).toBe(R.VENTA_PERDIDA);
     expect(resultadoSolicitud({ estado: 'Anulado', productos: [{}] }).resultado).toBe(R.ANULADA);
-    expect(resultadoSolicitud({ estado: 'Denegado', productos: [{}] }).resultado).toBe(R.PERDIDA);
+    expect(resultadoSolicitud({ estado: 'Denegado', productos: [{}] }).resultado).toBe(R.RECHAZADA);
+    expect(resultadoSolicitud({ estado: 'Cancelado', productos: [{}] }).resultado).toBe(R.RECHAZADA);
+    expect(resultadoSolicitud({ estado: 'Rechazado', productos: [{}] }).resultado).toBe(R.RECHAZADA);
     expect(resultadoSolicitud({ estado: 'Pendiente', productos: [{}] }).resultado).toBe(R.EN_CURSO);
   });
 
   it('un motivo suelto en un ítem Pedido no lo rebaja: la solicitud sigue ganada', () => {
     const solicitud = { estado: 'Pedido', productos: [{ estadoItem: 'Pedido', motivoRechazo: 'x' }, { estadoItem: 'Comprado', motivoVentaPerdida: { motivo: 'x' } }] };
     expect(resultadoSolicitud(solicitud).resultado).toBe(R.GANADA);
+  });
+});
+
+describe('resultadoSolicitud: "Venta perdida" frente a "Rechazada"', () => {
+  it('solo ventas perdidas es "Venta perdida" y solo rechazos es "Rechazada"; con las dos, la venta perdida manda', () => {
+    expect(resultadoSolicitud(sol(['Venta Perdida', 'Venta Perdida'])).resultado).toBe('Venta perdida');
+    expect(resultadoSolicitud(sol(['Rechazado', 'Cancelado', 'Denegado'])).resultado).toBe('Rechazada');
+    expect(resultadoSolicitud(sol(['Rechazado', 'Venta Perdida'])).resultado).toBe('Venta perdida');
+  });
+
+  it('con un ganado es "Ganada parcial", aunque haya ventas perdidas y rechazos; con un abierto, "En curso"', () => {
+    expect(resultadoSolicitud(sol(['Pedido', 'Venta Perdida', 'Rechazado'])).resultado).toBe(R.GANADA_PARCIAL);
+    expect(resultadoSolicitud(sol(['Cotizado', 'Venta Perdida', 'Rechazado'])).resultado).toBe(R.EN_CURSO);
+  });
+
+  it('los conteos por ítem no cambian: la mixta cuenta una venta perdida y un rechazo', () => {
+    const r = resultadoSolicitud(sol(['Venta Perdida', 'Rechazado', 'Anulado']));
+    expect([r.resultado, r.ventasPerdidas, r.rechazos, r.anulados, r.cerrados, r.abiertos]).toEqual([R.VENTA_PERDIDA, 1, 1, 1, 3, 0]);
+  });
+
+  it('PED-0031 (cancelado por el vendedor, solicitud Denegado) es "Rechazada"', () => {
+    expect(resultadoSolicitud({ estado: 'Denegado', productos: [{ desc: 'x', cant: 1, estadoItem: 'Cancelado', motivoRechazo: { motivo: 'x' } }] }).resultado).toBe(R.RECHAZADA);
   });
 });
 
@@ -100,7 +133,8 @@ describe('resultadoSolicitud: casos anonimizados', () => {
     expect(resumen).toEqual({ ganadas: 16, parciales: 2, total: 39 });
     expect(formatoGanadas(resumen)).toBe('16 (+2 parc.)');
     const por = (resultado) => CLIENTE_K.filter((s) => resultadoSolicitud(s).resultado === resultado).length;
-    expect([por(R.GANADA), por(R.GANADA_PARCIAL), por(R.EN_CURSO), por(R.ANULADA), por(R.PERDIDA)]).toEqual([16, 2, 3, 8, 10]);
+    // las 10 pérdidas son 8 solo de ventas perdidas y 2 mixtas (venta perdida y rechazo): todas "Venta perdida", ninguna "Rechazada"
+    expect([por(R.GANADA), por(R.GANADA_PARCIAL), por(R.EN_CURSO), por(R.ANULADA), por(R.VENTA_PERDIDA), por(R.RECHAZADA)]).toEqual([16, 2, 3, 8, 10, 0]);
   });
 
   it('producto repetido en dos líneas de la misma solicitud: la solicitud cuenta una sola vez', () => {

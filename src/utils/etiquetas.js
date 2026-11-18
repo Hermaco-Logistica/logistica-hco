@@ -212,7 +212,7 @@ const ESTADOS_ITEM = {
 
 /**
  * Resultado comercial (Ganada, Ganado parcial...). Lo calculan evaluarEstadoGanada (views/analisis/theme.js: Excel de movimientos) y, desde F8c,
- * resultadoSolicitud (lista de solicitudes; claves ganada, ganada_parcial, perdida, anulada, en_curso y sin_items).
+ * resultadoSolicitud (lista de solicitudes; claves ganada, ganada_parcial, venta_perdida, rechazada, anulada, en_curso y sin_items).
  */
 const RESULTADOS = {
   ganada: { texto: 'Ganada', tono: 'exito', icono: CheckCircle2 },
@@ -223,7 +223,8 @@ const RESULTADOS = {
   pendiente: { texto: 'Pendiente', tono: 'aviso', icono: Clock },
   // F8c: resultado por solicitud de `resultadoSolicitud` (utils/resultadoSolicitud.js); tonos que ya existían
   ganada_parcial: { texto: 'Ganada parcial', tono: 'info', icono: PieChart },
-  perdida: { texto: 'Perdida', tono: 'peligro', icono: TrendingDown },
+  venta_perdida: { texto: 'Venta perdida', tono: 'peligro', icono: TrendingDown },
+  rechazada: { texto: 'Rechazada', tono: 'peligro', icono: XCircle },
   en_curso: { texto: 'En curso', tono: 'azul', icono: FileText },
   sin_items: { texto: 'Sin ítems', tono: 'apagado', icono: MinusCircle }
 };

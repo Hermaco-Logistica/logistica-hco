@@ -25,13 +25,14 @@ const DATOS = [
   sol('2', 'Pedido Parcial', [item('a', 'Pedido'), item('b', 'Cotizado')]), // Ganada parcial (hoy Ganado Parcial)
   sol('3', 'Pedido', [item('a', 'Pedido'), item('b', 'Anulado')]), // Ganada parcial (hoy Ganado Parcial)
   sol('4', 'Pedido', [item('a', 'Pedido'), item('b', 'Venta Perdida')]), // Ganada parcial (hoy Ganada)
-  sol('5', 'Venta Perdida', [item('a', 'Venta Perdida')]), // Perdida (hoy Venta Perdida)
-  sol('6', 'Denegado', [item('a', 'Cancelado')]), // Perdida (hoy "Denegado" crudo)
+  sol('5', 'Venta Perdida', [item('a', 'Venta Perdida')]), // Venta perdida (hoy Venta Perdida)
+  sol('6', 'Denegado', [item('a', 'Cancelado')]), // Rechazada (hoy "Denegado" crudo)
   sol('7', 'Anulado', [item('a', 'Anulado')]), // Anulada (hoy Anulada)
   sol('8', 'Cotizado', [item('a', 'Cotizado')]), // En curso (hoy Cotizada)
   sol('9', 'Pendiente', [item('a', 'Pendiente', { fob: 0, precio: 0 })]) // En curso (hoy Pendiente)
 ];
 const SIN_ITEMS = sol('10', 'Pendiente', []); // Sin ítems
+const MIXTA = sol('11', 'Cotizado Parcial', [item('a', 'Venta Perdida'), item('b', 'Cancelado')]); // Venta perdida (mixta)
 
 const mm = (matches) => { window.matchMedia = () => ({ matches, addEventListener() {}, removeEventListener() {} }); };
 const matchMediaOriginal = window.matchMedia;
@@ -48,12 +49,19 @@ afterEach(async () => { cleanup(); await new Promise((r) => setTimeout(r, 40)); 
 
 describe('lista de solicitudes: columna "Resultado" con resultadoSolicitud', () => {
   it.each([
-    ['RFQ-1', 'Ganada'], ['RFQ-2', 'Ganada parcial'], ['RFQ-3', 'Ganada parcialítems anulados'], ['RFQ-4', 'Ganada parcial'], ['RFQ-5', 'Perdida'],
-    ['RFQ-6', 'Perdida'], ['RFQ-7', 'Anulada'], ['RFQ-8', 'En curso'], ['RFQ-9', 'En curso']
+    ['RFQ-1', 'Ganada'], ['RFQ-2', 'Ganada parcial'], ['RFQ-3', 'Ganada parcialítems anulados'], ['RFQ-4', 'Ganada parcial'], ['RFQ-5', 'Venta perdida'],
+    ['RFQ-6', 'Rechazada'], ['RFQ-7', 'Anulada'], ['RFQ-8', 'En curso'], ['RFQ-9', 'En curso']
   ])('la solicitud %s dice "%s" (el texto "ítems anulados" va pegado cuando hay un ítem anulado)', async (correlativo, texto) => {
     montar();
     await esperar();
     expect(celda(correlativo, 'Resultado')).toBe(texto);
+  });
+
+  it('una mixta (venta perdida y rechazo) dice "Venta perdida" y una solo con rechazos dice "Rechazada"', async () => {
+    montar([MIXTA, DATOS[5]]);
+    await esperar();
+    expect(celda('RFQ-11', 'Resultado')).toBe('Venta perdida');
+    expect(celda('RFQ-6', 'Resultado')).toBe('Rechazada');
   });
 
   it('una solicitud sin ítems dice "Sin ítems"', async () => {
@@ -73,7 +81,7 @@ describe('lista de solicitudes: columna "Resultado" con resultadoSolicitud', () 
     montar();
     await esperar();
     [...document.querySelectorAll('tbody tr')].forEach((tr) => {
-      expect(tr.querySelectorAll('td')[columna('Resultado')].textContent).not.toMatch(/Cotizada|Pendiente|Ganado Parcial|Denegado|Venta Perdida/);
+      expect(tr.querySelectorAll('td')[columna('Resultado')].textContent).not.toMatch(/Cotizada|Pendiente|Ganado Parcial|Denegado|Venta Perdida|^Perdida/);
     });
   });
 
@@ -99,7 +107,8 @@ describe('claveResultadoSolicitud y etiquetas nuevas', () => {
   it.each([
     [RESULTADO_SOLICITUD.GANADA, 'ganada', 'Ganada', 'exito'],
     [RESULTADO_SOLICITUD.GANADA_PARCIAL, 'ganada_parcial', 'Ganada parcial', 'info'],
-    [RESULTADO_SOLICITUD.PERDIDA, 'perdida', 'Perdida', 'peligro'],
+    [RESULTADO_SOLICITUD.VENTA_PERDIDA, 'venta_perdida', 'Venta perdida', 'peligro'],
+    [RESULTADO_SOLICITUD.RECHAZADA, 'rechazada', 'Rechazada', 'peligro'],
     [RESULTADO_SOLICITUD.ANULADA, 'anulada', 'Anulada', 'peligro'],
     [RESULTADO_SOLICITUD.EN_CURSO, 'en_curso', 'En curso', 'azul'],
     [RESULTADO_SOLICITUD.SIN_ITEMS, 'sin_items', 'Sin ítems', 'apagado']
