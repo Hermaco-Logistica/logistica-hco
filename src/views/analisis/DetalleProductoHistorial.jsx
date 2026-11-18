@@ -44,9 +44,9 @@ import {
   obtenerOpcionesMovimiento
 } from './utils/normalizarMovimiento';
 import { getRoleTheme } from './theme';
-import { ESTADO_FINAL, estadoFinalItem } from '../../utils/estadoFinalItem';
-import { resumirGanadas } from '../../utils/resultadoSolicitud';
-import { describirConversion, resumirLineas } from './utils/resumenProductos';
+import { estadoFinalItem } from '../../utils/estadoFinalItem';
+import { resumirMovimientosHistorial } from './utils/metricasHistorial';
+import { TarjetaConversion } from './components/TarjetaConversion';
 import { useSessionState } from '../../hooks/usePersistedState';
 import {
   getHoyElSalvador,
@@ -542,12 +542,10 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
   const metricas = useMemo(() => {
     const totalMovimientos = movimientosFiltrados.length;
     let unidadesTotales = 0;
-    let unidadesEnPedido = 0;
     let sumaValorNeto = 0;
     let sumaTotalConIva = 0;
     const clientesSet = new Set();
     const rfqsSet = new Set();
-    const solicitudesDeLasFilas = new Map();
 
     movimientosFiltrados.forEach((m) => {
       unidadesTotales += Number(m.unidades || 0);
@@ -555,28 +553,11 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
       sumaTotalConIva += Number(m.totalConIva || 0);
       if (m.cliente) clientesSet.add(normalizarBusqueda(m.cliente));
       const rfqKey = m.rfqId || m.correlativo || m.idMov;
-      if (rfqKey) {
-        rfqsSet.add(rfqKey);
-        // La solicitud con SOLO los ítems de las filas filtradas: el title cuenta las solicitudes por lo que pasó con este producto
-        if (!solicitudesDeLasFilas.has(rfqKey)) solicitudesDeLasFilas.set(rfqKey, { ...m.solicitudOriginal, productos: [] });
-        solicitudesDeLasFilas.get(rfqKey).productos.push(m.itemOriginal);
-      }
-      // Unidades en pedido: las de los ítems cuyo estado final es Ganado (F8c; antes salían de evaluarEstadoGanada)
-      if (m.estadoFinal === ESTADO_FINAL.GANADO) unidadesEnPedido += Number(m.unidades || 0);
+      if (rfqKey) rfqsSet.add(rfqKey);
     });
 
-    // Conversión por ítems (F8c): el mismo cálculo que el Directorio, sobre las filas ya filtradas de la tabla (búsqueda, estado, modalidad,
-    // seguimiento y vista de decisión). Sin filas no hay resumen; sin ítems cerrados la conversión es null y se muestra un guion.
-    const resumen = resumirLineas(
-      movimientosFiltrados.map((m, indice) => ({ solicitud: m.solicitudOriginal, item: m.itemOriginal, indiceSolicitud: indice, indiceItem: m.idxProducto })),
-      { clave: () => 'producto' }
-    )[0];
-    const conversion = resumen?.conversion ?? null;
-    const itemsGanados = resumen?.ganadas ?? 0;
-    const itemsCerrados = resumen?.cerrados ?? 0;
-    // Solo para el title: solicitudes distintas de esas filas por su resultado, con solo los ítems de esas filas (no los otros productos de la solicitud)
-    const { ganadas: pedidosCount, parciales: parcialesCount } = resumirGanadas([...solicitudesDeLasFilas.values()]);
-    const tituloConversion = `${describirConversion(resumen)} (${pedidosCount} ${pedidosCount === 1 ? 'solicitud ganada' : 'solicitudes ganadas'} + ${parcialesCount} ${parcialesCount === 1 ? 'parcial' : 'parciales'})`;
+    // Conversión por ítems, unidades en pedido y title: todo con el estado final de cada ítem (F8c), ver resumirMovimientosHistorial
+    const { conversion, itemsGanados, itemsCerrados, tituloConversion, unidadesEnPedido } = resumirMovimientosHistorial(movimientosFiltrados);
 
     return {
       totalMovimientos,
@@ -736,29 +717,7 @@ export const DetalleProductoHistorial = ({ role, solicitudes = [], ordenesCompra
 
         {/* Conversión por ítems; en las vistas de decisión (anulaciones, ventas perdidas) no tiene sentido: solo hay ítems de esa decisión */}
         {!soloAnulados && (
-          <div className="surface p-3.5 sm:p-4.5 rounded-xl sm:rounded-2xl flex flex-col justify-between col-span-2 lg:col-span-1">
-            <div className="flex items-center gap-2 text-slate-400 mb-1.5">
-              <TrendingUp size={14} className="text-slate-400 shrink-0" />
-              <span className="text-[10px] font-bold uppercase tracking-wider truncate">Conversión</span>
-            </div>
-            <div>
-              <div className="text-lg sm:text-2xl font-bold font-mono text-slate-800 tracking-tight flex items-baseline gap-1">
-                {metricas.conversion === null ? '—' : (
-                  <>
-                    {Math.round(metricas.conversion)}
-                    <span className="text-[10px] sm:text-xs font-normal text-slate-400">%</span>
-                  </>
-                )}
-              </div>
-              {/* Sin truncar: con cifras de cuatro dígitos o más no cabe en una línea en la tarjeta de 1/5 del ancho; envuelve en la barra, no a mitad de una cifra */}
-              <div
-                className="text-[10px] sm:text-[11px] font-medium text-slate-400 mt-0.5 cursor-help"
-                title={metricas.tituloConversion}
-              >
-                <span className="whitespace-nowrap">{metricas.itemsGanados.toLocaleString()} {metricas.itemsGanados === 1 ? 'ganado' : 'ganados'}</span> / <span className="whitespace-nowrap">{metricas.itemsCerrados.toLocaleString()} {metricas.itemsCerrados === 1 ? 'cerrado' : 'cerrados'}</span>
-              </div>
-            </div>
-          </div>
+          <TarjetaConversion conversion={metricas.conversion} itemsGanados={metricas.itemsGanados} itemsCerrados={metricas.itemsCerrados} titulo={metricas.tituloConversion} />
         )}
       </div>
 
