@@ -10,7 +10,7 @@ import { normalizarBusqueda } from '../../utils/normalizers';
 import { getRoleTheme } from './theme';
 import { resultadoSolicitud } from '../../utils/resultadoSolicitud';
 import { claveResultadoSolicitud } from './utils/claveResultadoSolicitud';
-import { esPestanaPorEstado, perteneceAPestanaPorEstado } from './utils/pestanaSolicitud';
+import { TITULO_ESTADO_SEGUN_ITEMS, esPestanaPorEstado, estadoRecalculadoSiDifiere, perteneceAPestanaPorEstado, textoEstadoSegunItems } from './utils/pestanaSolicitud';
 import { obtenerDecisionItem } from './utils/decisionMetrics';
 import { useSessionState } from '../../hooks/usePersistedState';
 import { obtenerFaseSolicitudCacheada } from '../../utils/faseSeguimiento';
@@ -24,6 +24,14 @@ import {
 import { TablePagination } from '../../components/ui/TablePagination';
 import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroPestanas } from '../../components/filtros';
 import { ChipsFiltroContexto } from './components/ChipsFiltroContexto';
+
+/** Aviso pequeño bajo una etiqueta de la fila ("ítems anulados" bajo Resultado; "Según ítems: ..." bajo Estado). */
+const AvisoFila = ({ icono: Icono, titulo, children }) => (
+  <span title={titulo} className="inline-flex items-center gap-1 text-[9px] font-semibold text-rose-500">
+    {Icono && <Icono size={9} className="shrink-0" />}
+    {children}
+  </span>
+);
 
 export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesCompra = [] }) => {
   const { tipoEstado } = useParams();
@@ -423,6 +431,9 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 pt-1">
                         <Etiqueta dominio="estadoSolicitud" valor={s.estado || 'Pendiente'} rol={theme.key} />
+                        {estadoRecalculadoSiDifiere(s, tabActual) && (
+                          <AvisoFila titulo={TITULO_ESTADO_SEGUN_ITEMS}>{textoEstadoSegunItems(estadoRecalculadoSiDifiere(s, tabActual))}</AvisoFila>
+                        )}
                         <Etiqueta dominio="faseSeguimiento" valor={obtenerFaseSolicitudCacheada(s)?.fase} />
                       </div>
                     </div>
@@ -599,6 +610,9 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                           <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                             <div className="flex flex-col items-center gap-1">
                               <Etiqueta dominio="estadoSolicitud" valor={s.estado || 'Pendiente'} rol={theme.key} />
+                              {estadoRecalculadoSiDifiere(s, tabActual) && (
+                                <AvisoFila titulo={TITULO_ESTADO_SEGUN_ITEMS}>{textoEstadoSegunItems(estadoRecalculadoSiDifiere(s, tabActual))}</AvisoFila>
+                              )}
                               <Etiqueta dominio="faseSeguimiento" valor={obtenerFaseSolicitudCacheada(s)?.fase} />
                             </div>
                           </td>
@@ -606,10 +620,7 @@ export const DetalleSolicitudesAnalisis = ({ role, solicitudes = [], ordenesComp
                             <div className="flex flex-col items-center gap-1">
                               <Etiqueta dominio="resultado" valor={claveResultadoSolicitud(resultadoSolicitud(s).resultado)} />
                               {s.estado !== 'Anulado' && s.productos?.some(p => p.estadoItem === 'Anulado') && (
-                                <span className="inline-flex items-center gap-1 text-[9px] font-semibold text-rose-500">
-                                  <Ban size={9} className="shrink-0" />
-                                  ítems anulados
-                                </span>
+                                <AvisoFila icono={Ban}>ítems anulados</AvisoFila>
                               )}
                             </div>
                           </td>
