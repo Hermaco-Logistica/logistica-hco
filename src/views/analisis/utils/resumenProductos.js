@@ -1,13 +1,14 @@
 /**
  * Resumen por producto (F8b): el único cálculo de "Veces solicitadas", "Mayor volumen", ganadas, ventas perdidas, rechazos, anulaciones,
- * conversión y "Clientes distintos" que usan el Directorio de productos, la tarjeta "Top Productos" del dashboard y el Historial de producto.
- * Las definiciones están en docs/metricas.md (secciones 3 y 4). El estado de cada ítem sale de `estadoFinalItem` (F8a).
+ * conversión y "Clientes distintos" que usan el Directorio de productos y la tarjeta "Top Productos" del dashboard, a través de
+ * `resumirProductos`. El Historial de producto (F8c) no usa `resumirProductos` sino `resumirLineas`, el mismo cálculo sobre las líneas ya
+ * filtradas de su tabla. Las definiciones están en docs/metricas.md (secciones 3 y 4). El estado de cada ítem sale de `estadoFinalItem` (F8a).
  *
- * El llamador filtra las solicitudes (período, vendedor, cliente, resultado) y esta función solo agrupa y cuenta.
+ * El llamador filtra las solicitudes o las líneas (período, vendedor, cliente, resultado...) y estas funciones solo agrupan y cuentan.
  *
  * PENDIENTE CONOCIDO: el Directorio aplica el filtro de resultado del dashboard (`analisis_resultado_filter`) y el Historial de producto no lo
  * aplica, y el Historial además tiene sus propios filtros (estado, modalidad, búsqueda, decisión y seguimiento). Con alguno de esos filtros
- * activos, el mismo producto puede dar dos cifras aunque compartan este cálculo. No se resuelve en F8b (docs/metricas.md, sección 10).
+ * activos, el mismo producto puede dar dos cifras aunque compartan este cálculo. No se resuelve en F8c (docs/metricas.md, sección 10).
  */
 import { ESTADO_FINAL, datoARevisarItem, estadoFinalItem } from '../../../utils/estadoFinalItem';
 import { normalizarBusqueda } from '../../../utils/normalizers';
@@ -62,6 +63,7 @@ const ceros = () => ({
   [CLAVE_ESTADO.ABIERTO]: 0
 });
 
+/** `desc` guarda la clave del grupo: para los productos es su descripción; para un grupo único del Historial, la que se le dé. */
 const nuevoResumen = (desc) => ({
   desc,
   marcas: [],
@@ -94,6 +96,46 @@ const cerrarResumen = (r) => {
 };
 
 /**
+ * Agrupa líneas (un ítem de una solicitud cada una) por la clave que dé `clave(item, solicitud)`; una clave vacía descarta la línea.
+ * Cada línea es `{ solicitud, item, indiceSolicitud, indiceItem }` (los dos índices son opcionales; `indiceSolicitud` solo sirve para
+ * identificar una solicitud que no trae `id` ni correlativo). Devuelve un resumen por grupo, sin ordenar y con las cifras descritas en
+ * `resumirProductos`, que es esta función con el producto como clave. El Historial de producto la usa con las líneas ya filtradas de su tabla.
+ * `porLinea(resumen, solicitud, item, indiceDelItem, estadoFinal)` permite sumar datos propios de una pantalla.
+ */
+export function resumirLineas(lineas, { clave, porLinea } = {}) {
+  const mapa = new Map();
+  (Array.isArray(lineas) ? lineas : []).forEach((linea) => {
+    const { solicitud, item, indiceSolicitud = 0, indiceItem = 0 } = linea || {};
+    const desc = typeof clave === 'function' ? clave(item, solicitud) : '';
+    if (!desc) return;
+    let r = mapa.get(desc);
+    if (!r) { r = nuevoResumen(desc); mapa.set(desc, r); }
+
+    const estado = estadoFinalItem(solicitud, item);
+    const claveEstado = claveEstadoFinal(estado);
+    const cant = unidadesDe(item);
+    r._solicitudes.add(claveSolicitud(solicitud, indiceSolicitud));
+    r.volumen += cant;
+    r.unidades[claveEstado] += cant;
+    if (claveEstado === CLAVE_ESTADO.ABIERTO) r.unidadesAbiertas[estado === ESTADO_FINAL.PENDIENTE ? 'pendiente' : 'cotizado'] += cant;
+    r.items[claveEstado] += 1;
+
+    const cliente = normalizarBusqueda(solicitud?.cliente);
+    if (cliente) r._clientes.add(cliente);
+    const marca = typeof item?.marca === 'string' ? item.marca.trim() : '';
+    if (marca && !r.marcas.includes(marca)) r.marcas.push(marca);
+
+    const motivo = datoARevisarItem(solicitud, item);
+    if (motivo) {
+      r.datosARevisar.total += 1;
+      r.datosARevisar.porMotivo[motivo] = (r.datosARevisar.porMotivo[motivo] || 0) + 1;
+    }
+    if (porLinea) porLinea(r, solicitud, item, indiceItem, estado);
+  });
+  return [...mapa.values()].map(cerrarResumen);
+}
+
+/**
  * Agrupa las líneas de las solicitudes por producto. Devuelve un resumen por producto, sin ordenar:
  *  - `vecesSolicitadas`: solicitudes distintas en las que aparece (cualquier estado, con pendientes y decisiones; un producto repetido
  *    dentro de una solicitud cuenta una vez).
@@ -107,39 +149,12 @@ const cerrarResumen = (r) => {
  * `porLinea(resumen, solicitud, item, indiceDelItem, estadoFinal)` permite sumar datos propios de una pantalla (por ejemplo el seguimiento).
  */
 export function resumirProductos(solicitudes, { porLinea } = {}) {
-  const mapa = new Map();
-  (Array.isArray(solicitudes) ? solicitudes : []).forEach((solicitud, indice) => {
+  const lineas = [];
+  (Array.isArray(solicitudes) ? solicitudes : []).forEach((solicitud, indiceSolicitud) => {
     if (!solicitud || !Array.isArray(solicitud.productos)) return;
-    const idSolicitud = claveSolicitud(solicitud, indice);
-    solicitud.productos.forEach((item, indiceItem) => {
-      const desc = claveProducto(item);
-      if (!desc) return;
-      let r = mapa.get(desc);
-      if (!r) { r = nuevoResumen(desc); mapa.set(desc, r); }
-
-      const estado = estadoFinalItem(solicitud, item);
-      const clave = claveEstadoFinal(estado);
-      const cant = unidadesDe(item);
-      r._solicitudes.add(idSolicitud);
-      r.volumen += cant;
-      r.unidades[clave] += cant;
-      if (clave === CLAVE_ESTADO.ABIERTO) r.unidadesAbiertas[estado === ESTADO_FINAL.PENDIENTE ? 'pendiente' : 'cotizado'] += cant;
-      r.items[clave] += 1;
-
-      const cliente = normalizarBusqueda(solicitud.cliente);
-      if (cliente) r._clientes.add(cliente);
-      const marca = typeof item.marca === 'string' ? item.marca.trim() : '';
-      if (marca && !r.marcas.includes(marca)) r.marcas.push(marca);
-
-      const motivo = datoARevisarItem(solicitud, item);
-      if (motivo) {
-        r.datosARevisar.total += 1;
-        r.datosARevisar.porMotivo[motivo] = (r.datosARevisar.porMotivo[motivo] || 0) + 1;
-      }
-      if (porLinea) porLinea(r, solicitud, item, indiceItem, estado);
-    });
+    solicitud.productos.forEach((item, indiceItem) => lineas.push({ solicitud, item, indiceSolicitud, indiceItem }));
   });
-  return [...mapa.values()].map(cerrarResumen);
+  return resumirLineas(lineas, { clave: claveProducto, porLinea });
 }
 
 /** Claves de orden que acepta `?orden=` y el selector. "ganadas" es un alias de "pedidos" (así lo manda el dashboard). */

@@ -5,7 +5,7 @@
     "src/utils/etiquetas.js"
   ],
   "totales": {
-    "clases": 964,
+    "clases": 961,
     "literales": 77
   },
   "archivos": {
@@ -122,7 +122,7 @@
       "literales": 6
     },
     "src/views/analisis/DetalleClienteHistorial.jsx": {
-      "clases": 4,
+      "clases": 3,
       "literales": 0
     },
     "src/views/analisis/DetalleClientesAnalisis.jsx": {
@@ -130,7 +130,7 @@
       "literales": 0
     },
     "src/views/analisis/DetalleProductoHistorial.jsx": {
-      "clases": 3,
+      "clases": 2,
       "literales": 0
     },
     "src/views/analisis/DetalleProductosAnalisis.jsx": {
@@ -142,7 +142,7 @@
       "literales": 0
     },
     "src/views/analisis/DetalleVendedorHistorial.jsx": {
-      "clases": 3,
+      "clases": 2,
       "literales": 0
     },
     "src/views/analisis/DetalleVendedoresAnalisis.jsx": {

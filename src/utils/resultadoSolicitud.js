@@ -1,6 +1,6 @@
 /**
  * Resultado de una solicitud (F8a): se calcula una vez por solicitud a partir del estado final de todos sus ítems (`estadoFinalItem`).
- * Las reglas están en docs/metricas.md (sección 5). Todavía no la usa ninguna pantalla. No sustituye a `clasificarSolicitud`, que sigue
+ * Las reglas están en docs/metricas.md (sección 5). La usa la columna "Resultado" de la lista de solicitudes (F8c). No sustituye a `clasificarSolicitud`, que sigue
  * sirviendo al filtro de resultado del dashboard.
  */
 import { ESTADO_FINAL, esEstadoCerrado, estadoFinalItem } from './estadoFinalItem';
@@ -8,7 +8,8 @@ import { ESTADO_FINAL, esEstadoCerrado, estadoFinalItem } from './estadoFinalIte
 export const RESULTADO_SOLICITUD = {
   GANADA: 'Ganada',
   GANADA_PARCIAL: 'Ganada parcial',
-  PERDIDA: 'Perdida',
+  VENTA_PERDIDA: 'Venta perdida',
+  RECHAZADA: 'Rechazada',
   ANULADA: 'Anulada',
   EN_CURSO: 'En curso',
   SIN_ITEMS: 'Sin ítems'
@@ -18,7 +19,8 @@ export const RESULTADO_SOLICITUD = {
  * Resultado de una solicitud y sus conteos por ítem.
  * - Ganada: todos los ítems están Ganado (y hay al menos uno).
  * - Ganada parcial: al menos un ítem Ganado y otro que no lo está (un Anulado cuenta como "no ganado").
- * - Perdida: ningún Ganado, ningún abierto y al menos un ítem en Venta perdida o Rechazo.
+ * - Venta perdida: ningún Ganado, ningún abierto y al menos un ítem en Venta perdida (incluye las mixtas: venta perdida y rechazo).
+ * - Rechazada: ningún Ganado, ningún abierto, ninguna venta perdida y al menos un ítem en Rechazo (Rechazado, Cancelado o Denegado).
  * - Anulada: ningún Ganado, ningún abierto y todos los ítems cerrados son Anulado.
  * - En curso: ningún Ganado y al menos un ítem abierto (Cotizado o Pendiente).
  * - Sin ítems: la solicitud no tiene productos.
@@ -44,7 +46,8 @@ export function resultadoSolicitud(solicitud) {
   else if (cuenta.ganados === total) resultado = RESULTADO_SOLICITUD.GANADA;
   else if (cuenta.ganados > 0) resultado = RESULTADO_SOLICITUD.GANADA_PARCIAL;
   else if (cuenta.abiertos > 0) resultado = RESULTADO_SOLICITUD.EN_CURSO;
-  else if (cuenta.ventasPerdidas + cuenta.rechazos > 0) resultado = RESULTADO_SOLICITUD.PERDIDA;
+  else if (cuenta.ventasPerdidas > 0) resultado = RESULTADO_SOLICITUD.VENTA_PERDIDA;
+  else if (cuenta.rechazos > 0) resultado = RESULTADO_SOLICITUD.RECHAZADA;
   else resultado = RESULTADO_SOLICITUD.ANULADA;
 
   return { resultado, total, cerrados, ...cuenta };

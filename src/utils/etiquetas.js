@@ -18,6 +18,7 @@ import {
   Truck,
   XCircle
 } from 'lucide-react';
+import { ESTADO_FINAL } from './estadoFinalItem';
 
 /**
  * ÚNICA fuente de estilo, texto e ícono de las etiquetas (badges, chips) del proyecto.
@@ -209,14 +210,38 @@ const ESTADOS_ITEM = {
   Anulado: { tono: 'apagado', icono: Ban }
 };
 
-/** Resultado comercial (Ganada, Ganado parcial...). Lo calcula evaluarEstadoGanada en views/analisis/theme.js. */
+/**
+ * Resultado comercial (Ganada, Ganado parcial...). Lo calculan evaluarEstadoGanada (views/analisis/theme.js: Excel de movimientos) y, desde F8c,
+ * resultadoSolicitud (lista de solicitudes; claves ganada, ganada_parcial, venta_perdida, rechazada, anulada, en_curso y sin_items).
+ */
 const RESULTADOS = {
   ganada: { texto: 'Ganada', tono: 'exito', icono: CheckCircle2 },
   ganado_parcial: { texto: 'Ganado parcial', tono: 'info', icono: PieChart },
   no_comprado: { texto: 'No comprado', tono: 'apagado', icono: MinusCircle },
   cotizada: { texto: 'Cotizada', tono: 'azul', icono: FileText },
   anulada: { texto: 'Anulada', tono: 'peligro', icono: Ban },
-  pendiente: { texto: 'Pendiente', tono: 'aviso', icono: Clock }
+  pendiente: { texto: 'Pendiente', tono: 'aviso', icono: Clock },
+  // F8c: resultado por solicitud de `resultadoSolicitud` (utils/resultadoSolicitud.js); tonos que ya existían
+  ganada_parcial: { texto: 'Ganada parcial', tono: 'info', icono: PieChart },
+  venta_perdida: { texto: 'Venta perdida', tono: 'peligro', icono: TrendingDown },
+  rechazada: { texto: 'Rechazada', tono: 'peligro', icono: XCircle },
+  en_curso: { texto: 'En curso', tono: 'azul', icono: FileText },
+  sin_items: { texto: 'Sin ítems', tono: 'apagado', icono: MinusCircle }
+};
+
+/**
+ * Resultado de un ÍTEM (F8c): una etiqueta por estado final de `estadoFinalItem` (utils/estadoFinalItem.js); la clave es el propio valor de
+ * `ESTADO_FINAL`. Las filas de los Historiales son ítems, así que su columna "Resultado" no usa `RESULTADOS` (que es por solicitud).
+ * Género: "Ganado" (ítem), no "Ganada" (solicitud). Tonos ya existentes: las decisiones llevan el de DECISIONES (los mismos textos y colores
+ * del DecisionBadge de la misma pantalla), Cotizado y Pendiente los de la columna "Resultado" por solicitud.
+ */
+const RESULTADOS_ITEM = {
+  [ESTADO_FINAL.GANADO]: { texto: 'Ganado', tono: 'exito', icono: CheckCircle2 },
+  [ESTADO_FINAL.VENTA_PERDIDA]: { texto: 'Venta perdida', tono: 'peligro', icono: TrendingDown },
+  [ESTADO_FINAL.RECHAZO]: { texto: 'Rechazo', tono: 'peligro', icono: XCircle },
+  [ESTADO_FINAL.ANULADO]: { texto: 'Anulado', tono: 'apagado', icono: Ban },
+  [ESTADO_FINAL.COTIZADO]: { texto: 'Cotizado', tono: 'azul', icono: FileText },
+  [ESTADO_FINAL.PENDIENTE]: { texto: 'Pendiente', tono: 'aviso', icono: Clock }
 };
 
 /** Decisiones que cierran un ítem sin pedido (claves = tipoDecision de los ítems). */
@@ -269,6 +294,7 @@ export const CATALOGOS = {
   faseSeguimiento: ETIQUETAS_FASE_SEGUIMIENTO,
   vigenciaItem: VIGENCIA_ITEM,
   resultado: RESULTADOS,
+  resultadoItem: RESULTADOS_ITEM,
   decision: DECISIONES,
   ritmo: RITMO_TIEMPO,
   modalidad: MODALIDADES,
