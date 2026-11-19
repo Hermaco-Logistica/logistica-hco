@@ -92,7 +92,7 @@ describe('Historiales', () => {
   it('Historial de producto: tarjeta Conversión 2 ganados / 3 cerrados, 6 en pedido y la fila de PED-A es "Cotizado"', async () => {
     montar(ruta('/analisis/producto/:productId', <DetalleProductoHistorial role="comprador" solicitudes={DATOS} ordenesCompra={[]} />), '/analisis/producto/PRODUCTO%200');
     await esperar();
-    expect(subtitulo(tarjeta('Conversión'))).toBe('2 ganados / 3 cerrados');
+    expect(subtitulo(tarjeta('Conversión'))).toBe('2 de 3 ítems cerrados');
     expect(within(tarjeta('Unid. Solicitadas')).getByText(/en pedido/).textContent).toBe('6 en pedido');
     expect(celda('PED-A', 'Resultado')).toMatch(/^Cotizado/);
     expect(celda('PED-B', 'Resultado')).toMatch(/^Ganado/);
@@ -103,14 +103,14 @@ describe('Historiales', () => {
     montar(ruta('/analisis/cliente/:clienteId', <DetalleClienteHistorial role="comprador" solicitudes={DATOS} ordenesCompra={[]} />), '/analisis/cliente/Cliente%20C');
     await esperar();
     // ganados: S2 y S3 (PRODUCTO 0); cerrados: más la venta perdida de S4; los dos ítems de S1 están abiertos
-    expect(subtitulo(tarjeta('Conversión'))).toBe('2 ganados / 3 cerrados');
+    expect(subtitulo(tarjeta('Conversión'))).toBe('2 de 3 ítems cerrados');
     expect(screen.getByText(/en pedido/).textContent).toBe('6 en pedido');
   });
 
   it('Historial de vendedor: igual, y el Monto en Pedidos solo suma los ítems confirmados', async () => {
     montar(ruta('/analisis/vendedor/:vendedorId', <DetalleVendedorHistorial role="comprador" solicitudes={DATOS} ordenesCompra={[]} />), '/analisis/vendedor/Ana');
     await esperar();
-    expect(subtitulo(tarjeta('Conversión'))).toBe('2 ganados / 3 cerrados');
+    expect(subtitulo(tarjeta('Conversión'))).toBe('2 de 3 ítems cerrados');
     expect(tarjeta('Prods. Cotizados').textContent).toMatch(/\(6 ped\)/);
     expect(tarjeta('Monto en Pedidos').textContent).toContain('$60.00'); // 2 ítems confirmados × 3 u. × $10
   });

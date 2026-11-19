@@ -25,6 +25,7 @@ describe('resumirMovimientosHistorial', () => {
   it('conversión por ítems, ganados y cerrados; el abierto no cuenta', () => {
     const r = resumirMovimientosHistorial(filas);
     expect([r.itemsGanados, r.itemsCerrados]).toEqual([2, 3]);
+    expect(r.itemsAbiertos).toBe(1);
     expect(r.conversion).toBeCloseTo(66.666, 2);
   });
 
@@ -51,7 +52,7 @@ describe('resumirMovimientosHistorial', () => {
   it('sin filas o con filas no válidas: conversión null, ceros y el texto sin conversión', () => {
     [undefined, null, []].forEach((entrada) => {
       const r = resumirMovimientosHistorial(entrada);
-      expect([r.conversion, r.itemsGanados, r.itemsCerrados, r.unidadesEnPedido, r.montoPedidosNeto, r.montoPedidosConIva]).toEqual([null, 0, 0, 0, 0, 0]);
+      expect([r.conversion, r.itemsGanados, r.itemsCerrados, r.itemsAbiertos, r.unidadesEnPedido, r.montoPedidosNeto, r.montoPedidosConIva]).toEqual([null, 0, 0, 0, 0, 0, 0]);
       expect(r.tituloConversion).toBe('Sin ítems cerrados: no hay conversión (0 solicitudes ganadas + 0 parciales)');
     });
   });

@@ -84,13 +84,29 @@ describe.each(PAGINAS)('Historial de $nombre: tarjeta "Conversión" por ítems',
     await esperar();
     expect(screen.queryByText('Efectividad')).toBeNull();
     expect(valor(tarjeta('Conversión'))).toBe('43%');
-    expect(subtitulo(tarjeta('Conversión'))).toBe('3 ganados / 7 cerrados');
+    expect(subtitulo(tarjeta('Conversión'))).toBe('3 de 7 ítems cerrados');
   });
 
   it('el title lleva el decimal con coma y las solicitudes ganadas y parciales de esas filas (1 ganada + 1 parcial)', async () => {
     montar(pagina);
     await esperar();
-    expect(tituloConversion()).toBe('Conversión 42,9 %: 3 ítems ganados de 7 cerrados (1 solicitud ganada + 1 parcial)');
+    expect(tituloConversion()).toBe('Conversión 42,9 %: 3 ítems ganados de 7 cerrados (1 solicitud ganada + 1 parcial). 3 ítems abiertos no cuentan');
+  });
+
+  it('con ítems abiertos, el title y el aria-label dicen cuántos no cuentan (3 abiertos: RFQ-5, RFQ-6 y RFQ-8)', async () => {
+    montar(pagina);
+    await esperar();
+    const sub = tarjeta('Conversión').querySelector('[title]');
+    expect(sub.getAttribute('aria-label')).toBe('3 de 7 ítems cerrados. 3 ítems abiertos no cuentan');
+    expect(sub.getAttribute('title')).toMatch(/\. 3 ítems abiertos no cuentan$/);
+  });
+
+  it('sin ítems abiertos no se muestra la frase de abiertos ni el aria-label', async () => {
+    montar(pagina, { solicitudes: [s('1', 'Pedido', [l('bomba', 'Pedido')])] });
+    await esperar();
+    const sub = tarjeta('Conversión').querySelector('[title]');
+    expect(sub.getAttribute('title')).not.toMatch(/abierto/);
+    expect(sub.hasAttribute('aria-label')).toBe(false);
   });
 
   it('los textos viejos ya no están: ni "gan.", "pc.", "solicitudes totales", "cots." ni "cotizaciones totales"', async () => {
@@ -100,11 +116,11 @@ describe.each(PAGINAS)('Historial de $nombre: tarjeta "Conversión" por ítems',
     ['gan.', 'pc.', 'solicitudes totales', 'cots.', 'cotizaciones totales', 'adjudicadas'].forEach((viejo) => expect(texto).not.toContain(viejo));
   });
 
-  it('sin ítems cerrados muestra un guion y 0 ganados / 0 cerrados', async () => {
+  it('sin ítems cerrados muestra un guion y 0 de 0 ítems cerrados', async () => {
     montar(pagina, { solicitudes: [s('5', 'Cotizado', [l('bomba', 'Cotizado')]), s('6', 'Pendiente', [l('tubo', 'Pendiente', { fob: 0, precio: 0 })])] });
     await esperar();
     expect(valor(tarjeta('Conversión'))).toBe('—');
-    expect(subtitulo(tarjeta('Conversión'))).toBe('0 ganados / 0 cerrados');
+    expect(subtitulo(tarjeta('Conversión'))).toBe('0 de 0 ítems cerrados');
     expect(tituloConversion()).toMatch(/^Sin ítems cerrados: no hay conversión/);
   });
 
@@ -112,13 +128,13 @@ describe.each(PAGINAS)('Historial de $nombre: tarjeta "Conversión" por ítems',
     montar(pagina, { solicitudes: [] });
     await esperar();
     expect(valor(tarjeta('Conversión'))).toBe('—');
-    expect(subtitulo(tarjeta('Conversión'))).toBe('0 ganados / 0 cerrados');
+    expect(subtitulo(tarjeta('Conversión'))).toBe('0 de 0 ítems cerrados');
   });
 
   it('un Cotizado dentro de un Pedido es abierto: no suma ganados ni cerrados (hoy contaba la solicitud como ganada)', async () => {
     montar(pagina, { solicitudes: [s('8', 'Pedido', [l('bomba', 'Cotizado', { cant: 4 })]), s('1', 'Pedido', [l('bomba', 'Pedido')])] });
     await esperar();
-    expect(subtitulo(tarjeta('Conversión'))).toBe('1 ganado / 1 cerrado');
+    expect(subtitulo(tarjeta('Conversión'))).toBe('1 de 1 ítem cerrado');
   });
 
   it('cifras grandes: separador de miles en el subtítulo', async () => {
@@ -126,7 +142,7 @@ describe.each(PAGINAS)('Historial de $nombre: tarjeta "Conversión" por ítems',
     const perdidas = Array.from({ length: 4444 }, (_, i) => s(`p${i}`, 'Venta Perdida', [l('bomba', 'Venta Perdida')]));
     montar(pagina, { solicitudes: [...ganadas, ...perdidas] });
     await esperar(300);
-    expect(subtitulo(tarjeta('Conversión'))).toBe(`${(1234).toLocaleString()} ganados / ${(5678).toLocaleString()} cerrados`);
+    expect(subtitulo(tarjeta('Conversión'))).toBe(`${(1234).toLocaleString()} de ${(5678).toLocaleString()} ítems cerrados`);
   });
 
   it('el filtro de estado recorta las filas y la tarjeta las usa: "Pedido" deja RFQ-1 (2 ganados) y RFQ-8 (1 abierto)', async () => {
@@ -134,7 +150,7 @@ describe.each(PAGINAS)('Historial de $nombre: tarjeta "Conversión" por ítems',
     montar(pagina);
     await esperar();
     expect(contador()).toBe('Mostrando 3 movimientos');
-    expect(subtitulo(tarjeta('Conversión'))).toBe('2 ganados / 2 cerrados');
+    expect(subtitulo(tarjeta('Conversión'))).toBe('2 de 2 ítems cerrados');
     expect(valor(tarjeta('Conversión'))).toBe('100%');
   });
 
@@ -143,7 +159,7 @@ describe.each(PAGINAS)('Historial de $nombre: tarjeta "Conversión" por ítems',
     montar(pagina);
     await esperar();
     expect(contador()).toBe('Mostrando 2 movimientos');
-    expect(subtitulo(tarjeta('Conversión'))).toBe('0 ganados / 2 cerrados');
+    expect(subtitulo(tarjeta('Conversión'))).toBe('0 de 2 ítems cerrados');
     expect(valor(tarjeta('Conversión'))).toBe('0%');
   });
 
@@ -312,7 +328,7 @@ describe.each(PAGINAS)('Paridad Historial de $nombre – Directorio de productos
     });
     return { ganados, cerrados, filas };
   };
-  const del = (el) => { const m = subtitulo(el).match(/^([\d.,]+) ganados? \/ ([\d.,]+) cerrados?$/); return { ganados: Number(m[1].replace(/\D/g, '')), cerrados: Number(m[2].replace(/\D/g, '')) }; };
+  const del = (el) => { const m = subtitulo(el).match(/^([\d.,]+) de ([\d.,]+) ítems? cerrados?$/); return { ganados: Number(m[1].replace(/\D/g, '')), cerrados: Number(m[2].replace(/\D/g, '')) }; };
   const CASOS = [
     ['sin filtros de contexto', {}, DATOS],
     ['con otro cliente y otro vendedor en los datos', {}, [...DATOS, ...OTRO_VENDEDOR]],
@@ -353,7 +369,7 @@ describe.each(PAGINAS)('Solicitud sin productos en el Historial de $nombre', (pa
     await esperar();
     expect(contador()).toBe('Mostrando 1 movimiento');
     expect(valor(tarjeta('Conversión'))).toBe('—');
-    expect(subtitulo(tarjeta('Conversión'))).toBe('0 ganados / 0 cerrados');
+    expect(subtitulo(tarjeta('Conversión'))).toBe('0 de 0 ítems cerrados');
     expect(tituloConversion()).toBe('Sin ítems cerrados: no hay conversión (0 solicitudes ganadas + 0 parciales)');
   });
 
@@ -370,8 +386,8 @@ describe.each(PAGINAS)('Solicitud sin productos en el Historial de $nombre', (pa
   it('añadida a los datos de siempre no cambia ninguna cifra de conversión, unidades ni monto', async () => {
     montar(pagina, { solicitudes: [...DATOS, vacia('Pedido'), vacia('Venta Perdida', 'v2'), vacia('Anulado', 'v3')] });
     await esperar();
-    expect(subtitulo(tarjeta('Conversión'))).toBe('3 ganados / 7 cerrados');
-    expect(tituloConversion()).toBe('Conversión 42,9 %: 3 ítems ganados de 7 cerrados (1 solicitud ganada + 1 parcial)');
+    expect(subtitulo(tarjeta('Conversión'))).toBe('3 de 7 ítems cerrados');
+    expect(tituloConversion()).toBe('Conversión 42,9 %: 3 ítems ganados de 7 cerrados (1 solicitud ganada + 1 parcial). 3 ítems abiertos no cuentan');
     if (pagina.nombre === 'Cliente') expect(screen.getByText(/en pedido/).textContent).toBe('10 en pedido');
     else expect(tarjeta('Monto en Pedidos').textContent).toContain('$100.00');
   });
@@ -397,6 +413,6 @@ describe.each(PAGINAS)('Solicitud sin productos en el Historial de $nombre', (pa
     Object.entries(contexto).forEach(([k, v]) => guardar(k, v));
     montar(pagina, { solicitudes });
     await esperar();
-    expect(subtitulo(tarjeta('Conversión'))).toBe(`${ganados} ganados / ${cerrados} cerrados`);
+    expect(subtitulo(tarjeta('Conversión'))).toBe(`${ganados} de ${cerrados} ${cerrados === 1 ? 'ítem cerrado' : 'ítems cerrados'}`);
   });
 });

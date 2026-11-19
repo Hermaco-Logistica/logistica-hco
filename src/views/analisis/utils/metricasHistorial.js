@@ -51,6 +51,7 @@ export function resumirMovimientosHistorial(movimientos) {
     conversion: resumen?.conversion ?? null,
     itemsGanados: resumen?.ganadas ?? 0,
     itemsCerrados: resumen?.cerrados ?? 0,
+    itemsAbiertos: resumen?.abiertos ?? 0,
     tituloConversion: `${describirConversion(resumen)} (${ganadas} ${ganadas === 1 ? 'solicitud ganada' : 'solicitudes ganadas'} + ${parciales} ${parciales === 1 ? 'parcial' : 'parciales'})`,
     unidadesEnPedido,
     montoPedidosNeto,

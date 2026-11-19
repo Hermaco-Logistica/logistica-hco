@@ -78,14 +78,14 @@ describe('Historial de producto: tarjeta "Conversión" por ítems', () => {
     await esperar();
     expect(screen.queryByText('Efectividad')).toBeNull();
     expect(valor(tarjetaConversion())).toBe('40%');
-    expect(subtitulo(tarjetaConversion())).toBe('2 ganados / 5 cerrados');
+    expect(subtitulo(tarjetaConversion())).toBe('2 de 5 ítems cerrados');
   });
 
   it('el title lleva el decimal y la cuenta de solicitudes ganadas más parciales, con solo las filas del producto', async () => {
     historial();
     await esperar();
     // RFQ-7 es Pedido Parcial por su otro producto (TUBO, venta perdida), pero con las filas de BOMBA es una solicitud ganada: 2 + 0
-    expect(tituloConversion(tarjetaConversion())).toBe('Conversión 40 %: 2 ítems ganados de 5 cerrados (2 solicitudes ganadas + 0 parciales)');
+    expect(tituloConversion(tarjetaConversion())).toBe('Conversión 40 %: 2 ítems ganados de 5 cerrados (2 solicitudes ganadas + 0 parciales). 2 ítems abiertos no cuentan');
   });
 
   it('una solicitud con el producto ganado en una línea y perdido en otra cuenta como parcial; el resultado de los otros productos no pesa', async () => {
@@ -109,14 +109,20 @@ describe('Historial de producto: tarjeta "Conversión" por ítems', () => {
     await esperar();
     expect(valor(tarjetaConversion())).toBe('33%');
     expect(tituloConversion(tarjetaConversion())).toBe('Conversión 33,3 %: 1 ítem ganado de 3 cerrados (1 solicitud ganada + 0 parciales)');
-    expect(subtitulo(tarjetaConversion())).toBe('1 ganado / 3 cerrados');
+    expect(subtitulo(tarjetaConversion())).toBe('1 de 3 ítems cerrados');
   });
 
   it('el producto repetido en una misma solicitud son dos ítems pero una sola solicitud en el title', async () => {
     historial({ solicitudes: [s('1', 'Pedido', [l('bomba', 'Pedido'), l('bomba', 'Pedido')])] });
     await esperar();
-    expect(subtitulo(tarjetaConversion())).toBe('2 ganados / 2 cerrados');
+    expect(subtitulo(tarjetaConversion())).toBe('2 de 2 ítems cerrados');
     expect(tituloConversion(tarjetaConversion())).toBe('Conversión 100 %: 2 ítems ganados de 2 cerrados (1 solicitud ganada + 0 parciales)');
+  });
+
+  it('con ítems abiertos, el aria-label dice cuántos no cuentan (2 abiertos)', async () => {
+    historial();
+    await esperar();
+    expect(tarjetaConversion().querySelector('[title]').getAttribute('aria-label')).toBe('2 de 5 ítems cerrados. 2 ítems abiertos no cuentan');
   });
 
   it('regla de género: "ganados" y "cerrados" para ítems; "solicitudes ganadas" solo en el title', async () => {
@@ -130,15 +136,15 @@ describe('Historial de producto: tarjeta "Conversión" por ítems', () => {
   it('un Cotizado dentro de un Pedido es abierto: no cuenta ni como ganado ni como cerrado', async () => {
     historial({ solicitudes: [s('1', 'Pedido', [l('bomba', 'Cotizado')]), s('2', 'Pedido', [l('bomba', 'Pedido')])] });
     await esperar();
-    expect(subtitulo(tarjetaConversion())).toBe('1 ganado / 1 cerrado');
+    expect(subtitulo(tarjetaConversion())).toBe('1 de 1 ítem cerrado');
     expect(valor(tarjetaConversion())).toBe('100%');
   });
 
-  it('sin ítems cerrados muestra un guion (no 0 %) y la cuenta 0 ganados / 0 cerrados', async () => {
+  it('sin ítems cerrados muestra un guion (no 0 %) y la cuenta 0 de 0 ítems cerrados', async () => {
     historial({ solicitudes: [s('5', 'Cotizado', [l('bomba', 'Cotizado')]), s('6', 'Pendiente', [l('bomba', 'Pendiente', { fob: 0, precio: 0 })])] });
     await esperar();
     expect(valor(tarjetaConversion())).toBe('—');
-    expect(subtitulo(tarjetaConversion())).toBe('0 ganados / 0 cerrados');
+    expect(subtitulo(tarjetaConversion())).toBe('0 de 0 ítems cerrados');
     expect(tituloConversion(tarjetaConversion())).toMatch(/^Sin ítems cerrados: no hay conversión/);
   });
 
@@ -146,7 +152,7 @@ describe('Historial de producto: tarjeta "Conversión" por ítems', () => {
     historial({ solicitudes: [] });
     await esperar();
     expect(valor(tarjetaConversion())).toBe('—');
-    expect(subtitulo(tarjetaConversion())).toBe('0 ganados / 0 cerrados');
+    expect(subtitulo(tarjetaConversion())).toBe('0 de 0 ítems cerrados');
   });
 
   it('cifras grandes: separador de miles y números enteros en el subtítulo', async () => {
@@ -154,7 +160,7 @@ describe('Historial de producto: tarjeta "Conversión" por ítems', () => {
     const perdidas = Array.from({ length: 4444 }, (_, i) => s(`p${i}`, 'Venta Perdida', [l('bomba', 'Venta Perdida')]));
     historial({ solicitudes: [...muchas, ...perdidas] });
     await esperar(200);
-    expect(subtitulo(tarjetaConversion())).toBe(`${(1234).toLocaleString()} ganados / ${(5678).toLocaleString()} cerrados`);
+    expect(subtitulo(tarjetaConversion())).toBe(`${(1234).toLocaleString()} de ${(5678).toLocaleString()} ítems cerrados`);
     expect(valor(tarjetaConversion())).toBe('22%');
   });
 });
@@ -165,7 +171,7 @@ describe('Historial de producto: la conversión sigue a las filas filtradas', ()
     historial();
     await esperar();
     expect(contador()).toBe('Mostrando 1 movimiento');
-    expect(subtitulo(tarjetaConversion())).toBe('1 ganado / 1 cerrado');
+    expect(subtitulo(tarjetaConversion())).toBe('1 de 1 ítem cerrado');
     expect(valor(tarjetaConversion())).toBe('100%');
   });
 
@@ -174,7 +180,7 @@ describe('Historial de producto: la conversión sigue a las filas filtradas', ()
     historial();
     await esperar();
     expect(contador()).toBe('Mostrando 3 movimientos');
-    expect(subtitulo(tarjetaConversion())).toBe('0 ganados / 2 cerrados');
+    expect(subtitulo(tarjetaConversion())).toBe('0 de 2 ítems cerrados');
     expect(valor(tarjetaConversion())).toBe('0%');
   });
 
@@ -184,13 +190,13 @@ describe('Historial de producto: la conversión sigue a las filas filtradas', ()
     historial();
     await esperar();
     expect(contador()).toBe('Mostrando 1 movimiento');
-    expect(subtitulo(tarjetaConversion())).toBe('0 ganados / 1 cerrado');
+    expect(subtitulo(tarjetaConversion())).toBe('0 de 1 ítem cerrado');
     cleanup();
     sessionStorage.clear();
     guardar('analisis_prod_hist_search', 'RFQ-4');
     historial();
     await esperar();
-    expect(subtitulo(tarjetaConversion())).toBe('0 ganados / 1 cerrado');
+    expect(subtitulo(tarjetaConversion())).toBe('0 de 1 ítem cerrado');
   });
 
   it('el filtro de estado "Cotizado" deja solo abiertas: guion', async () => {
@@ -212,13 +218,13 @@ describe('Historial de producto: la conversión sigue a las filas filtradas', ()
     guardar('analisis_vendedor_filter', 'Luis');
     historial({ solicitudes: [...MIXTO, ...otras] });
     await esperar();
-    expect(subtitulo(tarjetaConversion())).toBe('1 ganado / 1 cerrado');
+    expect(subtitulo(tarjetaConversion())).toBe('1 de 1 ítem cerrado');
     cleanup();
     sessionStorage.clear();
     guardar('analisis_cliente_search', 'holcim');
     historial({ solicitudes: [...MIXTO, ...otras] });
     await esperar();
-    expect(subtitulo(tarjetaConversion())).toBe('1 ganado / 1 cerrado');
+    expect(subtitulo(tarjetaConversion())).toBe('1 de 1 ítem cerrado');
   });
 });
 

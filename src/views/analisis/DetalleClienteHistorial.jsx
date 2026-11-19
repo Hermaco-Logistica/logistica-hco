@@ -578,7 +578,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
     });
 
     // Conversión por ítems, unidades en pedido y title: todo con el estado final de cada ítem (F8c), ver resumirMovimientosHistorial
-    const { conversion, itemsGanados, itemsCerrados, tituloConversion, unidadesEnPedido } = resumirMovimientosHistorial(movimientosFiltrados);
+    const { conversion, itemsGanados, itemsCerrados, itemsAbiertos, tituloConversion, unidadesEnPedido } = resumirMovimientosHistorial(movimientosFiltrados);
 
     return {
       totalMovimientos,
@@ -593,6 +593,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
       conversion,
       itemsGanados,
       itemsCerrados,
+      itemsAbiertos,
       tituloConversion
     };
   }, [movimientosFiltrados, movimientos.length]);
@@ -738,7 +739,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
 
         {/* Conversión por ítems; en las vistas de decisión (anulaciones, ventas perdidas) no tiene sentido: solo hay ítems de esa decisión */}
         {!soloAnulados && (
-          <TarjetaConversion conversion={metricas.conversion} itemsGanados={metricas.itemsGanados} itemsCerrados={metricas.itemsCerrados} titulo={metricas.tituloConversion} />
+          <TarjetaConversion conversion={metricas.conversion} itemsGanados={metricas.itemsGanados} itemsCerrados={metricas.itemsCerrados} itemsAbiertos={metricas.itemsAbiertos} titulo={metricas.tituloConversion} />
         )}
       </div>
 
