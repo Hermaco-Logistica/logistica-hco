@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroSegmentado, FiltroSelect } from '../../../components/filtros';
+import { BarraFiltros, BotonExportar, BotonLimpiar, ContadorResultados, FiltroBusqueda, FiltroSelect } from '../../../components/filtros';
 import { useMovil } from '../../../components/filtros/contexto';
 
 /**
@@ -8,7 +8,8 @@ import { useMovil } from '../../../components/filtros/contexto';
  *   - `chips`: elemento con los chips de contexto (ranura `encabezado`, variante plana); no cuentan ni los limpia `onLimpiar`.
  *   - `seguimiento`: elemento del conmutador (BotonSeguimiento, que edita ?seguimiento=1); `AvisoSeguimiento` queda en cada Historial.
  *   - `opcionesEstado`, `opcionesModalidad` ([strings]) y `opcionesCliente` llegan hechas; el select de Cliente solo con más de una.
- *   - Modalidad: segmentado con "Todas" + hasta 2 modalidades; con 3 (4 opciones en total no caben en una fila) pasa a select.
+ *   - Modalidad: siempre un desplegable (FiltroSelect: "Todas" más las modalidades presentes en la vista), con cualquier número de modalidades, en escritorio y
+ *     móvil y en la vista normal y la de seguimiento. Un valor que la vista ya no tiene se muestra como "Todas" (lo resuelve cada Historial).
  *   - `soloAnulados`: oculta Estado y seguimiento; el resto se mantiene.
  *   - `filtrosActivos`: lo que hay en la hoja (estado, modalidad, seguimiento y cliente); `activosLimpiar`: todo lo que limpia (con la búsqueda).
  *   - `total`: movimientos mostrados (contador "Mostrando N movimientos").
@@ -25,9 +26,7 @@ export const BarraFiltrosHistorial = ({
   const caja = (nodo) => (movil ? nodo : <div className="w-56 shrink-0">{nodo}</div>); // en escritorio las filas usan el ancho natural de cada control
   const selCliente = opcionesCliente.length > 1 && caja(<FiltroSelect value={cliente} onChange={onCliente} opciones={opcionesCliente} prefijo="Cliente:" etiqueta="Cliente" ariaLabel="Filtrar por cliente" />);
   const selEstado = !soloAnulados && caja(<FiltroSelect value={estado} onChange={onEstado} opciones={opcionesEstado} prefijo="Estado:" etiqueta="Estado" ariaLabel="Filtrar por estado" />);
-  const selModalidad = opcionesModalidad.length > 2
-    ? caja(<FiltroSelect value={modalidad} onChange={onModalidad} opciones={opcionesModalidad} etiquetaTodos="Todas" prefijo="Modalidad:" etiqueta="Modalidad" ariaLabel="Filtrar por modalidad" />)
-    : <FiltroSegmentado value={modalidad} onChange={onModalidad} valorNeutro="" prefijo="Modalidad:" etiqueta="Modalidad" ariaLabel="Filtrar por modalidad" opciones={[{ value: '', label: 'Todas' }, ...opcionesModalidad.map((m) => ({ value: m, label: m }))]} />;
+  const selModalidad = caja(<FiltroSelect value={modalidad} onChange={onModalidad} opciones={opcionesModalidad} etiquetaTodos="Todas" prefijo="Modalidad:" etiqueta="Modalidad" ariaLabel="Filtrar por modalidad" />);
   const conSeguimiento = !soloAnulados && seguimiento;
   return (
     <BarraFiltros

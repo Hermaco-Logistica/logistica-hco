@@ -242,7 +242,7 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
 
   const [searchTerm, setSearchTerm] = useSessionState('analisis_vend_hist_search', '');
   const [filterEstado, setFilterEstado] = useSessionState('analisis_vend_hist_estado', '');
-  const [filterModalidad, setFilterModalidad] = useSessionState('analisis_vend_hist_modalidad', '');
+  const [modalidadGuardada, setFilterModalidad] = useSessionState('analisis_vend_hist_modalidad', '');
   const [filterCliente, setFilterCliente] = useSessionState('analisis_vend_hist_cliente', '');
   const [clienteFilter, setClienteFilter] = useSessionState('analisis_cliente_search', '');
   const [currentPage, setCurrentPage] = useState(1);
@@ -542,6 +542,10 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
     };
   }, [solicitudes, targetKey, decodedSearch, vendedorId, mapFechasOC, clienteFilter, soloAnulados, soloSeguimiento, decisionFilter, filtroPeriodo, rangoEsteMes]);
 
+  const modalidadesDisponibles = useMemo(() => obtenerOpcionesMovimiento(movimientos, 'modalidad'), [movimientos]);
+  // Una modalidad guardada en sesión que esta vista ya no tiene (p. ej. en seguimiento) se ve y se aplica como "Todas"; el valor guardado no se borra.
+  const filterModalidad = movimientos.length === 0 || modalidadesDisponibles.includes(modalidadGuardada) ? modalidadGuardada : '';
+
   // Opciones del filtro alineadas con los filtros visibles actuales.
   // Se excluye filterCliente para conservar todas las opciones disponibles.
   const clientesDisponibles = useMemo(() => {
@@ -569,8 +573,6 @@ export const DetalleVendedorHistorial = ({ role, solicitudes = [], ordenesCompra
   }, [movimientos, filterEstado, filterModalidad, searchTerm, soloAnulados]);
 
   const estadosDisponibles = useMemo(() => obtenerOpcionesMovimiento(movimientos, 'estado'), [movimientos]);
-
-  const modalidadesDisponibles = useMemo(() => obtenerOpcionesMovimiento(movimientos, 'modalidad'), [movimientos]);
 
   // Filtrado de la tabla según filtros y búsqueda
   const movimientosFiltrados = useMemo(() => {
