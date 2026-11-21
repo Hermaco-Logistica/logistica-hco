@@ -242,7 +242,7 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
 
   const [searchTerm, setSearchTerm] = useSessionState('analisis_cli_hist_search', '');
   const [filterEstado, setFilterEstado] = useSessionState('analisis_cli_hist_estado', '');
-  const [filterModalidad, setFilterModalidad] = useSessionState('analisis_cli_hist_modalidad', '');
+  const [modalidadGuardada, setFilterModalidad] = useSessionState('analisis_cli_hist_modalidad', '');
   const [vendedorFilter, setVendedorFilter] = useSessionState('analisis_vendedor_filter', '');
   const [currentPage, setCurrentPage] = useState(1);
   const cambiarSeguimiento = (activo) => {
@@ -530,6 +530,8 @@ export const DetalleClienteHistorial = ({ role, solicitudes = [], ordenesCompra 
   const estadosDisponibles = useMemo(() => obtenerOpcionesMovimiento(movimientos, 'estado'), [movimientos]);
 
   const modalidadesDisponibles = useMemo(() => obtenerOpcionesMovimiento(movimientos, 'modalidad'), [movimientos]);
+  // Una modalidad guardada en sesión que esta vista ya no tiene (p. ej. en seguimiento) se ve y se aplica como "Todas"; el valor guardado no se borra.
+  const filterModalidad = movimientos.length === 0 || modalidadesDisponibles.includes(modalidadGuardada) ? modalidadGuardada : '';
 
   // Filtrado de la tabla según filtros y búsqueda
   const movimientosFiltrados = useMemo(() => {

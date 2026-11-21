@@ -33,7 +33,8 @@ describe('BarraFiltrosHistorial (escritorio)', () => {
     fireEvent.click(screen.getByRole('combobox', { name: 'Filtrar por estado' }));
     fireEvent.click(screen.getByRole('option', { name: 'Pedido' }));
     expect(p.onEstado).toHaveBeenCalledWith('Pedido');
-    fireEvent.click(within(screen.getByRole('group', { name: 'Filtrar por modalidad' })).getByRole('button', { name: 'Marítimo' }));
+    fireEvent.click(screen.getByRole('combobox', { name: 'Filtrar por modalidad' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Marítimo' }));
     expect(p.onModalidad).toHaveBeenCalledWith('Marítimo');
     fireEvent.click(screen.getByRole('combobox', { name: 'Filtrar por cliente' }));
     fireEvent.click(screen.getByRole('option', { name: 'B' }));
@@ -48,9 +49,12 @@ describe('BarraFiltrosHistorial (escritorio)', () => {
 
   it('las opciones de modalidad incluyen "Todas" (valor vacío) y la selección activa se marca', () => {
     montar(base({ modalidad: 'Aéreo' }));
-    const grupo = screen.getByRole('group', { name: 'Filtrar por modalidad' });
-    expect(within(grupo).getAllByRole('button').map((b) => b.textContent)).toEqual(['Todas', 'Aéreo', 'Marítimo']);
-    expect(within(grupo).getByRole('button', { name: 'Aéreo' }).getAttribute('aria-pressed')).toBe('true');
+    const campo = screen.getByRole('combobox', { name: 'Filtrar por modalidad' });
+    expect(campo.textContent).toContain('Aéreo');
+    fireEvent.click(campo);
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['Todas', 'Aéreo', 'Marítimo']);
+    expect(screen.getByRole('option', { name: 'Aéreo' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('option', { name: 'Todas' }).getAttribute('aria-selected')).toBe('false');
   });
 
   it('sin chips no pinta la ranura de encabezado; con chips la pinta', () => {
@@ -66,7 +70,7 @@ describe('BarraFiltrosHistorial (escritorio)', () => {
     expect(screen.queryByRole('combobox', { name: 'Filtrar por estado' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'En seguimiento' })).toBeNull();
     expect(screen.getByPlaceholderText('Buscar por correlativo, producto...')).toBeTruthy();
-    expect(screen.getByRole('group', { name: 'Filtrar por modalidad' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'Filtrar por modalidad' })).toBeTruthy();
     expect(screen.getByRole('button', { name: /^Limpiar filtros/ })).toBeTruthy();
     expect(screen.getByRole('button', { name: /Exportar movimientos/ })).toBeTruthy();
   });
@@ -90,7 +94,7 @@ describe('BarraFiltrosHistorial (escritorio)', () => {
   });
 });
 
-describe('BarraFiltrosHistorial: escritorio en dos filas y modalidad con 3 opciones', () => {
+describe('BarraFiltrosHistorial: escritorio en dos filas y modalidad como desplegable', () => {
   it('fila 1: búsqueda, Cliente y Estado; fila 2: Modalidad y seguimiento con Limpiar, Exportar y el contador en el bloque final', () => {
     const { container } = montar(base({ activosLimpiar: 1, cliente: '', onCliente: vi.fn(), opcionesCliente: ['A', 'B'] }));
     const filas = Array.from(container.querySelectorAll('section .space-y-2 > div'));
@@ -98,7 +102,7 @@ describe('BarraFiltrosHistorial: escritorio en dos filas y modalidad con 3 opcio
     expect(within(filas[0]).getByPlaceholderText('Buscar por correlativo, producto...')).toBeTruthy();
     expect(within(filas[0]).getByRole('combobox', { name: 'Filtrar por cliente' })).toBeTruthy();
     expect(within(filas[0]).getByRole('combobox', { name: 'Filtrar por estado' })).toBeTruthy();
-    expect(within(filas[1]).getByRole('group', { name: 'Filtrar por modalidad' })).toBeTruthy();
+    expect(within(filas[1]).getByRole('combobox', { name: 'Filtrar por modalidad' })).toBeTruthy();
     expect(within(filas[1]).getByRole('button', { name: 'En seguimiento' })).toBeTruthy();
     const bloque = filas[1].querySelector('[data-bloque]');
     expect(bloque.className).toContain('w-[27.5rem]');
@@ -112,23 +116,50 @@ describe('BarraFiltrosHistorial: escritorio en dos filas y modalidad con 3 opcio
     const filas = Array.from(container.querySelectorAll('section .space-y-2 > div'));
     expect(within(filas[0]).queryByRole('combobox', { name: 'Filtrar por estado' })).toBeNull();
     expect(within(filas[1]).queryByRole('button', { name: 'En seguimiento' })).toBeNull();
-    expect(within(filas[1]).getByRole('group', { name: 'Filtrar por modalidad' })).toBeTruthy();
+    expect(within(filas[1]).getByRole('combobox', { name: 'Filtrar por modalidad' })).toBeTruthy();
   });
 
-  it('con 3 modalidades (4 opciones con "Todas") Modalidad pasa a select y no hay segmentado que se superponga', () => {
+  it('con 3 modalidades elegir una llama a onModalidad con su valor', () => {
     const p = base({ opcionesModalidad: ['Aéreo', 'Marítimo', 'No asignada'] });
     montar(p);
-    expect(screen.queryByRole('group', { name: 'Filtrar por modalidad' })).toBeNull();
     fireEvent.click(screen.getByRole('combobox', { name: 'Filtrar por modalidad' }));
-    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['Todas', 'Aéreo', 'Marítimo', 'No asignada']);
     fireEvent.click(screen.getByRole('option', { name: 'No asignada' }));
     expect(p.onModalidad).toHaveBeenCalledWith('No asignada');
   });
 
-  it('con 2 modalidades sigue el segmentado (Todas, Aéreo, Marítimo)', () => {
-    montar(base());
-    expect(screen.getByRole('group', { name: 'Filtrar por modalidad' })).toBeTruthy();
-    expect(screen.queryByRole('combobox', { name: 'Filtrar por modalidad' })).toBeNull();
+  it('elegir "Todas" devuelve el valor vacío', () => {
+    const p = base({ modalidad: 'Aéreo' });
+    montar(p);
+    fireEvent.click(screen.getByRole('combobox', { name: 'Filtrar por modalidad' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Todas' }));
+    expect(p.onModalidad).toHaveBeenCalledWith('');
+  });
+});
+
+/** El control de Modalidad es el mismo con cualquier número de modalidades, en escritorio y en móvil (F: Modalidad siempre desplegable). */
+const MODALIDADES = ['Aéreo', 'Marítimo', 'No asignada', 'Terrestre'];
+describe.each([0, 1, 2, 3, 4])('BarraFiltrosHistorial: Modalidad con %i modalidades', (n) => {
+  const opciones = MODALIDADES.slice(0, n);
+  const esperado = ['Todas', ...opciones];
+
+  it('escritorio: siempre un combobox, nunca un group, con "Todas" más las presentes', () => {
+    montar(base({ opcionesModalidad: opciones }));
+    expect(screen.queryByRole('group', { name: 'Filtrar por modalidad' })).toBeNull();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Filtrar por modalidad' }));
+    expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(esperado);
+  });
+
+  it('móvil: la hoja usa el mismo desplegable (una fila de acordeón), no botones', async () => {
+    mm(true);
+    montar(base({ opcionesModalidad: opciones, filtrosActivos: 0 }));
+    fireEvent.click(screen.getByRole('button', { name: 'Filtros' }));
+    await esperar();
+    const hoja = screen.getByRole('dialog');
+    expect(within(hoja).queryByRole('group', { name: 'Filtrar por modalidad' })).toBeNull();
+    const fila = within(hoja).getByRole('combobox', { name: 'Filtrar por modalidad' });
+    expect(fila.closest('[data-fila-acordeon]')).toBeTruthy();
+    const lista = fila.closest('[data-fila-acordeon]').querySelector('[role="listbox"]');
+    expect(Array.from(lista.querySelectorAll('[role="option"]')).map((o) => o.textContent)).toEqual(esperado);
   });
 });
 
